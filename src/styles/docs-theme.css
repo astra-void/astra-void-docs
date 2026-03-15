@@ -1,0 +1,244 @@
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@layer starlight.base {
+  :root,
+  ::backdrop {
+    --sl-font: "IBM Plex Sans";
+    --sl-font-mono: "IBM Plex Mono";
+    --sl-content-width: 46rem;
+    --sl-sidebar-width: 19rem;
+    --sl-color-white: hsl(210, 28%, 96%);
+    --sl-color-gray-1: hsl(214, 22%, 88%);
+    --sl-color-gray-2: hsl(214, 16%, 74%);
+    --sl-color-gray-3: hsl(214, 12%, 58%);
+    --sl-color-gray-4: hsl(215, 12%, 42%);
+    --sl-color-gray-5: hsl(217, 19%, 18%);
+    --sl-color-gray-6: hsl(220, 27%, 12%);
+    --sl-color-black: hsl(222, 30%, 8%);
+    --sl-color-accent-low: hsla(191, 100%, 52%, 0.1);
+    --sl-color-accent: hsl(191, 88%, 61%);
+    --sl-color-accent-high: hsl(190, 100%, 85%);
+    --sl-color-text: var(--sl-color-gray-2);
+    --sl-color-text-accent: var(--sl-color-accent-high);
+    --sl-color-text-invert: hsl(222, 30%, 10%);
+    --sl-color-bg: var(--sl-color-black);
+    --sl-color-bg-nav: hsla(220, 24%, 11%, 0.92);
+    --sl-color-bg-sidebar: hsla(220, 24%, 10%, 0.96);
+    --sl-color-bg-inline-code: hsl(217, 25%, 14%);
+    --sl-color-bg-accent: var(--sl-color-accent);
+    --sl-color-hairline-light: hsla(191, 56%, 72%, 0.14);
+    --sl-color-hairline: hsla(217, 18%, 20%, 0.92);
+    --sl-color-hairline-shade: hsla(220, 22%, 5%, 0.9);
+    --sl-color-backdrop-overlay: hsla(222, 28%, 7%, 0.62);
+    --sl-shadow-sm: 0 8px 24px hsla(220, 35%, 2%, 0.12);
+    --sl-shadow-md: 0 18px 42px hsla(220, 35%, 2%, 0.18);
+    --surface-panel: hsla(220, 22%, 12%, 0.92);
+  }
+
+  :root[data-theme="light"],
+  [data-theme="light"] ::backdrop {
+    --sl-color-white: hsl(220, 22%, 16%);
+    --sl-color-gray-1: hsl(217, 18%, 24%);
+    --sl-color-gray-2: hsl(217, 15%, 36%);
+    --sl-color-gray-3: hsl(216, 12%, 48%);
+    --sl-color-gray-4: hsl(214, 12%, 62%);
+    --sl-color-gray-5: hsl(213, 22%, 84%);
+    --sl-color-gray-6: hsl(210, 26%, 92%);
+    --sl-color-gray-7: hsl(0, 0%, 100%);
+    --sl-color-black: hsl(210, 38%, 98%);
+    --sl-color-accent-low: hsla(192, 100%, 40%, 0.1);
+    --sl-color-accent: hsl(192, 72%, 42%);
+    --sl-color-accent-high: hsl(198, 54%, 24%);
+    --sl-color-text: hsl(217, 16%, 32%);
+    --sl-color-text-accent: var(--sl-color-accent-high);
+    --sl-color-text-invert: hsl(210, 38%, 98%);
+    --sl-color-bg: var(--sl-color-black);
+    --sl-color-bg-nav: hsla(0, 0%, 100%, 0.92);
+    --sl-color-bg-sidebar: hsla(210, 22%, 96%, 0.96);
+    --sl-color-bg-inline-code: hsl(210, 24%, 93%);
+    --sl-color-bg-accent: var(--sl-color-accent);
+    --sl-color-hairline-light: hsla(192, 60%, 36%, 0.14);
+    --sl-color-hairline: hsla(214, 16%, 82%, 0.92);
+    --sl-color-hairline-shade: hsla(210, 14%, 90%, 0.95);
+    --sl-color-backdrop-overlay: hsla(220, 12%, 20%, 0.22);
+    --sl-shadow-sm: 0 10px 28px hsla(216, 28%, 18%, 0.06);
+    --sl-shadow-md: 0 18px 42px hsla(216, 28%, 18%, 0.1);
+    --surface-panel: hsla(0, 0%, 100%, 0.95);
+  }
+
+  html {
+    background: var(--sl-color-bg);
+  }
+
+  body {
+    background:
+      linear-gradient(180deg, hsla(191, 80%, 50%, 0.05), transparent 16rem),
+      var(--sl-color-bg);
+  }
+}
+
+@layer starlight.core {
+  :root {
+    --sl-nav-height: 4rem;
+  }
+
+  :where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--__sl-font);
+    letter-spacing: -0.02em;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--sl-color-hairline-light);
+    background: var(--sl-color-bg-nav);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 1px 0 hsla(0, 0%, 100%, 0.02);
+  }
+
+  .sidebar-pane {
+    background: var(--sl-color-bg-sidebar);
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar-content {
+    padding-top: 1.1rem;
+  }
+
+  .sidebar-content a,
+  .sidebar-content summary {
+    border-radius: 0.65rem;
+  }
+
+  .sidebar-content a:hover,
+  .sidebar-content summary:hover {
+    background: hsla(0, 0%, 100%, 0.025);
+  }
+
+  .sidebar-content [aria-current="page"],
+  .sidebar-content [aria-current="page"]:hover,
+  .sidebar-content [aria-current="page"]:focus {
+    box-shadow: inset 0 0 0 1px var(--sl-color-hairline-light);
+  }
+
+  .sidebar-content ul ul li {
+    border-inline-start-color: var(--sl-color-hairline-light);
+  }
+
+  .content-panel {
+    padding-block: 1.5rem;
+  }
+
+  .content-panel + .content-panel {
+    border-top-color: var(--sl-color-hairline-light);
+  }
+
+  site-search button[data-open-modal] {
+    border-color: var(--sl-color-hairline-light);
+    border-radius: 0.75rem;
+    background: hsla(0, 0%, 100%, 0.03);
+    box-shadow: none;
+  }
+
+  site-search button[data-open-modal]:hover {
+    border-color: var(--sl-color-gray-4);
+    background: hsla(0, 0%, 100%, 0.045);
+  }
+
+  site-search button > kbd {
+    background: hsla(0, 0%, 100%, 0.05);
+  }
+
+  site-search dialog {
+    border-color: var(--sl-color-hairline-light);
+    background: var(--surface-panel);
+    border-radius: 1rem;
+    backdrop-filter: blur(14px);
+  }
+
+  starlight-toc nav {
+    border: 1px solid var(--sl-color-hairline-light);
+    border-radius: 0.85rem;
+    padding: 0.9rem;
+    background: var(--surface-panel);
+    box-shadow: var(--sl-shadow-sm);
+  }
+
+  starlight-toc h2 {
+    font-family: var(--__sl-font);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sl-color-gray-3);
+  }
+
+  .sl-markdown-content a {
+    text-decoration-color: hsla(191, 88%, 61%, 0.32);
+    text-underline-offset: 0.16em;
+  }
+
+  .sl-markdown-content a:hover {
+    text-decoration-color: var(--sl-color-accent);
+  }
+
+  .sl-markdown-content :not(pre) > code {
+    border: 1px solid var(--sl-color-hairline-light);
+    border-radius: 0.4rem;
+    padding: 0.14em 0.36em;
+    background: var(--sl-color-bg-inline-code);
+    color: var(--sl-color-accent-high);
+  }
+
+  .current-docs-note {
+    margin-top: 1.25rem;
+    border: 1px solid var(--sl-color-hairline-light);
+    border-radius: 0.9rem;
+    padding: 1rem 1.1rem;
+    background: var(--surface-panel);
+    box-shadow: var(--sl-shadow-sm);
+  }
+
+  .current-docs-note p {
+    margin: 0;
+  }
+
+  .current-docs-note p + p {
+    margin-top: 0.6rem;
+    color: var(--sl-color-gray-2);
+  }
+
+  .home-links {
+    display: grid;
+    gap: 0.9rem;
+    margin-top: 1rem;
+  }
+
+  .home-links > * {
+    margin-top: 0 !important;
+  }
+
+  .home-links .sl-link-card {
+    border-color: var(--sl-color-hairline-light);
+    border-radius: 0.9rem;
+    background: var(--surface-panel);
+    box-shadow: var(--sl-shadow-sm);
+  }
+
+  .home-links .sl-link-card:hover {
+    border-color: var(--sl-color-gray-4);
+    background: var(--surface-panel);
+  }
+
+  .home-links .description {
+    color: var(--sl-color-gray-2);
+  }
+
+  @media (min-width: 50rem) {
+    .home-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}

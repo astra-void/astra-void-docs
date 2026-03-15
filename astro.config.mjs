@@ -8,7 +8,18 @@ export default defineConfig({
   ...(docsSiteUrl ? { site: docsSiteUrl } : {}),
   integrations: [
     starlight({
-      title: "Lattice UI",
+      title: "Astra Void Docs",
+      tagline: "Shared documentation hub for Astra Void projects and tools.",
+      description:
+        "General documentation hub for Astra Void projects, packages, and workflows.",
+      customCss: ["./src/styles/docs-theme.css"],
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/astra-void/astra-void-docs",
+        },
+      ],
       prerender: true,
       sidebar: [
         {

@@ -13,6 +13,9 @@
     "@astrojs/check": "^0.9.7",
     "@astrojs/mdx": "^5.0.0",
     "@astrojs/starlight": "^0.38.1",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@fontsource/space-grotesk": "^5.2.10",
     "astro": "^6.0.4",
     "typescript": "5.9.3"
   },
