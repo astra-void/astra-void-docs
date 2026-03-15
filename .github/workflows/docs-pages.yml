@@ -37,7 +37,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build docs
-        run: pnpm --filter @lattice-ui/docs build
+        run: pnpm build
 
       - name: Create CNAME file
         if: vars.DOCS_CUSTOM_DOMAIN != ''
