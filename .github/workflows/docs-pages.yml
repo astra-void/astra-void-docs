@@ -41,12 +41,12 @@ jobs:
 
       - name: Create CNAME file
         if: vars.DOCS_CUSTOM_DOMAIN != ''
-        run: echo "${{ vars.DOCS_CUSTOM_DOMAIN }}" > apps/docs/dist/CNAME
+        run: echo "${{ vars.DOCS_CUSTOM_DOMAIN }}" > dist/CNAME
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/docs/dist
+          path: dist
 
   deploy:
     runs-on: ubuntu-latest
