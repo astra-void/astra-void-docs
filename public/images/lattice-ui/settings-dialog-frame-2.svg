@@ -1,0 +1,23 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="28" fill="#08131D"/>
+  <rect x="36" y="36" width="1128" height="648" rx="24" fill="#0D1D29" stroke="#17384C"/>
+  <rect x="72" y="72" width="1056" height="576" rx="18" fill="#0D1D29"/>
+  <rect x="0" y="0" width="1200" height="720" fill="#061018" fill-opacity=".38"/>
+  <rect x="300" y="116" width="600" height="488" rx="28" fill="#102433" stroke="#2A4457"/>
+  <rect x="338" y="154" width="252" height="20" rx="10" fill="#E5EDF5"/>
+  <rect x="338" y="188" width="354" height="12" rx="6" fill="#90A3B4"/>
+  <rect x="338" y="246" width="220" height="14" rx="7" fill="#7DD6EA"/>
+  <rect x="338" y="276" width="524" height="52" rx="16" fill="#0E2A3B"/>
+  <rect x="338" y="344" width="162" height="12" rx="6" fill="#90A3B4"/>
+  <rect x="338" y="372" width="524" height="52" rx="16" fill="#0E2A3B"/>
+  <rect x="338" y="440" width="524" height="62" rx="18" fill="#0B2331" stroke="#17384C"/>
+  <rect x="338" y="530" width="128" height="42" rx="12" fill="#102C3D"/>
+  <rect x="734" y="530" width="128" height="42" rx="12" fill="#28B6D8"/>
+  <text x="338" y="247" fill="#90A3B4" font-family="IBM Plex Sans, sans-serif" font-size="18">Display name</text>
+  <text x="338" y="345" fill="#90A3B4" font-family="IBM Plex Sans, sans-serif" font-size="18">Default region</text>
+  <text x="362" y="309" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="20">player-one</text>
+  <text x="362" y="405" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="20">Select a region</text>
+  <text x="362" y="475" fill="#7DD6EA" font-family="IBM Plex Sans, sans-serif" font-size="18">Live validation, helper text, and composed fields.</text>
+  <text x="369" y="557" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="18">Cancel</text>
+  <text x="777" y="557" fill="#05202B" font-family="IBM Plex Sans, sans-serif" font-size="18" font-weight="700">Save</text>
+</svg>

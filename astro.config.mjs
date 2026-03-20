@@ -8,10 +8,11 @@ export default defineConfig({
   ...(docsSiteUrl ? { site: docsSiteUrl } : {}),
   integrations: [
     starlight({
-      title: "Astra Void Docs",
-      tagline: "Shared documentation hub for Astra Void projects and tools.",
+      title: "Lattice UI Docs",
+      tagline:
+        "Headless Roblox UI primitives with a coherent style and system layer.",
       description:
-        "General documentation hub for Astra Void projects, packages, and workflows.",
+        "Documentation for Lattice UI: headless primitives, style and system foundations, and practical implementation guides for Roblox UI.",
       customCss: ["./src/styles/docs-theme.css"],
       social: [
         {
@@ -23,7 +24,7 @@ export default defineConfig({
       prerender: true,
       sidebar: [
         {
-          label: "Introduction",
+          label: "Home",
           link: "/",
         },
         {

@@ -1,39 +1,197 @@
 ---
-title: Astra Void Docs
-description: Shared documentation hub for Astra Void projects and tools.
+title: Why Lattice UI
+description: Why Lattice UI exists, what it is good at, and where to start.
 draft: false
 ---
 
 import { LinkCard } from "@astrojs/starlight/components";
 
-Astra Void Docs is the shared documentation home for projects, packages, and tooling published from this workspace.
+<div class="landing-hero">
+  <div class="landing-hero-copy">
+    <p class="landing-eyebrow">Lattice UI for Roblox</p>
+    <h1>Build product UI without giving up control of the screen.</h1>
+    <p class="landing-lead">
+      Lattice UI gives you headless Roblox primitives for real application work: caller-owned visuals,
+      a coherent Style + System foundation, and overlay behavior that still makes sense once dialogs,
+      popovers, menus, selects, and tooltips start layering together.
+    </p>
 
-<div class="current-docs-note">
-  <p><strong>Current published docs:</strong> Lattice UI is the currently available product documentation set in this site.</p>
-  <p>Product-specific pages remain intentionally focused on Lattice UI until additional doc sets are added.</p>
+    <div class="landing-specs">
+      <div class="landing-spec">
+        <span class="landing-spec-label">Primitive model</span>
+        <strong>Headless first</strong>
+      </div>
+      <div class="landing-spec">
+        <span class="landing-spec-label">Foundation</span>
+        <strong>Style + System</strong>
+      </div>
+      <div class="landing-spec">
+        <span class="landing-spec-label">Overlay stack</span>
+        <strong>Layer + Focus</strong>
+      </div>
+    </div>
+
+    <div class="landing-actions">
+      <a class="landing-button landing-button-primary" href="/getting-started/build-a-settings-dialog/">
+        Start With One Screen
+      </a>
+      <a class="landing-button landing-button-secondary" href="/components/">Browse Components</a>
+      <a class="landing-button landing-button-tertiary" href="/getting-started/installation/">Installation</a>
+    </div>
+
+  </div>
+
+  <div class="landing-hero-visual">
+    <div class="hero-monitor">
+      <div class="hero-monitor-chrome">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <img
+        src="/images/lattice-ui/settings-dialog-frame-4.svg"
+        alt="Lattice UI settings dialog built with SystemProvider, TextField, Select, and Dialog."
+      />
+      <div class="hero-monitor-caption">
+        <strong>One practical composition</strong>
+        <span>SystemProvider + style recipes + TextField + Select + Dialog</span>
+      </div>
+    </div>
+
+    <div class="hero-filmstrip">
+      <figure>
+        <img src="/images/lattice-ui/settings-dialog-frame-1.svg" alt="Playground shell with a dialog scene selected." />
+        <figcaption>Scene shell</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/lattice-ui/settings-dialog-frame-2.svg" alt="Dialog with text field and actions." />
+        <figcaption>Field composition</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/lattice-ui/settings-dialog-frame-3.svg" alt="Select content opened inside the dialog." />
+        <figcaption>Overlay behavior</figcaption>
+      </figure>
+    </div>
+
+  </div>
 </div>
 
-## Quick Links
+<div class="proof-band">
+  <section class="proof-item">
+    <p class="proof-kicker">Headless primitives</p>
+    <p>
+      State, focus, and interaction contracts stay in the package. Roblox
+      instance structure and styling stay in your app.
+    </p>
+  </section>
+  <section class="proof-item">
+    <p class="proof-kicker">Style + System</p>
+    <p>
+      Tokens, recipes, density, layout primitives, and surfaces were designed to
+      work as one stack instead of unrelated utilities.
+    </p>
+  </section>
+  <section class="proof-item">
+    <p class="proof-kicker">Overlay discipline</p>
+    <p>
+      Dialog, menu, popover, tooltip, select, and combobox build on the same
+      layer model so stacking and dismissal remain consistent.
+    </p>
+  </section>
+</div>
+
+## 1-Minute Real UI
+
+The fastest way to understand the library is to follow one screen from shell to finished interaction.
+
+<div class="timeline-grid">
+  <article class="timeline-step">
+    <div class="timeline-index">01</div>
+    <div class="timeline-body">
+      <h3>Start from a system-driven shell</h3>
+      <p>Use `SystemProvider` and a stable playground shell so theme, density, spacing, and screen structure already exist before components arrive.</p>
+    </div>
+    <img src="/images/lattice-ui/settings-dialog-frame-1.svg" alt="Playground shell with dialog scene selected." />
+  </article>
+
+<article class="timeline-step">
+  <div class="timeline-index">02</div>
+  <div class="timeline-body">
+    <h3>Compose a real field surface</h3>
+    <p>
+      Add TextField, helper text, validation state, and action rows without
+      locking yourself into a pre-skinned control.
+    </p>
+  </div>
+  <img
+    src="/images/lattice-ui/settings-dialog-frame-2.svg"
+    alt="Dialog content with text field and action buttons."
+  />
+</article>
+
+<article class="timeline-step">
+  <div class="timeline-index">03</div>
+  <div class="timeline-body">
+    <h3>Open portal-based selection content</h3>
+    <p>
+      Select uses registered items, anchored overlay content, and outside
+      dismissal while still letting the app own every visible host.
+    </p>
+  </div>
+  <img
+    src="/images/lattice-ui/settings-dialog-frame-3.svg"
+    alt="Select options opened inside the dialog."
+  />
+</article>
+
+  <article class="timeline-step">
+    <div class="timeline-index">04</div>
+    <div class="timeline-body">
+      <h3>Finish with one coherent product screen</h3>
+      <p>The end result is one settings dialog with shared visual language and stable interaction rules, not a pile of disconnected snippets.</p>
+    </div>
+    <img src="/images/lattice-ui/settings-dialog-frame-4.svg" alt="Final settings dialog and implementation notes." />
+  </article>
+</div>
+
+## Start Here
 
 <div class="home-links">
   <LinkCard
-    title="Getting Started"
-    href="/getting-started/installation/"
-    description="Start with installation, prerequisites, and setup flow."
+    title="Build a Settings Dialog"
+    href="/getting-started/build-a-settings-dialog/"
+    description="The recommended first tutorial: one screen that ties Style, System, TextField, Select, and Dialog together."
   />
   <LinkCard
-    title="CLI"
-    href="/cli/"
-    description="Browse command overviews, execution modes, and troubleshooting."
+    title="Installation"
+    href="/getting-started/installation/"
+    description="Set up the CLI, verify execution mode, and get a workspace ready for Lattice UI packages."
+  />
+  <LinkCard
+    title="Design with Style + System"
+    href="/getting-started/design-with-style-system/"
+    description="Read the design rules behind the practical tutorial once the first implementation is in place."
   />
   <LinkCard
     title="Components"
     href="/components/"
-    description="Open the current registry-backed component documentation."
+    description="Use the package docs as decision guides: what a package is for, its state model, key API, patterns, and cautions."
   />
-  <LinkCard
-    title="Reference"
-    href="/reference/workspace-governance/"
-    description="Read contributor and workspace maintenance guidance."
-  />
+</div>
+
+<div class="tutorial-banner">
+  <div class="tutorial-banner-copy">
+    <p class="tutorial-banner-kicker">Recommended path</p>
+    <h2>Start with one product screen, then drill into the references.</h2>
+    <p>
+      Do not begin with 25 isolated package pages. Build the settings dialog first, then use the
+      reference pages to make sharper decisions about style, system, and individual primitives.
+    </p>
+  </div>
+
+  <div class="tutorial-banner-links">
+    <a href="/getting-started/build-a-settings-dialog/">Open the tutorial</a>
+    <a href="/components/style/">Read Style</a>
+    <a href="/components/system/">Read System</a>
+  </div>
 </div>

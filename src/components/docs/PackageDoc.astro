@@ -1,0 +1,130 @@
+---
+import type { PackageDocData } from "../../data/component-docs";
+
+type Props = {
+  doc: PackageDocData;
+};
+
+const { doc } = Astro.props;
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatInline(value: string) {
+  return escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+---
+
+<div class="package-doc">
+  <section class="doc-section doc-section-purpose">
+    <h2>What It Is For</h2>
+    {
+      doc.whatItIsFor.map((paragraph) => (
+        <p set:html={formatInline(paragraph)} />
+      ))
+    }
+  </section>
+
+  <section class="doc-section doc-section-install">
+    <h2>Install</h2>
+
+    <div class="install-grid">
+      <div class="install-card">
+        <h3>Global CLI</h3>
+        <pre><code class="language-bash">{`lattice add ${doc.installName}`}</code></pre>
+      </div>
+
+      <div class="install-card">
+        <h3>Monorepo Local Script</h3>
+        <pre><code class="language-bash">{`pnpm lattice add ${doc.installName}`}</code></pre>
+      </div>
+    </div>
+
+    <ul class="package-meta">
+      <li>
+        npm package: <code>{doc.npm}</code>
+      </li>
+      <li>
+        peer dependencies: <code>@rbxts/react</code>, <code
+          >@rbxts/react-roblox</code
+        >
+      </li>
+    </ul>
+  </section>
+
+  <section class="doc-section doc-section-anatomy">
+    <h2>Anatomy / Exported Parts</h2>
+    <ul class="export-list">
+      {
+        doc.exports.map((entry) => (
+          <li>
+            <code>{entry}</code>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="doc-section doc-section-state">
+    <h2>State Model</h2>
+    <ul class="state-list">
+      {doc.stateModel.map((entry) => <li set:html={formatInline(entry)} />)}
+    </ul>
+  </section>
+
+  <section class="doc-section doc-section-api">
+    <h2>Key API</h2>
+    <div class="api-grid">
+      {
+        doc.keyApi.map((entry) => (
+          <div class="api-card">
+            <h3>
+              <code>{entry.name}</code>
+            </h3>
+            <p set:html={formatInline(entry.description)} />
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="doc-section doc-section-patterns">
+    <h2>Composition Patterns</h2>
+    <div class="pattern-grid">
+      {
+        doc.compositionPatterns.map((entry) => (
+          <div class="pattern-card">
+            <h3>{entry.title}</h3>
+            <p set:html={formatInline(entry.description)} />
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="doc-section doc-section-cautions">
+    <h2>Cautions / Limits</h2>
+    <ul class="caution-list">
+      {doc.cautions.map((entry) => <li set:html={formatInline(entry)} />)}
+    </ul>
+  </section>
+
+  <section class="doc-section doc-section-related">
+    <h2>Related</h2>
+    <ul class="related-list">
+      {
+        doc.related.map((entry) => (
+          <li>
+            <a href={entry.href}>{entry.label}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</div>

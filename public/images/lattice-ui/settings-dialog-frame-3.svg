@@ -1,0 +1,24 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="28" fill="#08131D"/>
+  <rect x="36" y="36" width="1128" height="648" rx="24" fill="#0D1D29" stroke="#17384C"/>
+  <rect x="0" y="0" width="1200" height="720" fill="#061018" fill-opacity=".38"/>
+  <rect x="300" y="116" width="600" height="488" rx="28" fill="#102433" stroke="#2A4457"/>
+  <rect x="338" y="154" width="252" height="20" rx="10" fill="#E5EDF5"/>
+  <rect x="338" y="188" width="354" height="12" rx="6" fill="#90A3B4"/>
+  <rect x="338" y="246" width="220" height="14" rx="7" fill="#90A3B4"/>
+  <rect x="338" y="276" width="524" height="52" rx="16" fill="#0E2A3B"/>
+  <rect x="338" y="344" width="162" height="12" rx="6" fill="#7DD6EA"/>
+  <rect x="338" y="372" width="524" height="52" rx="16" fill="#0E2A3B"/>
+  <rect x="338" y="432" width="320" height="186" rx="18" fill="#102C3D" stroke="#2A4457"/>
+  <rect x="364" y="456" width="272" height="34" rx="10" fill="#16384B"/>
+  <rect x="364" y="500" width="272" height="34" rx="10" fill="#102433"/>
+  <rect x="364" y="544" width="272" height="34" rx="10" fill="#102433"/>
+  <text x="362" y="309" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="20">player-one</text>
+  <text x="362" y="405" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="20">Asia Pacific</text>
+  <text x="386" y="478" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="18">Asia Pacific</text>
+  <text x="386" y="522" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="18">North America</text>
+  <text x="386" y="566" fill="#DCE6EE" font-family="IBM Plex Sans, sans-serif" font-size="18">Europe</text>
+  <text x="692" y="468" fill="#90A3B4" font-family="IBM Plex Sans, sans-serif" font-size="18">Select uses portal content,</text>
+  <text x="692" y="496" fill="#90A3B4" font-family="IBM Plex Sans, sans-serif" font-size="18">outside dismissal, and</text>
+  <text x="692" y="524" fill="#90A3B4" font-family="IBM Plex Sans, sans-serif" font-size="18">caller-owned item visuals.</text>
+</svg>

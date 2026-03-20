@@ -3,10 +3,13 @@ title: Design with Style + System
 description: Design principles built on style tokens and system layout primitives.
 draft: false
 sidebar:
-  order: 3
+  order: 4
 ---
 
-Use this guide when you are defining product UI patterns, not just consuming a single package API.
+Use this guide after [Build a Settings Dialog](/getting-started/build-a-settings-dialog/).
+That tutorial shows the practical flow first; this page explains the design rules behind it.
+
+Use this page when you are defining product UI patterns, not just consuming a single package API.
 
 Recommended baseline for new UI styling:
 
@@ -42,7 +45,10 @@ type AppRootProps = {
 
 export function AppRoot(props: AppRootProps) {
   return (
-    <SystemProvider defaultTheme={defaultDarkTheme} defaultDensity="comfortable">
+    <SystemProvider
+      defaultTheme={defaultDarkTheme}
+      defaultDensity="comfortable"
+    >
       {props.children}
     </SystemProvider>
   );
@@ -64,7 +70,9 @@ export function ThemeAndDensityControls() {
         Text="Toggle Theme"
         Event={{
           Activated: () => {
-            setBaseTheme(density === "compact" ? defaultLightTheme : defaultDarkTheme);
+            setBaseTheme(
+              density === "compact" ? defaultLightTheme : defaultDarkTheme,
+            );
           },
         }}
       />
@@ -214,5 +222,6 @@ Use `defaultVariants` for baseline behavior and add `compoundVariants` when mult
 
 Next references:
 
+- [Build a Settings Dialog](/getting-started/build-a-settings-dialog/)
 - [Style package reference](/components/style/)
 - [System package reference](/components/system/)

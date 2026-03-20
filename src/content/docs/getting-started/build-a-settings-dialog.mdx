@@ -1,0 +1,353 @@
+---
+title: Build a Settings Dialog
+description: Build one real screen with Style, System, Text Field, Select, and Dialog.
+draft: false
+sidebar:
+  order: 3
+---
+
+import { LinkCard } from "@astrojs/starlight/components";
+
+This guide is the recommended first build for Lattice UI. It uses one practical flow to show how
+[Style](/components/style/), [System](/components/system/), [Text Field](/components/text-field/),
+[Select](/components/select/), and [Dialog](/components/dialog/) fit together.
+
+## Final Screen Preview
+
+<div class="playground-strip">
+  <figure class="playground-card">
+    <img
+      src="/images/lattice-ui/settings-dialog-frame-4.svg"
+      alt="Final settings dialog tutorial preview."
+    />
+    <figcaption>
+      The target: one settings dialog with custom styling, layout structure, and
+      composed form controls.
+    </figcaption>
+  </figure>
+</div>
+
+## Step 1. Set up the app shell
+
+Use `SystemProvider` as the root entry point for theme and density, then mount `PortalProvider` so
+dialog and select content can render above the main layout.
+
+```tsx
+import type React from "@rbxts/react";
+import { PortalProvider } from "@lattice-ui/layer";
+import { defaultDarkTheme } from "@lattice-ui/style";
+import { SystemProvider } from "@lattice-ui/system";
+
+type AppRootProps = {
+  playerGui: PlayerGui;
+  children?: React.ReactNode;
+};
+
+export function AppRoot(props: AppRootProps) {
+  return (
+    <SystemProvider
+      defaultDensity="comfortable"
+      defaultTheme={defaultDarkTheme}
+    >
+      <PortalProvider container={props.playerGui}>
+        {props.children}
+      </PortalProvider>
+    </SystemProvider>
+  );
+}
+```
+
+What this step establishes:
+
+- [System](/components/system/) owns the app-wide theme and density model.
+- [Layer](/components/layer/) owns overlay mounting and stacking.
+- Every later component can stay headless because the environment is already prepared.
+
+## Step 2. Define the visual language with Style + System
+
+Use `createRecipe` for repeatable visuals and `Surface` / `Stack` for screen structure. The goal is
+to keep product styling in [Style](/components/style/) and layout in [System](/components/system/).
+
+```tsx
+import type React from "@rbxts/react";
+import { createRecipe, mergeGuiProps, Text, useTheme } from "@lattice-ui/style";
+import { Stack, Surface } from "@lattice-ui/system";
+
+type StyleProps = React.Attributes & Record<string, unknown>;
+
+const panelRecipe = createRecipe<StyleProps>({
+  base: (theme) => ({
+    BackgroundColor3: theme.colors.surface,
+    BorderSizePixel: 0,
+  }),
+});
+
+const buttonRecipe = createRecipe<
+  StyleProps,
+  {
+    intent: {
+      primary: StyleProps;
+      surface: StyleProps;
+    };
+  }
+>({
+  base: (theme) => ({
+    AutoButtonColor: false,
+    BorderSizePixel: 0,
+    TextSize: theme.typography.bodyMd.textSize,
+  }),
+  variants: {
+    intent: {
+      primary: (theme) => ({
+        BackgroundColor3: theme.colors.accent,
+        TextColor3: theme.colors.accentContrast,
+      }),
+      surface: (theme) => ({
+        BackgroundColor3: theme.colors.surfaceElevated,
+        TextColor3: theme.colors.textPrimary,
+      }),
+    },
+  },
+  defaultVariants: {
+    intent: "surface",
+  },
+});
+
+export function SettingsShell() {
+  const { theme } = useTheme();
+
+  return (
+    <Surface tone="surface">
+      <Stack gap={12} padding={16}>
+        <Text Text="Player Settings" TextColor3={theme.colors.textPrimary} />
+        <frame
+          {...(mergeGuiProps(panelRecipe({}, theme), {
+            Size: UDim2.fromOffset(720, 480),
+          }) as Record<string, unknown>)}
+        />
+      </Stack>
+    </Surface>
+  );
+}
+```
+
+## Step 3. Build the form controls
+
+Put the form behavior inside [Text Field](/components/text-field/) and [Select](/components/select/)
+instead of hand-rolling value, helper text, and list wiring.
+
+```tsx
+import { React } from "@lattice-ui/core";
+import { Select } from "@lattice-ui/select";
+import { TextField } from "@lattice-ui/text-field";
+import { Text, useTheme } from "@lattice-ui/style";
+
+export function SettingsFields() {
+  const { theme } = useTheme();
+  const [name, setName] = React.useState("player-one");
+  const [region, setRegion] = React.useState("apac");
+  const invalid = name.size() < 3;
+
+  return (
+    <>
+      <TextField.Root invalid={invalid} onValueChange={setName} value={name}>
+        <TextField.Label asChild>
+          <textlabel
+            BackgroundTransparency={1}
+            Text="Display name"
+            TextColor3={theme.colors.textSecondary}
+          />
+        </TextField.Label>
+        <TextField.Input asChild>
+          <textbox
+            BackgroundColor3={theme.colors.surfaceElevated}
+            BorderSizePixel={0}
+            TextColor3={theme.colors.textPrimary}
+          />
+        </TextField.Input>
+        <TextField.Message asChild>
+          <textlabel
+            BackgroundTransparency={1}
+            Text={
+              invalid ? "Name must be at least 3 characters." : "Ready to save."
+            }
+            TextColor3={
+              invalid ? theme.colors.danger : theme.colors.textSecondary
+            }
+          />
+        </TextField.Message>
+      </TextField.Root>
+
+      <Select.Root onValueChange={setRegion} value={region}>
+        <Select.Trigger asChild>
+          <textbutton
+            BackgroundColor3={theme.colors.surfaceElevated}
+            BorderSizePixel={0}
+            Text=""
+          />
+        </Select.Trigger>
+        <Select.Value asChild placeholder="Select a region">
+          <textlabel
+            BackgroundTransparency={1}
+            TextColor3={theme.colors.textPrimary}
+          />
+        </Select.Value>
+
+        <Select.Portal>
+          <Select.Content asChild offset={new Vector2(0, 8)} placement="bottom">
+            <frame
+              BackgroundColor3={theme.colors.surfaceElevated}
+              BorderSizePixel={0}
+            >
+              <Select.Item asChild textValue="Asia Pacific" value="apac">
+                <textbutton
+                  BackgroundTransparency={1}
+                  Text="Asia Pacific"
+                  TextColor3={theme.colors.textPrimary}
+                />
+              </Select.Item>
+              <Select.Item asChild textValue="North America" value="na">
+                <textbutton
+                  BackgroundTransparency={1}
+                  Text="North America"
+                  TextColor3={theme.colors.textPrimary}
+                />
+              </Select.Item>
+              <Select.Item asChild textValue="Europe" value="eu">
+                <textbutton
+                  BackgroundTransparency={1}
+                  Text="Europe"
+                  TextColor3={theme.colors.textPrimary}
+                />
+              </Select.Item>
+            </frame>
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
+    </>
+  );
+}
+```
+
+Why this matters:
+
+- [Text Field](/components/text-field/) keeps label, message, invalid state, and commit behavior in one tree.
+- [Select](/components/select/) gives you overlay placement and choice registration without dictating the visuals.
+- Both controls still consume the same theme tokens and recipes from [Style](/components/style/).
+
+## Step 4. Wrap the form in a dialog
+
+Now compose [Dialog](/components/dialog/) around the fields. The dialog owns open state and dismissal
+rules; the fields stay focused on form behavior.
+
+```tsx
+import { React } from "@lattice-ui/core";
+import { Dialog } from "@lattice-ui/dialog";
+import { mergeGuiProps, Text, useTheme } from "@lattice-ui/style";
+import { Stack } from "@lattice-ui/system";
+
+export function SettingsDialog() {
+  const { theme } = useTheme();
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <Dialog.Root onOpenChange={setOpen} open={open}>
+      <Dialog.Trigger asChild>
+        <textbutton
+          {...(mergeGuiProps(
+            {
+              AutoButtonColor: false,
+              BackgroundColor3: theme.colors.accent,
+              BorderSizePixel: 0,
+              Text: "Open settings",
+              TextColor3: theme.colors.accentContrast,
+            },
+            {},
+          ) as Record<string, unknown>)}
+        />
+      </Dialog.Trigger>
+
+      <Dialog.Portal>
+        <Dialog.Content trapFocus restoreFocus>
+          <Dialog.Overlay />
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(560, 420)}
+          >
+            <Stack gap={12} padding={16}>
+              <Text
+                BackgroundTransparency={1}
+                Text="Player settings"
+                TextColor3={theme.colors.textPrimary}
+              />
+              <SettingsFields />
+              <frame
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(528, 42)}
+              >
+                <textbutton
+                  BackgroundColor3={theme.colors.surfaceElevated}
+                  BorderSizePixel={0}
+                  Position={UDim2.fromOffset(0, 0)}
+                  Size={UDim2.fromOffset(112, 42)}
+                  Text="Cancel"
+                />
+                <Dialog.Close asChild>
+                  <textbutton
+                    BackgroundColor3={theme.colors.accent}
+                    BorderSizePixel={0}
+                    Position={UDim2.fromOffset(408, 0)}
+                    Size={UDim2.fromOffset(120, 42)}
+                    Text="Save"
+                    TextColor3={theme.colors.accentContrast}
+                  />
+                </Dialog.Close>
+              </frame>
+            </Stack>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+## Step 5. Use the reference pages to refine the details
+
+Once the screen exists, use the package pages as decision guides instead of reading them in isolation.
+
+<div class="home-links">
+  <LinkCard
+    title="Style"
+    href="/components/style/"
+    description="Token model, recipes, and merge rules."
+  />
+  <LinkCard
+    title="System"
+    href="/components/system/"
+    description="Provider model, density, layout primitives, and surfaces."
+  />
+  <LinkCard
+    title="Text Field"
+    href="/components/text-field/"
+    description="Value model, commit behavior, and field composition."
+  />
+  <LinkCard
+    title="Select"
+    href="/components/select/"
+    description="Single-value state, portal content, and item registration."
+  />
+  <LinkCard
+    title="Dialog"
+    href="/components/dialog/"
+    description="Open state, focus handoff, overlay behavior, and close patterns."
+  />
+</div>
+
+## What you should keep from this tutorial
+
+- Put [System](/components/system/) and [Layer](/components/layer/) at the environment boundary.
+- Keep visual language in [Style](/components/style/) recipes and tokens.
+- Let [Text Field](/components/text-field/), [Select](/components/select/), and [Dialog](/components/dialog/) own behavior, not visuals.
+- Build a real screen first, then drill into component docs when you need sharper decisions.
