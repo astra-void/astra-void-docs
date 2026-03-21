@@ -430,109 +430,6 @@
     box-shadow: none;
   }
 
-  .landing-hero-visual {
-    display: grid;
-    gap: 0.9rem;
-  }
-
-  .hero-monitor {
-    position: relative;
-    border: 1px solid var(--surface-border-strong);
-    border-radius: 1.4rem;
-    background: var(--surface-panel-contrast);
-    box-shadow: var(--sl-shadow-md);
-    overflow: hidden;
-  }
-
-  .hero-monitor::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(
-        90deg,
-        transparent 0,
-        transparent calc(100% - 1px),
-        var(--surface-grid) calc(100% - 1px)
-      ),
-      linear-gradient(
-        180deg,
-        transparent 0,
-        transparent calc(100% - 1px),
-        var(--surface-grid) calc(100% - 1px)
-      );
-    background-size: 3rem 3rem;
-    pointer-events: none;
-    opacity: 0.45;
-  }
-
-  .hero-monitor-chrome {
-    display: flex;
-    gap: 0.35rem;
-    padding: 0.8rem 0.9rem 0;
-  }
-
-  .hero-monitor-chrome span {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--sl-color-text-invert) 18%,
-      transparent
-    );
-  }
-
-  .hero-monitor img {
-    display: block;
-    width: 100%;
-    aspect-ratio: 5 / 3.25;
-    object-fit: cover;
-  }
-
-  .hero-monitor-caption {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.95rem 1rem 1rem;
-    font-size: 0.9rem;
-    color: color-mix(in srgb, var(--sl-color-text-invert) 78%, transparent);
-  }
-
-  .hero-monitor-caption strong {
-    color: var(--sl-color-text-invert);
-  }
-
-  .hero-filmstrip {
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .hero-filmstrip figure {
-    margin: 0;
-    padding: 0.5rem;
-    border: 1px solid var(--sl-color-hairline);
-    border-radius: 1rem;
-    background: var(--surface-panel);
-    box-shadow: var(--sl-shadow-sm);
-  }
-
-  .hero-filmstrip img {
-    display: block;
-    width: 100%;
-    border-radius: 0.75rem;
-    aspect-ratio: 5 / 3;
-    object-fit: cover;
-    background: var(--sl-color-bg-inline-code);
-  }
-
-  .hero-filmstrip figcaption {
-    margin-top: 0.55rem;
-    font-size: 0.82rem;
-    color: var(--sl-color-gray-2);
-  }
-
   .proof-band {
     display: grid;
     gap: 0.9rem;
@@ -873,7 +770,6 @@
     }
 
     .landing-hero {
-      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
       align-items: center;
       padding: 1.6rem;
     }
