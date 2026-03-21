@@ -4,150 +4,96 @@ description: Why Lattice UI exists, what it is good at, and where to start.
 draft: false
 ---
 
-import { LinkCard } from "@astrojs/starlight/components";
+<div class="docs-landing-intro">
+  <p>
+    Lattice UI is a headless-first component stack for Roblox product UI. Interaction contracts,
+    focus behavior, layering, and state ownership stay in the package. Visual structure, styling,
+    and screen composition stay in the app that ships the interface.
+  </p>
+  <p>
+    The documentation is written to help with implementation decisions, not to sell a design
+    system in the abstract. Start with one real screen, then move into the package pages that match
+    the part of the flow you are refining.
+  </p>
 
-<div class="landing-hero">
-  <div class="landing-hero-copy">
-    <p class="landing-eyebrow">Lattice UI for Roblox</p>
-    <h1>Build product UI without giving up control of the screen.</h1>
-    <p class="landing-lead">
-      Lattice UI gives you headless Roblox primitives for real application work: caller-owned visuals,
-      a coherent Style + System foundation, and overlay behavior that still makes sense once dialogs,
-      popovers, menus, selects, and tooltips start layering together.
+  <div class="docs-note">
+    <p>
+      Recommended first pass: installation, one practical tutorial, then the Style, System, and
+      Layer foundations before deeper component pages.
     </p>
-
-    <div class="landing-specs">
-      <div class="landing-spec">
-        <span class="landing-spec-label">Primitive model</span>
-        <strong>Headless first</strong>
-      </div>
-      <div class="landing-spec">
-        <span class="landing-spec-label">Foundation</span>
-        <strong>Style + System</strong>
-      </div>
-      <div class="landing-spec">
-        <span class="landing-spec-label">Overlay stack</span>
-        <strong>Layer + Focus</strong>
-      </div>
-    </div>
-
-    <div class="landing-actions">
-      <a class="landing-button landing-button-primary" href="/getting-started/build-a-settings-dialog/">
-        Start With One Screen
-      </a>
-      <a class="landing-button landing-button-secondary" href="/components/">Browse Components</a>
-      <a class="landing-button landing-button-tertiary" href="/getting-started/installation/">Installation</a>
-    </div>
-
   </div>
 </div>
 
-<div class="proof-band">
-  <section class="proof-item">
-    <p class="proof-kicker">Headless primitives</p>
-    <p>
-      State, focus, and interaction contracts stay in the package. Roblox
-      instance structure and styling stay in your app.
-    </p>
+## Get Started
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>Start with one real screen</h3>
+    <p>Use one complete flow to see how the stack fits together before browsing package pages.</p>
+    <ul class="docs-link-list">
+      <li>
+        <a href="/getting-started/build-a-settings-dialog/">Build a Settings Dialog</a>
+        <p>Follow one settings screen from shell structure to dialog, fields, and selection flows.</p>
+      </li>
+      <li>
+        <a href="/getting-started/quick-start/">Quick Start</a>
+        <p>See the core create, add, remove, doctor, and upgrade workflow in one place.</p>
+      </li>
+    </ul>
   </section>
-  <section class="proof-item">
-    <p class="proof-kicker">Style + System</p>
-    <p>
-      Tokens, recipes, density, layout primitives, and surfaces were designed to
-      work as one stack instead of unrelated utilities.
-    </p>
-  </section>
-  <section class="proof-item">
-    <p class="proof-kicker">Overlay discipline</p>
-    <p>
-      Dialog, menu, popover, tooltip, select, and combobox build on the same
-      layer model so stacking and dismissal remain consistent.
-    </p>
+
+  <section class="docs-section-card">
+    <h3>Prepare a workspace</h3>
+    <p>Set up the CLI and execution mode before you start composing screens from multiple packages.</p>
+    <ul class="docs-link-list">
+      <li>
+        <a href="/getting-started/installation/">Installation</a>
+        <p>Prepare the workspace, install the CLI, and verify the local setup.</p>
+      </li>
+      <li>
+        <a href="/cli/">CLI</a>
+        <p>Review commands, presets, execution rules, and troubleshooting guidance.</p>
+      </li>
+    </ul>
   </section>
 </div>
 
-## 1-Minute Real UI
+## Core Foundations
 
-The fastest way to understand the library is to follow one screen from shell to finished interaction.
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>Style and layout baseline</h3>
+    <p>Establish the visual and structural rules of the app before refining individual widgets.</p>
+    <ul class="docs-link-list">
+      <li>
+        <a href="/components/style/">Style</a>
+        <p>Tokens, recipes, and composition rules for caller-owned visuals.</p>
+      </li>
+      <li>
+        <a href="/components/system/">System</a>
+        <p>Providers, density, layout primitives, surfaces, and app-level UI context.</p>
+      </li>
+    </ul>
+  </section>
 
-<div class="timeline-grid">
-  <article class="timeline-step">
-    <div class="timeline-index">01</div>
-    <div class="timeline-body">
-      <h3>Start from a system-driven shell</h3>
-      <p>Use `SystemProvider` and a stable playground shell so theme, density, spacing, and screen structure already exist before components arrive.</p>
-    </div>
-  </article>
-
-<article class="timeline-step">
-  <div class="timeline-index">02</div>
-  <div class="timeline-body">
-    <h3>Compose a real field surface</h3>
-    <p>
-      Add TextField, helper text, validation state, and action rows without
-      locking yourself into a pre-skinned control.
-    </p>
-  </div>
-</article>
-
-<article class="timeline-step">
-  <div class="timeline-index">03</div>
-  <div class="timeline-body">
-    <h3>Open portal-based selection content</h3>
-    <p>
-      Select uses registered items, anchored overlay content, and outside
-      dismissal while still letting the app own every visible host.
-    </p>
-  </div>
-</article>
-
-  <article class="timeline-step">
-    <div class="timeline-index">04</div>
-    <div class="timeline-body">
-      <h3>Finish with one coherent product screen</h3>
-      <p>The end result is one settings dialog with shared visual language and stable interaction rules, not a pile of disconnected snippets.</p>
-    </div>
-  </article>
+  <section class="docs-section-card">
+    <h3>Layered interaction model</h3>
+    <p>Read these before building selection or overlay-heavy screens with stacked surfaces.</p>
+    <ul class="docs-link-list">
+      <li>
+        <a href="/components/layer/">Layer</a>
+        <p>Portal ownership, outside dismissal, presence, and stacking behavior.</p>
+      </li>
+      <li>
+        <a href="/components/">Components</a>
+        <p>Browse package pages by job to be done once the screen shape is clear.</p>
+      </li>
+    </ul>
+  </section>
 </div>
 
-## Start Here
+## Reading Order
 
-<div class="home-links">
-  <LinkCard
-    title="Build a Settings Dialog"
-    href="/getting-started/build-a-settings-dialog/"
-    description="The recommended first tutorial: one screen that ties Style, System, TextField, Select, and Dialog together."
-  />
-  <LinkCard
-    title="Installation"
-    href="/getting-started/installation/"
-    description="Set up the CLI, verify execution mode, and get a workspace ready for Lattice UI packages."
-  />
-  <LinkCard
-    title="Design with Style + System"
-    href="/getting-started/design-with-style-system/"
-    description="Read the design rules behind the practical tutorial once the first implementation is in place."
-  />
-  <LinkCard
-    title="Components"
-    href="/components/"
-    description="Use the package docs as decision guides: what a package is for, its state model, key API, patterns, and cautions."
-  />
-</div>
-
-<div class="tutorial-banner">
-  <div class="tutorial-banner-copy">
-    <p class="tutorial-banner-kicker">Recommended path</p>
-    <h2>Start with one product screen, then drill into the references.</h2>
-    <p>
-      Do not begin with 25 isolated package pages. Build the settings dialog first, then use the
-      reference pages to make sharper decisions about style, system, and individual primitives.
-    </p>
-  </div>
-
-  <div class="tutorial-banner-links">
-    <a href="/getting-started/build-a-settings-dialog/">Open the tutorial</a>
-    <a href="/components/style/">Read Style</a>
-    <a href="/components/system/">Read System</a>
-  </div>
-</div>
+1. Set up the workspace and confirm the CLI flow.
+2. Build the settings dialog to see one coherent screen instead of disconnected snippets.
+3. Read `Style`, `System`, and `Layer` before moving into specific packages like `Dialog`, `Select`, or `Text Field`.

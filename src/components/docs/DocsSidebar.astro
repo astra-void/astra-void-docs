@@ -1,0 +1,78 @@
+---
+import {
+  isCurrentPath,
+  isSectionActive,
+  type DocPage,
+  type SidebarSection,
+} from "../../lib/docs";
+
+type Props = {
+  currentPath: string;
+  homePage?: DocPage;
+  sections: SidebarSection[];
+};
+
+const { currentPath, homePage, sections } = Astro.props;
+---
+
+<nav class="flex h-full flex-col gap-6 overflow-y-auto pr-2">
+  {
+    homePage && (
+      <div class="space-y-2">
+        <p class="px-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Overview
+        </p>
+        <a
+          href={homePage.url}
+          title={homePage.title}
+          class:list={[
+            "docs-nav-link",
+            isCurrentPath(currentPath, homePage.path) && "docs-nav-link-active",
+          ]}
+        >
+          Home
+        </a>
+      </div>
+    )
+  }
+
+  {
+    sections.map((section) => (
+      <section class="space-y-2">
+        <div class="flex items-center justify-between gap-3 px-3">
+          {section.url ? (
+            <a
+              href={section.url}
+              class:list={[
+                "text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:text-foreground",
+                isSectionActive(currentPath, section) && "text-foreground",
+              ]}
+            >
+              {section.title}
+            </a>
+          ) : (
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              {section.title}
+            </p>
+          )}
+        </div>
+
+        <div class="space-y-1">
+          {
+            section.entries.map((entry) => (
+              <a
+                href={entry.url}
+                class:list={[
+                  "docs-nav-link",
+                  isCurrentPath(currentPath, entry.path) && "docs-nav-link-active",
+                ]}
+              >
+                {entry.title}
+              </a>
+            ))
+          }
+        </div>
+      </section>
+    ))
+  }
+</nav>

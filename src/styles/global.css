@@ -1,0 +1,412 @@
+@import "tailwindcss";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+@theme inline {
+  --font-sans: "Space Grotesk", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 0.35rem);
+  --radius-md: calc(var(--radius) - 0.2rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.35rem);
+}
+
+:root {
+  --background: hsl(210 25% 99%);
+  --foreground: hsl(222 47% 11%);
+  --card: hsl(0 0% 100% / 0.92);
+  --card-foreground: hsl(222 47% 11%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222 47% 11%);
+  --sidebar: hsl(210 40% 98% / 0.92);
+  --muted: hsl(214 32% 95%);
+  --muted-foreground: hsl(215 16% 40%);
+  --border: hsl(214 31% 90%);
+  --accent: hsl(221 83% 53%);
+  --accent-foreground: hsl(210 40% 98%);
+  --ring: hsl(221 83% 53% / 0.34);
+  --code-bg: hsl(216 33% 97%);
+  --code-border: hsl(214 31% 88%);
+  --radius: 1rem;
+}
+
+:root[data-theme="dark"],
+.dark {
+  --background: hsl(222 47% 6%);
+  --foreground: hsl(213 31% 91%);
+  --card: hsl(222 42% 10% / 0.92);
+  --card-foreground: hsl(210 40% 98%);
+  --popover: hsl(222 43% 8%);
+  --popover-foreground: hsl(210 40% 98%);
+  --sidebar: hsl(224 39% 9% / 0.96);
+  --muted: hsl(223 25% 16%);
+  --muted-foreground: hsl(215 20% 69%);
+  --border: hsl(217 24% 18%);
+  --accent: hsl(214 95% 68%);
+  --accent-foreground: hsl(222 47% 11%);
+  --ring: hsl(214 95% 68% / 0.42);
+  --code-bg: hsl(222 35% 12%);
+  --code-border: hsl(222 24% 20%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28rem),
+      linear-gradient(180deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 24rem);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
+  a,
+  button {
+    @apply outline-none;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  .docs-nav-link {
+    @apply block rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition;
+  }
+
+  .docs-nav-link:hover {
+    @apply bg-accent/10 text-foreground;
+  }
+
+  .docs-nav-link-active {
+    @apply bg-accent/10 text-foreground;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .docs-link-card {
+    @apply flex items-start justify-between gap-4 border border-border bg-card px-5 py-4 shadow-sm transition;
+    border-radius: calc(var(--radius) + 0.15rem);
+  }
+
+  .docs-link-card:hover {
+    @apply border-accent/20 bg-card/100;
+    transform: translateY(-1px);
+  }
+
+  .docs-pager-card {
+    @apply border border-border bg-card px-4 py-4 shadow-sm transition;
+    border-radius: calc(var(--radius) + 0.1rem);
+  }
+
+  .docs-pager-card:hover {
+    @apply border-accent/20 bg-card/100;
+  }
+
+  .docs-pager-label {
+    @apply block text-xs font-semibold uppercase text-muted-foreground;
+    letter-spacing: 0.18em;
+  }
+
+  .docs-pager-title {
+    @apply mt-2 block text-base font-semibold text-foreground;
+    letter-spacing: -0.02em;
+  }
+
+  .docs-landing-intro {
+    @apply mb-6 space-y-4;
+  }
+
+  .docs-landing-intro p {
+    max-width: 64ch;
+  }
+
+  .docs-note {
+    @apply border border-border bg-card px-4 py-3 shadow-sm;
+    border-radius: calc(var(--radius) + 0.1rem);
+  }
+
+  .docs-note p {
+    @apply m-0;
+  }
+
+  .docs-section-grid,
+  .home-links,
+  .install-grid,
+  .api-grid,
+  .pattern-grid {
+    @apply mt-5 grid gap-4 md:grid-cols-2;
+  }
+
+  .docs-section-card,
+  .install-card,
+  .api-card,
+  .pattern-card,
+  .doc-section-install,
+  .doc-section-cautions,
+  .doc-section-related {
+    @apply border border-border bg-card shadow-sm;
+    border-radius: calc(var(--radius) + 0.1rem);
+  }
+
+  .docs-section-card,
+  .doc-section-install,
+  .doc-section-cautions,
+  .doc-section-related {
+    @apply px-5 py-4;
+  }
+
+  .install-card,
+  .api-card,
+  .pattern-card {
+    @apply px-4 py-4;
+  }
+
+  .docs-section-card h3,
+  .install-card h3,
+  .api-card h3,
+  .pattern-card h3 {
+    @apply m-0 text-base font-semibold text-card-foreground;
+    letter-spacing: -0.02em;
+  }
+
+  .docs-section-card > p,
+  .install-card p,
+  .api-card p,
+  .pattern-card p {
+    @apply mt-2 text-sm leading-6 text-muted-foreground;
+  }
+
+  .docs-link-list {
+    @apply m-0 mt-4 grid list-none gap-4 p-0;
+  }
+
+  .docs-link-list li {
+    @apply m-0;
+  }
+
+  .docs-link-list a {
+    @apply text-sm font-semibold text-card-foreground no-underline;
+  }
+
+  .docs-link-list a:hover {
+    @apply text-accent;
+  }
+
+  .docs-link-list p {
+    @apply mt-1 text-sm leading-6 text-muted-foreground;
+  }
+
+  .package-doc {
+    @apply grid gap-6;
+  }
+
+  .doc-section {
+    @apply border-t border-border/70 pt-6 first:border-t-0 first:pt-0;
+  }
+
+  .doc-section-purpose p {
+    max-width: 64ch;
+  }
+
+  .package-meta,
+  .export-list,
+  .state-list,
+  .caution-list,
+  .related-list {
+    @apply m-0;
+  }
+
+  .package-meta {
+    @apply mt-4 grid gap-2 pl-5 text-sm text-muted-foreground;
+  }
+
+  .export-list {
+    @apply flex list-none flex-wrap gap-2 p-0;
+  }
+
+  .export-list code {
+    @apply inline-flex min-h-8 items-center rounded-full border border-border bg-background/70 px-3 py-1 text-sm text-card-foreground;
+  }
+
+  .state-list,
+  .caution-list,
+  .related-list {
+    @apply grid list-none gap-3 p-0;
+  }
+
+  .state-list li,
+  .caution-list li {
+    @apply border-l-2 border-border pl-4;
+  }
+
+  .doc-section-cautions {
+    border-left-width: 3px;
+    border-left-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  }
+
+  .related-list a {
+    @apply font-medium text-card-foreground no-underline;
+  }
+
+  .related-list a:hover {
+    @apply text-accent underline underline-offset-4;
+  }
+
+  .docs-prose {
+    @apply text-base leading-8 text-foreground;
+  }
+
+  .docs-prose > :first-child {
+    @apply mt-0;
+  }
+
+  .docs-prose h2,
+  .docs-prose h3,
+  .docs-prose h4 {
+    @apply scroll-mt-24 font-semibold text-foreground;
+    letter-spacing: -0.04em;
+  }
+
+  .docs-prose h2 {
+    @apply mt-12 text-3xl;
+  }
+
+  .docs-prose h3 {
+    @apply mt-8 text-xl;
+  }
+
+  .docs-prose h4 {
+    @apply mt-6 text-lg;
+  }
+
+  .docs-prose p,
+  .docs-prose ul,
+  .docs-prose ol,
+  .docs-prose pre,
+  .docs-prose blockquote,
+  .docs-prose table {
+    @apply my-5;
+  }
+
+  .docs-prose ul,
+  .docs-prose ol {
+    @apply pl-5;
+  }
+
+  .docs-prose li {
+    @apply my-2;
+  }
+
+  .docs-prose a {
+    @apply font-medium text-accent underline decoration-accent/30 underline-offset-4 transition;
+  }
+
+  .docs-prose a:hover {
+    @apply decoration-accent text-foreground;
+  }
+
+  .docs-prose :not(pre) > code {
+    @apply rounded-md border px-1.5 py-0.5 font-mono;
+    background: var(--code-bg);
+    border-color: var(--code-border);
+    color: var(--card-foreground);
+    font-size: 0.9em;
+  }
+
+  .docs-prose pre {
+    @apply overflow-x-auto border p-4 text-sm shadow-sm;
+    background: var(--code-bg);
+    border-color: var(--code-border);
+    border-radius: calc(var(--radius) + 0.1rem);
+  }
+
+  .docs-prose pre code {
+    @apply bg-transparent p-0 text-inherit;
+    border: 0;
+  }
+
+  .docs-prose blockquote {
+    @apply border-l-2 border-accent/25 pl-4 text-muted-foreground;
+  }
+
+  .docs-prose hr {
+    @apply my-8 border-border;
+  }
+
+  .docs-prose table {
+    @apply w-full border-collapse overflow-hidden rounded-xl border border-border text-left text-sm;
+  }
+
+  .docs-prose thead {
+    @apply bg-muted/70;
+  }
+
+  .docs-prose th,
+  .docs-prose td {
+    @apply border-b border-border px-4 py-3 align-top;
+  }
+
+  .docs-prose tbody tr:last-child td {
+    @apply border-b-0;
+  }
+}
+
+@media (max-width: 1023px) {
+  .docs-sidebar-panel {
+    transform: translateX(-100%);
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .docs-sidebar-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  :root[data-nav-open="true"] .docs-sidebar-panel {
+    transform: translateX(0);
+  }
+
+  :root[data-nav-open="true"] .docs-sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+[data-theme="dark"] [data-theme-icon="sun"] {
+  display: none;
+}
+
+[data-theme="light"] [data-theme-icon="moon"] {
+  display: none;
+}

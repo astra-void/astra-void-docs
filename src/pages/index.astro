@@ -1,0 +1,22 @@
+---
+import { render } from "astro:content";
+import DocsLayout from "../layouts/DocsLayout.astro";
+import { getDocsShellData } from "../lib/docs";
+
+const { currentPage, homePage, sections, previousPage, nextPage } =
+  await getDocsShellData("");
+const { Content, headings } = await render(currentPage.entry);
+---
+
+<DocsLayout
+  title={currentPage.title}
+  description={currentPage.description}
+  currentPage={currentPage}
+  homePage={homePage}
+  sections={sections}
+  headings={headings}
+  previousPage={previousPage}
+  nextPage={nextPage}
+>
+  <Content />
+</DocsLayout>
