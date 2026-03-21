@@ -15,11 +15,11 @@ type Props = {
 const { currentPath, homePage, sections } = Astro.props;
 ---
 
-<nav class="flex h-full flex-col gap-6 overflow-y-auto pr-2">
+<nav class="flex h-full flex-col gap-8 overflow-y-auto pr-4">
   {
     homePage && (
       <div class="space-y-2">
-        <p class="px-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <p class="px-3 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Overview
         </p>
         <a
@@ -44,7 +44,7 @@ const { currentPath, homePage, sections } = Astro.props;
             <a
               href={section.url}
               class:list={[
-                "text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:text-foreground",
+                "text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition hover:text-foreground",
                 isSectionActive(currentPath, section) && "text-foreground",
               ]}
             >
@@ -57,7 +57,7 @@ const { currentPath, homePage, sections } = Astro.props;
           )}
         </div>
 
-        <div class="space-y-1">
+        <div class="space-y-0.5">
           {
             section.entries.map((entry) => (
               <a

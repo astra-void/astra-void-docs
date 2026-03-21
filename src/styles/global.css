@@ -28,41 +28,41 @@
 }
 
 :root {
-  --background: hsl(210 25% 99%);
+  --background: hsl(210 20% 99%);
   --foreground: hsl(222 47% 11%);
-  --card: hsl(0 0% 100% / 0.92);
+  --card: hsl(0 0% 100%);
   --card-foreground: hsl(222 47% 11%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(222 47% 11%);
-  --sidebar: hsl(210 40% 98% / 0.92);
-  --muted: hsl(214 32% 95%);
+  --sidebar: hsl(210 20% 99%);
+  --muted: hsl(214 26% 96%);
   --muted-foreground: hsl(215 16% 40%);
-  --border: hsl(214 31% 90%);
+  --border: hsl(214 22% 88%);
   --accent: hsl(221 83% 53%);
   --accent-foreground: hsl(210 40% 98%);
   --ring: hsl(221 83% 53% / 0.34);
-  --code-bg: hsl(216 33% 97%);
-  --code-border: hsl(214 31% 88%);
-  --radius: 1rem;
+  --code-bg: hsl(216 22% 96%);
+  --code-border: hsl(214 22% 86%);
+  --radius: 0.5rem;
 }
 
 :root[data-theme="dark"],
 .dark {
-  --background: hsl(222 47% 6%);
+  --background: hsl(222 30% 8%);
   --foreground: hsl(213 31% 91%);
-  --card: hsl(222 42% 10% / 0.92);
+  --card: hsl(222 30% 10%);
   --card-foreground: hsl(210 40% 98%);
-  --popover: hsl(222 43% 8%);
+  --popover: hsl(222 30% 10%);
   --popover-foreground: hsl(210 40% 98%);
-  --sidebar: hsl(224 39% 9% / 0.96);
-  --muted: hsl(223 25% 16%);
+  --sidebar: hsl(222 30% 8%);
+  --muted: hsl(222 20% 14%);
   --muted-foreground: hsl(215 20% 69%);
-  --border: hsl(217 24% 18%);
+  --border: hsl(217 18% 22%);
   --accent: hsl(214 95% 68%);
   --accent-foreground: hsl(222 47% 11%);
   --ring: hsl(214 95% 68% / 0.42);
-  --code-bg: hsl(222 35% 12%);
-  --code-border: hsl(222 24% 20%);
+  --code-bg: hsl(222 24% 12%);
+  --code-border: hsl(222 18% 20%);
 }
 
 @layer base {
@@ -76,10 +76,6 @@
 
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28rem),
-      linear-gradient(180deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 24rem);
-    background-attachment: fixed;
   }
 
   ::selection {
@@ -99,35 +95,35 @@
 
 @layer components {
   .docs-nav-link {
-    @apply block rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition;
+    @apply block border-l border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground transition;
   }
 
   .docs-nav-link:hover {
-    @apply bg-accent/10 text-foreground;
+    @apply text-foreground;
   }
 
   .docs-nav-link-active {
-    @apply bg-accent/10 text-foreground;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+    @apply border-accent text-foreground;
   }
 
   .docs-link-card {
-    @apply flex items-start justify-between gap-4 border border-border bg-card px-5 py-4 shadow-sm transition;
-    border-radius: calc(var(--radius) + 0.15rem);
+    @apply flex items-start justify-between gap-4 border-b border-border/80 py-4 transition;
   }
 
   .docs-link-card:hover {
-    @apply border-accent/20 bg-card/100;
-    transform: translateY(-1px);
+    @apply border-border text-foreground;
+  }
+
+  .docs-link-card-icon {
+    min-width: 1.5rem;
   }
 
   .docs-pager-card {
-    @apply border border-border bg-card px-4 py-4 shadow-sm transition;
-    border-radius: calc(var(--radius) + 0.1rem);
+    @apply border-b border-border/80 px-0 py-4 transition;
   }
 
   .docs-pager-card:hover {
-    @apply border-accent/20 bg-card/100;
+    @apply border-border text-foreground;
   }
 
   .docs-pager-label {
@@ -149,8 +145,7 @@
   }
 
   .docs-note {
-    @apply border border-border bg-card px-4 py-3 shadow-sm;
-    border-radius: calc(var(--radius) + 0.1rem);
+    @apply border-l border-border px-4 py-1;
   }
 
   .docs-note p {
@@ -172,8 +167,8 @@
   .doc-section-install,
   .doc-section-cautions,
   .doc-section-related {
-    @apply border border-border bg-card shadow-sm;
-    border-radius: calc(var(--radius) + 0.1rem);
+    @apply border border-border/80 bg-transparent;
+    border-radius: var(--radius);
   }
 
   .docs-section-card,
@@ -253,7 +248,7 @@
   }
 
   .export-list code {
-    @apply inline-flex min-h-8 items-center rounded-full border border-border bg-background/70 px-3 py-1 text-sm text-card-foreground;
+    @apply inline-flex min-h-8 items-center rounded-md border border-border/80 px-3 py-1 text-sm text-card-foreground;
   }
 
   .state-list,
@@ -268,8 +263,8 @@
   }
 
   .doc-section-cautions {
-    border-left-width: 3px;
-    border-left-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    border-left-width: 1px;
+    border-left-color: color-mix(in srgb, var(--accent) 20%, var(--border));
   }
 
   .related-list a {
@@ -342,10 +337,10 @@
   }
 
   .docs-prose pre {
-    @apply overflow-x-auto border p-4 text-sm shadow-sm;
+    @apply overflow-x-auto border p-4 text-sm;
     background: var(--code-bg);
     border-color: var(--code-border);
-    border-radius: calc(var(--radius) + 0.1rem);
+    border-radius: var(--radius);
   }
 
   .docs-prose pre code {
@@ -354,7 +349,7 @@
   }
 
   .docs-prose blockquote {
-    @apply border-l-2 border-accent/25 pl-4 text-muted-foreground;
+    @apply border-l-2 border-border pl-4 text-muted-foreground;
   }
 
   .docs-prose hr {
@@ -362,7 +357,7 @@
   }
 
   .docs-prose table {
-    @apply w-full border-collapse overflow-hidden rounded-xl border border-border text-left text-sm;
+    @apply w-full border-collapse overflow-hidden rounded-md border border-border text-left text-sm;
   }
 
   .docs-prose thead {
