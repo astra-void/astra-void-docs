@@ -491,15 +491,6 @@
     color: var(--sl-color-gray-2);
   }
 
-  .timeline-step img {
-    display: block;
-    width: 100%;
-    border-radius: 0.95rem;
-    aspect-ratio: 5 / 3;
-    object-fit: cover;
-    background: var(--sl-color-bg-inline-code);
-  }
-
   .tutorial-banner {
     display: grid;
     gap: 1.1rem;
@@ -796,7 +787,7 @@
     }
 
     .timeline-step {
-      grid-template-columns: auto minmax(0, 0.9fr) minmax(18rem, 0.95fr);
+      grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
       padding: 1.05rem;
     }
