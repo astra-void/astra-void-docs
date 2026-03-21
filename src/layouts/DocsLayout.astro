@@ -133,6 +133,8 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         const root = document.documentElement;
         const themeStorageKey = "lattice-ui-docs-theme";
         const themeToggleSelector = "[data-theme-toggle]";
+        const codeCopyButtonSelector = "[data-copy-code]";
+        let activeCopyFeedbackTimeout = 0;
 
         const applyTheme = (theme) => {
           root.dataset.theme = theme;
@@ -149,6 +151,122 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           });
         };
 
+        const resetCopyButtons = () => {
+          document.querySelectorAll(codeCopyButtonSelector).forEach((button) => {
+            if (!(button instanceof HTMLButtonElement)) {
+              return;
+            }
+
+            button.dataset.copyState = "idle";
+            button.setAttribute("aria-label", "Copy code to clipboard");
+            button.setAttribute("title", "Copy code");
+          });
+        };
+
+        const showCopyFeedback = (button, didCopy) => {
+          window.clearTimeout(activeCopyFeedbackTimeout);
+          resetCopyButtons();
+          button.dataset.copyState = didCopy ? "done" : "error";
+          button.setAttribute(
+            "aria-label",
+            didCopy ? "Code copied to clipboard" : "Failed to copy code to clipboard",
+          );
+          button.setAttribute("title", didCopy ? "Copied" : "Copy failed");
+
+          activeCopyFeedbackTimeout = window.setTimeout(() => {
+            button.dataset.copyState = "idle";
+            button.setAttribute("aria-label", "Copy code to clipboard");
+            button.setAttribute("title", "Copy code");
+          }, 1800);
+        };
+
+        const copyText = async (value) => {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            return true;
+          }
+
+          const selection = window.getSelection();
+          const textArea = document.createElement("textarea");
+          textArea.value = value;
+          textArea.setAttribute("readonly", "true");
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          document.body.append(textArea);
+          textArea.select();
+          const didCopy = document.execCommand("copy");
+          textArea.remove();
+          selection?.removeAllRanges();
+          return didCopy;
+        };
+
+        const enhanceCodeBlocks = () => {
+          document.querySelectorAll(".docs-prose pre").forEach((pre) => {
+            if (!(pre instanceof HTMLPreElement) || pre.dataset.copyReady === "true") {
+              return;
+            }
+
+            const code = pre.querySelector("code");
+            if (!(code instanceof HTMLElement)) {
+              return;
+            }
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "docs-code-copy-button";
+            button.dataset.copyCode = "true";
+            button.dataset.copyState = "idle";
+            button.setAttribute("aria-label", "Copy code to clipboard");
+            button.setAttribute("title", "Copy code");
+            button.innerHTML = `
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="docs-code-copy-icon docs-code-copy-icon-copy"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="docs-code-copy-icon docs-code-copy-icon-done"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M20 6 9 17l-5-5"></path>
+              </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="docs-code-copy-icon docs-code-copy-icon-error"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 8v5"></path>
+                <path d="M12 16h.01"></path>
+              </svg>
+            `;
+            pre.append(button);
+            pre.dataset.copyReady = "true";
+          });
+        };
+
         const closeNav = () => {
           delete root.dataset.navOpen;
           document
@@ -157,8 +275,9 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         };
 
         applyTheme(root.dataset.theme === "dark" ? "dark" : "light");
+        enhanceCodeBlocks();
 
-        document.addEventListener("click", (event) => {
+        document.addEventListener("click", async (event) => {
           const target = event.target;
 
           if (!(target instanceof Element)) {
@@ -169,6 +288,21 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           if (themeToggle) {
             const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
             applyTheme(nextTheme);
+            return;
+          }
+
+          const codeCopyButton = target.closest(codeCopyButtonSelector);
+          if (codeCopyButton instanceof HTMLButtonElement) {
+            const pre = codeCopyButton.closest("pre");
+            const code = pre?.querySelector("code");
+
+            if (!(code instanceof HTMLElement)) {
+              showCopyFeedback(codeCopyButton, false);
+              return;
+            }
+
+            const copied = await copyText(code.innerText.replace(/\n$/, ""));
+            showCopyFeedback(codeCopyButton, copied);
             return;
           }
 

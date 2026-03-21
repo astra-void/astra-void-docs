@@ -341,15 +341,53 @@
   }
 
   .docs-prose pre {
-    @apply overflow-x-auto border p-4 text-sm;
+    @apply overflow-x-auto border p-4 pt-12 text-sm;
     background: var(--code-bg);
     border-color: var(--code-border);
     border-radius: var(--radius);
+    position: relative;
   }
 
   .docs-prose pre code {
     @apply bg-transparent p-0 text-inherit;
     border: 0;
+  }
+
+  .docs-code-copy-button {
+    @apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/80 text-xs font-medium text-muted-foreground transition hover:text-foreground;
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+  }
+
+  .docs-code-copy-icon {
+    @apply h-4 w-4;
+  }
+
+  .docs-code-copy-icon-done,
+  .docs-code-copy-icon-error {
+    display: none;
+  }
+
+  .docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-copy,
+  .docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-copy,
+  .docs-code-copy-button[data-copy-state="idle"] .docs-code-copy-icon-done,
+  .docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-done,
+  .docs-code-copy-button[data-copy-state="idle"] .docs-code-copy-icon-error,
+  .docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-error {
+    display: none;
+  }
+
+  .docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-done,
+  .docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-error {
+    display: block;
+  }
+
+  .docs-code-copy-button[data-copy-state="done"] {
+    @apply text-foreground;
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  }
+
+  .docs-code-copy-button[data-copy-state="error"] {
+    border-color: color-mix(in srgb, hsl(0 72% 55%) 28%, var(--border));
   }
 
   .docs-prose blockquote {
