@@ -132,11 +132,21 @@ const hasToc = headings.some((heading) => heading.depth > 1);
       (() => {
         const root = document.documentElement;
         const themeStorageKey = "lattice-ui-docs-theme";
+        const themeToggleSelector = "[data-theme-toggle]";
 
         const applyTheme = (theme) => {
           root.dataset.theme = theme;
           root.classList.toggle("dark", theme === "dark");
           window.localStorage.setItem(themeStorageKey, theme);
+          document.querySelectorAll(themeToggleSelector).forEach((toggle) => {
+            if (!(toggle instanceof HTMLButtonElement)) {
+              return;
+            }
+
+            const nextTheme = theme === "dark" ? "light" : "dark";
+            toggle.setAttribute("aria-label", `Switch to ${nextTheme} theme`);
+            toggle.setAttribute("title", `Switch to ${nextTheme} theme`);
+          });
         };
 
         const closeNav = () => {
@@ -146,14 +156,16 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             ?.setAttribute("aria-expanded", "false");
         };
 
+        applyTheme(root.dataset.theme === "dark" ? "dark" : "light");
+
         document.addEventListener("click", (event) => {
           const target = event.target;
 
-          if (!(target instanceof HTMLElement)) {
+          if (!(target instanceof Element)) {
             return;
           }
 
-          const themeToggle = target.closest("[data-theme-toggle]");
+          const themeToggle = target.closest(themeToggleSelector);
           if (themeToggle) {
             const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
             applyTheme(nextTheme);
