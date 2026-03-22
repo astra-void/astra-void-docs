@@ -1,23 +1,27 @@
 ---
 title: CLI Commands
-description: Command signatures, behavior rules, and edge cases for create/add/remove/upgrade/doctor.
+description: Command signatures, behavior rules, and edge cases for create/init/add/remove/upgrade/doctor.
 draft: false
 sidebar:
   order: 2
 ---
 
+import CliCommandReference from "../../../components/docs/CliCommandReference.astro";
+import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+
 ## Global Options
 
-- `--help`
-- `--version`
+<ul class="export-list">
+  {latticeSnapshot.cli.globalOptions.map((flag) => (
+    <li>
+      <code>{flag}</code>
+    </li>
+  ))}
+</ul>
 
 ## `create`
 
-Create a new project from the rbxts template.
-
-Signature:
-
-`lattice create [project-path] [--yes] [--pm <pnpm|npm|yarn>] [--git] [--template rbxts] [--lint] [--no-lint]`
+<CliCommandReference command="create" />
 
 Behavior:
 
@@ -25,27 +29,22 @@ Behavior:
 - In `--yes` mode, `[project-path]` is required.
 - `--lint` and `--no-lint` are mutually exclusive.
 - `--template` currently supports only `rbxts`.
-- Generated projects include `@lattice-ui/cli` in `devDependencies`.
+- Generated projects include `lattice-ui` in `devDependencies`.
 
-### Global CLI
+## `init`
 
-```bash
-lattice create
-```
+<CliCommandReference command="init" showPhases={true} />
 
-### Monorepo Local Script
+Behavior:
 
-```bash
-pnpm lattice create
-```
+- `init` runs only inside an existing project root that already has a `package.json`.
+- `--dry-run` prints planned file/package changes and does not mutate the repo.
+- `--lint` opts into ESLint + Prettier during init; otherwise interactive mode asks.
+- Package-manager resolution uses `--pm`, lockfiles, installed managers, or interactive selection.
 
 ## `add`
 
-Install components selected by explicit names and/or presets.
-
-Signature:
-
-`lattice add [name...] [--preset <preset...>] [--yes] [--dry-run]`
+<CliCommandReference command="add" showPhases={true} />
 
 Behavior:
 
@@ -54,27 +53,9 @@ Behavior:
 - Adds required peers and required providers.
 - Optional providers are reported in output but not auto-installed.
 
-### Global CLI
-
-```bash
-lattice add dialog,toast --preset overlay
-lattice add --dry-run --preset form
-```
-
-### Monorepo Local Script
-
-```bash
-pnpm lattice add dialog,toast --preset overlay
-pnpm lattice add --dry-run --preset form
-```
-
 ## `remove`
 
-Remove installed component packages selected by names/presets.
-
-Signature:
-
-`lattice remove [name...] [--preset <preset...>] [--yes] [--dry-run]`
+<CliCommandReference command="remove" showPhases={true} />
 
 Behavior:
 
@@ -82,27 +63,9 @@ Behavior:
 - With `--yes`, names or presets are required.
 - Missing requested components are skipped and summarized.
 
-### Global CLI
-
-```bash
-lattice remove dialog
-lattice remove --preset overlay --dry-run
-```
-
-### Monorepo Local Script
-
-```bash
-pnpm lattice remove dialog
-pnpm lattice remove --preset overlay --dry-run
-```
-
 ## `upgrade`
 
-Upgrade installed `@lattice-ui/*` packages.
-
-Signature:
-
-`lattice upgrade [name...] [--preset <preset...>] [--yes] [--dry-run]`
+<CliCommandReference command="upgrade" showPhases={true} />
 
 Behavior:
 
@@ -111,52 +74,22 @@ Behavior:
 - Preserves dependency intent (`dependencies` vs `devDependencies`) during upgrade.
 - Missing requested packages are summarized and skipped.
 
-### Global CLI
-
-```bash
-lattice upgrade
-lattice upgrade --preset form --dry-run
-```
-
-### Monorepo Local Script
-
-```bash
-pnpm lattice upgrade
-pnpm lattice upgrade --preset form --dry-run
-```
-
 ## `doctor`
 
-Run diagnostics for lockfiles, package-manager alignment, peers, providers, and unknown registry packages.
-
-Signature:
-
-`lattice doctor`
+<CliCommandReference command="doctor" showPhases={true} />
 
 Behavior:
 
-- Warnings: advisory issues (for example optional providers, lockfile drift).
-- Errors: required provider violations and other hard-fail conditions.
-- Required provider errors throw and terminate command execution.
-- Recommendations are output as package-manager-aware commands.
-
-### Global CLI
-
-```bash
-lattice doctor
-```
-
-### Monorepo Local Script
-
-```bash
-pnpm lattice doctor
-```
+- Warnings are advisory issues such as lockfile drift or optional provider gaps.
+- Errors are hard-fail conditions such as missing required providers.
+- Recommendations are emitted as package-manager-aware commands.
 
 ## Common Failure Cases
 
 - `create --yes` without `[project-path]`.
 - `create --lint --no-lint` flag conflict.
 - `add --yes` or `remove --yes` without explicit selection.
+- `init` outside a project root with `package.json`.
 - Unknown component or preset names.
 
-For execution phase output (`Selecting`, `Planning`, `Dry Run`, `Applying`, `Result`, `Next Steps`), see [Execution and Output](/cli/execution-and-output/).
+For execution-phase details and dry-run expectations, see [Execution and Output](/cli/execution-and-output/).

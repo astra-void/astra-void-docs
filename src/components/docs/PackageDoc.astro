@@ -1,8 +1,8 @@
 ---
-import type { PackageDocData } from "../../data/component-docs";
+import type { ResolvedPackageDocData } from "../../data/package-docs";
 
 type Props = {
-  doc: PackageDocData;
+  doc: ResolvedPackageDocData;
 };
 
 const { doc } = Astro.props;
@@ -19,9 +19,23 @@ function escapeHtml(value: string) {
 function formatInline(value: string) {
   return escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
 }
+
+function formatProvider(raw: string, optional: boolean) {
+  return optional ? `${raw} (optional)` : raw;
+}
 ---
 
 <div class="package-doc">
+  <section class="doc-section doc-section-overview">
+    <div class="package-status-row">
+      <span class:list={["package-status-badge", doc.maturity === "experimental" && "is-experimental"]}>
+        {doc.maturityLabel}
+      </span>
+      <code class="package-install-name">{doc.npm}</code>
+    </div>
+    <p class="package-status-note" set:html={formatInline(doc.maturityNote)} />
+  </section>
+
   <section class="doc-section doc-section-purpose">
     <h2 class="mb-4 text-2xl font-semibold tracking-[-0.04em] text-foreground">
       What It Is For
@@ -50,21 +64,46 @@ function formatInline(value: string) {
       </div>
     </div>
 
-    <ul class="package-meta">
-      <li>
+    <div class="package-meta-stack">
+      <p>
         npm package: <code>{doc.npm}</code>
-      </li>
-      <li>
-        peer dependencies: <code>@rbxts/react</code>, <code
-          >@rbxts/react-roblox</code
-        >
-      </li>
-    </ul>
+      </p>
+      <div>
+        <p>Peer dependencies</p>
+        <ul class="export-list">
+          {doc.peers.map((peer) => (
+            <li>
+              <code>{peer}</code>
+            </li>
+          ))}
+        </ul>
+      </div>
+      {doc.providers.length > 0 && (
+        <div>
+          <p>Providers</p>
+          <ul class="export-list">
+            {doc.providers.map((provider) => (
+              <li>
+                <code>{formatProvider(provider.raw, provider.optional)}</code>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {doc.notes.length > 0 && (
+        <div>
+          <p>Registry notes</p>
+          <ul class="state-list">
+            {doc.notes.map((note) => <li set:html={formatInline(note)} />)}
+          </ul>
+        </div>
+      )}
+    </div>
   </section>
 
   <section class="doc-section doc-section-anatomy">
     <h2 class="mb-4 text-2xl font-semibold tracking-[-0.04em] text-foreground">
-      Anatomy / Exported Parts
+      Public Exports
     </h2>
     <ul class="export-list">
       {
@@ -144,3 +183,4 @@ function formatInline(value: string) {
     </ul>
   </section>
 </div>
+

@@ -4,6 +4,9 @@ description: Why Lattice UI exists, what it is good at, and where to start.
 draft: false
 ---
 
+import PackageMaturitySummary from "../../components/docs/PackageMaturitySummary.astro";
+import latticeSnapshot from "../../data/lattice-snapshot.generated";
+
 <div class="docs-landing-intro">
   <p>
     Lattice UI is a headless-first component stack for Roblox product UI. Interaction contracts,
@@ -11,15 +14,14 @@ draft: false
     and screen composition stay in the app that ships the interface.
   </p>
   <p>
-    The documentation is written to help with implementation decisions, not to sell a design
-    system in the abstract. Start with one real screen, then move into the package pages that match
-    the part of the flow you are refining.
+    This docs site tracks <code>lattice-ui/main</code> as the source of truth. That means CLI
+    flows like <code>init</code> can appear here before they are part of the latest tagged release.
   </p>
 
   <div class="docs-note">
     <p>
-      Recommended first pass: installation, one practical tutorial, then the Style, System, and
-      Layer foundations before deeper component pages.
+      Current CLI package: <code>{latticeSnapshot.cli.packageName}</code>. Latest tagged release in
+      the source repo: <code>{latticeSnapshot.workspace.changelog.latestRelease?.version ?? "n/a"}</code>.
     </p>
   </div>
 </div>
@@ -37,7 +39,7 @@ draft: false
       </li>
       <li>
         <a href="/getting-started/quick-start/">Quick Start</a>
-        <p>See the core create, add, remove, doctor, and upgrade workflow in one place.</p>
+        <p>Choose between <code>create</code> for a new app and <code>init</code> for an existing one.</p>
       </li>
     </ul>
   </section>
@@ -48,49 +50,19 @@ draft: false
     <ul class="docs-link-list">
       <li>
         <a href="/getting-started/installation/">Installation</a>
-        <p>Prepare the workspace, install the CLI, and verify the local setup.</p>
+        <p>Install <code>{latticeSnapshot.cli.packageName}</code>, verify binaries, and bootstrap a project.</p>
       </li>
       <li>
         <a href="/cli/">CLI</a>
-        <p>Review commands, presets, execution rules, and troubleshooting guidance.</p>
+        <p>Review commands, presets, dry-run behavior, and troubleshooting guidance.</p>
       </li>
     </ul>
   </section>
 </div>
 
-## Core Foundations
+## Package Direction
 
-<div class="docs-section-grid">
-  <section class="docs-section-card">
-    <h3>Style and layout baseline</h3>
-    <p>Establish the visual and structural rules of the app before refining individual widgets.</p>
-    <ul class="docs-link-list">
-      <li>
-        <a href="/components/style/">Style</a>
-        <p>Tokens, recipes, and composition rules for caller-owned visuals.</p>
-      </li>
-      <li>
-        <a href="/components/system/">System</a>
-        <p>Providers, density, layout primitives, surfaces, and app-level UI context.</p>
-      </li>
-    </ul>
-  </section>
-
-  <section class="docs-section-card">
-    <h3>Layered interaction model</h3>
-    <p>Read these before building selection or overlay-heavy screens with stacked surfaces.</p>
-    <ul class="docs-link-list">
-      <li>
-        <a href="/components/layer/">Layer</a>
-        <p>Portal ownership, outside dismissal, presence, and stacking behavior.</p>
-      </li>
-      <li>
-        <a href="/components/">Components</a>
-        <p>Browse package pages by job to be done once the screen shape is clear.</p>
-      </li>
-    </ul>
-  </section>
-</div>
+<PackageMaturitySummary />
 
 ## Reading Order
 

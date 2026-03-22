@@ -6,6 +6,8 @@ sidebar:
   order: 1
 ---
 
+import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+
 ## Prerequisites
 
 - Node.js 20+
@@ -14,21 +16,19 @@ sidebar:
 
 ## Execution Mode Matrix
 
-| Mode                  | Best for                               | First setup                | Command style            |
-| --------------------- | -------------------------------------- | -------------------------- | ------------------------ |
-| Global CLI            | App repositories outside this monorepo | `npm i -g @lattice-ui/cli` | `lattice <command>`      |
-| Monorepo Local Script | Working inside this repository         | No global install required | `pnpm lattice <command>` |
+| Mode                  | Best for                               | First setup                            | Command style       |
+| --------------------- | -------------------------------------- | -------------------------------------- | ------------------- |
+| Global CLI            | App repositories outside this monorepo | `npm i -g lattice-ui` | `lattice <command>` |
+| Monorepo Local Script | Working inside this repository         | No global install required             | `pnpm lattice <command>` |
 
-If you do not want a global install, you can also run one-off commands with `npx lattice <command>`.
+If you do not want a global install, you can also run one-off commands with `npx lattice-ui <command>`.
 
 ## Verify CLI Access
 
 ### Global CLI
 
-```bash
-npm i -g @lattice-ui/cli
-lattice --help
-```
+<pre><code class="language-bash">{`npm i -g ${latticeSnapshot.cli.packageName}
+lattice --help`}</code></pre>
 
 ### Monorepo Local Script
 
@@ -36,24 +36,28 @@ lattice --help
 pnpm lattice --help
 ```
 
-## Project Creation
+## Bootstrap a Project
 
-### Global CLI
+Use `create` for a new repo and `init` for an existing repo that already has a `package.json`.
+
+### Create a New Project
 
 ```bash
 lattice create
-```
-
-### Monorepo Local Script
-
-```bash
 pnpm lattice create
 ```
 
-`create` is interactive by default.
-Use optional flags like `--pm`, `--git`, `--lint`, and `--no-lint` only when you need explicit non-default behavior.
+### Initialize an Existing Project
 
-After `create`, generated projects include `@lattice-ui/cli` in `devDependencies`, so local command execution is immediately available:
+```bash
+lattice init
+pnpm lattice init
+```
+
+`create` is interactive by default.
+`init` is also interactive unless you pass `--yes`, and it supports `--dry-run` so you can inspect the merge plan first.
+
+After `create`, generated projects include `lattice-ui` in `devDependencies`, so local command execution is immediately available:
 
 ```bash
 npx lattice --help
@@ -75,22 +79,6 @@ lattice add dialog,toast --preset overlay
 ```bash
 pnpm lattice add core,style,system
 pnpm lattice add dialog,toast --preset overlay
-```
-
-## Remove Component Packages
-
-### Global CLI
-
-```bash
-lattice remove dialog
-lattice remove --preset overlay --dry-run
-```
-
-### Monorepo Local Script
-
-```bash
-pnpm lattice remove dialog
-pnpm lattice remove --preset overlay --dry-run
 ```
 
 ## Validate and Upgrade
@@ -118,3 +106,4 @@ pnpm add @rbxts/react @rbxts/react-roblox
 ```
 
 Next: [Quick Start](/getting-started/quick-start/).
+

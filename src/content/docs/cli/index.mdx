@@ -6,14 +6,18 @@ sidebar:
   order: 1
 ---
 
+import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+
 Audience: app developers integrating Lattice UI in project repositories.
 
 The `lattice` CLI is the recommended way to scaffold and maintain Lattice dependencies.
-It supports both interactive flows and explicit non-interactive runs.
+It supports both interactive flows and explicit non-interactive runs, and the current docs track the
+unreleased `init` workflow on `main`.
 
 ## What the CLI Covers
 
 - `create`: scaffold a new rbxts-based project
+- `init`: bootstrap Lattice inside an existing project with safe template merging
 - `add`: install components by name and/or preset
 - `remove`: remove selected component packages
 - `upgrade`: update installed `@lattice-ui/*` packages
@@ -23,10 +27,8 @@ It supports both interactive flows and explicit non-interactive runs.
 
 ### Global CLI
 
-```bash
-npm i -g @lattice-ui/cli
-lattice --help
-```
+<pre><code class="language-bash">{`npm i -g ${latticeSnapshot.cli.packageName}
+lattice --help`}</code></pre>
 
 ### Monorepo Local Script
 
@@ -34,9 +36,20 @@ lattice --help
 pnpm lattice --help
 ```
 
+The published package currently exposes these binaries:
+
+<ul class="export-list">
+  {latticeSnapshot.cli.binaries.map((binary) => (
+    <li>
+      <code>{binary}</code>
+    </li>
+  ))}
+</ul>
+
 ## Learn the Workflow
 
 - Full command signatures: [CLI Commands](/cli/commands/)
 - Registry component names and presets: [Components and Presets](/cli/components-and-presets/)
 - Interactive and output model: [Execution and Output](/cli/execution-and-output/)
 - Failure recovery patterns: [Troubleshooting](/cli/troubleshooting/)
+

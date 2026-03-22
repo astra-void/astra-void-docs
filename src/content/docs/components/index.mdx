@@ -6,6 +6,9 @@ sidebar:
   order: 0
 ---
 
+import PackageMaturitySummary from "../../../components/docs/PackageMaturitySummary.astro";
+import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+
 <div class="docs-landing-intro">
   <p>
     These pages are organized around integration decisions rather than package names. Each package
@@ -14,18 +17,21 @@ sidebar:
     screen.
   </p>
   <p>
-    If you are new to the stack, start with the foundation packages that define tokens, layout, and
-    layering. Move into inputs, selectors, and overlays once the shape of the screen is already
-    clear.
+    The package surface is not flat in maturity. This docs set treats the stable direction as the
+    default path, while clearly calling out feature-limited packages like <code>select</code> and
+    <code>slider</code> when their constraints matter to integration decisions.
   </p>
 
   <div class="docs-note">
     <p>
-      Recommended first path: `Style`, `System`, `Layer`, then one screen tutorial, then the
-      package families that match your current task.
+      Registry-backed component surface in the current source repo: <code>{Object.keys(latticeSnapshot.registry.packages).length}</code> packages.
     </p>
   </div>
 </div>
+
+## Package Maturity
+
+<PackageMaturitySummary />
 
 ## Recommended Path
 
@@ -59,7 +65,7 @@ sidebar:
       </li>
       <li>
         <a href="/getting-started/quick-start/">Quick Start</a>
-        <p>Review the create, add, remove, doctor, and upgrade workflow around package use.</p>
+        <p>Review the current <code>create</code>, <code>init</code>, <code>add</code>, <code>remove</code>, <code>doctor</code>, and <code>upgrade</code> workflow.</p>
       </li>
     </ul>
   </section>
@@ -132,6 +138,6 @@ sidebar:
 ## How to Read a Package Page
 
 - Read `What It Is For` first to confirm the package matches the screen problem you actually have.
+- Use the generated install/export/provider metadata to confirm the public package surface before wiring it into an app.
 - Use `State Model` to understand controlled ownership, focus movement, and overlay behavior before implementation starts.
-- Use `Key API` and `Composition Patterns` to identify the small part of the surface area that changes integration decisions.
 - Read `Cautions / Limits` before committing the package to a larger workflow.

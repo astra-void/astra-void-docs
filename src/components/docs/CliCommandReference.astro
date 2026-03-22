@@ -1,0 +1,46 @@
+---
+import latticeSnapshot from "../../data/lattice-snapshot.generated";
+
+type CommandName = keyof typeof latticeSnapshot.cli.commands;
+
+type Props = {
+  command: CommandName;
+  showPhases?: boolean;
+};
+
+const { command, showPhases = false } = Astro.props;
+const commandMeta = latticeSnapshot.cli.commands[command];
+---
+
+<div class="docs-note">
+  <p>
+    <strong>{command}</strong>: {commandMeta.description}
+  </p>
+  <pre><code class="language-bash">{`lattice ${commandMeta.signature}`}</code></pre>
+
+  {commandMeta.flags.length > 0 && (
+    <div>
+      <p>Supported flags</p>
+      <ul class="export-list">
+        {commandMeta.flags.map((flag) => (
+          <li>
+            <code>{flag}</code>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {showPhases && commandMeta.outputPhases.length > 0 && (
+    <div>
+      <p>Observed output phases</p>
+      <ul class="export-list">
+        {commandMeta.outputPhases.map((phase) => (
+          <li>
+            <code>{phase}</code>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+</div>

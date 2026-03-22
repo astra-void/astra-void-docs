@@ -1,0 +1,57 @@
+---
+import latticeSnapshot from "../../data/lattice-snapshot.generated";
+
+const foundationPackages = ["core", "focus", "layer", "style", "system"];
+const stableFoundations = latticeSnapshot.workspace.stability.stableDirection.filter((slug) =>
+  foundationPackages.includes(slug),
+);
+const stableUiPackages = latticeSnapshot.workspace.stability.stableDirection.filter(
+  (slug) => !foundationPackages.includes(slug),
+);
+---
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>Stable direction</h3>
+    <p>These packages are the maintained path toward v1 and the default recommendation for product work.</p>
+    <div class="package-meta-stack">
+      <div>
+        <p>Foundations</p>
+        <ul class="export-list">
+          {stableFoundations.map((slug) => (
+            <li>
+              <code>{slug}</code>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <p>Primary UI packages</p>
+        <ul class="export-list">
+          {stableUiPackages.map((slug) => (
+            <li>
+              <code>{slug}</code>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="docs-section-card">
+    <h3>Experimental / limited</h3>
+    <p>These packages are available, but the docs should set expectations more narrowly.</p>
+    <ul class="docs-link-list">
+      {
+        latticeSnapshot.workspace.stability.experimental.map((entry) => (
+          <li>
+            <strong>
+              <code>{entry.slug}</code>
+            </strong>
+            <p>{entry.note}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</div>

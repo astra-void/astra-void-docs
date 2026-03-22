@@ -14,10 +14,7 @@ export type PackageDocPattern = {
 };
 
 export type PackageDocData = {
-  installName: string;
-  npm: string;
   whatItIsFor: string[];
-  exports: string[];
   stateModel: string[];
   keyApi: PackageDocEntry[];
   compositionPatterns: PackageDocPattern[];
@@ -27,19 +24,9 @@ export type PackageDocData = {
 
 export const componentDocs: Record<string, PackageDocData> = {
   accordion: {
-    installName: "accordion",
-    npm: "@lattice-ui/accordion",
     whatItIsFor: [
       "Use `Accordion` when the screen needs progressive disclosure without leaving the current layout.",
       "It is a headless compound component, so you own the trigger visuals, spacing, and motion while the package owns open-state coordination.",
-    ],
-    exports: [
-      "Accordion",
-      "Accordion.Root",
-      "Accordion.Item",
-      "Accordion.Header",
-      "Accordion.Trigger",
-      "Accordion.Content",
     ],
     stateModel: [
       "`Accordion.Root` can be controlled with `value` or uncontrolled with `defaultValue`.",
@@ -89,13 +76,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   avatar: {
-    installName: "avatar",
-    npm: "@lattice-ui/avatar",
     whatItIsFor: [
       "Use `Avatar` for profile chips, player lists, or presence surfaces where image loading and fallback timing need to stay consistent.",
       "The package separates image state from rendering, so you can fully own the Roblox instances used for the picture and the fallback.",
     ],
-    exports: ["Avatar", "Avatar.Root", "Avatar.Image", "Avatar.Fallback"],
     stateModel: [
       "`Avatar.Root` tracks `src`, image `status`, and whether the fallback delay has elapsed.",
       "`Avatar.Image` and `Avatar.Fallback` read the same state, so they stay synchronized without manual branching in the caller.",
@@ -141,13 +125,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   checkbox: {
-    installName: "checkbox",
-    npm: "@lattice-ui/checkbox",
     whatItIsFor: [
       "Use `Checkbox` for boolean or tri-state choices where the control itself is the interaction target.",
       "It is useful when you need `indeterminate` state and want to keep the visual host fully custom.",
     ],
-    exports: ["Checkbox", "Checkbox.Root", "Checkbox.Indicator"],
     stateModel: [
       '`checked` supports `true`, `false`, and `"indeterminate"`.',
       "`Checkbox.Root` supports both controlled and uncontrolled state via `checked` or `defaultChecked`.",
@@ -193,24 +174,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   combobox: {
-    installName: "combobox",
-    npm: "@lattice-ui/combobox",
     whatItIsFor: [
       "Use `Combobox` when the user needs to type into a field and still commit to one option from a registered list.",
       "It sits between `Select` and `TextField`: the package owns list filtering, option registration, and value/input synchronization, while you own the rendered UI.",
-    ],
-    exports: [
-      "Combobox",
-      "Combobox.Root",
-      "Combobox.Trigger",
-      "Combobox.Input",
-      "Combobox.Value",
-      "Combobox.Portal",
-      "Combobox.Content",
-      "Combobox.Item",
-      "Combobox.Group",
-      "Combobox.Label",
-      "Combobox.Separator",
     ],
     stateModel: [
       "`Combobox.Root` can control three values independently: selected `value`, typed `inputValue`, and `open`.",
@@ -262,21 +228,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   core: {
-    installName: "core",
-    npm: "@lattice-ui/core",
     whatItIsFor: [
       "Use `@lattice-ui/core` when you are building your own headless primitives or compound components on top of the same low-level conventions used by the rest of Lattice UI.",
       "Most app teams consume it indirectly through other packages, but it is the place to reach for controllable state, slots, ref composition, and shared React bindings.",
-    ],
-    exports: [
-      "React",
-      "ReactRoblox",
-      "useControllableState",
-      "Slot",
-      "Slottable",
-      "composeRefs",
-      "context helpers",
-      "focus helpers",
     ],
     stateModel: [
       "There is no package-level runtime model; `core` provides helper primitives that let callers build their own stateful components.",
@@ -323,20 +277,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   dialog: {
-    installName: "dialog",
-    npm: "@lattice-ui/dialog",
     whatItIsFor: [
       "Use `Dialog` for modal or non-modal overlays that own focus handoff, outside dismissal, and explicit close actions.",
       "The package gives you the compound structure for triggers, content, overlay, and close controls while leaving rendering and layout fully headless.",
-    ],
-    exports: [
-      "Dialog",
-      "Dialog.Root",
-      "Dialog.Trigger",
-      "Dialog.Portal",
-      "Dialog.Content",
-      "Dialog.Overlay",
-      "Dialog.Close",
     ],
     stateModel: [
       "`Dialog.Root` can be controlled with `open` or uncontrolled with `defaultOpen`.",
@@ -391,13 +334,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   focus: {
-    installName: "focus",
-    npm: "@lattice-ui/focus",
     whatItIsFor: [
       "Use `FocusScope` when a section of the UI needs to trap `GuiService.SelectedObject` and optionally restore focus when that scope deactivates.",
       "It is a foundation package for overlays and composite interaction regions rather than a styled control on its own.",
     ],
-    exports: ["FocusScope"],
     stateModel: [
       "`FocusScope` tracks whether it is `active`, whether focus should be `trapped`, and whether prior focus should be restored on teardown.",
       "Nested trapped scopes are stack-based, so only the top-most active scope redirects outside selections.",
@@ -433,13 +373,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   layer: {
-    installName: "layer",
-    npm: "@lattice-ui/layer",
     whatItIsFor: [
       "Use `layer` when you need the shared mechanics behind portals, outside dismissal, and mount-presence transitions.",
       "It is the coordination layer that powers overlays like dialogs, popovers, menus, selects, and tooltips.",
     ],
-    exports: ["DismissableLayer", "PortalProvider", "Portal", "Presence"],
     stateModel: [
       "`PortalProvider` establishes the overlay container and a display-order base for everything mounted beneath it.",
       "`DismissableLayer` tracks whether outside interactions should dismiss the current surface and whether outside pointer events should be blocked.",
@@ -490,22 +427,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   menu: {
-    installName: "menu",
-    npm: "@lattice-ui/menu",
     whatItIsFor: [
       "Use `Menu` for contextual action lists where opening the surface should immediately hand focus to the first available item.",
       "It is appropriate for action menus and command surfaces, not value-selection widgets like `Select`.",
-    ],
-    exports: [
-      "Menu",
-      "Menu.Root",
-      "Menu.Trigger",
-      "Menu.Portal",
-      "Menu.Content",
-      "Menu.Item",
-      "Menu.Group",
-      "Menu.Label",
-      "Menu.Separator",
     ],
     stateModel: [
       "`Menu.Root` supports controlled and uncontrolled `open` state and a `modal` mode flag.",
@@ -552,20 +476,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   popover: {
-    installName: "popover",
-    npm: "@lattice-ui/popover",
     whatItIsFor: [
       "Use `Popover` for anchored surfaces that should stay connected to a trigger or anchor without taking over the full interaction mode like a dialog.",
       "It is the right fit for inline help, quick settings, or compact secondary editors.",
-    ],
-    exports: [
-      "Popover",
-      "Popover.Root",
-      "Popover.Trigger",
-      "Popover.Anchor",
-      "Popover.Portal",
-      "Popover.Content",
-      "Popover.Close",
     ],
     stateModel: [
       "`Popover.Root` manages controlled or uncontrolled `open` state and optional `modal` behavior.",
@@ -617,13 +530,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   popper: {
-    installName: "popper",
-    npm: "@lattice-ui/popper",
     whatItIsFor: [
       "Use `popper` when you need low-level anchored positioning without adopting a higher-level overlay component.",
       "It provides the geometry engine used by packages like `Select`, `Popover`, and `Tooltip`.",
     ],
-    exports: ["usePopper", "computePopper", "Popper types"],
     stateModel: [
       "There is no shared React context; `usePopper` derives position directly from `anchorRef`, `contentRef`, and geometric inputs.",
       "`placement`, `offset`, and `padding` are the core variables that influence the computed result.",
@@ -669,17 +579,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   progress: {
-    installName: "progress",
-    npm: "@lattice-ui/progress",
     whatItIsFor: [
       "Use `Progress` and `Spinner` for task feedback when the app should communicate either measurable completion or ongoing work.",
       "The package gives you normalized progress state and timing hooks while leaving the visuals completely up to you.",
-    ],
-    exports: [
-      "Progress",
-      "Progress.Root",
-      "Progress.Indicator",
-      "Progress.Spinner",
     ],
     stateModel: [
       "`Progress.Root` tracks `value`, `max`, a normalized `ratio`, and `indeterminate` state.",
@@ -726,17 +628,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   "radio-group": {
-    installName: "radio-group",
-    npm: "@lattice-ui/radio-group",
     whatItIsFor: [
       "Use `RadioGroup` for mutually exclusive selection when the available options should remain visible all at once.",
       "It is best for small, stable option sets where direct comparison matters more than compactness.",
-    ],
-    exports: [
-      "RadioGroup",
-      "RadioGroup.Root",
-      "RadioGroup.Item",
-      "RadioGroup.Indicator",
     ],
     stateModel: [
       "`RadioGroup.Root` manages a single selected `value`, optional `required` semantics, and `horizontal` or `vertical` orientation.",
@@ -783,19 +677,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   "scroll-area": {
-    installName: "scroll-area",
-    npm: "@lattice-ui/scroll-area",
     whatItIsFor: [
       "Use `ScrollArea` when you want custom scrollbars and thumbs around a Roblox `ScrollingFrame` viewport.",
       "It is useful when native scroll visuals do not match the product language but native scrolling behavior should remain intact.",
-    ],
-    exports: [
-      "ScrollArea",
-      "ScrollArea.Root",
-      "ScrollArea.Viewport",
-      "ScrollArea.Scrollbar",
-      "ScrollArea.Thumb",
-      "ScrollArea.Corner",
     ],
     stateModel: [
       "`ScrollArea.Root` tracks viewport metrics for both axes, scrollbar visibility policy, and recent scroll activity.",
@@ -842,23 +726,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   select: {
-    installName: "select",
-    npm: "@lattice-ui/select",
     whatItIsFor: [
       "Use `Select` when the UI needs a compact single-choice picker with caller-owned trigger, value display, and overlay visuals.",
       "It works well when options should open into a managed list but the user should not type freeform search text.",
-    ],
-    exports: [
-      "Select",
-      "Select.Root",
-      "Select.Trigger",
-      "Select.Value",
-      "Select.Portal",
-      "Select.Content",
-      "Select.Item",
-      "Select.Group",
-      "Select.Label",
-      "Select.Separator",
     ],
     stateModel: [
       "`Select.Root` manages controlled or uncontrolled `value` and `open` state.",
@@ -913,18 +783,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   slider: {
-    installName: "slider",
-    npm: "@lattice-ui/slider",
     whatItIsFor: [
       "Use `Slider` for bounded numeric input when dragging or key-based adjustment is more natural than typing a raw number.",
       "It is a headless primitive for one-dimensional range selection rather than a styled media scrubber.",
-    ],
-    exports: [
-      "Slider",
-      "Slider.Root",
-      "Slider.Track",
-      "Slider.Range",
-      "Slider.Thumb",
     ],
     stateModel: [
       "`Slider.Root` manages controlled or uncontrolled numeric `value` plus a separate commit callback for final confirmation.",
@@ -971,25 +832,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   style: {
-    installName: "style",
-    npm: "@lattice-ui/style",
     whatItIsFor: [
       "Use `@lattice-ui/style` as the default baseline for product UI styling in Lattice UI apps.",
       "It provides theme tokens, primitive text/box helpers, `sx` composition, and reusable recipes without dictating app structure.",
-    ],
-    exports: [
-      "Box",
-      "Text",
-      "ThemeProvider",
-      "useTheme",
-      "useThemeValue",
-      "createTheme",
-      "defaultDarkTheme",
-      "defaultLightTheme",
-      "createRecipe",
-      "mergeGuiProps",
-      "mergeSx",
-      "resolveSx",
     ],
     stateModel: [
       "`ThemeProvider` owns the current theme object and exposes it through `useTheme` and `useThemeValue`.",
@@ -1047,13 +892,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   switch: {
-    installName: "switch",
-    npm: "@lattice-ui/switch",
     whatItIsFor: [
       "Use `Switch` for immediate on/off settings where the control communicates a binary system state rather than membership in a list.",
       "It is the simplest boolean primitive in the library and works well for preferences panels and toggles.",
     ],
-    exports: ["Switch", "Switch.Root", "Switch.Thumb"],
     stateModel: [
       "`Switch.Root` tracks a boolean `checked` state with controlled and uncontrolled entry points.",
       "`disabled` is enforced at the root, and `Switch.Thumb` reads that shared state rather than maintaining any local state.",
@@ -1099,23 +941,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   system: {
-    installName: "system",
-    npm: "@lattice-ui/system",
     whatItIsFor: [
       "Use `@lattice-ui/system` for app-level UI context, density-aware theme resolution, and layout primitives like `Stack`, `Row`, `Grid`, and `Surface`.",
       "It is the structural companion to `style`: `style` defines the visual language, while `system` applies that language across screens and layouts.",
-    ],
-    exports: [
-      "SystemProvider",
-      "useSystemTheme",
-      "DensityProvider",
-      "useDensity",
-      "applyDensity",
-      "Stack",
-      "Row",
-      "Grid",
-      "Surface",
-      "surface",
     ],
     stateModel: [
       "`SystemProvider` owns two coordinated values: the raw `baseTheme` and the current density token.",
@@ -1173,13 +1001,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   tabs: {
-    installName: "tabs",
-    npm: "@lattice-ui/tabs",
     whatItIsFor: [
       "Use `Tabs` when the screen should switch between sibling panels without leaving the current route or layout.",
       "It is a good fit for profile pages, settings surfaces, and inspector UIs where the current section should stay explicit.",
     ],
-    exports: ["Tabs", "Tabs.Root", "Tabs.List", "Tabs.Trigger", "Tabs.Content"],
     stateModel: [
       "`Tabs.Root` manages a single selected `value` with controlled or uncontrolled ownership.",
       "Triggers register with orientation-aware ordering so selection movement can advance through enabled items.",
@@ -1225,19 +1050,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   "text-field": {
-    installName: "text-field",
-    npm: "@lattice-ui/text-field",
     whatItIsFor: [
       "Use `TextField` for single-line text entry with label, description, validation message, and commit hooks that stay in one compound tree.",
       "It is the right default when you want field semantics without adopting a pre-skinned input component.",
-    ],
-    exports: [
-      "TextField",
-      "TextField.Root",
-      "TextField.Input",
-      "TextField.Label",
-      "TextField.Description",
-      "TextField.Message",
     ],
     stateModel: [
       "`TextField.Root` manages the current string value plus `disabled`, `readOnly`, `required`, and `invalid` flags.",
@@ -1287,19 +1102,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   textarea: {
-    installName: "textarea",
-    npm: "@lattice-ui/textarea",
     whatItIsFor: [
       "Use `Textarea` for multi-line text entry when the field should support the same labeled-field semantics as `TextField` but with optional automatic resizing.",
       "It works well for notes, descriptions, and admin surfaces that need larger freeform input.",
-    ],
-    exports: [
-      "Textarea",
-      "Textarea.Root",
-      "Textarea.Input",
-      "Textarea.Label",
-      "Textarea.Description",
-      "Textarea.Message",
     ],
     stateModel: [
       "`Textarea.Root` shares the same controlled/uncontrolled value model as `TextField`, with additional `autoResize`, `minRows`, and `maxRows` state.",
@@ -1346,22 +1151,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   toast: {
-    installName: "toast",
-    npm: "@lattice-ui/toast",
     whatItIsFor: [
       "Use `Toast` for transient feedback that should queue, stack, and dismiss automatically without interrupting the main interaction flow.",
       "It is appropriate for saved-state messages, undo affordances, and background task completion notices.",
-    ],
-    exports: [
-      "Toast",
-      "Toast.Provider",
-      "Toast.Viewport",
-      "Toast.Root",
-      "Toast.Title",
-      "Toast.Description",
-      "Toast.Action",
-      "Toast.Close",
-      "useToast",
     ],
     stateModel: [
       "`Toast.Provider` owns the full toast queue, the visible subset, the default duration, and the maximum visible count.",
@@ -1413,13 +1205,10 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   "toggle-group": {
-    installName: "toggle-group",
-    npm: "@lattice-ui/toggle-group",
     whatItIsFor: [
       "Use `ToggleGroup` for pill bars, formatting controls, and compact segmented selectors where buttons should show pressed state.",
       "It bridges the gap between a lone `Switch` and a full `RadioGroup`, with both single and multiple selection modes.",
     ],
-    exports: ["ToggleGroup", "ToggleGroup.Root", "ToggleGroup.Item"],
     stateModel: [
       "`ToggleGroup.Root` switches between `single` and `multiple` selection models through the required `type` prop.",
       "The value shape follows that selection model: a string or undefined for `single`, an array for `multiple`.",
@@ -1460,19 +1249,9 @@ export const componentDocs: Record<string, PackageDocData> = {
     ],
   },
   tooltip: {
-    installName: "tooltip",
-    npm: "@lattice-ui/tooltip",
     whatItIsFor: [
       "Use `Tooltip` for short contextual hints that appear on hover or selection focus without interrupting the surrounding workflow.",
       "It is best for explaining nearby UI affordances, not for delivering required instructions or deep interaction flows.",
-    ],
-    exports: [
-      "Tooltip",
-      "Tooltip.Provider",
-      "Tooltip.Root",
-      "Tooltip.Trigger",
-      "Tooltip.Portal",
-      "Tooltip.Content",
     ],
     stateModel: [
       "`Tooltip.Provider` tracks open-delay policy with `delayDuration` and `skipDelayDuration` across multiple tooltips.",

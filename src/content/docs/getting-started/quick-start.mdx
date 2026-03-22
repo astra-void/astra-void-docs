@@ -1,6 +1,6 @@
 ---
 title: Quick Start
-description: Scaffold and maintain a Lattice UI app project with the full CLI workflow.
+description: Scaffold or bootstrap a Lattice UI app project with the full CLI workflow.
 draft: false
 sidebar:
   order: 2
@@ -11,24 +11,31 @@ Audience: app developers integrating Lattice UI into project codebases.
 If you want to see how the UI packages fit together after setup, continue with
 [Build a Settings Dialog](/getting-started/build-a-settings-dialog/).
 
-## 1. Create a Project
+## 1. Choose the Entry Point
 
-### Global CLI
+Use `create` when you are starting a fresh project.
+Use `init` when the repository already exists and you want Lattice to merge its template, scripts,
+and dependency baseline into the current `package.json`.
+
+### New Project
 
 ```bash
 lattice create
+pnpm lattice create
 ```
 
-### Monorepo Local Script
+### Existing Project
 
 ```bash
-pnpm lattice create
+lattice init --dry-run
+pnpm lattice init --dry-run
 ```
 
 Notes:
 
-- Omit `project-path` to enter interactive mode.
-- In non-interactive mode (`--yes`), `project-path` is required.
+- `create` requires `project-path` in non-interactive mode (`--yes`).
+- `init` does not accept positional arguments.
+- `init --dry-run` is the safest first pass for an existing codebase.
 
 ## 2. Add Packages by Preset and Name
 

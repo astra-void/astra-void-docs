@@ -13,7 +13,7 @@ Symptom: command exits with guidance about interactive prompts requiring a TTY.
 Actions:
 
 1. Re-run using explicit flags and `--yes`.
-2. Provide required values (for example `create <project-path>`).
+2. Provide required values (for example `create <project-path>` or `add --preset form`).
 3. Use dry-run first if you want to inspect planned changes.
 
 ## `create --yes` Without Project Path
@@ -25,13 +25,23 @@ Actions:
 1. Run interactive create (`lattice create` / `pnpm lattice create`) when non-interactive mode is not required.
 2. If you keep `--yes`, provide `project-path` explicitly.
 
+## `init` Outside a Project Root
+
+Symptom: init fails because the CLI cannot find `package.json` from the current working directory.
+
+Actions:
+
+1. Run the command from the repo root that owns the target `package.json`.
+2. Confirm the project already exists before using `init`; use `create` for a new directory.
+3. Re-run with `--dry-run` first after moving to the correct root.
+
 ## Conflicting Lint Flags
 
 Symptom: `Cannot use --lint and --no-lint together.`
 
 Actions:
 
-1. Keep exactly one of those flags.
+1. Keep exactly one of those flags on `create`.
 2. Omit both flags if you want interactive/default behavior.
 
 ## `remove --yes` Without Selection
@@ -75,15 +85,3 @@ Typical recovery loop:
 1. Run `doctor`.
 2. Apply recommended commands shown under `Recommended Commands`.
 3. Re-run `doctor` until warnings/errors are resolved.
-
-### Global CLI
-
-```bash
-lattice doctor
-```
-
-### Monorepo Local Script
-
-```bash
-pnpm lattice doctor
-```

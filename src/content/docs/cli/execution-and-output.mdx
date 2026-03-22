@@ -1,51 +1,65 @@
 ---
 title: Execution and Output
-description: Interactive rules, --yes behavior, and structured output phases used by the CLI.
+description: Interactive rules, --yes behavior, dry-run behavior, and command output phases used by the CLI.
 draft: false
 sidebar:
   order: 4
 ---
 
+import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+
 ## Interactive vs Non-Interactive
 
 By default, commands can run interactively when stdin/stdout are TTY-capable.
 
-- Interactive mode prompts for missing selection/path input.
+- Interactive mode prompts for missing selection, path, or package-manager input.
 - `--yes` disables prompts and uses explicit flags/defaults.
 - If prompts are required but no TTY is available, commands fail with guidance to use `--yes`.
 
-## `create` Input Rules
+## `create` vs `init`
 
-- `project-path` is optional in interactive mode.
-- In `--yes` mode, `project-path` is required.
-- `--lint` enables lint template application.
-- `--no-lint` disables lint template application.
-- `--lint` and `--no-lint` cannot be used together.
+- `create` scaffolds a new directory and then installs dependencies.
+- `init` inspects an existing project, plans merges, and can dry-run those merges before applying them.
+- Both commands can resolve a package manager from `--pm`, lockfiles, installed managers, or interactive selection.
 
 ## Structured Output Phases
 
-Most dependency commands (`add`, `remove`, `upgrade`, `doctor`) use consistent output phases:
+Current command implementations emit these sections:
 
-- `Selecting`: command scope and selected target context.
-- `Planning`: expanded components/packages and summary counts.
-- `Dry Run`: simulated package manager commands when `--dry-run` is set.
-- `Applying`: real package manager operations (plus confirmation where applicable).
-- `Result`: outcome summary and success/warning/error state.
-- `Next Steps`: follow-up commands (typically `lattice doctor` or `pnpm lattice doctor`).
+<ul class="docs-link-list">
+  <li>
+    <strong><code>create</code></strong>
+    <p>{latticeSnapshot.cli.commands.create.outputPhases.join(" -> ")}</p>
+  </li>
+  <li>
+    <strong><code>init</code></strong>
+    <p>{latticeSnapshot.cli.commands.init.outputPhases.join(" -> ")}</p>
+  </li>
+  <li>
+    <strong><code>add</code>, <code>remove</code>, <code>upgrade</code></strong>
+    <p>Selecting -> Planning -> Dry Run/Applying -> Result -> Next Steps</p>
+  </li>
+  <li>
+    <strong><code>doctor</code></strong>
+    <p>{latticeSnapshot.cli.commands.doctor.outputPhases.join(" -> ")}</p>
+  </li>
+</ul>
 
 ## Dry Run Contract
 
 In dry-run mode:
 
-- Planned package manager actions are printed with `[dry-run]` prefix.
+- Planned package-manager actions are printed with `[dry-run]` prefix.
 - No dependency changes are applied.
-- Output explicitly includes: `No files were changed.`
+- Output explicitly includes: `No files were changed.` for the dependency commands.
+- `init --dry-run` also reports the planned file/package merge set before any confirmation step.
 
 Examples:
 
 ### Global CLI
 
 ```bash
+lattice init --dry-run
 lattice add dialog,toast --preset overlay --dry-run
 lattice remove --preset overlay --dry-run
 lattice upgrade --preset form --dry-run
@@ -54,6 +68,7 @@ lattice upgrade --preset form --dry-run
 ### Monorepo Local Script
 
 ```bash
+pnpm lattice init --dry-run
 pnpm lattice add dialog,toast --preset overlay --dry-run
 pnpm lattice remove --preset overlay --dry-run
 pnpm lattice upgrade --preset form --dry-run
