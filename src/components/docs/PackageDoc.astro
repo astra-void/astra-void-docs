@@ -1,4 +1,7 @@
 ---
+import CodeBlock from "./CodeBlock.astro";
+import SourceExample from "./SourceExample.astro";
+import { componentGuideLinks } from "../../data/component-guides";
 import type { ResolvedPackageDocData } from "../../data/package-docs";
 
 type Props = {
@@ -6,6 +9,18 @@ type Props = {
 };
 
 const { doc } = Astro.props;
+const guideLinks = componentGuideLinks[doc.slug] ?? [];
+const exampleModules = import.meta.glob("../../examples/components/*.tsx", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+const examplePath = `../../examples/components/${doc.slug}.tsx`;
+const exampleSource = exampleModules[examplePath];
+
+if (!exampleSource) {
+  throw new Error(`Missing component example source for ${doc.slug}`);
+}
 
 function escapeHtml(value: string) {
   return value
@@ -47,6 +62,8 @@ function formatProvider(raw: string, optional: boolean) {
     }
   </section>
 
+  <SourceExample code={exampleSource} fileName={`${doc.slug}.tsx`} />
+
   <section class="doc-section doc-section-install">
     <h2 class="mb-5 text-2xl font-semibold tracking-[-0.04em] text-foreground">
       Install
@@ -55,12 +72,12 @@ function formatProvider(raw: string, optional: boolean) {
     <div class="install-grid">
       <div class="install-card">
         <h3>Global CLI</h3>
-        <pre><code class="language-bash">{`lattice add ${doc.installName}`}</code></pre>
+        <CodeBlock code={`lattice add ${doc.installName}`} lang="bash" />
       </div>
 
       <div class="install-card">
         <h3>Monorepo Local Script</h3>
-        <pre><code class="language-bash">{`pnpm lattice add ${doc.installName}`}</code></pre>
+        <CodeBlock code={`pnpm lattice add ${doc.installName}`} lang="bash" />
       </div>
     </div>
 
@@ -182,5 +199,22 @@ function formatProvider(raw: string, optional: boolean) {
       }
     </ul>
   </section>
-</div>
 
+  {
+    guideLinks.length > 0 && (
+      <section class="doc-section doc-section-guides">
+        <h2 class="mb-4 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+          Decision Guides
+        </h2>
+        <ul class="docs-link-list">
+          {guideLinks.map((entry) => (
+            <li>
+              <a href={entry.href}>{entry.label}</a>
+              <p>{entry.description}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</div>

@@ -1,0 +1,82 @@
+---
+title: "Choosing Controls"
+description: "Decision tables for Lattice UI selection, overlay, and boolean controls."
+draft: false
+versionBasis: main
+sidebar:
+  order: 1
+---
+
+import DecisionTable from "../../../components/docs/DecisionTable.astro";
+
+Use this page when you are still deciding which primitive should own the interaction, not after implementation has already started.
+Each table is biased toward product decision-making: what the user sees, what the state model looks like, and which failure mode is most likely if you pick the wrong control.
+
+<DecisionTable
+  title="Select vs Combobox vs Radio Group"
+  columns={["Control", "Choose it when", "Avoid it when", "Key tradeoff"]}
+  rows={[
+    [
+      "`Select`",
+      "The UI needs one committed value from a compact trigger + overlay list.",
+      "The user must keep all options visible at once or type into the field.",
+      "Most compact, but it depends on overlay wiring and currently stays single-value only.",
+    ],
+    [
+      "`Combobox`",
+      "The user should type to narrow a list but still commit to one registered option.",
+      "The value should be freeform text or the query should survive independently from the committed option.",
+      "More flexible than Select, but input state, open state, and selected value are separate concerns.",
+    ],
+    [
+      "`RadioGroup`",
+      "The option set is small and stable enough to stay visible all the time.",
+      "The list is long, needs filtering, or should live in a portal-based overlay.",
+      "Best direct comparison, but it consumes layout space and does not solve compactness.",
+    ],
+  ]}
+/>
+
+<DecisionTable
+  title="Dialog vs Popover"
+  columns={["Control", "Choose it when", "Avoid it when", "Key tradeoff"]}
+  rows={[
+    [
+      "`Dialog`",
+      "The surface should own interaction mode, trap focus, and read like a distinct task boundary.",
+      "The user only needs a lightweight anchored editor or supplemental information panel.",
+      "Heavier contract, but it gives stronger focus and dismissal semantics for modal work.",
+    ],
+    [
+      "`Popover`",
+      "The surface should stay anchored to a trigger and feel like an extension of nearby UI.",
+      "The content needs full modal ownership or must strongly isolate surrounding interaction.",
+      "Lighter and faster to use, but easier to misuse for flows that really need dialog semantics.",
+    ],
+  ]}
+/>
+
+<DecisionTable
+  title="Switch vs Checkbox"
+  columns={["Control", "Choose it when", "Avoid it when", "Key tradeoff"]}
+  rows={[
+    [
+      "`Switch`",
+      "The control represents an immediate on/off setting such as a preference or runtime toggle.",
+      "The UI is really about list membership or partial selection.",
+      "Clear binary setting semantics, but there is no indeterminate state.",
+    ],
+    [
+      "`Checkbox`",
+      "The control represents selection membership or can legitimately be `indeterminate`.",
+      "The screen should communicate an immediate system setting rather than inclusion in a set.",
+      "More flexible state model, but the wrong fit for preference toggles that should read as settings.",
+    ],
+  ]}
+/>
+
+## Quick Routing
+
+- Start with [Select](/components/select/), [Combobox](/components/combobox/), or [Radio Group](/components/radio-group/) when the main question is how the user picks one option.
+- Start with [Dialog](/components/dialog/) or [Popover](/components/popover/) when the main question is how much interaction ownership the surface needs.
+- Start with [Switch](/components/switch/) or [Checkbox](/components/checkbox/) when the main question is whether the UI represents a setting or a selection.

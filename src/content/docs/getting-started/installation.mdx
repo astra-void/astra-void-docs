@@ -7,6 +7,7 @@ sidebar:
 ---
 
 import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+import CodeBlock from "../../../components/docs/CodeBlock.astro";
 
 ## Prerequisites
 
@@ -27,8 +28,11 @@ If you do not want a global install, you can also run one-off commands with `npx
 
 ### Global CLI
 
-<pre><code class="language-bash">{`npm i -g ${latticeSnapshot.cli.packageName}
-lattice --help`}</code></pre>
+<CodeBlock
+  code={`npm i -g ${latticeSnapshot.cli.packageName}
+lattice --help`}
+  lang="bash"
+/>
 
 ### Monorepo Local Script
 

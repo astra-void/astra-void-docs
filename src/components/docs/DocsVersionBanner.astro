@@ -1,0 +1,54 @@
+---
+import { packageDocs } from "../../data/package-docs";
+import latticeSnapshot from "../../data/lattice-snapshot.generated";
+
+type Props = {
+  path: string;
+  versionBasis: "main" | "stable";
+};
+
+const { path, versionBasis } = Astro.props;
+const release = latticeSnapshot.workspace.changelog.latestRelease;
+const componentSlug = path.startsWith("components/") ? path.slice("components/".length) : undefined;
+const packageDoc = componentSlug ? packageDocs[componentSlug] : undefined;
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatInline(value: string) {
+  return escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
+const sourceBadge =
+  versionBasis === "stable" ? `Stable release v${release?.version ?? "n/a"}` : "Tracking lattice-ui/main";
+const sourceMessage =
+  versionBasis === "stable"
+    ? "This page is written against the latest tagged release captured in the checked-in snapshot."
+    : "This page is written against the checked-in snapshot of lattice-ui/main. Tagged releases can lag behind these docs.";
+---
+
+<div class="docs-version-banner">
+  <div class="docs-version-banner-badges">
+    <span class:list={["docs-version-badge", versionBasis === "main" && "is-main"]}>{sourceBadge}</span>
+    <span class="docs-version-badge">Latest tagged release: v{release?.version ?? "n/a"}</span>
+    <span class="docs-version-badge">Snapshot date: {release?.date ?? "n/a"}</span>
+    {
+      packageDoc && (
+        <span class:list={["docs-version-badge", packageDoc.maturity === "experimental" && "is-experimental"]}>
+          Package status: {packageDoc.maturityLabel}
+        </span>
+      )
+    }
+  </div>
+
+  <div class="docs-version-banner-copy">
+    <p>{sourceMessage}</p>
+    {packageDoc && <p set:html={`Current package note: ${formatInline(packageDoc.maturityNote)}`} />}
+  </div>
+</div>

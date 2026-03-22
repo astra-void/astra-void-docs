@@ -1,0 +1,83 @@
+---
+import CodeBlock from "./CodeBlock.astro";
+
+type Props = {
+  code: string;
+  title?: string;
+  fileName?: string;
+  description?: string;
+  defaultOpen?: boolean;
+};
+
+const {
+  code,
+  title = "TSX Example Preview",
+  fileName,
+  description = "Preview the first lines below, or expand to inspect the full source file.",
+  defaultOpen = false,
+} = Astro.props;
+
+const normalizedCode = code.replace(/\s+$/, "");
+const previewLineCount = 6;
+const codeLines = normalizedCode.split("\n");
+const hasOverflow = codeLines.length > previewLineCount;
+const previewCode = hasOverflow
+  ? `${codeLines.slice(0, previewLineCount).join("\n")}\n...`
+  : normalizedCode;
+const disclosureSource = (fileName ?? title)
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-+|-+$/g, "") || "example";
+const disclosureId = `docs-example-${disclosureSource}`;
+const isExpanded = defaultOpen || !hasOverflow;
+---
+
+<section class="doc-section doc-section-example docs-example" data-example-collapsible data-open={isExpanded ? "true" : "false"}>
+  <div class="docs-example-card">
+    <div class="docs-example-header">
+      <div class="docs-example-summary-copy">
+        <h2 class="mb-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">{title}</h2>
+        <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+
+      <div class="docs-example-summary-meta">
+        {fileName && <code class="docs-example-file">{fileName}</code>}
+        {hasOverflow && (
+          <button
+            type="button"
+            class="docs-example-toggle"
+            data-example-toggle
+            aria-expanded={isExpanded ? "true" : "false"}
+            aria-controls={disclosureId}
+          >
+            <span class="docs-example-toggle-copy docs-example-toggle-copy-closed">Show full example</span>
+            <span class="docs-example-toggle-copy docs-example-toggle-copy-open">Hide full example</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="docs-example-toggle-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6"></path>
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+
+    {hasOverflow && (
+      <div class="docs-example-preview">
+        <CodeBlock code={previewCode} lang="tsx" />
+      </div>
+    )}
+
+    <div id={disclosureId} class="docs-example-panel" data-example-panel hidden={hasOverflow && !isExpanded}>
+      <CodeBlock code={normalizedCode} lang="tsx" />
+    </div>
+  </div>
+</section>

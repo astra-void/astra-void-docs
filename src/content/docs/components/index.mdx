@@ -2,6 +2,7 @@
 title: Components
 description: Decision-oriented package documentation for Lattice UI components and foundations.
 draft: false
+versionBasis: main
 sidebar:
   order: 0
 ---
@@ -27,6 +28,32 @@ import latticeSnapshot from "../../../data/lattice-snapshot.generated";
       Registry-backed component surface in the current source repo: <code>{Object.keys(latticeSnapshot.registry.packages).length}</code> packages.
     </p>
   </div>
+</div>
+
+## Decision Guides
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>Choosing controls</h3>
+    <p>Use side-by-side comparisons before you pick a selection or overlay primitive.</p>
+    <ul class="docs-link-list">
+      <li>
+        <a href="/components/choosing-controls/">Choosing Controls</a>
+        <p>Compare Select vs Combobox vs Radio Group, Dialog vs Popover, and Switch vs Checkbox.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="docs-section-card">
+    <h3>Implementation pitfalls</h3>
+    <p>Review the failure modes that show up most often once real app state and overlays are involved.</p>
+    <ul class="docs-link-list">
+      <li>
+        <a href="/components/implementation-pitfalls/">Overlay and State Pitfalls</a>
+        <p>PortalProvider, stacking, focus, disabled items, and controlled/uncontrolled transitions.</p>
+      </li>
+    </ul>
+  </section>
 </div>
 
 ## Package Maturity
@@ -141,3 +168,4 @@ import latticeSnapshot from "../../../data/lattice-snapshot.generated";
 - Use the generated install/export/provider metadata to confirm the public package surface before wiring it into an app.
 - Use `State Model` to understand controlled ownership, focus movement, and overlay behavior before implementation starts.
 - Read `Cautions / Limits` before committing the package to a larger workflow.
+- Treat `Complete TSX Example` as the quickest path to a working baseline, then branch into the comparison and pitfalls guides when you need sharper decisions.

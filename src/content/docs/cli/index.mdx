@@ -7,6 +7,7 @@ sidebar:
 ---
 
 import latticeSnapshot from "../../../data/lattice-snapshot.generated";
+import CodeBlock from "../../../components/docs/CodeBlock.astro";
 
 Audience: app developers integrating Lattice UI in project repositories.
 
@@ -27,8 +28,11 @@ unreleased `init` workflow on `main`.
 
 ### Global CLI
 
-<pre><code class="language-bash">{`npm i -g ${latticeSnapshot.cli.packageName}
-lattice --help`}</code></pre>
+<CodeBlock
+  code={`npm i -g ${latticeSnapshot.cli.packageName}
+lattice --help`}
+  lang="bash"
+/>
 
 ### Monorepo Local Script
 

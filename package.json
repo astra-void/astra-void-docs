@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "typecheck": "astro check",
+    "docs:check:examples": "node ./scripts/check-doc-examples.mjs",
     "docs:sync:lattice": "node ./scripts/sync-lattice-snapshot.mjs",
     "docs:check:lattice": "node ./scripts/sync-lattice-snapshot.mjs --check"
   },

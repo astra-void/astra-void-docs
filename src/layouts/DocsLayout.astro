@@ -4,6 +4,7 @@ import DocsHeader from "../components/docs/DocsHeader.astro";
 import DocsPager from "../components/docs/DocsPager.astro";
 import DocsSidebar from "../components/docs/DocsSidebar.astro";
 import DocsToc from "../components/docs/DocsToc.astro";
+import DocsVersionBanner from "../components/docs/DocsVersionBanner.astro";
 import { DOCS_SITE, type DocPage, type SidebarSection } from "../lib/docs";
 import "../styles/global.css";
 
@@ -107,6 +108,9 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             <p class="mt-4 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
               {description}
             </p>
+            <div class="mt-6">
+              <DocsVersionBanner path={currentPage.path} versionBasis={currentPage.versionBasis} />
+            </div>
           </div>
 
           <article class="docs-prose mt-10 max-w-none">
@@ -303,6 +307,22 @@ const hasToc = headings.some((heading) => heading.depth > 1);
 
             const copied = await copyText(code.innerText.replace(/\n$/, ""));
             showCopyFeedback(codeCopyButton, copied);
+            return;
+          }
+
+          const exampleToggle = target.closest("[data-example-toggle]");
+          if (exampleToggle instanceof HTMLButtonElement) {
+            const example = exampleToggle.closest("[data-example-collapsible]");
+            const panel = example?.querySelector("[data-example-panel]");
+
+            if (!(example instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+              return;
+            }
+
+            const nextOpen = example.dataset.open !== "true";
+            example.dataset.open = nextOpen ? "true" : "false";
+            exampleToggle.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+            panel.hidden = !nextOpen;
             return;
           }
 

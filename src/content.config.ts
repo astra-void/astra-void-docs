@@ -11,6 +11,7 @@ export const collections = {
       title: z.string(),
       description: z.string(),
       draft: z.boolean().default(false),
+      versionBasis: z.enum(["main", "stable"]).default("main"),
       sidebar: z
         .object({
           order: z.number().optional(),

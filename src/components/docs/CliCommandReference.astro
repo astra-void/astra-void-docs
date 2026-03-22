@@ -1,4 +1,5 @@
 ---
+import CodeBlock from "./CodeBlock.astro";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
 type CommandName = keyof typeof latticeSnapshot.cli.commands;
@@ -16,7 +17,7 @@ const commandMeta = latticeSnapshot.cli.commands[command];
   <p>
     <strong>{command}</strong>: {commandMeta.description}
   </p>
-  <pre><code class="language-bash">{`lattice ${commandMeta.signature}`}</code></pre>
+  <CodeBlock code={`lattice ${commandMeta.signature}`} lang="bash" />
 
   {commandMeta.flags.length > 0 && (
     <div>

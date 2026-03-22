@@ -348,6 +348,12 @@
     position: relative;
   }
 
+  .docs-prose pre[data-language]::before {
+    content: attr(data-language);
+    @apply absolute left-4 top-3 text-[0.7rem] font-semibold uppercase text-muted-foreground;
+    letter-spacing: 0.16em;
+  }
+
   .docs-prose pre code {
     @apply bg-transparent p-0 text-inherit;
     border: 0;
@@ -446,4 +452,130 @@
 
 [data-theme="light"] [data-theme-icon="moon"] {
   display: none;
+}
+
+@layer components {
+  .docs-version-banner {
+    @apply grid gap-4 border border-border/80 bg-muted/40 px-4 py-4;
+    border-radius: var(--radius);
+  }
+
+  .docs-version-banner-badges {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .docs-version-badge {
+    @apply inline-flex min-h-8 items-center rounded-md border border-border/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-card-foreground;
+  }
+
+  .docs-version-badge.is-main {
+    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+
+  .docs-version-badge.is-experimental {
+    border-color: color-mix(in srgb, hsl(32 88% 52%) 36%, var(--border));
+    background: color-mix(in srgb, hsl(32 88% 52%) 10%, transparent);
+  }
+
+  .docs-version-banner-copy {
+    @apply grid gap-2 text-sm leading-6 text-muted-foreground;
+  }
+
+  .docs-version-banner-copy p {
+    @apply m-0;
+  }
+
+  .docs-example-card {
+    @apply border border-border/80 bg-muted/30;
+    border-radius: var(--radius);
+  }
+
+  .docs-example-header {
+    @apply flex flex-col gap-4 px-4 py-4 md:flex-row md:items-start md:justify-between;
+  }
+
+  .docs-example-summary-copy {
+    @apply min-w-0;
+  }
+
+  .docs-example-summary-meta {
+    @apply flex flex-wrap items-center gap-3;
+  }
+
+  .docs-example-file {
+    @apply inline-flex min-h-8 items-center rounded-md border border-border/80 px-3 py-1 text-sm text-card-foreground;
+    width: fit-content;
+  }
+
+  .docs-example-toggle {
+    @apply inline-flex min-h-8 items-center gap-2 rounded-md border border-border/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground;
+  }
+
+  .docs-example-toggle-copy-open {
+    display: none;
+  }
+
+  .docs-example-toggle-icon {
+    @apply h-4 w-4;
+    transition: transform 180ms ease;
+  }
+
+  .docs-example-preview,
+  .docs-example-panel {
+    @apply px-4 pb-4;
+  }
+
+  .docs-example-preview {
+    @apply border-t border-border/70;
+    position: relative;
+  }
+
+  .docs-example-preview::after {
+    content: "";
+    position: absolute;
+    inset-inline: 1rem;
+    bottom: 1rem;
+    height: 4rem;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--code-bg));
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+  }
+
+  .docs-example-preview .docs-code-copy-button {
+    display: none;
+  }
+
+  .docs-example-panel {
+    @apply border-t border-border/70;
+  }
+
+  .docs-example[data-open="true"] .docs-example-preview {
+    display: none;
+  }
+
+  .docs-example[data-open="true"] .docs-example-toggle-copy-closed {
+    display: none;
+  }
+
+  .docs-example[data-open="true"] .docs-example-toggle-copy-open {
+    display: inline;
+  }
+
+  .docs-example[data-open="true"] .docs-example-toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  .decision-table-wrap {
+    @apply my-8 grid gap-4;
+  }
+
+  .decision-table-scroll {
+    overflow-x: auto;
+  }
+
+  .decision-table {
+    min-width: 42rem;
+  }
 }

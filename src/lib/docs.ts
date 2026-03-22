@@ -31,6 +31,7 @@ export type DocPage = {
   url: string;
   title: string;
   description: string;
+  versionBasis: "main" | "stable";
   sectionKey: string;
   sectionTitle: string;
   sectionOrder: number;
@@ -100,6 +101,7 @@ function toDocPage(entry: DocEntry): DocPage {
     url: getDocUrl(path),
     title: entry.data.title,
     description: entry.data.description,
+    versionBasis: entry.data.versionBasis,
     sectionKey: section.key,
     sectionTitle: section.title,
     sectionOrder: section.order,
