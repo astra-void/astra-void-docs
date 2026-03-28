@@ -1,4 +1,4 @@
----
+﻿---
 import CodeBlock from "./CodeBlock.astro";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
@@ -13,18 +13,22 @@ const { command, showPhases = false } = Astro.props;
 const commandMeta = latticeSnapshot.cli.commands[command];
 ---
 
-<div class="docs-note">
-  <p>
-    <strong>{command}</strong>: {commandMeta.description}
-  </p>
+<div class="grid gap-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
+  <div class="grid gap-2">
+    <p class="text-sm font-medium text-muted-foreground">Command</p>
+    <p class="text-base font-semibold tracking-[-0.02em] text-foreground">
+      <strong>{command}</strong>: {commandMeta.description}
+    </p>
+  </div>
+
   <CodeBlock code={`lattice ${commandMeta.signature}`} lang="bash" />
 
   {commandMeta.flags.length > 0 && (
-    <div>
-      <p>Supported flags</p>
-      <ul class="export-list">
+    <div class="grid gap-2">
+      <p class="text-sm font-medium text-foreground">Supported flags</p>
+      <ul class="flex flex-wrap gap-2">
         {commandMeta.flags.map((flag) => (
-          <li>
+          <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
             <code>{flag}</code>
           </li>
         ))}
@@ -33,11 +37,11 @@ const commandMeta = latticeSnapshot.cli.commands[command];
   )}
 
   {showPhases && commandMeta.outputPhases.length > 0 && (
-    <div>
-      <p>Observed output phases</p>
-      <ul class="export-list">
+    <div class="grid gap-2">
+      <p class="text-sm font-medium text-foreground">Observed output phases</p>
+      <ul class="flex flex-wrap gap-2">
         {commandMeta.outputPhases.map((phase) => (
-          <li>
+          <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
             <code>{phase}</code>
           </li>
         ))}

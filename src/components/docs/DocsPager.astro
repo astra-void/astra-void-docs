@@ -1,4 +1,4 @@
----
+﻿---
 import type { DocPage } from "../../lib/docs";
 
 type Props = {
@@ -11,20 +11,30 @@ const { previousPage, nextPage } = Astro.props;
 
 {
   (previousPage || nextPage) && (
-    <nav class="mt-10 grid gap-3 border-t border-border/70 pt-6 sm:grid-cols-2">
+    <nav class="mt-10 grid gap-3 border-t pt-6 sm:grid-cols-2">
       {previousPage ? (
-        <a href={previousPage.url} class="docs-pager-card">
-          <span class="docs-pager-label">Previous</span>
-          <span class="docs-pager-title">{previousPage.title}</span>
+        <a
+          href={previousPage.url}
+          class="group rounded-xl border bg-card p-4 text-card-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground group-hover:text-accent-foreground/80">
+            Previous
+          </span>
+          <span class="mt-2 block text-base font-semibold tracking-[-0.02em]">{previousPage.title}</span>
         </a>
       ) : (
         <div class="hidden sm:block" />
       )}
 
       {nextPage && (
-        <a href={nextPage.url} class="docs-pager-card text-left sm:text-right">
-          <span class="docs-pager-label">Next</span>
-          <span class="docs-pager-title">{nextPage.title}</span>
+        <a
+          href={nextPage.url}
+          class="group rounded-xl border bg-card p-4 text-left text-card-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground sm:text-right"
+        >
+          <span class="block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground group-hover:text-accent-foreground/80">
+            Next
+          </span>
+          <span class="mt-2 block text-base font-semibold tracking-[-0.02em]">{nextPage.title}</span>
         </a>
       )}
     </nav>

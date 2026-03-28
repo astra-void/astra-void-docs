@@ -1,4 +1,7 @@
----
+﻿---
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Table, TableBody, TableHeader, TableRow } from "../ui/table";
+
 type Props = {
   title?: string;
   columns: string[];
@@ -23,24 +26,32 @@ function formatInline(value: string) {
 }
 ---
 
-<div class="decision-table-wrap">
-  {title && <h2>{title}</h2>}
-  <div class="decision-table-scroll">
-    <table class="decision-table">
-      <thead>
-        <tr>
-          {columns.map((column) => <th set:html={formatInline(column)} />)}
-        </tr>
-      </thead>
-      <tbody>
+<Card className="my-8">
+  {title && (
+    <CardHeader className="pb-3">
+      <CardTitle className="text-lg tracking-[-0.02em]">{title}</CardTitle>
+    </CardHeader>
+  )}
+  <CardContent className="pb-6">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map((column) => (
+            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground" set:html={formatInline(column)} />
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {
           rows.map((row) => (
-            <tr>
-              {row.map((cell) => <td set:html={formatInline(cell)} />)}
-            </tr>
+            <TableRow>
+              {row.map((cell) => (
+                <td class="p-4 align-middle" set:html={formatInline(cell)} />
+              ))}
+            </TableRow>
           ))
         }
-      </tbody>
-    </table>
-  </div>
-</div>
+      </TableBody>
+    </Table>
+  </CardContent>
+</Card>

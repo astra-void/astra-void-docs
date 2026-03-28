@@ -1,12 +1,14 @@
-@import "tailwindcss";
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/600.css";
+﻿@import "tailwindcss";
+@import "@fontsource-variable/geist";
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Space Grotesk", sans-serif;
+  --font-sans: 'Geist Variable', sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -21,29 +23,40 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
   --radius-sm: calc(var(--radius) - 0.35rem);
   --radius-md: calc(var(--radius) - 0.2rem);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 0.35rem);
+  --font-heading: var(--font-sans);
+  --color-input: var(--input);
 }
 
 :root {
-  --background: hsl(210 20% 99%);
-  --foreground: hsl(222 47% 11%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222 47% 11%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(222 47% 11%);
-  --sidebar: hsl(210 20% 99%);
-  --muted: hsl(214 26% 96%);
-  --muted-foreground: hsl(215 16% 40%);
-  --border: hsl(214 22% 88%);
-  --accent: hsl(221 83% 53%);
-  --accent-foreground: hsl(210 40% 98%);
-  --ring: hsl(221 83% 53% / 0.34);
-  --code-bg: hsl(216 22% 96%);
-  --code-border: hsl(214 22% 86%);
-  --radius: 0.5rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --sidebar: oklch(0.985 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --border: oklch(0.922 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --ring: oklch(0.708 0 0);
+  --radius: 0.625rem;
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --input: oklch(0.922 0 0);
 }
 
 :root[data-theme="dark"],
@@ -61,21 +74,25 @@
   --accent: hsl(214 95% 68%);
   --accent-foreground: hsl(222 47% 11%);
   --ring: hsl(214 95% 68% / 0.42);
-  --code-bg: hsl(222 24% 12%);
-  --code-border: hsl(222 18% 20%);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --input: oklch(1 0 0 / 15%);
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border outline-ring/50;
   }
 
   html {
-    @apply scroll-smooth;
+    @apply scroll-smooth font-sans;
   }
 
   body {
-    @apply min-h-screen bg-background font-sans text-foreground antialiased;
+    @apply min-h-screen bg-background text-foreground antialiased;
   }
 
   ::selection {
@@ -94,54 +111,42 @@
 }
 
 @layer components {
-  .docs-header-icon-button {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-md border border-border/60 text-muted-foreground transition hover:border-border hover:text-foreground;
+  .docs-sidebar-panel {
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
   }
 
-  .docs-nav-link {
-    @apply block border-l border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground transition;
+  [data-theme="dark"] [data-theme-icon="sun"] {
+    display: none;
   }
 
-  .docs-nav-link:hover {
-    @apply text-foreground;
+  [data-theme="light"] [data-theme-icon="moon"] {
+    display: none;
+  }
+@media (max-width: 1023px) {
+  .docs-sidebar-panel {
+    transform: translateX(-100%);
   }
 
-  .docs-nav-link-active {
-    @apply border-accent text-foreground;
+  .docs-sidebar-overlay {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
   }
 
-  .docs-link-card {
-    @apply flex items-start justify-between gap-4 border-b border-border/80 py-4 transition;
+  :root[data-nav-open="true"] .docs-sidebar-panel {
+    transform: translateX(0);
   }
 
-  .docs-link-card:hover {
-    @apply border-border text-foreground;
+  :root[data-nav-open="true"] .docs-sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
   }
-
-  .docs-link-card-icon {
-    min-width: 1.5rem;
-  }
-
-  .docs-pager-card {
-    @apply border-b border-border/80 px-0 py-4 transition;
-  }
-
-  .docs-pager-card:hover {
-    @apply border-border text-foreground;
-  }
-
-  .docs-pager-label {
-    @apply block text-xs font-semibold uppercase text-muted-foreground;
-    letter-spacing: 0.18em;
-  }
-
-  .docs-pager-title {
-    @apply mt-2 block text-base font-semibold text-foreground;
-    letter-spacing: -0.02em;
-  }
+}
 
   .docs-landing-intro {
-    @apply mb-6 space-y-4;
+    @apply mb-6 grid gap-4;
   }
 
   .docs-landing-intro p {
@@ -149,11 +154,7 @@
   }
 
   .docs-note {
-    @apply border-l border-border px-4 py-1;
-  }
-
-  .docs-note p {
-    @apply m-0;
+    @apply rounded-xl border bg-card p-4 text-card-foreground shadow-sm;
   }
 
   .docs-section-grid,
@@ -171,35 +172,36 @@
   .doc-section-install,
   .doc-section-cautions,
   .doc-section-related {
-    @apply border border-border/80 bg-transparent;
-    border-radius: var(--radius);
+    @apply rounded-xl border bg-card text-card-foreground shadow-sm;
   }
 
   .docs-section-card,
   .doc-section-install,
   .doc-section-cautions,
   .doc-section-related {
-    @apply px-5 py-4;
+    @apply p-5;
   }
 
   .install-card,
   .api-card,
   .pattern-card {
-    @apply px-4 py-4;
+    @apply p-4;
   }
 
   .docs-section-card h3,
   .install-card h3,
   .api-card h3,
-  .pattern-card h3 {
-    @apply m-0 text-base font-semibold text-card-foreground;
-    letter-spacing: -0.02em;
+  .pattern-card h3,
+  .doc-section-install h3,
+  .doc-section-cautions h3,
+  .doc-section-related h3 {
+    @apply m-0 text-base font-semibold tracking-[-0.02em] text-card-foreground;
   }
 
   .docs-section-card > p,
-  .install-card p,
-  .api-card p,
-  .pattern-card p {
+  .install-card > p,
+  .api-card > p,
+  .pattern-card > p {
     @apply mt-2 text-sm leading-6 text-muted-foreground;
   }
 
@@ -212,11 +214,7 @@
   }
 
   .docs-link-list a {
-    @apply text-sm font-semibold text-card-foreground no-underline;
-  }
-
-  .docs-link-list a:hover {
-    @apply text-accent;
+    @apply text-sm font-semibold text-card-foreground no-underline transition-colors hover:text-accent-foreground;
   }
 
   .docs-link-list p {
@@ -235,30 +233,47 @@
     max-width: 64ch;
   }
 
-  .package-meta,
+  .package-status-row {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .package-status-badge {
+    @apply inline-flex min-h-8 items-center rounded-md border border-border bg-muted px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-foreground;
+  }
+
+  .package-status-badge.is-experimental {
+    @apply border-amber-500/40 bg-amber-500/10 text-amber-400;
+  }
+
+  .package-install-name {
+    @apply inline-flex min-h-8 items-center rounded-md border border-border bg-muted px-2.5 py-1 text-sm text-foreground;
+  }
+
+  .package-status-note {
+    @apply m-0 max-w-2xl text-sm leading-6 text-muted-foreground;
+  }
+
+  .package-meta-stack {
+    @apply mt-4 grid gap-4 text-sm text-muted-foreground;
+  }
+
+  .package-meta-stack p {
+    @apply m-0 text-sm text-foreground;
+  }
+
   .export-list,
   .state-list,
   .caution-list,
   .related-list {
-    @apply m-0;
-  }
-
-  .package-meta {
-    @apply mt-4 grid gap-2 pl-5 text-sm text-muted-foreground;
+    @apply m-0 grid list-none gap-3 p-0;
   }
 
   .export-list {
-    @apply flex list-none flex-wrap gap-2 p-0;
+    @apply flex flex-wrap gap-2;
   }
 
   .export-list code {
-    @apply inline-flex min-h-8 items-center rounded-md border border-border/80 px-3 py-1 text-sm text-card-foreground;
-  }
-
-  .state-list,
-  .caution-list,
-  .related-list {
-    @apply grid list-none gap-3 p-0;
+    @apply inline-flex min-h-8 items-center rounded-md border bg-muted px-3 py-1 text-sm text-foreground;
   }
 
   .state-list li,
@@ -272,11 +287,7 @@
   }
 
   .related-list a {
-    @apply font-medium text-card-foreground no-underline;
-  }
-
-  .related-list a:hover {
-    @apply text-accent underline underline-offset-4;
+    @apply font-medium text-card-foreground no-underline transition-colors hover:text-accent-foreground hover:underline hover:underline-offset-4;
   }
 
   .docs-prose {
@@ -290,8 +301,7 @@
   .docs-prose h2,
   .docs-prose h3,
   .docs-prose h4 {
-    @apply scroll-mt-24 font-semibold text-foreground;
-    letter-spacing: -0.04em;
+    @apply scroll-mt-24 font-semibold tracking-[-0.04em] text-foreground;
   }
 
   .docs-prose h2 {
@@ -325,7 +335,7 @@
   }
 
   .docs-prose a {
-    @apply font-medium text-accent underline decoration-accent/30 underline-offset-4 transition;
+    @apply font-medium text-accent-foreground underline decoration-accent/30 underline-offset-4 transition-colors;
   }
 
   .docs-prose a:hover {
@@ -333,25 +343,16 @@
   }
 
   .docs-prose :not(pre) > code {
-    @apply rounded-md border px-1.5 py-0.5 font-mono;
-    background: var(--code-bg);
-    border-color: var(--code-border);
-    color: var(--card-foreground);
-    font-size: 0.9em;
+    @apply rounded-md border bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground;
   }
 
   .docs-prose pre {
-    @apply overflow-x-auto border p-4 pt-12 text-sm;
-    background: var(--code-bg);
-    border-color: var(--code-border);
-    border-radius: var(--radius);
-    position: relative;
+    @apply relative overflow-x-auto rounded-xl border bg-card p-4 pt-12 text-sm shadow-sm;
   }
 
   .docs-prose pre[data-language]::before {
     content: attr(data-language);
-    @apply absolute left-4 top-3 text-[0.7rem] font-semibold uppercase text-muted-foreground;
-    letter-spacing: 0.16em;
+    @apply absolute left-4 top-3 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
   }
 
   .docs-prose pre code {
@@ -360,8 +361,7 @@
   }
 
   .docs-code-copy-button {
-    @apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border border-border/80 text-xs font-medium text-muted-foreground transition hover:text-foreground;
-    background: color-mix(in srgb, var(--background) 88%, transparent);
+    @apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
   }
 
   .docs-code-copy-icon {
@@ -405,7 +405,7 @@
   }
 
   .docs-prose table {
-    @apply w-full border-collapse overflow-hidden rounded-md border border-border text-left text-sm;
+    @apply w-full border-collapse overflow-hidden rounded-xl border border-border text-left text-sm shadow-sm;
   }
 
   .docs-prose thead {
@@ -420,79 +420,13 @@
   .docs-prose tbody tr:last-child td {
     @apply border-b-0;
   }
-}
-
-@media (max-width: 1023px) {
-  .docs-sidebar-panel {
-    transform: translateX(-100%);
-    transition:
-      transform 180ms ease,
-      box-shadow 180ms ease;
-  }
-
-  .docs-sidebar-overlay {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 180ms ease;
-  }
-
-  :root[data-nav-open="true"] .docs-sidebar-panel {
-    transform: translateX(0);
-  }
-
-  :root[data-nav-open="true"] .docs-sidebar-overlay {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-[data-theme="dark"] [data-theme-icon="sun"] {
-  display: none;
-}
-
-[data-theme="light"] [data-theme-icon="moon"] {
-  display: none;
-}
-
-@layer components {
-  .docs-version-banner {
-    @apply grid gap-4 border border-border/80 bg-muted/40 px-4 py-4;
-    border-radius: var(--radius);
-  }
-
-  .docs-version-banner-badges {
-    @apply flex flex-wrap gap-2;
-  }
-
-  .docs-version-badge {
-    @apply inline-flex min-h-8 items-center rounded-md border border-border/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-card-foreground;
-  }
-
-  .docs-version-badge.is-main {
-    border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-  }
-
-  .docs-version-badge.is-experimental {
-    border-color: color-mix(in srgb, hsl(32 88% 52%) 36%, var(--border));
-    background: color-mix(in srgb, hsl(32 88% 52%) 10%, transparent);
-  }
-
-  .docs-version-banner-copy {
-    @apply grid gap-2 text-sm leading-6 text-muted-foreground;
-  }
-
-  .docs-version-banner-copy p {
-    @apply m-0;
-  }
 
   .docs-example-card {
-    @apply border border-border/80 bg-muted/30;
-    border-radius: var(--radius);
+    @apply overflow-hidden rounded-xl border bg-card shadow-sm;
   }
 
   .docs-example-header {
-    @apply flex flex-col gap-4 px-4 py-4 md:flex-row md:items-start md:justify-between;
+    @apply flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:justify-between;
   }
 
   .docs-example-summary-copy {
@@ -504,12 +438,11 @@
   }
 
   .docs-example-file {
-    @apply inline-flex min-h-8 items-center rounded-md border border-border/80 px-3 py-1 text-sm text-card-foreground;
-    width: fit-content;
+    @apply inline-flex min-h-8 items-center rounded-md border bg-background px-3 py-1 text-sm text-foreground;
   }
 
   .docs-example-toggle {
-    @apply inline-flex min-h-8 items-center gap-2 rounded-md border border-border/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition hover:text-foreground;
+    @apply inline-flex min-h-8 items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
   }
 
   .docs-example-toggle-copy-open {
@@ -517,7 +450,6 @@
   }
 
   .docs-example-toggle-icon {
-    @apply h-4 w-4;
     transition: transform 180ms ease;
   }
 
@@ -527,8 +459,7 @@
   }
 
   .docs-example-preview {
-    @apply border-t border-border/70;
-    position: relative;
+    @apply relative border-t;
   }
 
   .docs-example-preview::after {
@@ -538,7 +469,7 @@
     bottom: 1rem;
     height: 4rem;
     pointer-events: none;
-    background: linear-gradient(to bottom, transparent, var(--code-bg));
+    background: linear-gradient(to bottom, transparent, var(--card));
     border-bottom-left-radius: var(--radius);
     border-bottom-right-radius: var(--radius);
   }
@@ -548,7 +479,7 @@
   }
 
   .docs-example-panel {
-    @apply border-t border-border/70;
+    @apply border-t;
   }
 
   .docs-example[data-open="true"] .docs-example-preview {
@@ -566,16 +497,5 @@
   .docs-example[data-open="true"] .docs-example-toggle-icon {
     transform: rotate(180deg);
   }
-
-  .decision-table-wrap {
-    @apply my-8 grid gap-4;
-  }
-
-  .decision-table-scroll {
-    overflow-x: auto;
-  }
-
-  .decision-table {
-    min-width: 42rem;
-  }
 }
+

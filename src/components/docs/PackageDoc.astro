@@ -1,4 +1,7 @@
----
+﻿---
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import CodeBlock from "./CodeBlock.astro";
 import SourceExample from "./SourceExample.astro";
 import { componentGuideLinks } from "../../data/component-guides";
@@ -10,17 +13,10 @@ type Props = {
 
 const { doc } = Astro.props;
 const guideLinks = componentGuideLinks[doc.slug] ?? [];
-const exampleModules = import.meta.glob("../../examples/components/*.tsx", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-const examplePath = `../../examples/components/${doc.slug}.tsx`;
-const exampleSource = exampleModules[examplePath];
-
-if (!exampleSource) {
-  throw new Error(`Missing component example source for ${doc.slug}`);
-}
+const exampleSource = await readFile(
+  join(process.cwd(), "src/examples/components", `${doc.slug}.tsx`),
+  "utf8",
+);
 
 function escapeHtml(value: string) {
   return value

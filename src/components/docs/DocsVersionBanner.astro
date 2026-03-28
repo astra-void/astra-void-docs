@@ -1,4 +1,6 @@
----
+﻿---
+import { Badge } from "../ui/badge";
+import { Card, CardContent } from "../ui/card";
 import { packageDocs } from "../../data/package-docs";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
@@ -33,22 +35,24 @@ const sourceMessage =
     : "This page is written against the checked-in snapshot of lattice-ui/main. Tagged releases can lag behind these docs.";
 ---
 
-<div class="docs-version-banner">
-  <div class="docs-version-banner-badges">
-    <span class:list={["docs-version-badge", versionBasis === "main" && "is-main"]}>{sourceBadge}</span>
-    <span class="docs-version-badge">Latest tagged release: v{release?.version ?? "n/a"}</span>
-    <span class="docs-version-badge">Snapshot date: {release?.date ?? "n/a"}</span>
-    {
-      packageDoc && (
-        <span class:list={["docs-version-badge", packageDoc.maturity === "experimental" && "is-experimental"]}>
-          Package status: {packageDoc.maturityLabel}
-        </span>
-      )
-    }
-  </div>
+<Card className="border-muted/60 bg-card/80 shadow-sm backdrop-blur">
+  <CardContent className="grid gap-4 p-4">
+    <div class="flex flex-wrap gap-2">
+      <Badge variant={versionBasis === "main" ? "default" : "secondary"}>{sourceBadge}</Badge>
+      <Badge variant="outline">Latest tagged release: v{release?.version ?? "n/a"}</Badge>
+      <Badge variant="outline">Snapshot date: {release?.date ?? "n/a"}</Badge>
+      {
+        packageDoc && (
+          <Badge variant={packageDoc.maturity === "experimental" ? "secondary" : "outline"}>
+            Package status: {packageDoc.maturityLabel}
+          </Badge>
+        )
+      }
+    </div>
 
-  <div class="docs-version-banner-copy">
-    <p>{sourceMessage}</p>
-    {packageDoc && <p set:html={`Current package note: ${formatInline(packageDoc.maturityNote)}`} />}
-  </div>
-</div>
+    <div class="grid gap-2 text-sm leading-6 text-muted-foreground">
+      <p>{sourceMessage}</p>
+      {packageDoc && <p set:html={`Current package note: ${formatInline(packageDoc.maturityNote)}`} />}
+    </div>
+  </CardContent>
+</Card>
