@@ -1,23 +1,43 @@
 import { Accordion } from "@lattice-ui/accordion";
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 
 export function AccordionExample() {
   const [value, setValue] = React.useState<string | string[]>("general");
 
   return (
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(720, 260)}>
-      <Accordion.Root collapsible onValueChange={setValue} type="single" value={value}>
+      <Accordion.Root
+        collapsible
+        onValueChange={setValue}
+        type="single"
+        value={value}
+      >
         <frame BackgroundTransparency={1} Size={UDim2.fromOffset(720, 220)}>
-          <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 10)} />
+          <uilistlayout
+            FillDirection={Enum.FillDirection.Vertical}
+            Padding={new UDim(0, 10)}
+          />
 
           {[
-            ["general", "General settings stay visible inside the current layout."],
-            ["privacy", "Privacy controls can expand without opening a separate screen."],
+            [
+              "general",
+              "General settings stay visible inside the current layout.",
+            ],
+            [
+              "privacy",
+              "Privacy controls can expand without opening a separate screen.",
+            ],
           ].map(([itemValue, description]) => (
             <Accordion.Item asChild key={itemValue} value={itemValue}>
-              <frame BackgroundTransparency={1} Size={UDim2.fromOffset(720, 92)}>
+              <frame
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(720, 92)}
+              >
                 <Accordion.Header asChild>
-                  <frame BackgroundTransparency={1} Size={UDim2.fromOffset(720, 36)}>
+                  <frame
+                    BackgroundTransparency={1}
+                    Size={UDim2.fromOffset(720, 36)}
+                  >
                     <Accordion.Trigger asChild>
                       <textbutton
                         AutoButtonColor={false}

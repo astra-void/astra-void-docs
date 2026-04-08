@@ -4,9 +4,35 @@ description: "Headless accordion primitives for Roblox UI with single and multip
 draft: false
 sidebar:
   order: 1
+packageDoc:
+  whatItIsFor:
+    - "Use `Accordion` when the screen needs progressive disclosure without leaving the current layout."
+    - "It is a headless compound component, so you own the trigger visuals, spacing, and motion while the package owns open-state coordination."
+  stateModel:
+    - "`Accordion.Root` can be controlled with `value` or uncontrolled with `defaultValue`."
+    - "`type` switches the value shape between a single string and an array of strings."
+    - "Each item tracks `open` and `disabled` state through context, and `Accordion.Content` can stay mounted with `forceMount`."
+  keyApi:
+    - name: "Accordion.Root"
+      description: "Use `type`, `value`, `defaultValue`, `onValueChange`, and `collapsible` to define the disclosure model for the entire group."
+    - name: "Accordion.Item"
+      description: "Each item needs a stable `value`; `disabled` removes that item from interaction without changing the rest of the group."
+    - name: "Accordion.Content"
+      description: "Use `forceMount` when you need persistent layout measurement or your own enter/exit animation handling."
+  compositionPatterns:
+    - title: "FAQ or help content"
+      description: "Model each answer as an `Accordion.Item` so the surrounding layout stays simple and only the disclosure behavior is shared."
+    - title: "Settings sections"
+      description: 'Use `type="single"` when the UI should encourage one open section at a time, and `type="multiple"` for checklist-style review flows.'
+  cautions:
+    - "Match the controlled `value` shape to `type`: a single string for `single`, an array for `multiple`."
+    - "The package does not style or animate panels for you; provide your own trigger affordance and content transition treatment."
+  related:
+    - label: "Tabs"
+      href: "/components/tabs/"
+    - label: "Dialog"
+      href: "/components/dialog/"
+    - label: "Build a Settings Dialog"
+      href: "/getting-started/build-a-settings-dialog/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["accordion"]} />

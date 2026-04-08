@@ -6,10 +6,23 @@ import ts from "typescript";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCS_ROOT = path.resolve(__dirname, "..");
-const DEFAULT_LATTICE_REPO = path.resolve(DOCS_ROOT, "..", "..", "rojo", "lattice-ui");
-const OUTPUT_PATH = path.join(DOCS_ROOT, "src", "data", "lattice-snapshot.generated.ts");
+const DEFAULT_LATTICE_REPO = path.resolve(
+  DOCS_ROOT,
+  "..",
+  "..",
+  "rojo",
+  "lattice-ui",
+);
+const OUTPUT_PATH = path.join(
+  DOCS_ROOT,
+  "src",
+  "data",
+  "lattice-snapshot.generated.ts",
+);
 const CHECK_MODE = process.argv.includes("--check");
-const SOURCE_REPO = path.resolve(process.env.LATTICE_UI_REPO ?? DEFAULT_LATTICE_REPO);
+const SOURCE_REPO = path.resolve(
+  process.env.LATTICE_UI_REPO ?? DEFAULT_LATTICE_REPO,
+);
 
 async function main() {
   await ensureReadableDirectory(SOURCE_REPO);
@@ -65,7 +78,12 @@ async function readIfExists(filePath) {
   try {
     return await fs.readFile(filePath, "utf8");
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
       return null;
     }
 
@@ -83,16 +101,23 @@ async function readJson(repoRoot, relativePath) {
 }
 
 async function buildSnapshot(repoRoot) {
-  const [cliPackageJson, cliSource, componentsRegistry, presetsRegistry, readme, changelog, packageDirs] =
-    await Promise.all([
-      readJson(repoRoot, "packages/cli/package.json"),
-      readText(repoRoot, "packages/cli/src/cli.ts"),
-      readJson(repoRoot, "packages/cli/registry/components.json"),
-      readJson(repoRoot, "packages/cli/registry/presets.json"),
-      readText(repoRoot, "README.md"),
-      readText(repoRoot, "CHANGELOG.md"),
-      listPackageDirs(path.join(repoRoot, "packages")),
-    ]);
+  const [
+    cliPackageJson,
+    cliSource,
+    componentsRegistry,
+    presetsRegistry,
+    readme,
+    changelog,
+    packageDirs,
+  ] = await Promise.all([
+    readJson(repoRoot, "packages/cli/package.json"),
+    readText(repoRoot, "packages/cli/src/cli.ts"),
+    readJson(repoRoot, "packages/cli/registry/components.json"),
+    readJson(repoRoot, "packages/cli/registry/presets.json"),
+    readText(repoRoot, "README.md"),
+    readText(repoRoot, "CHANGELOG.md"),
+    listPackageDirs(path.join(repoRoot, "packages")),
+  ]);
 
   const cli = buildCliSnapshot(cliPackageJson, cliSource, repoRoot);
   const workspace = buildWorkspaceSnapshot(readme, changelog);
@@ -104,7 +129,9 @@ async function buildSnapshot(repoRoot) {
       continue;
     }
 
-    const experimentalEntry = workspace.stability.experimental.find((entry) => entry.slug === slug);
+    const experimentalEntry = workspace.stability.experimental.find(
+      (entry) => entry.slug === slug,
+    );
     const indexPath = path.join(repoRoot, "packages", slug, "src", "index.ts");
     packages[slug] = {
       slug,
@@ -114,7 +141,8 @@ async function buildSnapshot(repoRoot) {
       notes: registryEntry.notes ?? [],
       exports: collectRuntimeExports(indexPath),
       maturity: experimentalEntry ? "experimental" : "stable",
-      maturityNote: experimentalEntry?.note ?? "Part of the stable direction toward v1.0.",
+      maturityNote:
+        experimentalEntry?.note ?? "Part of the stable direction toward v1.0.",
     };
   }
 
@@ -166,7 +194,9 @@ function buildCliSnapshot(cliPackageJson, cliSource, repoRoot) {
   return {
     packageName: cliPackageJson.name,
     version: cliPackageJson.version,
-    binaries: Object.keys(cliPackageJson.bin ?? {}).sort((left, right) => left.localeCompare(right)),
+    binaries: Object.keys(cliPackageJson.bin ?? {}).sort((left, right) =>
+      left.localeCompare(right),
+    ),
     globalOptions: parseHelpList(helpText, "Global options:"),
     commands,
     examples: parseHelpList(helpText, "Examples:"),
@@ -183,7 +213,11 @@ function extractHelpText(source) {
 }
 
 function parseHelpCommands(helpText) {
-  const commandsBlock = sliceBetween(helpText, "Commands:\n", "\nGlobal options:");
+  const commandsBlock = sliceBetween(
+    helpText,
+    "Commands:\n",
+    "\nGlobal options:",
+  );
   const entries = [...commandsBlock.matchAll(/^  ([^\n]+)\n    ([^\n]+)$/gmu)];
   const commands = {};
 
@@ -214,11 +248,22 @@ function parseHelpList(helpText, heading) {
   return block
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.startsWith("-") || line.startsWith("npx ") || line.startsWith("lattice "));
+    .filter(
+      (line) =>
+        line.startsWith("-") ||
+        line.startsWith("npx ") ||
+        line.startsWith("lattice "),
+    );
 }
 
 function parseCommandPhases(repoRoot) {
-  const commandsRoot = path.join(repoRoot, "packages", "cli", "src", "commands");
+  const commandsRoot = path.join(
+    repoRoot,
+    "packages",
+    "cli",
+    "src",
+    "commands",
+  );
   const commandFiles = [
     ["create", "create.ts"],
     ["init", "init.ts"],
@@ -230,18 +275,31 @@ function parseCommandPhases(repoRoot) {
 
   return Object.fromEntries(
     commandFiles.map(([commandName, fileName]) => {
-      const source = ts.sys.readFile(path.join(commandsRoot, fileName), "utf8") ?? "";
-      const phases = [...source.matchAll(/logger\.section\("([^"]+)"\)/gmu)].map((match) => match[1]);
+      const source =
+        ts.sys.readFile(path.join(commandsRoot, fileName), "utf8") ?? "";
+      const phases = [
+        ...source.matchAll(/logger\.section\("([^"]+)"\)/gmu),
+      ].map((match) => match[1]);
       return [commandName, [...new Set(phases)]];
     }),
   );
 }
 
 function buildWorkspaceSnapshot(readme, changelog) {
-  const stabilitySection = sliceBetween(readme, "## Stability and Versioning\n", "\n## Roadmap");
+  const stabilitySection = sliceBetween(
+    readme,
+    "## Stability and Versioning\n",
+    "\n## Roadmap",
+  );
   const roadmapSection = sliceBetween(readme, "## Roadmap\n", "");
-  const unreleasedSection = sliceBetween(changelog, "## [Unreleased]\n", "\n## [");
-  const latestReleaseMatch = changelog.match(/^## \[(?<version>[^\]]+)\] - (?<date>[^\n]+)\n(?<body>[\s\S]*?)(?=^## \[|$)/mu);
+  const unreleasedSection = sliceBetween(
+    changelog,
+    "## [Unreleased]\n",
+    "\n## [",
+  );
+  const latestReleaseMatch = changelog.match(
+    /^## \[(?<version>[^\]]+)\] - (?<date>[^\n]+)\n(?<body>[\s\S]*?)(?=^## \[|$)/mu,
+  );
 
   return {
     stability: {
@@ -265,18 +323,28 @@ function buildWorkspaceSnapshot(readme, changelog) {
 }
 
 function parseStableDirection(markdown) {
-  const stableSection = sliceBetween(markdown, "### Stable direction\n\n", "\n### Experimental or feature-limited");
+  const stableSection = sliceBetween(
+    markdown,
+    "### Stable direction\n\n",
+    "\n### Experimental or feature-limited",
+  );
   const packages = [];
 
   for (const line of stableSection.split("\n")) {
-    packages.push(...[...line.matchAll(/`([^`]+)`/gmu)].map((match) => match[1]));
+    packages.push(
+      ...[...line.matchAll(/`([^`]+)`/gmu)].map((match) => match[1]),
+    );
   }
 
   return sortStrings(packages);
 }
 
 function parseExperimentalPackages(markdown) {
-  const section = sliceBetween(markdown, "### Experimental or feature-limited\n\n", "");
+  const section = sliceBetween(
+    markdown,
+    "### Experimental or feature-limited\n\n",
+    "",
+  );
 
   return section
     .split("\n")
@@ -311,7 +379,12 @@ function parseLeadParagraphs(markdown) {
   return markdown
     .split("\n\n")
     .map((block) => block.trim())
-    .filter((block) => block.length > 0 && !block.startsWith("Migration notes:") && !block.startsWith("### "))
+    .filter(
+      (block) =>
+        block.length > 0 &&
+        !block.startsWith("Migration notes:") &&
+        !block.startsWith("### "),
+    )
     .slice(0, 1);
 }
 
@@ -382,7 +455,13 @@ function collectRuntimeExports(entryPath) {
       throw new Error(`Unable to read source file: ${normalizedPath}`);
     }
 
-    const sourceFile = ts.createSourceFile(normalizedPath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const sourceFile = ts.createSourceFile(
+      normalizedPath,
+      sourceText,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TS,
+    );
     sourceFileCache.set(normalizedPath, sourceFile);
     return sourceFile;
   }
@@ -417,7 +496,10 @@ function collectRuntimeExports(entryPath) {
           continue;
         }
 
-        if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+        if (
+          statement.exportClause &&
+          ts.isNamedExports(statement.exportClause)
+        ) {
           for (const element of statement.exportClause.elements) {
             if (!element.isTypeOnly) {
               add(element.name.text);
@@ -426,9 +508,19 @@ function collectRuntimeExports(entryPath) {
           continue;
         }
 
-        if (!statement.exportClause && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)) {
-          const targetPath = resolveImportPath(normalizedPath, statement.moduleSpecifier.text);
-          for (const name of collectModuleNamedExports(targetPath, new Set(trail))) {
+        if (
+          !statement.exportClause &&
+          statement.moduleSpecifier &&
+          ts.isStringLiteral(statement.moduleSpecifier)
+        ) {
+          const targetPath = resolveImportPath(
+            normalizedPath,
+            statement.moduleSpecifier.text,
+          );
+          for (const name of collectModuleNamedExports(
+            targetPath,
+            new Set(trail),
+          )) {
             add(name);
           }
         }
@@ -445,7 +537,12 @@ function collectRuntimeExports(entryPath) {
           continue;
         }
 
-        if ((ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement) || ts.isEnumDeclaration(statement)) && statement.name) {
+        if (
+          (ts.isFunctionDeclaration(statement) ||
+            ts.isClassDeclaration(statement) ||
+            ts.isEnumDeclaration(statement)) &&
+          statement.name
+        ) {
           add(statement.name.text);
         }
       }
@@ -467,7 +564,9 @@ function collectRuntimeExports(entryPath) {
         const exportName = declaration.name.text;
         pushExport(exportName);
 
-        const initializer = declaration.initializer ? unwrapExpression(declaration.initializer) : null;
+        const initializer = declaration.initializer
+          ? unwrapExpression(declaration.initializer)
+          : null;
         if (initializer && ts.isObjectLiteralExpression(initializer)) {
           for (const property of initializer.properties) {
             const memberName = getObjectMemberName(property);
@@ -494,8 +593,15 @@ function collectRuntimeExports(entryPath) {
         continue;
       }
 
-      if (!statement.exportClause && statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)) {
-        const targetPath = resolveImportPath(entryPath, statement.moduleSpecifier.text);
+      if (
+        !statement.exportClause &&
+        statement.moduleSpecifier &&
+        ts.isStringLiteral(statement.moduleSpecifier)
+      ) {
+        const targetPath = resolveImportPath(
+          entryPath,
+          statement.moduleSpecifier.text,
+        );
         for (const name of collectModuleNamedExports(targetPath)) {
           pushExport(name);
         }
@@ -504,7 +610,12 @@ function collectRuntimeExports(entryPath) {
     }
 
     if (hasExportModifier(statement)) {
-      if ((ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement) || ts.isEnumDeclaration(statement)) && statement.name) {
+      if (
+        (ts.isFunctionDeclaration(statement) ||
+          ts.isClassDeclaration(statement) ||
+          ts.isEnumDeclaration(statement)) &&
+        statement.name
+      ) {
         pushExport(statement.name.text);
       }
     }
@@ -518,8 +629,13 @@ function hasExportModifier(node) {
 }
 
 function getObjectMemberName(property) {
-  if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) {
-    return property.name && ts.isIdentifier(property.name) ? property.name.text : null;
+  if (
+    ts.isPropertyAssignment(property) ||
+    ts.isShorthandPropertyAssignment(property)
+  ) {
+    return property.name && ts.isIdentifier(property.name)
+      ? property.name.text
+      : null;
   }
 
   return null;
@@ -541,7 +657,12 @@ function unwrapExpression(expression) {
 
 function normalizeModulePath(filePath) {
   const normalizedPath = path.normalize(filePath);
-  const candidates = [normalizedPath, `${normalizedPath}.ts`, `${normalizedPath}.tsx`, path.join(normalizedPath, "index.ts")];
+  const candidates = [
+    normalizedPath,
+    `${normalizedPath}.ts`,
+    `${normalizedPath}.tsx`,
+    path.join(normalizedPath, "index.ts"),
+  ];
 
   for (const candidate of candidates) {
     if (ts.sys.fileExists(candidate)) {
@@ -554,10 +675,14 @@ function normalizeModulePath(filePath) {
 
 function resolveImportPath(fromFilePath, specifier) {
   if (!specifier.startsWith(".")) {
-    throw new Error(`Only relative re-exports are supported in snapshot generation: ${specifier}`);
+    throw new Error(
+      `Only relative re-exports are supported in snapshot generation: ${specifier}`,
+    );
   }
 
-  return normalizeModulePath(path.resolve(path.dirname(fromFilePath), specifier));
+  return normalizeModulePath(
+    path.resolve(path.dirname(fromFilePath), specifier),
+  );
 }
 
 function sliceBetween(value, startMarker, endMarker) {
@@ -626,8 +751,13 @@ function serialize(value, indentLevel = 0) {
   }
 
   return `\{\n${entries
-    .map(([key, entryValue]) => `${nextIndent}${isIdentifier(key) ? key : JSON.stringify(key)}: ${serialize(entryValue, indentLevel + 1)}`)
-    .join(",\n")}\n${indent}\}`.replace(/\\\{/g, "{").replace(/\\\}/g, "}");
+    .map(
+      ([key, entryValue]) =>
+        `${nextIndent}${isIdentifier(key) ? key : JSON.stringify(key)}: ${serialize(entryValue, indentLevel + 1)}`,
+    )
+    .join(",\n")}\n${indent}\}`
+    .replace(/\\\{/g, "{")
+    .replace(/\\\}/g, "}");
 }
 
 function isIdentifier(value) {
@@ -635,7 +765,8 @@ function isIdentifier(value) {
 }
 
 main().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.stderr.write(
+    `${error instanceof Error ? error.message : String(error)}\n`,
+  );
   process.exitCode = 1;
 });
-

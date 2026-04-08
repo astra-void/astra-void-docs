@@ -69,67 +69,85 @@ const hasToc = headings.some((heading) => heading.depth > 1);
       class="docs-sidebar-overlay fixed inset-0 z-30 bg-background/60 lg:hidden"
       data-nav-close
       aria-hidden="true"
-    />
+    >
+    </div>
 
-    <div class="mx-auto flex max-w-[96rem] gap-8 px-4 pb-16 pt-8 sm:px-6 lg:px-8 xl:gap-12">
+    <div
+      class="container mx-auto px-4 md:px-8 max-w-screen-2xl flex flex-1 px-4 sm:px-6 md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"
+    >
       <aside
         id="docs-sidebar"
-        class="docs-sidebar-panel fixed inset-y-0 left-0 z-40 w-72 border-r border-border/80 bg-background px-5 py-6 lg:sticky lg:top-[4.75rem] lg:block lg:h-[calc(100vh-5.75rem)] lg:w-[16rem] lg:border-r lg:border-border/70 lg:bg-transparent"
+        class="docs-sidebar-panel fixed top-14 left-0 z-30 -ml-2 hidden h-[calc(100dvh-3.5rem)] w-full shrink-0 overflow-hidden border-r border-border/40 md:sticky md:block md:w-[220px] lg:w-[240px]"
       >
-        <div class="mb-4 flex items-center justify-between gap-3 lg:hidden">
-          <span class="text-sm font-semibold tracking-[-0.02em] text-foreground">
-            Documentation
-          </span>
-          <button
-            type="button"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border/70 text-muted-foreground"
-            data-nav-close
-            aria-label="Close navigation"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-              <path d="m18 6-12 12" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
+        <div class="h-full overflow-y-auto overscroll-contain py-6 pr-6 lg:py-8">
+          <DocsSidebar
+            currentPath={currentPage.path}
+            homePage={homePage}
+            sections={sections}
+          />
         </div>
-
-        <DocsSidebar currentPath={currentPage.path} homePage={homePage} sections={sections} />
       </aside>
 
-      <main class="min-w-0 flex-1">
-        <div class="pb-10">
-          <div class="max-w-3xl border-b border-border/70 pb-8">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      <main
+        class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px] min-w-0"
+      >
+        <div class="mx-auto w-full min-w-0">
+          <div
+            class="mb-4 flex items-center space-x-1 text-sm text-muted-foreground"
+          >
+            <div class="overflow-hidden text-ellipsis whitespace-nowrap">
+              Docs
+            </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-4 w-4"><path d="m9 18 6-6-6-6"></path></svg
+            >
+            <div class="font-medium text-foreground">
               {currentPage.sectionTitle}
-            </p>
-            <h1 class="mt-4 text-balance text-4xl font-semibold tracking-[-0.05em] text-foreground sm:text-5xl">
-              {title}
-            </h1>
-            <p class="mt-4 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-              {description}
-            </p>
-            <div class="mt-6">
-              <DocsVersionBanner path={currentPage.path} versionBasis={currentPage.versionBasis} />
             </div>
           </div>
 
-          <article class="docs-prose mt-10 max-w-none">
+          <div class="space-y-2">
+            <h1 class="scroll-m-20 text-4xl font-extrabold tracking-tight">
+              {title}
+            </h1>
+            <p class="text-lg text-muted-foreground">
+              {description}
+            </p>
+          </div>
+
+          <div class="mt-4 flex items-center space-x-2 pb-8 pt-2">
+            <DocsVersionBanner
+              path={currentPage.path}
+              versionBasis={currentPage.versionBasis}
+            />
+          </div>
+
+          <article class="docs-prose max-w-none pb-12">
             <slot />
           </article>
 
           <DocsPager previousPage={previousPage} nextPage={nextPage} />
         </div>
-      </main>
 
-      {
-        hasToc && (
-          <aside class="hidden w-64 shrink-0 xl:block">
-            <div class="sticky top-[5.5rem]">
-              <DocsToc headings={headings} />
+        {
+          hasToc && (
+            <div class="hidden text-sm xl:block">
+              <div class="sticky top-16 -mt-10 pt-4">
+                <DocsToc headings={headings} />
+              </div>
             </div>
-          </aside>
-        )
-      }
+          )
+        }
+      </main>
     </div>
 
     <script is:inline>
@@ -156,15 +174,17 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         };
 
         const resetCopyButtons = () => {
-          document.querySelectorAll(codeCopyButtonSelector).forEach((button) => {
-            if (!(button instanceof HTMLButtonElement)) {
-              return;
-            }
+          document
+            .querySelectorAll(codeCopyButtonSelector)
+            .forEach((button) => {
+              if (!(button instanceof HTMLButtonElement)) {
+                return;
+              }
 
-            button.dataset.copyState = "idle";
-            button.setAttribute("aria-label", "Copy code to clipboard");
-            button.setAttribute("title", "Copy code");
-          });
+              button.dataset.copyState = "idle";
+              button.setAttribute("aria-label", "Copy code to clipboard");
+              button.setAttribute("title", "Copy code");
+            });
         };
 
         const showCopyFeedback = (button, didCopy) => {
@@ -173,7 +193,9 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           button.dataset.copyState = didCopy ? "done" : "error";
           button.setAttribute(
             "aria-label",
-            didCopy ? "Code copied to clipboard" : "Failed to copy code to clipboard",
+            didCopy
+              ? "Code copied to clipboard"
+              : "Failed to copy code to clipboard",
           );
           button.setAttribute("title", didCopy ? "Copied" : "Copy failed");
 
@@ -198,7 +220,7 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           textArea.style.opacity = "0";
           document.body.append(textArea);
           textArea.select();
-          const didCopy = document.execCommand("copy");
+          const didCopy = navigator.clipboard.writeText("copy");
           textArea.remove();
           selection?.removeAllRanges();
           return didCopy;
@@ -206,7 +228,10 @@ const hasToc = headings.some((heading) => heading.depth > 1);
 
         const enhanceCodeBlocks = () => {
           document.querySelectorAll(".docs-prose pre").forEach((pre) => {
-            if (!(pre instanceof HTMLPreElement) || pre.dataset.copyReady === "true") {
+            if (
+              !(pre instanceof HTMLPreElement) ||
+              pre.dataset.copyReady === "true"
+            ) {
               return;
             }
 
@@ -315,20 +340,27 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             const example = exampleToggle.closest("[data-example-collapsible]");
             const panel = example?.querySelector("[data-example-panel]");
 
-            if (!(example instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+            if (
+              !(example instanceof HTMLElement) ||
+              !(panel instanceof HTMLElement)
+            ) {
               return;
             }
 
             const nextOpen = example.dataset.open !== "true";
             example.dataset.open = nextOpen ? "true" : "false";
-            exampleToggle.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+            exampleToggle.setAttribute(
+              "aria-expanded",
+              nextOpen ? "true" : "false",
+            );
             panel.hidden = !nextOpen;
             return;
           }
 
           const navToggle = target.closest("[data-nav-toggle]");
           if (navToggle) {
-            root.dataset.navOpen = root.dataset.navOpen === "true" ? "false" : "true";
+            root.dataset.navOpen =
+              root.dataset.navOpen === "true" ? "false" : "true";
             navToggle.setAttribute(
               "aria-expanded",
               root.dataset.navOpen === "true" ? "true" : "false",
@@ -336,7 +368,10 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             return;
           }
 
-          if (target.closest("[data-nav-close]") || target.closest("#docs-sidebar a")) {
+          if (
+            target.closest("[data-nav-close]") ||
+            target.closest("#docs-sidebar a")
+          ) {
             closeNav();
           }
         });

@@ -1,5 +1,5 @@
 import { Combobox } from "@lattice-ui/combobox";
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { PortalProvider } from "@lattice-ui/layer";
 
 type Props = {
@@ -11,7 +11,11 @@ function ComboboxDemo() {
   const [value, setValue] = React.useState("alpha");
 
   return (
-    <Combobox.Root onOpenChange={setOpen} onValueChange={setValue} value={value}>
+    <Combobox.Root
+      onOpenChange={setOpen}
+      onValueChange={setValue}
+      value={value}
+    >
       <frame BackgroundTransparency={1} Size={UDim2.fromOffset(360, 220)}>
         <Combobox.Trigger asChild>
           <textbutton
@@ -46,23 +50,47 @@ function ComboboxDemo() {
             TextXAlignment={Enum.TextXAlignment.Left}
           >
             <uicorner CornerRadius={new UDim(0, 8)} />
-            <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+            <uipadding
+              PaddingLeft={new UDim(0, 10)}
+              PaddingRight={new UDim(0, 10)}
+            />
           </textbox>
         </Combobox.Input>
 
         <Combobox.Portal>
-          <Combobox.Content asChild offset={new Vector2(0, 8)} placement="bottom">
-            <frame BackgroundColor3={Color3.fromRGB(22, 28, 39)} BorderSizePixel={0} Size={UDim2.fromOffset(320, 118)}>
+          <Combobox.Content
+            asChild
+            offset={new Vector2(0, 8)}
+            placement="bottom"
+          >
+            <frame
+              BackgroundColor3={Color3.fromRGB(22, 28, 39)}
+              BorderSizePixel={0}
+              Size={UDim2.fromOffset(320, 118)}
+            >
               <uicorner CornerRadius={new UDim(0, 8)} />
-              <uipadding PaddingLeft={new UDim(0, 8)} PaddingRight={new UDim(0, 8)} PaddingTop={new UDim(0, 8)} PaddingBottom={new UDim(0, 8)} />
-              <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 4)} />
+              <uipadding
+                PaddingLeft={new UDim(0, 8)}
+                PaddingRight={new UDim(0, 8)}
+                PaddingTop={new UDim(0, 8)}
+                PaddingBottom={new UDim(0, 8)}
+              />
+              <uilistlayout
+                FillDirection={Enum.FillDirection.Vertical}
+                Padding={new UDim(0, 4)}
+              />
 
               {[
                 ["alpha", "Alpha"],
                 ["beta", "Beta"],
                 ["gamma", "Gamma"],
               ].map(([itemValue, label]) => (
-                <Combobox.Item asChild key={itemValue} textValue={label} value={itemValue}>
+                <Combobox.Item
+                  asChild
+                  key={itemValue}
+                  textValue={label}
+                  value={itemValue}
+                >
                   <textbutton
                     AutoButtonColor={false}
                     BackgroundColor3={Color3.fromRGB(34, 41, 54)}

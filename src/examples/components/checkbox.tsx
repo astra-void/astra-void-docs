@@ -1,5 +1,5 @@
 import { Checkbox, type CheckedState } from "@lattice-ui/checkbox";
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 
 function toIndicator(value: CheckedState) {
   if (value === "indeterminate") {
@@ -23,7 +23,12 @@ export function CheckboxExample() {
           Text=""
         >
           <uicorner CornerRadius={new UDim(0, 8)} />
-          <frame BackgroundColor3={Color3.fromRGB(22, 28, 39)} BorderSizePixel={0} Position={UDim2.fromOffset(10, 10)} Size={UDim2.fromOffset(24, 24)}>
+          <frame
+            BackgroundColor3={Color3.fromRGB(22, 28, 39)}
+            BorderSizePixel={0}
+            Position={UDim2.fromOffset(10, 10)}
+            Size={UDim2.fromOffset(24, 24)}
+          >
             <uicorner CornerRadius={new UDim(0, 6)} />
             <Checkbox.Indicator asChild forceMount>
               <textlabel

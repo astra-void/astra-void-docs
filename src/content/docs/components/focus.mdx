@@ -4,9 +4,30 @@ description: "Focus scope primitives for trapping and restoring Roblox selection
 draft: false
 sidebar:
   order: 7
+packageDoc:
+  whatItIsFor:
+    - "Use `FocusScope` when a section of the UI needs to trap `GuiService.SelectedObject` and optionally restore focus when that scope deactivates."
+    - "It is a foundation package for overlays and composite interaction regions rather than a styled control on its own."
+  stateModel:
+    - "`FocusScope` tracks whether it is `active`, whether focus should be `trapped`, and whether prior focus should be restored on teardown."
+    - "Nested trapped scopes are stack-based, so only the top-most active scope redirects outside selections."
+    - "The scope model is built around Roblox selection focus, not browser-like DOM focus graphs."
+  keyApi:
+    - name: "FocusScope"
+      description: "Use `active`, `trapped`, `restoreFocus`, and `asChild` to determine how the scope wraps and controls its descendants."
+  compositionPatterns:
+    - title: "Modal or menu internals"
+      description: "Wrap overlay content in `FocusScope` when leaving the selection region would create invalid or confusing interaction."
+    - title: "Temporary keyboard islands"
+      description: "Use an active trapped scope for short-lived panels that should return the user to the previous selection when they close."
+  cautions:
+    - "Current focus management is based on `GuiService.SelectedObject`; it does not rewrite `NextSelection*` relationships for you."
+    - "Use it for focus ownership, not as a general-purpose navigation system."
+  related:
+    - label: "Dialog"
+      href: "/components/dialog/"
+    - label: "Layer"
+      href: "/components/layer/"
+    - label: "Tabs"
+      href: "/components/tabs/"
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["focus"]} />

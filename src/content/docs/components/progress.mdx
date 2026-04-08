@@ -4,9 +4,35 @@ description: "Headless progress and spinner primitives for Roblox UI."
 draft: false
 sidebar:
   order: 12
+packageDoc:
+  whatItIsFor:
+    - "Use `Progress` and `Spinner` for task feedback when the app should communicate either measurable completion or ongoing work."
+    - "The package gives you normalized progress state and timing hooks while leaving the visuals completely up to you."
+  stateModel:
+    - "`Progress.Root` tracks `value`, `max`, a normalized `ratio`, and `indeterminate` state."
+    - "The component supports controlled and uncontrolled numeric progress values."
+    - "`Spinner` is a separate primitive that owns only whether it is spinning and how fast it rotates."
+  keyApi:
+    - name: "Progress.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, `max`, and `indeterminate` to define the semantic progress state."
+    - name: "Progress.Indicator"
+      description: "Render your own bar or fill element and read the shared ratio through the compound component wiring."
+    - name: "Progress.Spinner"
+      description: "Use `spinning` and `speedDegPerSecond` when you need an activity indicator rather than a measurable progress bar."
+  compositionPatterns:
+    - title: "Linear task feedback"
+      description: "Use `Progress.Root` plus `Progress.Indicator` for uploads, saves, and loading bars that should reflect a bounded numeric state."
+    - title: "Compact pending indicators"
+      description: "Use `Spinner` for asynchronous work that has no trustworthy completion percentage."
+  cautions:
+    - "`indeterminate` mode is a semantic state, not a built-in animation style; you still own the visuals."
+    - "Out-of-range values are normalized by the package, so do not depend on raw overflow behavior in your UI."
+  related:
+    - label: "Toast"
+      href: "/components/toast/"
+    - label: "Avatar"
+      href: "/components/avatar/"
+    - label: "Style"
+      href: "/components/style/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["progress"]} />

@@ -4,9 +4,34 @@ description: "Core React and state utilities shared by Lattice UI packages."
 draft: false
 sidebar:
   order: 5
+packageDoc:
+  whatItIsFor:
+    - "Use `@lattice-ui/core` when you are building your own headless primitives or compound components on top of the same low-level conventions used by the rest of Lattice UI."
+    - "Most app teams consume it indirectly through other packages, but it is the place to reach for controllable state, slots, ref composition, and shared React bindings."
+  stateModel:
+    - "There is no package-level runtime model; `core` provides helper primitives that let callers build their own stateful components."
+    - "`useControllableState` is the main pattern bridge between controlled and uncontrolled usage across the package ecosystem."
+    - "Slot and ref helpers preserve caller-owned tree structure while still allowing behavior injection."
+  keyApi:
+    - name: "useControllableState"
+      description: "Use this when a primitive should support both controlled props and internal fallback state."
+    - name: "Slot / Slottable"
+      description: "Use slots when your package should attach behavior to caller-owned Roblox instances instead of forcing a host element."
+    - name: "composeRefs"
+      description: "Use composed refs to merge internal wiring with a caller-provided ref without dropping either one."
+  compositionPatterns:
+    - title: "New headless primitives"
+      description: "Combine `useControllableState`, context helpers, and `Slot` when you want a package to look and behave like the rest of Lattice UI."
+    - title: "Interop with caller-owned hosts"
+      description: "Use the slot pattern when the app already has a visual button or frame and only needs interaction/state semantics applied to it."
+  cautions:
+    - "`core` is intentionally low-level; if you only need styling, layout, or a finished headless primitive, prefer `style`, `system`, or a component package."
+    - "Directly depending on `core` usually means you are authoring infrastructure, not just composing product UI."
+  related:
+    - label: "Style"
+      href: "/components/style/"
+    - label: "Layer"
+      href: "/components/layer/"
+    - label: "Focus"
+      href: "/components/focus/"
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["core"]} />

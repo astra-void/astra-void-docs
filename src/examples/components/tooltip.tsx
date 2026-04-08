@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { PortalProvider } from "@lattice-ui/layer";
 import { Tooltip } from "@lattice-ui/tooltip";
 
@@ -25,8 +25,16 @@ function TooltipDemo() {
         </Tooltip.Trigger>
 
         <Tooltip.Portal>
-          <Tooltip.Content asChild offset={new Vector2(0, 8)} placement="bottom">
-            <frame BackgroundColor3={Color3.fromRGB(22, 28, 39)} BorderSizePixel={0} Size={UDim2.fromOffset(220, 74)}>
+          <Tooltip.Content
+            asChild
+            offset={new Vector2(0, 8)}
+            placement="bottom"
+          >
+            <frame
+              BackgroundColor3={Color3.fromRGB(22, 28, 39)}
+              BorderSizePixel={0}
+              Size={UDim2.fromOffset(220, 74)}
+            >
               <uicorner CornerRadius={new UDim(0, 8)} />
               <textlabel
                 BackgroundTransparency={1}

@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { TextField } from "@lattice-ui/text-field";
 
 export function TextFieldExample() {
@@ -9,7 +9,10 @@ export function TextFieldExample() {
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(460, 220)}>
       <TextField.Root invalid={invalid} onValueChange={setValue} value={value}>
         <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 180)}>
-          <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 6)} />
+          <uilistlayout
+            FillDirection={Enum.FillDirection.Vertical}
+            Padding={new UDim(0, 6)}
+          />
 
           <TextField.Label asChild>
             <textbutton
@@ -34,7 +37,10 @@ export function TextFieldExample() {
               TextXAlignment={Enum.TextXAlignment.Left}
             >
               <uicorner CornerRadius={new UDim(0, 8)} />
-              <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+              <uipadding
+                PaddingLeft={new UDim(0, 10)}
+                PaddingRight={new UDim(0, 10)}
+              />
             </textbox>
           </TextField.Input>
 
@@ -53,8 +59,14 @@ export function TextFieldExample() {
             <textlabel
               BackgroundTransparency={1}
               Size={UDim2.fromOffset(420, 18)}
-              Text={invalid ? "Must be at least 3 characters." : "Ready to save."}
-              TextColor3={invalid ? Color3.fromRGB(210, 102, 102) : Color3.fromRGB(172, 181, 196)}
+              Text={
+                invalid ? "Must be at least 3 characters." : "Ready to save."
+              }
+              TextColor3={
+                invalid
+                  ? Color3.fromRGB(210, 102, 102)
+                  : Color3.fromRGB(172, 181, 196)
+              }
               TextSize={13}
               TextXAlignment={Enum.TextXAlignment.Left}
             />

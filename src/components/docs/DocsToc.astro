@@ -1,5 +1,4 @@
 ﻿---
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import type { MarkdownHeading } from "astro";
 
 type Props = {
@@ -12,27 +11,21 @@ const visibleHeadings = headings.filter((heading) => heading.depth > 1);
 
 {
   visibleHeadings.length > 0 && (
-    <Card className="border-muted/60 bg-card/80 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          On this page
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <nav class="grid gap-1">
-          {
-            visibleHeadings.map((heading) => (
-              <a
-                href={`#${heading.slug}`}
-                class="rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                style={`padding-left: ${Math.max(0, heading.depth - 2) * 0.85 + 0.5}rem;`}
-              >
-                {heading.text}
-              </a>
-            ))
-          }
-        </nav>
-      </CardContent>
-    </Card>
+    <div class="space-y-2">
+      <p class="font-medium">On This Page</p>
+      <ul class="m-0 list-none">
+        {visibleHeadings.map((heading) => (
+          <li class="mt-0 pt-2">
+            <a
+              href={`#${heading.slug}`}
+              class="inline-block no-underline transition-colors hover:text-foreground text-muted-foreground"
+              style={`padding-left: ${Math.max(0, heading.depth - 2) * 1}rem;`}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

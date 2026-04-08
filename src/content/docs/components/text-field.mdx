@@ -4,9 +4,35 @@ description: "Headless text input primitives for Roblox UI with controlled/uncon
 draft: false
 sidebar:
   order: 21
+packageDoc:
+  whatItIsFor:
+    - "Use `TextField` for single-line text entry with label, description, validation message, and commit hooks that stay in one compound tree."
+    - "It is the right default when you want field semantics without adopting a pre-skinned input component."
+  stateModel:
+    - "`TextField.Root` manages the current string value plus `disabled`, `readOnly`, `required`, and `invalid` flags."
+    - "The package supports controlled and uncontrolled value ownership through `value` or `defaultValue`."
+    - "`onValueChange` fires on text edits, while `onValueCommit` fires on commit moments such as focus loss or enter-like confirmation."
+  keyApi:
+    - name: "TextField.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, `onValueCommit`, `disabled`, `readOnly`, `required`, and `invalid` to connect the field to app state."
+    - name: "TextField.Input"
+      description: "Use `asChild` when the host should be your own `TextBox`; root-level disabled and read-only rules still flow through."
+    - name: "TextField.Label / Description / Message"
+      description: "Use the companion parts to keep accessibility and field messaging close to the same shared state source."
+  compositionPatterns:
+    - title: "Labeled validated fields"
+      description: "Keep label, input, helper text, and validation message inside one `TextField.Root` so invalid and read-only state stay coordinated."
+    - title: "Commit-aware settings"
+      description: "Use `onValueCommit` when the app should treat typing and committed saves differently."
+  cautions:
+    - "Commit callbacks are separate from live change callbacks; do not expect `onValueCommit` to fire on every keystroke."
+    - "Use `Textarea` instead when multi-line input or automatic height growth is part of the field contract."
+  related:
+    - label: "Textarea"
+      href: "/components/textarea/"
+    - label: "Select"
+      href: "/components/select/"
+    - label: "Build a Settings Dialog"
+      href: "/getting-started/build-a-settings-dialog/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["text-field"]} />

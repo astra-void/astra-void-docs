@@ -14,20 +14,22 @@ This page is rendered from the checked-in lattice snapshot, which is generated b
 ## Presets
 
 <ul class="docs-link-list">
-  {Object.entries(latticeSnapshot.registry.presets).map(([presetName, members]) => (
-    <li>
-      <strong>
-        <code>{presetName}</code>
-      </strong>
-      <ul class="export-list">
-        {members.map((member) => (
-          <li>
-            <code>{member}</code>
-          </li>
-        ))}
-      </ul>
-    </li>
-  ))}
+  {Object.entries(latticeSnapshot.registry.presets).map(
+    ([presetName, members]) => (
+      <li>
+        <strong>
+          <code>{presetName}</code>
+        </strong>
+        <ul class="export-list">
+          {members.map((member) => (
+            <li>
+              <code>{member}</code>
+            </li>
+          ))}
+        </ul>
+      </li>
+    ),
+  )}
 </ul>
 
 ## Install by Preset

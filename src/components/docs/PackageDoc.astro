@@ -3,28 +3,30 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import CodeBlock from "./CodeBlock.astro";
+import LoomLiveDemo from "./LoomLiveDemo.astro";
 import SourceExample from "./SourceExample.astro";
 import { componentGuideLinks } from "../../data/component-guides";
 import type { ResolvedPackageDocData } from "../../data/package-docs";
 
 type Props = {
+  slug: string;
   doc: ResolvedPackageDocData;
 };
 
-const { doc } = Astro.props;
-const guideLinks = componentGuideLinks[doc.slug] ?? [];
+const { slug, doc } = Astro.props;
+const guideLinks = componentGuideLinks[slug] ?? [];
 const exampleSource = await readFile(
-  join(process.cwd(), "src/examples/components", `${doc.slug}.tsx`),
+  join(process.cwd(), "src/examples/components", `${slug}.tsx`),
   "utf8",
 );
 
 function escapeHtml(value: string) {
   return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatInline(value: string) {
@@ -39,7 +41,12 @@ function formatProvider(raw: string, optional: boolean) {
 <div class="package-doc">
   <section class="doc-section doc-section-overview">
     <div class="package-status-row">
-      <span class:list={["package-status-badge", doc.maturity === "experimental" && "is-experimental"]}>
+      <span
+        class:list={[
+          "package-status-badge",
+          doc.maturity === "experimental" && "is-experimental",
+        ]}
+      >
         {doc.maturityLabel}
       </span>
       <code class="package-install-name">{doc.npm}</code>
@@ -58,7 +65,13 @@ function formatProvider(raw: string, optional: boolean) {
     }
   </section>
 
-  <SourceExample code={exampleSource} fileName={`${doc.slug}.tsx`} />
+  {
+    doc.hasLiveDemo ? (
+      <LoomLiveDemo slug={slug} sourceCode={exampleSource} />
+    ) : (
+      <SourceExample code={exampleSource} fileName={`${slug}.tsx`} />
+    )
+  }
 
   <section class="doc-section doc-section-install">
     <h2 class="mb-5 text-2xl font-semibold tracking-[-0.04em] text-foreground">
@@ -84,33 +97,41 @@ function formatProvider(raw: string, optional: boolean) {
       <div>
         <p>Peer dependencies</p>
         <ul class="export-list">
-          {doc.peers.map((peer) => (
-            <li>
-              <code>{peer}</code>
-            </li>
-          ))}
+          {
+            doc.peers.map((peer) => (
+              <li>
+                <code>{peer}</code>
+              </li>
+            ))
+          }
         </ul>
       </div>
-      {doc.providers.length > 0 && (
-        <div>
-          <p>Providers</p>
-          <ul class="export-list">
-            {doc.providers.map((provider) => (
-              <li>
-                <code>{formatProvider(provider.raw, provider.optional)}</code>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {doc.notes.length > 0 && (
-        <div>
-          <p>Registry notes</p>
-          <ul class="state-list">
-            {doc.notes.map((note) => <li set:html={formatInline(note)} />)}
-          </ul>
-        </div>
-      )}
+      {
+        doc.providers.length > 0 && (
+          <div>
+            <p>Providers</p>
+            <ul class="export-list">
+              {doc.providers.map((provider) => (
+                <li>
+                  <code>{formatProvider(provider.raw, provider.optional)}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+      {
+        doc.notes.length > 0 && (
+          <div>
+            <p>Registry notes</p>
+            <ul class="state-list">
+              {doc.notes.map((note) => (
+                <li set:html={formatInline(note)} />
+              ))}
+            </ul>
+          </div>
+        )
+      }
     </div>
   </section>
 

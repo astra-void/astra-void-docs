@@ -4,41 +4,50 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
 const foundationPackages = ["core", "focus", "layer", "style", "system"];
-const stableFoundations = latticeSnapshot.workspace.stability.stableDirection.filter((slug) =>
-  foundationPackages.includes(slug),
-);
-const stableUiPackages = latticeSnapshot.workspace.stability.stableDirection.filter(
-  (slug) => !foundationPackages.includes(slug),
-);
+const stableFoundations =
+  latticeSnapshot.workspace.stability.stableDirection.filter((slug) =>
+    foundationPackages.includes(slug),
+  );
+const stableUiPackages =
+  latticeSnapshot.workspace.stability.stableDirection.filter(
+    (slug) => !foundationPackages.includes(slug),
+  );
 ---
 
 <div class="grid gap-4 md:grid-cols-2">
   <Card>
     <CardHeader>
-      <CardTitle className="text-lg tracking-[-0.02em]">Stable direction</CardTitle>
+      <CardTitle className="text-lg tracking-[-0.02em]"
+        >Stable direction</CardTitle
+      >
       <p class="text-sm leading-6 text-muted-foreground">
-        These packages are the maintained path toward v1 and the default recommendation for product work.
+        These packages are the maintained path toward v1 and the default
+        recommendation for product work.
       </p>
     </CardHeader>
     <CardContent className="grid gap-4">
       <div class="grid gap-2">
         <p class="text-sm font-medium text-foreground">Foundations</p>
         <div class="flex flex-wrap gap-2">
-          {stableFoundations.map((slug) => (
-            <Badge variant="outline">
-              <code class="font-mono text-[0.8rem]">{slug}</code>
-            </Badge>
-          ))}
+          {
+            stableFoundations.map((slug) => (
+              <Badge variant="outline">
+                <code class="font-mono text-[0.8rem]">{slug}</code>
+              </Badge>
+            ))
+          }
         </div>
       </div>
       <div class="grid gap-2">
         <p class="text-sm font-medium text-foreground">Primary UI packages</p>
         <div class="flex flex-wrap gap-2">
-          {stableUiPackages.map((slug) => (
-            <Badge variant="secondary">
-              <code class="font-mono text-[0.8rem]">{slug}</code>
-            </Badge>
-          ))}
+          {
+            stableUiPackages.map((slug) => (
+              <Badge variant="secondary">
+                <code class="font-mono text-[0.8rem]">{slug}</code>
+              </Badge>
+            ))
+          }
         </div>
       </div>
     </CardContent>
@@ -46,9 +55,12 @@ const stableUiPackages = latticeSnapshot.workspace.stability.stableDirection.fil
 
   <Card>
     <CardHeader>
-      <CardTitle className="text-lg tracking-[-0.02em]">Experimental / limited</CardTitle>
+      <CardTitle className="text-lg tracking-[-0.02em]"
+        >Experimental / limited</CardTitle
+      >
       <p class="text-sm leading-6 text-muted-foreground">
-        These packages are available, but the docs should set expectations more narrowly.
+        These packages are available, but the docs should set expectations more
+        narrowly.
       </p>
     </CardHeader>
     <CardContent>
@@ -59,7 +71,9 @@ const stableUiPackages = latticeSnapshot.workspace.stability.stableDirection.fil
               <strong class="text-sm font-semibold text-foreground">
                 <code>{entry.slug}</code>
               </strong>
-              <p class="text-sm leading-6 text-muted-foreground">{entry.note}</p>
+              <p class="text-sm leading-6 text-muted-foreground">
+                {entry.note}
+              </p>
             </li>
           ))
         }

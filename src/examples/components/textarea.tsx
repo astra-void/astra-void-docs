@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { Textarea } from "@lattice-ui/textarea";
 
 export function TextareaExample() {
@@ -8,7 +8,10 @@ export function TextareaExample() {
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(460, 260)}>
       <Textarea.Root onValueChange={setValue} value={value}>
         <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 220)}>
-          <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 6)} />
+          <uilistlayout
+            FillDirection={Enum.FillDirection.Vertical}
+            Padding={new UDim(0, 6)}
+          />
 
           <Textarea.Label asChild>
             <textbutton
@@ -35,7 +38,12 @@ export function TextareaExample() {
               TextYAlignment={Enum.TextYAlignment.Top}
             >
               <uicorner CornerRadius={new UDim(0, 8)} />
-              <uipadding PaddingBottom={new UDim(0, 8)} PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} PaddingTop={new UDim(0, 8)} />
+              <uipadding
+                PaddingBottom={new UDim(0, 8)}
+                PaddingLeft={new UDim(0, 10)}
+                PaddingRight={new UDim(0, 10)}
+                PaddingTop={new UDim(0, 8)}
+              />
             </textbox>
           </Textarea.Input>
 

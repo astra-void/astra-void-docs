@@ -1,4 +1,5 @@
-import { React, useControllableState } from "@lattice-ui/core";
+import * as React from "react";
+import { useControllableState } from "@lattice-ui/core";
 
 type ControllableToggleProps = {
   checked?: boolean;
@@ -16,7 +17,9 @@ function ControllableToggle(props: ControllableToggleProps) {
   return (
     <textbutton
       AutoButtonColor={false}
-      BackgroundColor3={checked ? Color3.fromRGB(53, 104, 196) : Color3.fromRGB(34, 41, 54)}
+      BackgroundColor3={
+        checked ? Color3.fromRGB(53, 104, 196) : Color3.fromRGB(34, 41, 54)
+      }
       BorderSizePixel={0}
       Size={UDim2.fromOffset(220, 40)}
       Text={checked ? "Controlled on" : "Controlled off"}

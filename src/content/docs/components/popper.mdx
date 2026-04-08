@@ -4,9 +4,34 @@ description: "Anchored positioning helpers for overlay content."
 draft: false
 sidebar:
   order: 11
+packageDoc:
+  whatItIsFor:
+    - "Use `popper` when you need low-level anchored positioning without adopting a higher-level overlay component."
+    - "It provides the geometry engine used by packages like `Select`, `Popover`, and `Tooltip`."
+  stateModel:
+    - "There is no shared React context; `usePopper` derives position directly from `anchorRef`, `contentRef`, and geometric inputs."
+    - "`placement`, `offset`, and `padding` are the core variables that influence the computed result."
+    - "The returned model is just `position`, `anchorPoint`, and the resolved placement plus an `update()` function."
+  keyApi:
+    - name: "usePopper"
+      description: "Use `anchorRef`, `contentRef`, `placement`, `offset`, `padding`, and `enabled` for live anchored positioning in a component tree."
+    - name: "computePopper"
+      description: "Use the pure compute helper when you need the same geometry logic outside a hook-driven surface."
+    - name: "PopperPlacement"
+      description: "Current placement options are `top`, `bottom`, `left`, and `right`."
+  compositionPatterns:
+    - title: "Custom anchored overlays"
+      description: "Pair `usePopper` with `Portal` or your own mount strategy when you want positioning but not the rest of a compound overlay package."
+    - title: "Measured content surfaces"
+      description: "Use the `update()` function when geometry needs to be recomputed after layout or content changes."
+  cautions:
+    - "Popper solves positioning only; it does not manage dismissal, focus, portals, or presence."
+    - "The public placement model is intentionally small, so build more complex policies above it rather than expecting full menu-like behavior from the package alone."
+  related:
+    - label: "Popover"
+      href: "/components/popover/"
+    - label: "Select"
+      href: "/components/select/"
+    - label: "Tooltip"
+      href: "/components/tooltip/"
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["popper"]} />

@@ -4,9 +4,37 @@ description: "Headless dialog primitives for modal and non-modal overlays in Rob
 draft: false
 sidebar:
   order: 6
+packageDoc:
+  whatItIsFor:
+    - "Use `Dialog` for modal or non-modal overlays that own focus handoff, outside dismissal, and explicit close actions."
+    - "The package gives you the compound structure for triggers, content, overlay, and close controls while leaving rendering and layout fully headless."
+  stateModel:
+    - "`Dialog.Root` can be controlled with `open` or uncontrolled with `defaultOpen`."
+    - "`modal` defaults the interaction model for the whole dialog tree, and `Dialog.Content` controls focus trapping and focus restoration."
+    - "Portal, overlay, and outside-interaction dismissal are coordinated through shared layer state, not through userland event wiring."
+  keyApi:
+    - name: "Dialog.Root"
+      description: "Use `open`, `defaultOpen`, `onOpenChange`, and `modal` to define how the dialog participates in app state and surrounding interaction."
+    - name: "Dialog.Content"
+      description: "Use `trapFocus`, `restoreFocus`, and outside-interaction callbacks when you need to customize the default overlay behavior."
+    - name: "Dialog.Overlay"
+      description: "Mount the backdrop separately so you can own the visual treatment without re-implementing overlay semantics."
+    - name: "Dialog.Close"
+      description: "Attach close behavior to any host element without coupling it to a specific button implementation."
+  compositionPatterns:
+    - title: "Settings or confirmation modal"
+      description: "Use `Trigger`, `Portal`, `Overlay`, `Content`, and `Close` as separate pieces so layout and visual hierarchy remain fully app-owned."
+    - title: "Managed focus return"
+      description: "Keep dialogs tied to a concrete trigger when possible so `restoreFocus` returns the user to a predictable origin after dismissal."
+  cautions:
+    - "Dialogs depend on portal-based layering for reliable overlay behavior; use `PortalProvider` near the app root."
+    - "A dialog is the right fit when content should own the interaction mode; use `Popover` for lighter anchored surfaces."
+  related:
+    - label: "Layer"
+      href: "/components/layer/"
+    - label: "Popover"
+      href: "/components/popover/"
+    - label: "Build a Settings Dialog"
+      href: "/getting-started/build-a-settings-dialog/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["dialog"]} />

@@ -1,5 +1,5 @@
 import { Popover } from "@lattice-ui/popover";
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { PortalProvider } from "@lattice-ui/layer";
 
 type Props = {
@@ -27,7 +27,11 @@ function PopoverDemo() {
 
       <Popover.Portal>
         <Popover.Content asChild offset={new Vector2(0, 8)} placement="bottom">
-          <frame BackgroundColor3={Color3.fromRGB(34, 41, 54)} BorderSizePixel={0} Size={UDim2.fromOffset(280, 146)}>
+          <frame
+            BackgroundColor3={Color3.fromRGB(34, 41, 54)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(280, 146)}
+          >
             <uicorner CornerRadius={new UDim(0, 10)} />
             <textlabel
               BackgroundTransparency={1}

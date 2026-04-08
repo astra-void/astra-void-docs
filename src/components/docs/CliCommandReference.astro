@@ -13,7 +13,9 @@ const { command, showPhases = false } = Astro.props;
 const commandMeta = latticeSnapshot.cli.commands[command];
 ---
 
-<div class="grid gap-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm">
+<div
+  class="grid gap-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm"
+>
   <div class="grid gap-2">
     <p class="text-sm font-medium text-muted-foreground">Command</p>
     <p class="text-base font-semibold tracking-[-0.02em] text-foreground">
@@ -23,29 +25,35 @@ const commandMeta = latticeSnapshot.cli.commands[command];
 
   <CodeBlock code={`lattice ${commandMeta.signature}`} lang="bash" />
 
-  {commandMeta.flags.length > 0 && (
-    <div class="grid gap-2">
-      <p class="text-sm font-medium text-foreground">Supported flags</p>
-      <ul class="flex flex-wrap gap-2">
-        {commandMeta.flags.map((flag) => (
-          <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
-            <code>{flag}</code>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
+  {
+    commandMeta.flags.length > 0 && (
+      <div class="grid gap-2">
+        <p class="text-sm font-medium text-foreground">Supported flags</p>
+        <ul class="flex flex-wrap gap-2">
+          {commandMeta.flags.map((flag) => (
+            <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
+              <code>{flag}</code>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
 
-  {showPhases && commandMeta.outputPhases.length > 0 && (
-    <div class="grid gap-2">
-      <p class="text-sm font-medium text-foreground">Observed output phases</p>
-      <ul class="flex flex-wrap gap-2">
-        {commandMeta.outputPhases.map((phase) => (
-          <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
-            <code>{phase}</code>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )}
+  {
+    showPhases && commandMeta.outputPhases.length > 0 && (
+      <div class="grid gap-2">
+        <p class="text-sm font-medium text-foreground">
+          Observed output phases
+        </p>
+        <ul class="flex flex-wrap gap-2">
+          {commandMeta.outputPhases.map((phase) => (
+            <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
+              <code>{phase}</code>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
 </div>

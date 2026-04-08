@@ -20,8 +20,6 @@ const SECTION_CONFIG = [
   { key: "reference", title: "Reference", slug: "reference", order: 4 },
 ] as const;
 
-type KnownSection = (typeof SECTION_CONFIG)[number];
-
 export type DocEntry = CollectionEntry<"docs">;
 
 export type DocPage = {
@@ -106,7 +104,8 @@ function toDocPage(entry: DocEntry): DocPage {
     sectionTitle: section.title,
     sectionOrder: section.order,
     sidebarOrder: entry.data.sidebar?.order ?? Number.MAX_SAFE_INTEGER,
-    isSectionIndex: !path || path.endsWith(`/${section.slug}`) || path === section.slug,
+    isSectionIndex:
+      !path || path.endsWith(`/${section.slug}`) || path === section.slug,
   };
 }
 
@@ -154,8 +153,10 @@ function groupSidebarSections(docs: DocPage[]) {
   }
 
   return [...sections.values()].sort((a, b) => {
-    const aOrder = docs.find((doc) => doc.sectionKey === a.key)?.sectionOrder ?? 999;
-    const bOrder = docs.find((doc) => doc.sectionKey === b.key)?.sectionOrder ?? 999;
+    const aOrder =
+      docs.find((doc) => doc.sectionKey === a.key)?.sectionOrder ?? 999;
+    const bOrder =
+      docs.find((doc) => doc.sectionKey === b.key)?.sectionOrder ?? 999;
     return aOrder - bOrder || a.title.localeCompare(b.title);
   });
 }
@@ -196,7 +197,8 @@ export function isSectionActive(currentPath: string, section: SidebarSection) {
     return currentPath.startsWith(`${section.key}/`);
   }
 
-  const normalizedSectionPath = section.url === "/" ? "" : section.url.slice(1, -1);
+  const normalizedSectionPath =
+    section.url === "/" ? "" : section.url.slice(1, -1);
   return (
     currentPath === normalizedSectionPath ||
     currentPath.startsWith(`${normalizedSectionPath}/`)

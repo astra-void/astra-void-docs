@@ -7,26 +7,14 @@ export const latticeSnapshot: LatticeSnapshot = {
   cli: {
     packageName: "lattice-ui",
     version: "0.4.4",
-    binaries: [
-      "lattice",
-      "lattice-ui"
-    ],
-    globalOptions: [
-      "--help",
-      "--version"
-    ],
+    binaries: ["lattice", "lattice-ui"],
+    globalOptions: ["--help", "--version"],
     commands: {
       create: {
-        signature: "create [project-path] [--yes] [--pm <pnpm|npm|yarn>] [--git] [--template rbxts] [--lint] [--no-lint]",
+        signature:
+          "create [project-path] [--yes] [--pm <pnpm|npm|yarn>] [--git] [--template rbxts] [--lint] [--no-lint]",
         description: "Create a new project from the rbxts template.",
-        flags: [
-          "--yes",
-          "--pm",
-          "--git",
-          "--template",
-          "--lint",
-          "--no-lint"
-        ],
+        flags: ["--yes", "--pm", "--git", "--template", "--lint", "--no-lint"],
         outputPhases: [
           "Creating a new Lattice app",
           "Resolving",
@@ -34,109 +22,90 @@ export const latticeSnapshot: LatticeSnapshot = {
           "Configuring",
           "Installing",
           "Git",
-          "Next Steps"
-        ]
+          "Next Steps",
+        ],
       },
       init: {
-        signature: "init [--yes] [--dry-run] [--pm <pnpm|npm|yarn>] [--template rbxts] [--lint]",
+        signature:
+          "init [--yes] [--dry-run] [--pm <pnpm|npm|yarn>] [--template rbxts] [--lint]",
         description: "Initialize Lattice in an existing project.",
-        flags: [
-          "--yes",
-          "--dry-run",
-          "--pm",
-          "--template",
-          "--lint"
-        ],
+        flags: ["--yes", "--dry-run", "--pm", "--template", "--lint"],
         outputPhases: [
           "Inspecting",
           "Planning",
           "Dry Run",
           "Applying",
           "Result",
-          "Next Steps"
-        ]
+          "Next Steps",
+        ],
       },
       add: {
-        signature: "add [name...] [--preset <preset...>] [--pm <pnpm|npm|yarn>] [--yes] [--dry-run]",
+        signature:
+          "add [name...] [--preset <preset...>] [--pm <pnpm|npm|yarn>] [--yes] [--dry-run]",
         description: "Install component packages and their required peers.",
-        flags: [
-          "--preset",
-          "--pm",
-          "--yes",
-          "--dry-run"
-        ],
+        flags: ["--preset", "--pm", "--yes", "--dry-run"],
         outputPhases: [
           "Selecting",
           "Planning",
           "Dry Run",
           "Applying",
           "Result",
-          "Next Steps"
-        ]
+          "Next Steps",
+        ],
       },
       remove: {
-        signature: "remove [name...] [--preset <preset...>] [--pm <pnpm|npm|yarn>] [--yes] [--dry-run]",
+        signature:
+          "remove [name...] [--preset <preset...>] [--pm <pnpm|npm|yarn>] [--yes] [--dry-run]",
         description: "Remove selected component packages.",
-        flags: [
-          "--preset",
-          "--pm",
-          "--yes",
-          "--dry-run"
-        ],
+        flags: ["--preset", "--pm", "--yes", "--dry-run"],
         outputPhases: [
           "Selecting",
           "Result",
           "Next Steps",
           "Planning",
           "Dry Run",
-          "Applying"
-        ]
+          "Applying",
+        ],
       },
       upgrade: {
-        signature: "upgrade [name...] [--preset <preset...>] [--pm <pnpm|npm|yarn>] [--yes] [--dry-run]",
+        signature:
+          "upgrade [name...] [--preset <preset...>] [--pm <pnpm|npm|yarn>] [--yes] [--dry-run]",
         description: "Upgrade installed @lattice-ui/* packages.",
-        flags: [
-          "--preset",
-          "--pm",
-          "--yes",
-          "--dry-run"
-        ],
+        flags: ["--preset", "--pm", "--yes", "--dry-run"],
         outputPhases: [
           "Selecting",
           "Planning",
           "Dry Run",
           "Applying",
           "Result",
-          "Next Steps"
-        ]
+          "Next Steps",
+        ],
       },
       doctor: {
         signature: "doctor [--pm <pnpm|npm|yarn>]",
         description: "Check lockfiles, peers, and provider expectations.",
-        flags: [
-          "--pm"
-        ],
+        flags: ["--pm"],
         outputPhases: [
           "Checking",
           "Summary",
           "Warnings",
           "Errors",
           "Recommended Commands",
-          "Result"
-        ]
+          "Result",
+        ],
       },
       help: {
         signature: "help",
         description: "Show this help message.",
         flags: [],
-        outputPhases: []
+        outputPhases: [],
       },
       version: {
         signature: "version",
         description: "Print CLI version.",
         flags: [],
-        outputPhases: []
-      }
+        outputPhases: [],
+      },
     },
     examples: [
       "npx lattice-ui create",
@@ -145,324 +114,231 @@ export const latticeSnapshot: LatticeSnapshot = {
       "npx lattice-ui add dialog,toast --preset overlay",
       "npx lattice-ui remove dialog --dry-run",
       "npx lattice-ui upgrade --dry-run",
-      "npx lattice-ui doctor"
-    ]
+      "npx lattice-ui doctor",
+    ],
   },
   registry: {
     packages: {
       accordion: {
         npm: "@lattice-ui/accordion",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       avatar: {
         npm: "@lattice-ui/avatar",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       checkbox: {
         npm: "@lattice-ui/checkbox",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       combobox: {
         npm: "@lattice-ui/combobox",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
-        notes: [
-          "Combobox content can be portal-mounted via PortalProvider."
-        ]
+        notes: ["Combobox content can be portal-mounted via PortalProvider."],
       },
       core: {
         npm: "@lattice-ui/core",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       dialog: {
         npm: "@lattice-ui/dialog",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
         notes: [
-          "Dialog.Content can use PortalProvider for predictable layering."
-        ]
+          "Dialog.Content can use PortalProvider for predictable layering.",
+        ],
       },
       focus: {
         npm: "@lattice-ui/focus",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       layer: {
         npm: "@lattice-ui/layer",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       menu: {
         npm: "@lattice-ui/menu",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
         notes: [
-          "Menu.Content can use PortalProvider for display order control."
-        ]
+          "Menu.Content can use PortalProvider for display order control.",
+        ],
       },
       popover: {
         npm: "@lattice-ui/popover",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
         notes: [
-          "Popover.Content can safely manage displayOrder with PortalProvider."
-        ]
+          "Popover.Content can safely manage displayOrder with PortalProvider.",
+        ],
       },
       popper: {
         npm: "@lattice-ui/popper",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       progress: {
         npm: "@lattice-ui/progress",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       "radio-group": {
         npm: "@lattice-ui/radio-group",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       "scroll-area": {
         npm: "@lattice-ui/scroll-area",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       select: {
         npm: "@lattice-ui/select",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
-        notes: [
-          "Select.Content can use PortalProvider for robust overlays."
-        ]
+        notes: ["Select.Content can use PortalProvider for robust overlays."],
       },
       slider: {
         npm: "@lattice-ui/slider",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       style: {
         npm: "@lattice-ui/style",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       switch: {
         npm: "@lattice-ui/switch",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       system: {
         npm: "@lattice-ui/system",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       tabs: {
         npm: "@lattice-ui/tabs",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       "text-field": {
         npm: "@lattice-ui/text-field",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       textarea: {
         npm: "@lattice-ui/textarea",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       toast: {
         npm: "@lattice-ui/toast",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
         notes: [
-          "Toast viewport can be mounted with PortalProvider for layering."
-        ]
+          "Toast viewport can be mounted with PortalProvider for layering.",
+        ],
       },
       "toggle-group": {
         npm: "@lattice-ui/toggle-group",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [],
-        notes: []
+        notes: [],
       },
       tooltip: {
         npm: "@lattice-ui/tooltip",
-        peers: [
-          "@rbxts/react",
-          "@rbxts/react-roblox"
-        ],
+        peers: ["@rbxts/react", "@rbxts/react-roblox"],
         providers: [
           {
             raw: "@lattice-ui/layer:PortalProvider?",
             packageName: "@lattice-ui/layer",
             providerName: "PortalProvider",
-            optional: true
-          }
+            optional: true,
+          },
         ],
         notes: [
-          "Tooltip content can be portal-mounted for better overlap behavior."
-        ]
-      }
+          "Tooltip content can be portal-mounted for better overlap behavior.",
+        ],
+      },
     },
     presets: {
-      form: [
-        "checkbox",
-        "radio-group",
-        "switch",
-        "text-field",
-        "textarea"
-      ],
-      overlay: [
-        "popover",
-        "tooltip",
-        "dialog",
-        "toast"
-      ]
-    }
+      form: ["checkbox", "radio-group", "switch", "text-field", "textarea"],
+      overlay: ["popover", "tooltip", "dialog", "toast"],
+    },
   },
   packages: {
     accordion: {
       slug: "accordion",
       npm: "@lattice-ui/accordion",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -473,18 +349,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Accordion.Trigger",
         "Accordion.Content",
         "nextAccordionValues",
-        "normalizeAccordionValue"
+        "normalizeAccordionValue",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     avatar: {
       slug: "avatar",
       npm: "@lattice-ui/avatar",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -492,18 +365,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Avatar.Root",
         "Avatar.Image",
         "Avatar.Fallback",
-        "resolveAvatarFallbackVisible"
+        "resolveAvatarFallbackVisible",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     checkbox: {
       slug: "checkbox",
       npm: "@lattice-ui/checkbox",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -511,29 +381,24 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Checkbox.Root",
         "Checkbox.Indicator",
         "CheckboxIndicator",
-        "CheckboxRoot"
+        "CheckboxRoot",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     combobox: {
       slug: "combobox",
       npm: "@lattice-ui/combobox",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
-      notes: [
-        "Combobox content can be portal-mounted via PortalProvider."
-      ],
+      notes: ["Combobox content can be portal-mounted via PortalProvider."],
       exports: [
         "Combobox",
         "Combobox.Root",
@@ -549,18 +414,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "defaultComboboxFilter",
         "filterComboboxOptions",
         "resolveComboboxInputValue",
-        "resolveForcedComboboxValue"
+        "resolveForcedComboboxValue",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     core: {
       slug: "core",
       npm: "@lattice-ui/core",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -598,28 +460,25 @@ export const latticeSnapshot: LatticeSnapshot = {
         "setRef",
         "composeRefs",
         "Slot",
-        "useControllableState"
+        "useControllableState",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     dialog: {
       slug: "dialog",
       npm: "@lattice-ui/dialog",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
       notes: [
-        "Dialog.Content can use PortalProvider for predictable layering."
+        "Dialog.Content can use PortalProvider for predictable layering.",
       ],
       exports: [
         "Dialog",
@@ -634,33 +493,25 @@ export const latticeSnapshot: LatticeSnapshot = {
         "DialogOverlay",
         "DialogPortal",
         "DialogRoot",
-        "DialogTrigger"
+        "DialogTrigger",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     focus: {
       slug: "focus",
       npm: "@lattice-ui/focus",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
-      exports: [
-        "FocusScope"
-      ],
+      exports: ["FocusScope"],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     layer: {
       slug: "layer",
       npm: "@lattice-ui/layer",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -668,29 +519,24 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Portal",
         "PortalProvider",
         "usePortalContext",
-        "Presence"
+        "Presence",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     menu: {
       slug: "menu",
       npm: "@lattice-ui/menu",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
-      notes: [
-        "Menu.Content can use PortalProvider for display order control."
-      ],
+      notes: ["Menu.Content can use PortalProvider for display order control."],
       exports: [
         "Menu",
         "Menu.Root",
@@ -708,28 +554,25 @@ export const latticeSnapshot: LatticeSnapshot = {
         "MenuPortal",
         "MenuRoot",
         "MenuSeparator",
-        "MenuTrigger"
+        "MenuTrigger",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     popover: {
       slug: "popover",
       npm: "@lattice-ui/popover",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
       notes: [
-        "Popover.Content can safely manage displayOrder with PortalProvider."
+        "Popover.Content can safely manage displayOrder with PortalProvider.",
       ],
       exports: [
         "Popover",
@@ -744,34 +587,25 @@ export const latticeSnapshot: LatticeSnapshot = {
         "PopoverContent",
         "PopoverPortal",
         "PopoverRoot",
-        "PopoverTrigger"
+        "PopoverTrigger",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     popper: {
       slug: "popper",
       npm: "@lattice-ui/popper",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
-      exports: [
-        "computePopper",
-        "usePopper"
-      ],
+      exports: ["computePopper", "usePopper"],
       maturity: "experimental",
-      maturityNote: "early positioning foundation"
+      maturityNote: "early positioning foundation",
     },
     progress: {
       slug: "progress",
       npm: "@lattice-ui/progress",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -780,18 +614,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Progress.Indicator",
         "Progress.Spinner",
         "clampProgressValue",
-        "resolveProgressRatio"
+        "resolveProgressRatio",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     "radio-group": {
       slug: "radio-group",
       npm: "@lattice-ui/radio-group",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -801,18 +632,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "RadioGroup.Indicator",
         "RadioGroupIndicator",
         "RadioGroupItem",
-        "RadioGroupRoot"
+        "RadioGroupRoot",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     "scroll-area": {
       slug: "scroll-area",
       npm: "@lattice-ui/scroll-area",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -827,29 +655,24 @@ export const latticeSnapshot: LatticeSnapshot = {
         "resolveThumbOffset",
         "resolveThumbOffsetFromPointerDelta",
         "resolveThumbOffsetFromTrackPosition",
-        "resolveThumbSize"
+        "resolveThumbSize",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     select: {
       slug: "select",
       npm: "@lattice-ui/select",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
-      notes: [
-        "Select.Content can use PortalProvider for robust overlays."
-      ],
+      notes: ["Select.Content can use PortalProvider for robust overlays."],
       exports: [
         "Select",
         "Select.Root",
@@ -869,18 +692,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "SelectRoot",
         "SelectSeparator",
         "SelectTrigger",
-        "SelectValue"
+        "SelectValue",
       ],
       maturity: "experimental",
-      maturityNote: "currently single-value only"
+      maturityNote: "currently single-value only",
     },
     slider: {
       slug: "slider",
       npm: "@lattice-ui/slider",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -888,18 +708,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Slider.Root",
         "Slider.Track",
         "Slider.Range",
-        "Slider.Thumb"
+        "Slider.Thumb",
       ],
       maturity: "experimental",
-      maturityNote: "currently single-thumb only"
+      maturityNote: "currently single-thumb only",
     },
     style: {
       slug: "style",
       npm: "@lattice-ui/style",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -914,35 +731,25 @@ export const latticeSnapshot: LatticeSnapshot = {
         "useThemeValue",
         "createTheme",
         "defaultDarkTheme",
-        "defaultLightTheme"
+        "defaultLightTheme",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     switch: {
       slug: "switch",
       npm: "@lattice-ui/switch",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
-      exports: [
-        "Switch",
-        "Switch.Root",
-        "Switch.Thumb"
-      ],
+      exports: ["Switch", "Switch.Root", "Switch.Thumb"],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     system: {
       slug: "system",
       npm: "@lattice-ui/system",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -956,18 +763,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "surface",
         "Surface",
         "SystemProvider",
-        "useSystemTheme"
+        "useSystemTheme",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     tabs: {
       slug: "tabs",
       npm: "@lattice-ui/tabs",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -975,18 +779,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Tabs.Root",
         "Tabs.List",
         "Tabs.Trigger",
-        "Tabs.Content"
+        "Tabs.Content",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     "text-field": {
       slug: "text-field",
       npm: "@lattice-ui/text-field",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -995,18 +796,15 @@ export const latticeSnapshot: LatticeSnapshot = {
         "TextField.Input",
         "TextField.Label",
         "TextField.Description",
-        "TextField.Message"
+        "TextField.Message",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     textarea: {
       slug: "textarea",
       npm: "@lattice-ui/textarea",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
       exports: [
@@ -1016,28 +814,25 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Textarea.Label",
         "Textarea.Description",
         "Textarea.Message",
-        "resolveTextareaHeight"
+        "resolveTextareaHeight",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     toast: {
       slug: "toast",
       npm: "@lattice-ui/toast",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
       notes: [
-        "Toast viewport can be mounted with PortalProvider for layering."
+        "Toast viewport can be mounted with PortalProvider for layering.",
       ],
       exports: [
         "Toast",
@@ -1052,45 +847,35 @@ export const latticeSnapshot: LatticeSnapshot = {
         "enqueueToast",
         "getVisibleToasts",
         "pruneExpiredToasts",
-        "useToast"
+        "useToast",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     "toggle-group": {
       slug: "toggle-group",
       npm: "@lattice-ui/toggle-group",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [],
       notes: [],
-      exports: [
-        "ToggleGroup",
-        "ToggleGroup.Root",
-        "ToggleGroup.Item"
-      ],
+      exports: ["ToggleGroup", "ToggleGroup.Root", "ToggleGroup.Item"],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
+      maturityNote: "Part of the stable direction toward v1.0.",
     },
     tooltip: {
       slug: "tooltip",
       npm: "@lattice-ui/tooltip",
-      peers: [
-        "@rbxts/react",
-        "@rbxts/react-roblox"
-      ],
+      peers: ["@rbxts/react", "@rbxts/react-roblox"],
       providers: [
         {
           raw: "@lattice-ui/layer:PortalProvider?",
           packageName: "@lattice-ui/layer",
           providerName: "PortalProvider",
-          optional: true
-        }
+          optional: true,
+        },
       ],
       notes: [
-        "Tooltip content can be portal-mounted for better overlap behavior."
+        "Tooltip content can be portal-mounted for better overlap behavior.",
       ],
       exports: [
         "Tooltip",
@@ -1098,11 +883,11 @@ export const latticeSnapshot: LatticeSnapshot = {
         "Tooltip.Root",
         "Tooltip.Trigger",
         "Tooltip.Portal",
-        "Tooltip.Content"
+        "Tooltip.Content",
       ],
       maturity: "stable",
-      maturityNote: "Part of the stable direction toward v1.0."
-    }
+      maturityNote: "Part of the stable direction toward v1.0.",
+    },
   },
   workspace: {
     stability: {
@@ -1129,22 +914,22 @@ export const latticeSnapshot: LatticeSnapshot = {
         "toast",
         "toggle-group",
         "tooltip",
-        "v1.0"
+        "v1.0",
       ],
       experimental: [
         {
           slug: "popper",
-          note: "early positioning foundation"
+          note: "early positioning foundation",
         },
         {
           slug: "select",
-          note: "currently single-value only"
+          note: "currently single-value only",
         },
         {
           slug: "slider",
-          note: "currently single-thumb only"
-        }
-      ]
+          note: "currently single-thumb only",
+        },
+      ],
     },
     roadmap: [
       {
@@ -1154,8 +939,8 @@ export const latticeSnapshot: LatticeSnapshot = {
           "document package maturity more clearly",
           "expand tests for overlays, selection, and input behavior",
           "polish feature-limited packages such as `select` and `slider`",
-          "improve docs and usage examples"
-        ]
+          "improve docs and usage examples",
+        ],
       },
       {
         title: "v0.5.x",
@@ -1163,49 +948,49 @@ export const latticeSnapshot: LatticeSnapshot = {
           "continue stabilizing the core UI foundations",
           "improve overlay positioning and interaction consistency",
           "close common edge cases across dialog, popover, tooltip, menu, and selection components",
-          "improve CLI workflows and package maintenance ergonomics"
-        ]
+          "improve CLI workflows and package maintenance ergonomics",
+        ],
       },
       {
         title: "v0.6.x+",
         bullets: [
           "expand package maintenance workflows",
           "improve reliability, debugging, and coverage",
-          "keep feature-limited packages flexible until the API surface is ready"
-        ]
+          "keep feature-limited packages flexible until the API surface is ready",
+        ],
       },
       {
         title: "v1.0",
         bullets: [
           "ship a stable foundation for the main UI layer",
           "finalize the supported core package surface",
-          "strengthen compatibility and semver expectations for stable UI packages"
-        ]
+          "strengthen compatibility and semver expectations for stable UI packages",
+        ],
       },
       {
         title: "after v1.0",
         bullets: [
           "continue maturing feature-limited packages independently",
           "allow experimental packages to remain in `0.x` if needed",
-          "only promote feature-limited packages to stable versioning when their APIs are ready"
-        ]
-      }
+          "only promote feature-limited packages to stable versioning when their APIs are ready",
+        ],
+      },
     ],
     changelog: {
       unreleased: {
         Added: [
-          "Add an interactive `init` CLI command that bootstraps Lattice into existing projects with safe template merging, dry-run planning, and JSONC-aware config updates."
-        ]
+          "Add an interactive `init` CLI command that bootstraps Lattice into existing projects with safe template merging, dry-run planning, and JSONC-aware config updates.",
+        ],
       },
       latestRelease: {
         version: "0.4.4",
         date: "2026-03-22",
         summary: [],
         migrationNotes: [],
-        sections: {}
-      }
-    }
-  }
+        sections: {},
+      },
+    },
+  },
 };
 
 export default latticeSnapshot;

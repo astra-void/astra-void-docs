@@ -4,9 +4,35 @@ description: "Headless radio group primitives for single-option selection."
 draft: false
 sidebar:
   order: 13
+packageDoc:
+  whatItIsFor:
+    - "Use `RadioGroup` for mutually exclusive selection when the available options should remain visible all at once."
+    - "It is best for small, stable option sets where direct comparison matters more than compactness."
+  stateModel:
+    - "`RadioGroup.Root` manages a single selected `value`, optional `required` semantics, and `horizontal` or `vertical` orientation."
+    - "Items register in order so keyboard-style movement can advance through enabled choices."
+    - "Each item gets local `checked` and `disabled` state through context."
+  keyApi:
+    - name: "RadioGroup.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, `orientation`, `disabled`, and `required` to define group semantics."
+    - name: "RadioGroup.Item"
+      description: "Each item needs a unique `value`; `disabled` removes it from selection without changing the rest of the group."
+    - name: "RadioGroup.Indicator"
+      description: "Use `forceMount` if your indicator visuals need to stay mounted across state transitions."
+  compositionPatterns:
+    - title: "Settings mode selection"
+      description: "Use radios when the user should compare 2-5 modes directly without opening a list."
+    - title: "Inline option matrices"
+      description: "Combine group orientation and custom item visuals to produce pill, tile, or row-style selectors."
+  cautions:
+    - "Use `Select` instead when the option set is long enough that always-visible choices would overwhelm the layout."
+    - 'The package is single-value by design; use `Checkbox` or `ToggleGroup type="multiple"` for multi-select behavior.'
+  related:
+    - label: "Select"
+      href: "/components/select/"
+    - label: "Toggle Group"
+      href: "/components/toggle-group/"
+    - label: "Checkbox"
+      href: "/components/checkbox/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["radio-group"]} />

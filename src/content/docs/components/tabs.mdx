@@ -4,9 +4,35 @@ description: "Behavior-only Tabs primitives for Roblox UI, aligned with the latt
 draft: false
 sidebar:
   order: 20
+packageDoc:
+  whatItIsFor:
+    - "Use `Tabs` when the screen should switch between sibling panels without leaving the current route or layout."
+    - "It is a good fit for profile pages, settings surfaces, and inspector UIs where the current section should stay explicit."
+  stateModel:
+    - "`Tabs.Root` manages a single selected `value` with controlled or uncontrolled ownership."
+    - "Triggers register with orientation-aware ordering so selection movement can advance through enabled items."
+    - "`Tabs.Content` can stay mounted with `forceMount` even when its tab is not the active value."
+  keyApi:
+    - name: "Tabs.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, and `orientation` to define the navigation model."
+    - name: "Tabs.Trigger"
+      description: "Each trigger needs a stable `value`; `disabled` removes it from activation and directional movement."
+    - name: "Tabs.Content"
+      description: "Use `forceMount` when inactive content still needs measurement, retained state, or custom animation handling."
+  compositionPatterns:
+    - title: "Screen subsections"
+      description: "Use tabs when the user needs to move between a few related panels while keeping the container layout constant."
+    - title: "Inspector sidebars"
+      description: 'Use `orientation="vertical"` when the trigger list should behave more like a navigation rail than a top bar.'
+  cautions:
+    - "Current behavior activates tabs immediately when selection moves; there is no separate manual activation mode."
+    - "Tabs solve disclosure and selection, not overlaying or lazy positioning; reach for `Accordion` or `Dialog` when the UI contract is different."
+  related:
+    - label: "Accordion"
+      href: "/components/accordion/"
+    - label: "Focus"
+      href: "/components/focus/"
+    - label: "Scroll Area"
+      href: "/components/scroll-area/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["tabs"]} />

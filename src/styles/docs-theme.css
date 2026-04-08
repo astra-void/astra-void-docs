@@ -268,7 +268,11 @@
 
   .sl-markdown-content a {
     color: var(--sl-color-text-accent);
-    text-decoration-color: color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
+    text-decoration-color: color-mix(
+      in srgb,
+      var(--sl-color-accent) 28%,
+      transparent
+    );
     text-decoration-thickness: 0.08em;
     text-underline-offset: 0.16em;
   }
@@ -412,7 +416,8 @@
     min-height: 1.9rem;
     padding: 0.18rem 0.6rem;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 22%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--sl-color-accent) 22%, transparent);
     background: color-mix(in srgb, var(--sl-color-accent-low) 72%, transparent);
     color: var(--sl-color-white);
     font-size: 0.82rem;
@@ -581,5 +586,3 @@
     }
   }
 }
-
-

@@ -1,7 +1,6 @@
 ﻿---
 import { Badge } from "../ui/badge";
 import { Card, CardContent } from "../ui/card";
-import { packageDocs } from "../../data/package-docs";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
 type Props = {
@@ -11,24 +10,36 @@ type Props = {
 
 const { path, versionBasis } = Astro.props;
 const release = latticeSnapshot.workspace.changelog.latestRelease;
-const componentSlug = path.startsWith("components/") ? path.slice("components/".length) : undefined;
-const packageDoc = componentSlug ? packageDocs[componentSlug] : undefined;
+const componentSlug = path.startsWith("components/")
+  ? path.slice("components/".length)
+  : undefined;
+const packageSnapshot = componentSlug
+  ? latticeSnapshot.packages[componentSlug]
+  : undefined;
 
 function escapeHtml(value: string) {
   return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatInline(value: string) {
   return escapeHtml(value).replace(/`([^`]+)`/g, "<code>$1</code>");
 }
 
+function resolveMaturityLabel(maturity: "stable" | "experimental") {
+  return maturity === "experimental"
+    ? "Experimental / feature-limited"
+    : "Stable direction";
+}
+
 const sourceBadge =
-  versionBasis === "stable" ? `Stable release v${release?.version ?? "n/a"}` : "Tracking lattice-ui/main";
+  versionBasis === "stable"
+    ? `Stable release v${release?.version ?? "n/a"}`
+    : "Tracking lattice-ui/main";
 const sourceMessage =
   versionBasis === "stable"
     ? "This page is written against the latest tagged release captured in the checked-in snapshot."
@@ -38,13 +49,23 @@ const sourceMessage =
 <Card className="border-muted/60 bg-card/80 shadow-sm backdrop-blur">
   <CardContent className="grid gap-4 p-4">
     <div class="flex flex-wrap gap-2">
-      <Badge variant={versionBasis === "main" ? "default" : "secondary"}>{sourceBadge}</Badge>
-      <Badge variant="outline">Latest tagged release: v{release?.version ?? "n/a"}</Badge>
+      <Badge variant={versionBasis === "main" ? "default" : "secondary"}
+        >{sourceBadge}</Badge
+      >
+      <Badge variant="outline"
+        >Latest tagged release: v{release?.version ?? "n/a"}</Badge
+      >
       <Badge variant="outline">Snapshot date: {release?.date ?? "n/a"}</Badge>
       {
-        packageDoc && (
-          <Badge variant={packageDoc.maturity === "experimental" ? "secondary" : "outline"}>
-            Package status: {packageDoc.maturityLabel}
+        packageSnapshot && (
+          <Badge
+            variant={
+              packageSnapshot.maturity === "experimental"
+                ? "secondary"
+                : "outline"
+            }
+          >
+            Package status: {resolveMaturityLabel(packageSnapshot.maturity)}
           </Badge>
         )
       }
@@ -52,7 +73,13 @@ const sourceMessage =
 
     <div class="grid gap-2 text-sm leading-6 text-muted-foreground">
       <p>{sourceMessage}</p>
-      {packageDoc && <p set:html={`Current package note: ${formatInline(packageDoc.maturityNote)}`} />}
+      {
+        packageSnapshot && (
+          <p
+            set:html={`Current package note: ${formatInline(packageSnapshot.maturityNote)}`}
+          />
+        )
+      }
     </div>
   </CardContent>
 </Card>

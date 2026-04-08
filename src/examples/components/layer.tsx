@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { DismissableLayer, PortalProvider, Presence } from "@lattice-ui/layer";
 
 type Props = {
@@ -26,7 +26,10 @@ function LayerDemo() {
       <Presence
         present={open}
         render={({ isPresent }) => (
-          <DismissableLayer enabled={isPresent} onDismiss={() => setOpen(false)}>
+          <DismissableLayer
+            enabled={isPresent}
+            onDismiss={() => setOpen(false)}
+          >
             <frame
               AnchorPoint={new Vector2(0, 0)}
               BackgroundColor3={Color3.fromRGB(34, 41, 54)}

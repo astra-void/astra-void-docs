@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { PortalProvider } from "@lattice-ui/layer";
 import { Select } from "@lattice-ui/select";
 
@@ -36,10 +36,22 @@ function SelectDemo() {
 
         <Select.Portal>
           <Select.Content asChild offset={new Vector2(0, 8)} placement="bottom">
-            <frame BackgroundColor3={Color3.fromRGB(22, 28, 39)} BorderSizePixel={0} Size={UDim2.fromOffset(320, 126)}>
+            <frame
+              BackgroundColor3={Color3.fromRGB(22, 28, 39)}
+              BorderSizePixel={0}
+              Size={UDim2.fromOffset(320, 126)}
+            >
               <uicorner CornerRadius={new UDim(0, 8)} />
-              <uipadding PaddingLeft={new UDim(0, 8)} PaddingRight={new UDim(0, 8)} PaddingTop={new UDim(0, 8)} PaddingBottom={new UDim(0, 8)} />
-              <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 4)} />
+              <uipadding
+                PaddingLeft={new UDim(0, 8)}
+                PaddingRight={new UDim(0, 8)}
+                PaddingTop={new UDim(0, 8)}
+                PaddingBottom={new UDim(0, 8)}
+              />
+              <uilistlayout
+                FillDirection={Enum.FillDirection.Vertical}
+                Padding={new UDim(0, 4)}
+              />
 
               <Select.Item asChild textValue="Asia Pacific" value="apac">
                 <textbutton
@@ -57,7 +69,12 @@ function SelectDemo() {
                 </textbutton>
               </Select.Item>
 
-              <Select.Item asChild disabled={true} textValue="North America" value="na">
+              <Select.Item
+                asChild
+                disabled={true}
+                textValue="North America"
+                value="na"
+              >
                 <textbutton
                   Active={false}
                   AutoButtonColor={false}

@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { Dialog } from "@lattice-ui/dialog";
 import { PortalProvider } from "@lattice-ui/layer";
 

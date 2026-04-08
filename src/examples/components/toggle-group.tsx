@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { ToggleGroup } from "@lattice-ui/toggle-group";
 
 export function ToggleGroupExample() {
@@ -8,12 +8,19 @@ export function ToggleGroupExample() {
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 160)}>
       <ToggleGroup.Root onValueChange={setValue} type="single" value={value}>
         <frame BackgroundTransparency={1} Size={UDim2.fromOffset(360, 40)}>
-          <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 8)} />
+          <uilistlayout
+            FillDirection={Enum.FillDirection.Horizontal}
+            Padding={new UDim(0, 8)}
+          />
           {(["alpha", "beta", "gamma"] as const).map((itemValue) => (
             <ToggleGroup.Item asChild key={itemValue} value={itemValue}>
               <textbutton
                 AutoButtonColor={false}
-                BackgroundColor3={value === itemValue ? Color3.fromRGB(53, 104, 196) : Color3.fromRGB(34, 41, 54)}
+                BackgroundColor3={
+                  value === itemValue
+                    ? Color3.fromRGB(53, 104, 196)
+                    : Color3.fromRGB(34, 41, 54)
+                }
                 BorderSizePixel={0}
                 Size={UDim2.fromOffset(110, 36)}
                 Text={itemValue}

@@ -4,9 +4,35 @@ description: "Headless switch primitives for boolean state toggles."
 draft: false
 sidebar:
   order: 18
+packageDoc:
+  whatItIsFor:
+    - "Use `Switch` for immediate on/off settings where the control communicates a binary system state rather than membership in a list."
+    - "It is the simplest boolean primitive in the library and works well for preferences panels and toggles."
+  stateModel:
+    - "`Switch.Root` tracks a boolean `checked` state with controlled and uncontrolled entry points."
+    - "`disabled` is enforced at the root, and `Switch.Thumb` reads that shared state rather than maintaining any local state."
+    - "There is no indeterminate or mixed state in this package."
+  keyApi:
+    - name: "Switch.Root"
+      description: "Use `checked`, `defaultChecked`, `onCheckedChange`, and `disabled` to connect the control to your settings model."
+    - name: "Switch.Root asChild"
+      description: "Use `asChild` when you already have a visual host and only need switch semantics attached to it."
+    - name: "Switch.Thumb"
+      description: "Render the moving or highlighted interior affordance as a separate piece without re-implementing checked-state wiring."
+  compositionPatterns:
+    - title: "Preference toggles"
+      description: "Combine a switch with nearby helper text when a setting should apply immediately and remain visually compact."
+    - title: "Custom host surfaces"
+      description: "Use `asChild` for pill, card, or toolbar-based visuals that still need the same binary state semantics."
+  cautions:
+    - "Use `Checkbox` instead when the control represents selection or needs an `indeterminate` state."
+    - "The package provides state semantics, not motion or skin; you still own the track and thumb visuals."
+  related:
+    - label: "Checkbox"
+      href: "/components/checkbox/"
+    - label: "Toggle Group"
+      href: "/components/toggle-group/"
+    - label: "Text Field"
+      href: "/components/text-field/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["switch"]} />

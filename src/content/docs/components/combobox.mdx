@@ -4,9 +4,37 @@ description: "Headless combobox primitives for Roblox UI with typed filtering an
 draft: false
 sidebar:
   order: 4
+packageDoc:
+  whatItIsFor:
+    - "Use `Combobox` when the user needs to type into a field and still commit to one option from a registered list."
+    - "It sits between `Select` and `TextField`: the package owns list filtering, option registration, and value/input synchronization, while you own the rendered UI."
+  stateModel:
+    - "`Combobox.Root` can control three values independently: selected `value`, typed `inputValue`, and `open`."
+    - "When the list closes, the input is synchronized back to the selected option text."
+    - "Opening logic, filtering, and item registration all live in the root context, and disabled or read-only roots reject writes."
+  keyApi:
+    - name: "Combobox.Root"
+      description: "Use `value`, `inputValue`, `open`, and their default/onChange pairs when integrating with external form or search state."
+    - name: "Combobox.Input"
+      description: "This is the typed query surface; `placeholder`, `disabled`, and `readOnly` are the key integration points."
+    - name: "Combobox.Content"
+      description: "Use `placement`, `offset`, `padding`, and outside-interaction callbacks for overlay positioning and dismissal behavior."
+    - name: "filterFn"
+      description: "Override `filterFn` when case-insensitive substring matching is not enough for your search rules."
+  compositionPatterns:
+    - title: "Searchable settings picker"
+      description: "Compose `Trigger`, `Value`, and `Input` together so the currently selected value and the live filter query are both visible."
+    - title: "Strict option selection"
+      description: "Use `Combobox.Item` for every valid value and let the package re-sync the input text to the chosen option when the list closes."
+  cautions:
+    - "This package is still a selection control, not a freeform text field; the stable committed value comes from registered items."
+    - "Because content is portal-based, use `PortalProvider` when you need predictable overlay mounting and display order."
+  related:
+    - label: "Select"
+      href: "/components/select/"
+    - label: "Text Field"
+      href: "/components/text-field/"
+    - label: "Layer"
+      href: "/components/layer/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["combobox"]} />

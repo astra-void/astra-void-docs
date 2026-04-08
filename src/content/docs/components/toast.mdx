@@ -4,9 +4,37 @@ description: "Headless toast primitives for Roblox UI with queue-based visibilit
 draft: false
 sidebar:
   order: 23
+packageDoc:
+  whatItIsFor:
+    - "Use `Toast` for transient feedback that should queue, stack, and dismiss automatically without interrupting the main interaction flow."
+    - "It is appropriate for saved-state messages, undo affordances, and background task completion notices."
+  stateModel:
+    - "`Toast.Provider` owns the full toast queue, the visible subset, the default duration, and the maximum visible count."
+    - "`useToast()` exposes the imperative queue API so any component in the provider tree can enqueue and clear toasts."
+    - "`Toast.Root` is presentation-oriented; queue lifecycle and timing live at the provider layer."
+  keyApi:
+    - name: "Toast.Provider"
+      description: "Use `defaultDurationMs` and `maxVisible` to define queue pacing and stacking behavior for the whole app."
+    - name: "useToast"
+      description: "Call `enqueue`, `remove`, and `clear` from application code without manually threading toast state everywhere."
+    - name: "Toast.Viewport"
+      description: "Mount the viewport once where toast surfaces should render and stack."
+    - name: "Toast.Action / Toast.Close"
+      description: "Use these parts for explicit user actions and dismiss controls inside the toast surface."
+  compositionPatterns:
+    - title: "Global save feedback"
+      description: "Mount one provider and viewport high in the tree, then enqueue short descriptive toasts from feature code."
+    - title: "Undoable actions"
+      description: "Use `Toast.Action` when the toast should offer one meaningful follow-up action without becoming a full dialog."
+  cautions:
+    - "A provider without a mounted viewport can still manage queue state, but nothing will render visibly."
+    - "Toasts are intentionally transient; use `Dialog` or inline validation when the user must acknowledge or resolve something before proceeding."
+  related:
+    - label: "Dialog"
+      href: "/components/dialog/"
+    - label: "Progress"
+      href: "/components/progress/"
+    - label: "Layer"
+      href: "/components/layer/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["toast"]} />

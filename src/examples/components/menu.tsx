@@ -1,5 +1,5 @@
 import { Menu } from "@lattice-ui/menu";
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { PortalProvider } from "@lattice-ui/layer";
 
 type Props = {
@@ -28,10 +28,22 @@ function MenuDemo() {
 
         <Menu.Portal>
           <Menu.Content asChild offset={new Vector2(0, 8)} placement="bottom">
-            <frame BackgroundColor3={Color3.fromRGB(22, 28, 39)} BorderSizePixel={0} Size={UDim2.fromOffset(220, 144)}>
+            <frame
+              BackgroundColor3={Color3.fromRGB(22, 28, 39)}
+              BorderSizePixel={0}
+              Size={UDim2.fromOffset(220, 144)}
+            >
               <uicorner CornerRadius={new UDim(0, 10)} />
-              <uipadding PaddingLeft={new UDim(0, 8)} PaddingRight={new UDim(0, 8)} PaddingTop={new UDim(0, 8)} PaddingBottom={new UDim(0, 8)} />
-              <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 4)} />
+              <uipadding
+                PaddingLeft={new UDim(0, 8)}
+                PaddingRight={new UDim(0, 8)}
+                PaddingTop={new UDim(0, 8)}
+                PaddingBottom={new UDim(0, 8)}
+              />
+              <uilistlayout
+                FillDirection={Enum.FillDirection.Vertical}
+                Padding={new UDim(0, 4)}
+              />
 
               <Menu.Label asChild>
                 <textlabel
@@ -77,7 +89,11 @@ function MenuDemo() {
               </Menu.Item>
 
               <Menu.Separator asChild>
-                <frame BackgroundColor3={Color3.fromRGB(60, 76, 104)} BorderSizePixel={0} Size={UDim2.fromOffset(204, 1)} />
+                <frame
+                  BackgroundColor3={Color3.fromRGB(60, 76, 104)}
+                  BorderSizePixel={0}
+                  Size={UDim2.fromOffset(204, 1)}
+                />
               </Menu.Separator>
 
               <Menu.Item asChild disabled={true}>

@@ -4,9 +4,35 @@ description: "Headless checkbox primitives for Roblox UI."
 draft: false
 sidebar:
   order: 3
+packageDoc:
+  whatItIsFor:
+    - "Use `Checkbox` for boolean or tri-state choices where the control itself is the interaction target."
+    - "It is useful when you need `indeterminate` state and want to keep the visual host fully custom."
+  stateModel:
+    - '`checked` supports `true`, `false`, and `"indeterminate"`.'
+    - "`Checkbox.Root` supports both controlled and uncontrolled state via `checked` or `defaultChecked`."
+    - "`Checkbox.Indicator` reflects the current checked state and can remain mounted with `forceMount`."
+  keyApi:
+    - name: "Checkbox.Root"
+      description: "Use `checked`, `defaultChecked`, `onCheckedChange`, `disabled`, and `required` to integrate with your own form model."
+    - name: "Checkbox.Root asChild"
+      description: "Set `asChild` when you want the click behavior attached to an existing button-like element instead of the default host."
+    - name: "Checkbox.Indicator"
+      description: "Mount visual marks, fills, or icons inside the checkbox without rebuilding checked-state plumbing."
+  compositionPatterns:
+    - title: "Checklist rows"
+      description: "Wrap the interactive host with `Checkbox.Root asChild` and render the label beside it so the state lives in one place."
+    - title: "Partial selection"
+      description: 'Use `"indeterminate"` for parent-group selection UIs where some but not all descendants are active.'
+  cautions:
+    - "The default toggle cycle is `indeterminate -> true -> false`; account for that if you map the value into external state."
+    - "Use `Switch` instead of `Checkbox` when the UI should communicate an immediate on/off setting rather than selection membership."
+  related:
+    - label: "Switch"
+      href: "/components/switch/"
+    - label: "Radio Group"
+      href: "/components/radio-group/"
+    - label: "Text Field"
+      href: "/components/text-field/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["checkbox"]} />

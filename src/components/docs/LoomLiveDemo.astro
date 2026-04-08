@@ -1,0 +1,110 @@
+---
+import { LoomLiveDemoClient } from "./LoomLiveDemoClient";
+import CodeBlock from "./CodeBlock.astro";
+
+interface Props {
+  slug: string;
+  sourceCode: string;
+}
+
+const { slug, sourceCode } = Astro.props;
+const tabId = Math.random().toString(36).substring(2, 9);
+---
+
+<div
+  class="group relative my-4 flex flex-col space-y-2 loom-demo-tabs"
+  id={`demo-${tabId}`}
+>
+  <div class="relative mr-auto w-full">
+    <div class="flex items-center justify-between pb-3">
+      <div
+        class="inline-flex h-9 items-center justify-center rounded-none border-b bg-transparent p-0 text-muted-foreground w-full"
+        role="tablist"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls={`preview-${tabId}`}
+          class="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+          data-state="active"
+          data-target={`preview-${tabId}`}
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls={`code-${tabId}`}
+          class="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+          data-state="inactive"
+          data-target={`code-${tabId}`}
+        >
+          Code
+        </button>
+      </div>
+    </div>
+
+    <div
+      id={`preview-${tabId}`}
+      role="tabpanel"
+      class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative rounded-md border"
+    >
+      <div
+        class="preview flex min-h-87.5 w-full justify-center p-10 items-center bg-background"
+      >
+        <LoomLiveDemoClient client:only="react" slug={slug} />
+      </div>
+    </div>
+
+    <div
+      id={`code-${tabId}`}
+      role="tabpanel"
+      class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hidden"
+    >
+      <div class="flex flex-col space-y-4">
+        <div
+          class="w-full rounded-md [&_pre]:my-0 [&_pre]:max-h-87.5 [&_pre]:overflow-auto"
+        >
+          <CodeBlock code={sourceCode} lang="tsx" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setupTabs() {
+    const tabGroups = document.querySelectorAll(".loom-demo-tabs");
+    tabGroups.forEach((group) => {
+      const buttons = group.querySelectorAll(".demo-tab-btn");
+      const contents = group.querySelectorAll(".demo-tab-content");
+
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetId = btn.getAttribute("data-target");
+
+          // Update buttons
+          buttons.forEach((b) => {
+            b.setAttribute("data-state", b === btn ? "active" : "inactive");
+            b.setAttribute("aria-selected", b === btn ? "true" : "false");
+          });
+
+          // Update contents
+          contents.forEach((content) => {
+            if (content.id === targetId) {
+              content.classList.remove("hidden");
+            } else {
+              content.classList.add("hidden");
+            }
+          });
+        });
+      });
+    });
+  }
+
+  // Run on initial load and after Astro page transitions
+  setupTabs();
+  document.addEventListener("astro:page-load", setupTabs);
+</script>

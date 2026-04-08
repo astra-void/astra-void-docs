@@ -4,9 +4,35 @@ description: "Headless avatar primitives for Roblox UI with delayed fallback ren
 draft: false
 sidebar:
   order: 2
+packageDoc:
+  whatItIsFor:
+    - "Use `Avatar` for profile chips, player lists, or presence surfaces where image loading and fallback timing need to stay consistent."
+    - "The package separates image state from rendering, so you can fully own the Roblox instances used for the picture and the fallback."
+  stateModel:
+    - "`Avatar.Root` tracks `src`, image `status`, and whether the fallback delay has elapsed."
+    - "`Avatar.Image` and `Avatar.Fallback` read the same state, so they stay synchronized without manual branching in the caller."
+    - "`delayMs` controls when the fallback becomes visible while the image is still unresolved."
+  keyApi:
+    - name: "Avatar.Root"
+      description: "Pass `src` and optional `delayMs` to control image loading behavior and fallback reveal timing."
+    - name: "Avatar.Image"
+      description: "Use `asChild` to bind the avatar state onto your own `ImageLabel` or similar host element."
+    - name: "Avatar.Fallback"
+      description: "Render initials, status dots, or silhouette content only when the shared avatar state says the fallback should appear."
+  compositionPatterns:
+    - title: "Player roster rows"
+      description: "Keep the host image primitive small and let the fallback render initials or a status badge without duplicating load/error state outside the avatar tree."
+    - title: "Dense status chips"
+      description: "Short `delayMs` values work well when a missing image should reveal fallback content quickly in compact, frequently changing lists."
+  cautions:
+    - "Fallback visibility is state-driven; do not mount a separate unconditional fallback outside `Avatar.Fallback` if you want consistent behavior."
+    - "A missing or failed image source resolves to fallback immediately, while a loading image waits for the configured delay."
+  related:
+    - label: "Style"
+      href: "/components/style/"
+    - label: "System"
+      href: "/components/system/"
+    - label: "Progress"
+      href: "/components/progress/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["avatar"]} />

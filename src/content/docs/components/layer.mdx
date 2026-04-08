@@ -4,9 +4,36 @@ description: "Overlay layering primitives including portals, presence, and dismi
 draft: false
 sidebar:
   order: 8
+packageDoc:
+  whatItIsFor:
+    - "Use `layer` when you need the shared mechanics behind portals, outside dismissal, and mount-presence transitions."
+    - "It is the coordination layer that powers overlays like dialogs, popovers, menus, selects, and tooltips."
+  stateModel:
+    - "`PortalProvider` establishes the overlay container and a display-order base for everything mounted beneath it."
+    - "`DismissableLayer` tracks whether outside interactions should dismiss the current surface and whether outside pointer events should be blocked."
+    - "`Presence` keeps a subtree mounted long enough for exit work to complete and reports `isPresent` to the render function."
+  keyApi:
+    - name: "PortalProvider"
+      description: "Put this near the UI root with a `PlayerGui` container so overlay packages share one predictable mounting target."
+    - name: "Portal"
+      description: "Use `Portal` when content should render outside its logical parent tree but keep the same React ownership."
+    - name: "DismissableLayer"
+      description: "Use outside-interaction callbacks and `onDismiss` to implement overlay close behavior without manual global input listeners."
+    - name: "Presence"
+      description: "Use `present`, `exitFallbackMs`, and `onExitComplete` to coordinate presence-driven mounting and unmounting."
+  compositionPatterns:
+    - title: "Overlay root setup"
+      description: "Mount one `PortalProvider` at app root and let all dialog, popover, menu, select, and tooltip content inherit it."
+    - title: "Custom layered surfaces"
+      description: "Compose `Portal`, `DismissableLayer`, and `Presence` directly when you need a custom overlay that does not map cleanly to an existing package."
+  cautions:
+    - "Without a stable `PortalProvider`, overlays can still work but become harder to reason about and coordinate across the app."
+    - "`DismissableLayer` handles outside interaction semantics; it does not provide visuals or positioning by itself."
+  related:
+    - label: "Dialog"
+      href: "/components/dialog/"
+    - label: "Popover"
+      href: "/components/popover/"
+    - label: "Select"
+      href: "/components/select/"
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["layer"]} />

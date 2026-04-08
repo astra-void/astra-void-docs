@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { Switch } from "@lattice-ui/switch";
 
 export function SwitchExample() {
@@ -16,7 +16,11 @@ export function SwitchExample() {
         >
           <uicorner CornerRadius={new UDim(0, 8)} />
           <frame
-            BackgroundColor3={checked ? Color3.fromRGB(53, 104, 196) : Color3.fromRGB(60, 76, 104)}
+            BackgroundColor3={
+              checked
+                ? Color3.fromRGB(53, 104, 196)
+                : Color3.fromRGB(60, 76, 104)
+            }
             BorderSizePixel={0}
             Position={UDim2.fromOffset(10, 10)}
             Size={UDim2.fromOffset(46, 24)}
@@ -26,7 +30,9 @@ export function SwitchExample() {
               <frame
                 BackgroundColor3={Color3.fromRGB(240, 244, 250)}
                 BorderSizePixel={0}
-                Position={checked ? UDim2.fromOffset(24, 2) : UDim2.fromOffset(2, 2)}
+                Position={
+                  checked ? UDim2.fromOffset(24, 2) : UDim2.fromOffset(2, 2)
+                }
                 Size={UDim2.fromOffset(20, 20)}
               >
                 <uicorner CornerRadius={new UDim(1, 0)} />

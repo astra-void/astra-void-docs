@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { FocusScope } from "@lattice-ui/focus";
 
 export function FocusExample() {
@@ -7,7 +7,11 @@ export function FocusExample() {
   return (
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 180)}>
       <FocusScope active={active} restoreFocus={true} trapped={true}>
-        <frame BackgroundColor3={Color3.fromRGB(34, 41, 54)} BorderSizePixel={0} Size={UDim2.fromOffset(320, 92)}>
+        <frame
+          BackgroundColor3={Color3.fromRGB(34, 41, 54)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(320, 92)}
+        >
           <uicorner CornerRadius={new UDim(0, 10)} />
           <textlabel
             BackgroundTransparency={1}

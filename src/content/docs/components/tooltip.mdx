@@ -4,9 +4,35 @@ description: "Headless tooltip primitives for contextual hover/focus hints."
 draft: false
 sidebar:
   order: 25
+packageDoc:
+  whatItIsFor:
+    - "Use `Tooltip` for short contextual hints that appear on hover or selection focus without interrupting the surrounding workflow."
+    - "It is best for explaining nearby UI affordances, not for delivering required instructions or deep interaction flows."
+  stateModel:
+    - "`Tooltip.Provider` tracks open-delay policy with `delayDuration` and `skipDelayDuration` across multiple tooltips."
+    - "`Tooltip.Root` can be controlled or uncontrolled and keeps refs for both the trigger and the positioned content."
+    - "Tooltip activity can come from hover or focus/selection, and the provider decides whether the next tooltip should open with a shorter skip delay."
+  keyApi:
+    - name: "Tooltip.Provider"
+      description: "Use provider-level delay settings when multiple tooltips in one region should feel consistent and benefit from skip-delay behavior."
+    - name: "Tooltip.Root"
+      description: "Use `open`, `defaultOpen`, `delayDuration`, and `onOpenChange` when one tooltip needs explicit state ownership."
+    - name: "Tooltip.Content"
+      description: "Use `placement`, `offset`, `padding`, and outside-interaction hooks to position the hint surface without rebuilding overlay math."
+  compositionPatterns:
+    - title: "Dense control hints"
+      description: "Wrap icon-only or compact controls with tooltips when nearby text would create too much layout noise."
+    - title: "Shared timing regions"
+      description: "Use one provider around a toolbar or command strip so moving between nearby controls feels responsive instead of repeatedly delayed."
+  cautions:
+    - "Tooltips should stay short and supplemental; do not hide required instructions or destructive confirmations inside them."
+    - "Like other anchored overlays, tooltips benefit from a shared `PortalProvider` for predictable mounting and stacking."
+  related:
+    - label: "Popover"
+      href: "/components/popover/"
+    - label: "Layer"
+      href: "/components/layer/"
+    - label: "Popper"
+      href: "/components/popper/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["tooltip"]} />

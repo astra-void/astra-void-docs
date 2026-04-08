@@ -4,9 +4,37 @@ description: "Theme tokens, style primitives, and sx helpers for Lattice UI."
 draft: false
 sidebar:
   order: 17
+packageDoc:
+  whatItIsFor:
+    - "Use `@lattice-ui/style` as the default baseline for product UI styling in Lattice UI apps."
+    - "It provides theme tokens, primitive text/box helpers, `sx` composition, and reusable recipes without dictating app structure."
+  stateModel:
+    - "`ThemeProvider` owns the current theme object and exposes it through `useTheme` and `useThemeValue`."
+    - "`createRecipe` and `mergeSx` are pure style composition tools; they do not create runtime state on their own."
+    - "Theme tokens cover colors, spacing, radius, and typography, and other packages read from that theme model rather than duplicating scales."
+  keyApi:
+    - name: "ThemeProvider"
+      description: "Use `theme`, `defaultTheme`, and `onThemeChange` when your app needs controlled or uncontrolled theme ownership."
+    - name: "createRecipe"
+      description: "Use recipes to centralize visual variants instead of scattering conditional prop objects across your UI."
+    - name: "mergeGuiProps"
+      description: "Use this to layer base, variant, and caller overrides while composing `Event` and `Change` handlers instead of replacing them."
+    - name: "Box / Text"
+      description: "Use primitives for token-driven structure and typography without reaching directly for raw Roblox hosts everywhere."
+  compositionPatterns:
+    - title: "Theme-backed product surfaces"
+      description: "Define recipes once, then apply them across buttons, panels, and labels so visual language stays coherent."
+    - title: "Custom component skins"
+      description: "Pair `useTheme` with headless packages like `TextField` or `Select` so semantics and visuals stay decoupled."
+  cautions:
+    - "`style` handles visual language, not app-level layout or density orchestration; use `system` for that layer."
+    - "If you bypass tokens with one-off values everywhere, the package stops paying for itself quickly."
+  related:
+    - label: "System"
+      href: "/components/system/"
+    - label: "Design with Style + System"
+      href: "/getting-started/design-with-style-system/"
+    - label: "Build a Settings Dialog"
+      href: "/getting-started/build-a-settings-dialog/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["style"]} />

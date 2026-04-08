@@ -4,9 +4,37 @@ description: "Headless popover primitives anchored to trigger or anchor elements
 draft: false
 sidebar:
   order: 10
+packageDoc:
+  whatItIsFor:
+    - "Use `Popover` for anchored surfaces that should stay connected to a trigger or anchor without taking over the full interaction mode like a dialog."
+    - "It is the right fit for inline help, quick settings, or compact secondary editors."
+  stateModel:
+    - "`Popover.Root` manages controlled or uncontrolled `open` state and optional `modal` behavior."
+    - "Trigger, anchor, and content refs are part of the shared context so positioning stays synchronized."
+    - "Content uses popper placement data plus layer dismissal semantics rather than in-place layout flow."
+  keyApi:
+    - name: "Popover.Root"
+      description: "Use `open`, `defaultOpen`, `onOpenChange`, and `modal` to define how heavy the overlay interaction model should be."
+    - name: "Popover.Anchor"
+      description: "Use an explicit anchor when the positioned content should attach to something other than the trigger itself."
+    - name: "Popover.Content"
+      description: "Use `placement`, `offset`, `padding`, and outside-interaction hooks to control geometry and dismissal."
+    - name: "Popover.Close"
+      description: "Attach dismiss behavior to any host element inside the content without introducing extra state plumbing."
+  compositionPatterns:
+    - title: "Quick settings panel"
+      description: "Use a trigger for entry, then place short form controls inside `Popover.Content` when the edit surface should remain lightweight."
+    - title: "Detached anchor workflows"
+      description: "Use `Popover.Anchor` when the UI affordance that opens the surface is not the same visual target the surface should align to."
+  cautions:
+    - "Because popovers are anchored overlays, they still benefit from a shared `PortalProvider` near the app root."
+    - "Use `Dialog` instead when the content should trap attention or own a stronger modal interaction contract."
+  related:
+    - label: "Dialog"
+      href: "/components/dialog/"
+    - label: "Popper"
+      href: "/components/popper/"
+    - label: "Layer"
+      href: "/components/layer/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["popover"]} />

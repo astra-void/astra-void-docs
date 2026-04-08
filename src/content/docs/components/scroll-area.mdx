@@ -4,9 +4,35 @@ description: "Headless scroll area primitives for Roblox UI with custom scrollba
 draft: false
 sidebar:
   order: 14
+packageDoc:
+  whatItIsFor:
+    - "Use `ScrollArea` when you want custom scrollbars and thumbs around a Roblox `ScrollingFrame` viewport."
+    - "It is useful when native scroll visuals do not match the product language but native scrolling behavior should remain intact."
+  stateModel:
+    - "`ScrollArea.Root` tracks viewport metrics for both axes, scrollbar visibility policy, and recent scroll activity."
+    - "`type` determines whether scrollbars are always visible, only visible while scrolling, or auto-shown based on overflow."
+    - "Scrollbar and thumb primitives read the shared metrics; they do not maintain independent scroll position state."
+  keyApi:
+    - name: "ScrollArea.Root"
+      description: "Use `type` and `scrollHideDelayMs` to define how visible and reactive the custom scrollbars should feel."
+    - name: "ScrollArea.Viewport"
+      description: "Bind this to the actual `ScrollingFrame` host so the package can observe canvas size and scroll position."
+    - name: "ScrollArea.Scrollbar / Thumb"
+      description: "Set `orientation` to wire each scrollbar and thumb to the correct axis."
+  compositionPatterns:
+    - title: "Custom content panes"
+      description: "Wrap a `ScrollingFrame` viewport with vertical and horizontal scrollbar primitives when the app needs a branded scroll treatment."
+    - title: "Large settings or logs panels"
+      description: "Use the auto visibility policy for dense content areas where permanent scrollbars would add noise."
+  cautions:
+    - "Thumb movement reflects shared viewport metrics, so the viewport host must be the authoritative scroll owner."
+    - "This package customizes the chrome around scrolling; it does not replace Roblox scrolling behavior or content virtualization."
+  related:
+    - label: "System"
+      href: "/components/system/"
+    - label: "Style"
+      href: "/components/style/"
+    - label: "Tabs"
+      href: "/components/tabs/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["scroll-area"]} />

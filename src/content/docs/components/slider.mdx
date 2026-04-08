@@ -4,9 +4,35 @@ description: "Headless single-thumb slider primitives for Roblox UI."
 draft: false
 sidebar:
   order: 16
+packageDoc:
+  whatItIsFor:
+    - "Use `Slider` for bounded numeric input when dragging or key-based adjustment is more natural than typing a raw number."
+    - "It is a headless primitive for one-dimensional range selection rather than a styled media scrubber."
+  stateModel:
+    - "`Slider.Root` manages controlled or uncontrolled numeric `value` plus a separate commit callback for final confirmation."
+    - "`min`, `max`, `step`, `orientation`, and `disabled` define how movement maps to values."
+    - "Track and thumb hosts are registered into shared slider state so drag calculations know which geometry to use."
+  keyApi:
+    - name: "Slider.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, `onValueCommit`, `min`, `max`, `step`, and `orientation` to define the numeric model."
+    - name: "Slider.Track"
+      description: "Bind your main drag surface here so the slider can translate pointer position into values."
+    - name: "Slider.Range / Slider.Thumb"
+      description: "Use these for the filled segment and the draggable handle without reimplementing range math."
+  compositionPatterns:
+    - title: "Audio or gameplay settings"
+      description: "Use a horizontal slider with a separate numeric label when the user benefits from both direct manipulation and explicit value feedback."
+    - title: "Vertical scrubbing surfaces"
+      description: 'Use `orientation="vertical"` for compact inspector-style controls or side-mounted adjustment strips.'
+  cautions:
+    - "The current public package is single-thumb only; it is not a dual-handle range selector."
+    - "Values are clamped and stepped by the package, so do not depend on raw pointer positions as authoritative state."
+  related:
+    - label: "Progress"
+      href: "/components/progress/"
+    - label: "Text Field"
+      href: "/components/text-field/"
+    - label: "System"
+      href: "/components/system/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["slider"]} />

@@ -4,9 +4,35 @@ description: "Headless menu primitives for contextual actions and grouped menu i
 draft: false
 sidebar:
   order: 9
+packageDoc:
+  whatItIsFor:
+    - "Use `Menu` for contextual action lists where opening the surface should immediately hand focus to the first available item."
+    - "It is appropriate for action menus and command surfaces, not value-selection widgets like `Select`."
+  stateModel:
+    - "`Menu.Root` supports controlled and uncontrolled `open` state and a `modal` mode flag."
+    - "Registered menu items are ordered and selection moves through that ordered set when the menu is open."
+    - "When the menu opens, the first enabled item receives focus; when it closes, focus can return to the trigger."
+  keyApi:
+    - name: "Menu.Root"
+      description: "Use `open`, `defaultOpen`, `onOpenChange`, and `modal` to define menu ownership and dismissal behavior."
+    - name: "Menu.Content"
+      description: "Use `placement`, `offset`, and outside-interaction hooks to position the surface and customize dismissal."
+    - name: "Menu.Item"
+      description: "Use `disabled` and `onSelect` for per-action behavior; calling `preventDefault` keeps the menu open when needed."
+  compositionPatterns:
+    - title: "Overflow or kebab menus"
+      description: "Pair a compact trigger with grouped `Menu.Item` actions and separators for secondary actions that should not live in the main layout."
+    - title: "Contextual action blocks"
+      description: "Use labels and groups to separate destructive or advanced actions without giving up caller-owned visuals."
+  cautions:
+    - "This package models a flat action menu; there are no submenu primitives in the current public surface."
+    - "Menus open into item-focus mode immediately, so they are not a replacement for searchable or value-driven pickers."
+  related:
+    - label: "Select"
+      href: "/components/select/"
+    - label: "Popover"
+      href: "/components/popover/"
+    - label: "Layer"
+      href: "/components/layer/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["menu"]} />

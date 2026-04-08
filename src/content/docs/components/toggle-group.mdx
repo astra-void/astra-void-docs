@@ -4,9 +4,33 @@ description: "Headless toggle group primitives for single and multiple selection
 draft: false
 sidebar:
   order: 24
+packageDoc:
+  whatItIsFor:
+    - "Use `ToggleGroup` for pill bars, formatting controls, and compact segmented selectors where buttons should show pressed state."
+    - "It bridges the gap between a lone `Switch` and a full `RadioGroup`, with both single and multiple selection modes."
+  stateModel:
+    - "`ToggleGroup.Root` switches between `single` and `multiple` selection models through the required `type` prop."
+    - "The value shape follows that selection model: a string or undefined for `single`, an array for `multiple`."
+    - "Pressed state is computed centrally, and both group-level and item-level disabled flags participate in interaction rules."
+  keyApi:
+    - name: "ToggleGroup.Root"
+      description: "Use `type`, `value`, `defaultValue`, and `onValueChange` to define whether the group behaves like a segmented selector or a pressed-state toolbar."
+    - name: "ToggleGroup.Item"
+      description: "Each item needs a stable `value`; `disabled` removes it from toggling without changing the rest of the group."
+  compositionPatterns:
+    - title: "Single-choice segmented controls"
+      description: 'Use `type="single"` when the control should feel like a compact alternative to radio buttons.'
+    - title: "Pressed formatting toolbars"
+      description: 'Use `type="multiple"` when several pressed states may be active at once, such as bold/italic/underline controls.'
+  cautions:
+    - "The controlled value shape changes with `type`, so avoid sharing one state variable between single and multiple groups without normalizing it first."
+    - "Use `RadioGroup` when the options should stay visible but read more like a classic form control than a pressed button bar."
+  related:
+    - label: "Radio Group"
+      href: "/components/radio-group/"
+    - label: "Switch"
+      href: "/components/switch/"
+    - label: "Tabs"
+      href: "/components/tabs/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["toggle-group"]} />

@@ -12,11 +12,11 @@ const { title, columns, rows } = Astro.props;
 
 function escapeHtml(value: string) {
   return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatInline(value: string) {
@@ -27,18 +27,25 @@ function formatInline(value: string) {
 ---
 
 <Card className="my-8">
-  {title && (
-    <CardHeader className="pb-3">
-      <CardTitle className="text-lg tracking-[-0.02em]">{title}</CardTitle>
-    </CardHeader>
-  )}
+  {
+    title && (
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg tracking-[-0.02em]">{title}</CardTitle>
+      </CardHeader>
+    )
+  }
   <CardContent className="pb-6">
     <Table>
       <TableHeader>
         <TableRow>
-          {columns.map((column) => (
-            <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground" set:html={formatInline(column)} />
-          ))}
+          {
+            columns.map((column) => (
+              <th
+                class="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+                set:html={formatInline(column)}
+              />
+            ))
+          }
         </TableRow>
       </TableHeader>
       <TableBody>

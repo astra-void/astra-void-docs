@@ -24,59 +24,91 @@ const hasOverflow = codeLines.length > previewLineCount;
 const previewCode = hasOverflow
   ? `${codeLines.slice(0, previewLineCount).join("\n")}\n...`
   : normalizedCode;
-const disclosureSource = (fileName ?? title)
-  .toLowerCase()
-  .replace(/[^a-z0-9]+/g, "-")
-  .replace(/^-+|-+$/g, "") || "example";
+const disclosureSource =
+  (fileName ?? title)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "example";
 const disclosureId = `docs-example-${disclosureSource}`;
 const isExpanded = defaultOpen || !hasOverflow;
 ---
 
-<section class="doc-section doc-section-example docs-example" data-example-collapsible data-open={isExpanded ? "true" : "false"}>
-  <div class="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
-    <div class="flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:justify-between">
+<section
+  class="doc-section doc-section-example docs-example"
+  data-example-collapsible
+  data-open={isExpanded ? "true" : "false"}
+>
+  <div
+    class="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm"
+  >
+    <div
+      class="flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:justify-between"
+    >
       <div class="min-w-0">
-        <h2 class="mb-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">{title}</h2>
+        <h2
+          class="mb-2 text-2xl font-semibold tracking-[-0.04em] text-foreground"
+        >
+          {title}
+        </h2>
         <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        {fileName && <code class="inline-flex items-center rounded-md border bg-background px-3 py-1 text-sm text-foreground">{fileName}</code>}
-        {hasOverflow && (
-          <button
-            type="button"
-            class="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            data-example-toggle
-            aria-expanded={isExpanded ? "true" : "false"}
-            aria-controls={disclosureId}
-          >
-            <span class="docs-example-toggle-copy docs-example-toggle-copy-closed">Show full example</span>
-            <span class="docs-example-toggle-copy docs-example-toggle-copy-open">Hide full example</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 docs-example-toggle-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+        {
+          fileName && (
+            <code class="inline-flex items-center rounded-md border bg-background px-3 py-1 text-sm text-foreground">
+              {fileName}
+            </code>
+          )
+        }
+        {
+          hasOverflow && (
+            <button
+              type="button"
+              class="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              data-example-toggle
+              aria-expanded={isExpanded ? "true" : "false"}
+              aria-controls={disclosureId}
             >
-              <path d="m6 9 6 6 6-6"></path>
-            </svg>
-          </button>
-        )}
+              <span class="docs-example-toggle-copy docs-example-toggle-copy-closed">
+                Show full example
+              </span>
+              <span class="docs-example-toggle-copy docs-example-toggle-copy-open">
+                Hide full example
+              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 docs-example-toggle-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+          )
+        }
       </div>
     </div>
 
-    {hasOverflow && (
-      <div class="border-b bg-muted/20 px-4 py-4 docs-example-preview relative">
-        <CodeBlock code={previewCode} lang="tsx" />
-      </div>
-    )}
+    {
+      hasOverflow && (
+        <div class="border-b bg-muted/20 px-4 py-4 docs-example-preview relative">
+          <CodeBlock code={previewCode} lang="tsx" />
+        </div>
+      )
+    }
 
-    <div id={disclosureId} class="px-4 py-4 docs-example-panel" data-example-panel hidden={hasOverflow && !isExpanded}>
+    <div
+      id={disclosureId}
+      class="px-4 py-4 docs-example-panel"
+      data-example-panel
+      hidden={hasOverflow && !isExpanded}
+    >
       <CodeBlock code={normalizedCode} lang="tsx" />
     </div>
   </div>

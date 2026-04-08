@@ -1,17 +1,27 @@
 import { Avatar } from "@lattice-ui/avatar";
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 
 export function AvatarExample() {
   const [broken, setBroken] = React.useState(false);
-  const src = broken ? "rbxassetid://0" : "rbxasset://textures/ui/GuiImagePlaceholder.png";
+  const src = broken
+    ? "rbxassetid://0"
+    : "rbxasset://textures/ui/GuiImagePlaceholder.png";
 
   return (
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(360, 170)}>
       <Avatar.Root delayMs={250} src={src}>
-        <frame BackgroundColor3={Color3.fromRGB(34, 41, 54)} BorderSizePixel={0} Size={UDim2.fromOffset(64, 64)}>
+        <frame
+          BackgroundColor3={Color3.fromRGB(34, 41, 54)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(64, 64)}
+        >
           <uicorner CornerRadius={new UDim(1, 0)} />
           <Avatar.Image asChild>
-            <imagelabel BackgroundTransparency={1} BorderSizePixel={0} Size={UDim2.fromScale(1, 1)}>
+            <imagelabel
+              BackgroundTransparency={1}
+              BorderSizePixel={0}
+              Size={UDim2.fromScale(1, 1)}
+            >
               <uicorner CornerRadius={new UDim(1, 0)} />
             </imagelabel>
           </Avatar.Image>

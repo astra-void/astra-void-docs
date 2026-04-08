@@ -15,11 +15,18 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
 <div class="docs-section-grid">
   <section class="docs-section-card">
     <h3>What breaks</h3>
-    <p>Dialog, Popover, Select, Combobox, Menu, Tooltip, and Toast can all render without a shared app-level portal target, but layering becomes harder to reason about immediately.</p>
+    <p>
+      Dialog, Popover, Select, Combobox, Menu, Tooltip, and Toast can all render
+      without a shared app-level portal target, but layering becomes harder to
+      reason about immediately.
+    </p>
   </section>
   <section class="docs-section-card">
     <h3>What to do</h3>
-    <p>Mount one <code>PortalProvider</code> near the app root with a stable <code>PlayerGui</code> container, then let overlay packages inherit it.</p>
+    <p>
+      Mount one <code>PortalProvider</code> near the app root with a stable{" "}
+      <code>PlayerGui</code> container, then let overlay packages inherit it.
+    </p>
   </section>
 </div>
 
@@ -28,11 +35,17 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
 <div class="docs-section-grid">
   <section class="docs-section-card">
     <h3>What breaks</h3>
-    <p>Two overlays can both look correct in isolation but fight once one trigger lives under a different provider or display-order base.</p>
+    <p>
+      Two overlays can both look correct in isolation but fight once one trigger
+      lives under a different provider or display-order base.
+    </p>
   </section>
   <section class="docs-section-card">
     <h3>What to do</h3>
-    <p>Keep one stacking model per app shell. If you need custom layering, do it through the shared layer primitives instead of ad hoc ScreenGui trees.</p>
+    <p>
+      Keep one stacking model per app shell. If you need custom layering, do it
+      through the shared layer primitives instead of ad hoc ScreenGui trees.
+    </p>
   </section>
 </div>
 
@@ -41,11 +54,18 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
 <div class="docs-section-grid">
   <section class="docs-section-card">
     <h3>What breaks</h3>
-    <p>Dialogs and trapped scopes feel flaky when they open from triggers that cannot receive focus again or when restore paths are implicit.</p>
+    <p>
+      Dialogs and trapped scopes feel flaky when they open from triggers that
+      cannot receive focus again or when restore paths are implicit.
+    </p>
   </section>
   <section class="docs-section-card">
     <h3>What to do</h3>
-    <p>Treat the trigger as part of the focus contract. Use <code>restoreFocus</code> intentionally and keep trigger ownership stable when possible.</p>
+    <p>
+      Treat the trigger as part of the focus contract. Use{" "}
+      <code>restoreFocus</code> intentionally and keep trigger ownership stable
+      when possible.
+    </p>
   </section>
 </div>
 
@@ -54,11 +74,18 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
 <div class="docs-section-grid">
   <section class="docs-section-card">
     <h3>What breaks</h3>
-    <p>Disabled items disappear from interaction, but product state often still assumes they can be selected, focused, or announced like normal options.</p>
+    <p>
+      Disabled items disappear from interaction, but product state often still
+      assumes they can be selected, focused, or announced like normal options.
+    </p>
   </section>
   <section class="docs-section-card">
     <h3>What to do</h3>
-    <p>Model disabled items as truly unavailable. In selection controls, expect keyboard and directional movement to skip them and keep labels explicit in the rendered host.</p>
+    <p>
+      Model disabled items as truly unavailable. In selection controls, expect
+      keyboard and directional movement to skip them and keep labels explicit in
+      the rendered host.
+    </p>
   </section>
 </div>
 
@@ -67,11 +94,20 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
 <div class="docs-section-grid">
   <section class="docs-section-card">
     <h3>What breaks</h3>
-    <p>Moving a component between <code>defaultValue</code> and <code>value</code> modes mid-flow creates hard-to-debug state handoff issues, especially when the control also owns <code>open</code> or <code>inputValue</code>.</p>
+    <p>
+      Moving a component between <code>defaultValue</code> and{" "}
+      <code>value</code> modes mid-flow creates hard-to-debug state handoff
+      issues, especially when the control also owns <code>open</code> or{" "}
+      <code>inputValue</code>.
+    </p>
   </section>
   <section class="docs-section-card">
     <h3>What to do</h3>
-    <p>Pick ownership up front. If app state should be the source of truth, control the component from the start; otherwise keep it fully uncontrolled and mirror only committed changes outward.</p>
+    <p>
+      Pick ownership up front. If app state should be the source of truth,
+      control the component from the start; otherwise keep it fully uncontrolled
+      and mirror only committed changes outward.
+    </p>
   </section>
 </div>
 

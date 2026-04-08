@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { Slider } from "@lattice-ui/slider";
 
 export function SliderExample() {
@@ -6,12 +6,26 @@ export function SliderExample() {
 
   return (
     <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 160)}>
-      <Slider.Root max={100} min={0} onValueChange={setValue} step={1} value={value}>
+      <Slider.Root
+        max={100}
+        min={0}
+        onValueChange={setValue}
+        step={1}
+        value={value}
+      >
         <Slider.Track asChild>
-          <frame BackgroundColor3={Color3.fromRGB(34, 41, 54)} BorderSizePixel={0} Position={UDim2.fromOffset(0, 24)} Size={UDim2.fromOffset(320, 12)}>
+          <frame
+            BackgroundColor3={Color3.fromRGB(34, 41, 54)}
+            BorderSizePixel={0}
+            Position={UDim2.fromOffset(0, 24)}
+            Size={UDim2.fromOffset(320, 12)}
+          >
             <uicorner CornerRadius={new UDim(0, 6)} />
             <Slider.Range asChild>
-              <frame BackgroundColor3={Color3.fromRGB(53, 104, 196)} BorderSizePixel={0}>
+              <frame
+                BackgroundColor3={Color3.fromRGB(53, 104, 196)}
+                BorderSizePixel={0}
+              >
                 <uicorner CornerRadius={new UDim(0, 6)} />
               </frame>
             </Slider.Range>

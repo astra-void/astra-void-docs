@@ -4,9 +4,35 @@ description: "Headless multi-line text input primitives for Roblox UI with optio
 draft: false
 sidebar:
   order: 22
+packageDoc:
+  whatItIsFor:
+    - "Use `Textarea` for multi-line text entry when the field should support the same labeled-field semantics as `TextField` but with optional automatic resizing."
+    - "It works well for notes, descriptions, and admin surfaces that need larger freeform input."
+  stateModel:
+    - "`Textarea.Root` shares the same controlled/uncontrolled value model as `TextField`, with additional `autoResize`, `minRows`, and `maxRows` state."
+    - "`autoResize` defaults to `true`, and row constraints are normalized so `minRows` is at least one and `maxRows` never falls below it."
+    - "`onValueCommit` remains distinct from live text changes, and disabled/read-only roots reject writes."
+  keyApi:
+    - name: "Textarea.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, `onValueCommit`, `autoResize`, `minRows`, and `maxRows` to define the field model."
+    - name: "Textarea.Input"
+      description: "Use `lineHeight` with `asChild` when your visual host needs explicit row-height control."
+    - name: "Textarea.Label / Description / Message"
+      description: "Use the same companion parts as `TextField` to keep field messaging aligned with the current state."
+  compositionPatterns:
+    - title: "Auto-growing notes fields"
+      description: "Leave `autoResize` enabled when the field should expand naturally with content up to a defined row ceiling."
+    - title: "Structured long-form settings"
+      description: "Combine a textarea with helper and validation text when the app needs multi-line input but still wants the same field-shell contract as `TextField`."
+  cautions:
+    - "`autoResize` is on by default, so opt out explicitly if the layout depends on fixed input height."
+    - "Use `TextField` instead when the input must stay single-line and commit semantics matter more than row growth."
+  related:
+    - label: "Text Field"
+      href: "/components/text-field/"
+    - label: "Scroll Area"
+      href: "/components/scroll-area/"
+    - label: "Style"
+      href: "/components/style/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["textarea"]} />

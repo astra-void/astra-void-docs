@@ -4,9 +4,37 @@ description: "System-level providers and layout/surface primitives for app scaff
 draft: false
 sidebar:
   order: 19
+packageDoc:
+  whatItIsFor:
+    - "Use `@lattice-ui/system` for app-level UI context, density-aware theme resolution, and layout primitives like `Stack`, `Row`, `Grid`, and `Surface`."
+    - "It is the structural companion to `style`: `style` defines the visual language, while `system` applies that language across screens and layouts."
+  stateModel:
+    - "`SystemProvider` owns two coordinated values: the raw `baseTheme` and the current density token."
+    - "`useSystemTheme` exposes the density-resolved `theme` for reading, plus setters for `baseTheme` and `density`."
+    - "Layout primitives are stateless views over spacing and layout rules; they read theme and density context but do not create their own global model."
+  keyApi:
+    - name: "SystemProvider"
+      description: "Use `theme`, `defaultTheme`, `density`, and their change callbacks when the app root should own global UI context."
+    - name: "useSystemTheme"
+      description: "Read the resolved theme and update `setBaseTheme` or `setDensity` when runtime appearance should react to user choice or screen context."
+    - name: "Stack / Row / Grid"
+      description: "Use these primitives for token-aware layout instead of hand-authoring repetitive padding, gap, and auto-size wiring."
+    - name: "Surface / surface"
+      description: "Use `Surface` for decorated containers and `surface()` when you only need host props for a given tone."
+  compositionPatterns:
+    - title: "App root scaffolding"
+      description: "Wrap the top-level UI in `SystemProvider`, then build screens with `Stack`, `Row`, `Grid`, and `Surface` so density changes propagate cleanly."
+    - title: "Adaptive settings panels"
+      description: "Use `useSystemTheme` to switch theme or density in response to player settings without bypassing the shared UI model."
+  cautions:
+    - "`system` assumes you want one coherent app-wide UI context; if you skip the provider, density-aware behavior and theme coordination disappear."
+    - "Density is intentionally constrained to `compact`, `comfortable`, and `spacious` rather than an open-ended arbitrary scale."
+  related:
+    - label: "Style"
+      href: "/components/style/"
+    - label: "Design with Style + System"
+      href: "/getting-started/design-with-style-system/"
+    - label: "Build a Settings Dialog"
+      href: "/getting-started/build-a-settings-dialog/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["system"]} />

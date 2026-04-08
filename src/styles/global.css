@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 @import "@fontsource-variable/geist";
 @import "@fontsource/ibm-plex-mono/400.css";
 @import "@fontsource/ibm-plex-mono/500.css";
@@ -8,7 +8,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: "Geist Variable", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -28,58 +28,61 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-destructive: var(--destructive);
-  --radius-sm: calc(var(--radius) - 0.35rem);
-  --radius-md: calc(var(--radius) - 0.2rem);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 0.35rem);
+  --radius-xl: calc(var(--radius) + 4px);
   --font-heading: var(--font-sans);
   --color-input: var(--input);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --sidebar: oklch(0.985 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --border: oklch(0.922 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --input: oklch(0.922 0 0);
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(240 10% 3.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 10% 3.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(240 10% 3.9%);
+  --sidebar: hsl(0 0% 98%);
+  --primary: hsl(240 5.9% 10%);
+  --primary-foreground: hsl(0 0% 98%);
+  --secondary: hsl(240 4.8% 95.9%);
+  --secondary-foreground: hsl(240 5.9% 10%);
+  --muted: hsl(240 4.8% 95.9%);
+  --muted-foreground: hsl(240 3.8% 46.1%);
+  --accent: hsl(240 4.8% 95.9%);
+  --accent-foreground: hsl(240 5.9% 10%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(240 5.9% 90%);
+  --input: hsl(240 5.9% 90%);
+  --ring: hsl(240 10% 3.9%);
+  --radius: 0.5rem;
 }
 
 :root[data-theme="dark"],
 .dark {
-  --background: hsl(222 30% 8%);
-  --foreground: hsl(213 31% 91%);
-  --card: hsl(222 30% 10%);
-  --card-foreground: hsl(210 40% 98%);
-  --popover: hsl(222 30% 10%);
-  --popover-foreground: hsl(210 40% 98%);
-  --sidebar: hsl(222 30% 8%);
-  --muted: hsl(222 20% 14%);
-  --muted-foreground: hsl(215 20% 69%);
-  --border: hsl(217 18% 22%);
-  --accent: hsl(214 95% 68%);
-  --accent-foreground: hsl(222 47% 11%);
-  --ring: hsl(214 95% 68% / 0.42);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --input: oklch(1 0 0 / 15%);
+  --background: hsl(240 10% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(240 10% 3.9%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(240 10% 3.9%);
+  --popover-foreground: hsl(0 0% 98%);
+  --sidebar: hsl(240 10% 3.9%);
+  --primary: hsl(0 0% 98%);
+  --primary-foreground: hsl(240 5.9% 10%);
+  --secondary: hsl(240 3.7% 15.9%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(240 3.7% 15.9%);
+  --muted-foreground: hsl(240 5% 64.9%);
+  --accent: hsl(240 3.7% 15.9%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(240 3.7% 15.9%);
+  --input: hsl(240 3.7% 15.9%);
+  --ring: hsl(240 4.9% 83.9%);
 }
 
 @layer base {
@@ -124,26 +127,26 @@
   [data-theme="light"] [data-theme-icon="moon"] {
     display: none;
   }
-@media (max-width: 1023px) {
-  .docs-sidebar-panel {
-    transform: translateX(-100%);
-  }
+  @media (max-width: 1023px) {
+    .docs-sidebar-panel {
+      transform: translateX(-100%);
+    }
 
-  .docs-sidebar-overlay {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 180ms ease;
-  }
+    .docs-sidebar-overlay {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
 
-  :root[data-nav-open="true"] .docs-sidebar-panel {
-    transform: translateX(0);
-  }
+    :root[data-nav-open="true"] .docs-sidebar-panel {
+      transform: translateX(0);
+    }
 
-  :root[data-nav-open="true"] .docs-sidebar-overlay {
-    opacity: 1;
-    pointer-events: auto;
+    :root[data-nav-open="true"] .docs-sidebar-overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
-}
 
   .docs-landing-intro {
     @apply mb-6 grid gap-4;
@@ -226,7 +229,7 @@
   }
 
   .doc-section {
-    @apply border-t border-border/70 pt-6 first:border-t-0 first:pt-0;
+    @apply border-t border-border pt-6 first:border-t-0 first:pt-0;
   }
 
   .doc-section-purpose p {
@@ -291,7 +294,7 @@
   }
 
   .docs-prose {
-    @apply text-base leading-8 text-foreground;
+    @apply text-base leading-7 text-foreground;
   }
 
   .docs-prose > :first-child {
@@ -301,19 +304,19 @@
   .docs-prose h2,
   .docs-prose h3,
   .docs-prose h4 {
-    @apply scroll-mt-24 font-semibold tracking-[-0.04em] text-foreground;
+    @apply scroll-mt-24 font-semibold tracking-tight text-foreground;
   }
 
   .docs-prose h2 {
-    @apply mt-12 text-3xl;
+    @apply mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0;
   }
 
   .docs-prose h3 {
-    @apply mt-8 text-xl;
+    @apply mt-8 scroll-m-20 text-2xl font-semibold tracking-tight;
   }
 
   .docs-prose h4 {
-    @apply mt-6 text-lg;
+    @apply mt-8 scroll-m-20 text-xl font-semibold tracking-tight;
   }
 
   .docs-prose p,
@@ -322,12 +325,18 @@
   .docs-prose pre,
   .docs-prose blockquote,
   .docs-prose table {
-    @apply my-5;
+    @apply my-6;
   }
 
   .docs-prose ul,
   .docs-prose ol {
-    @apply pl-5;
+    @apply pl-6 list-disc;
+  }
+  .docs-prose ul {
+    @apply list-disc;
+  }
+  .docs-prose ol {
+    @apply list-decimal;
   }
 
   .docs-prose li {
@@ -335,33 +344,31 @@
   }
 
   .docs-prose a {
-    @apply font-medium text-accent-foreground underline decoration-accent/30 underline-offset-4 transition-colors;
+    @apply font-medium underline underline-offset-4 transition-colors;
   }
 
   .docs-prose a:hover {
-    @apply decoration-accent text-foreground;
+    @apply text-foreground;
   }
 
   .docs-prose :not(pre) > code {
-    @apply rounded-md border bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground;
+    @apply rounded-md border bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm text-foreground;
   }
 
   .docs-prose pre {
-    @apply relative overflow-x-auto rounded-xl border bg-card p-4 pt-12 text-sm shadow-sm;
+    @apply mb-4 mt-6 overflow-x-auto rounded-lg border bg-zinc-950 py-4 dark:bg-zinc-900;
   }
 
   .docs-prose pre[data-language]::before {
-    content: attr(data-language);
-    @apply absolute left-4 top-3 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+    display: none;
   }
 
   .docs-prose pre code {
-    @apply bg-transparent p-0 text-inherit;
-    border: 0;
+    @apply relative rounded bg-transparent px-[0.3rem] py-[0.2rem] font-mono text-sm text-zinc-50;
   }
 
   .docs-code-copy-button {
-    @apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
+    @apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-50;
   }
 
   .docs-code-copy-icon {
@@ -388,16 +395,15 @@
   }
 
   .docs-code-copy-button[data-copy-state="done"] {
-    @apply text-foreground;
-    border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+    @apply text-zinc-50 border-zinc-600;
   }
 
   .docs-code-copy-button[data-copy-state="error"] {
-    border-color: color-mix(in srgb, hsl(0 72% 55%) 28%, var(--border));
+    @apply text-red-500 border-red-500;
   }
 
   .docs-prose blockquote {
-    @apply border-l-2 border-border pl-4 text-muted-foreground;
+    @apply mt-6 border-l-2 border-border pl-6 italic text-muted-foreground;
   }
 
   .docs-prose hr {
@@ -405,16 +411,19 @@
   }
 
   .docs-prose table {
-    @apply w-full border-collapse overflow-hidden rounded-xl border border-border text-left text-sm shadow-sm;
+    @apply w-full overflow-hidden text-left text-sm border-0;
   }
 
   .docs-prose thead {
-    @apply bg-muted/70;
+    @apply border-b border-border bg-transparent;
   }
 
-  .docs-prose th,
+  .docs-prose th {
+    @apply h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
+  }
+
   .docs-prose td {
-    @apply border-b border-border px-4 py-3 align-top;
+    @apply p-4 align-middle [&:has([role=checkbox])]:pr-0 border-b border-border/50;
   }
 
   .docs-prose tbody tr:last-child td {
@@ -498,4 +507,3 @@
     transform: rotate(180deg);
   }
 }
-

@@ -4,9 +4,37 @@ description: "Headless single-select primitives built for Roblox UI."
 draft: false
 sidebar:
   order: 15
+packageDoc:
+  whatItIsFor:
+    - "Use `Select` when the UI needs a compact single-choice picker with caller-owned trigger, value display, and overlay visuals."
+    - "It works well when options should open into a managed list but the user should not type freeform search text."
+  stateModel:
+    - "`Select.Root` manages controlled or uncontrolled `value` and `open` state."
+    - "Items register in the root context, and the selected value resolves back to item text for `Select.Value` display."
+    - "If the current value no longer points at an enabled item, the root falls back to the first enabled registered item."
+  keyApi:
+    - name: "Select.Root"
+      description: "Use `value`, `defaultValue`, `onValueChange`, `open`, `defaultOpen`, and `onOpenChange` to connect the picker to app state."
+    - name: "Select.Value"
+      description: "Use `placeholder` when the control should show an explicit empty-state label before a value is chosen."
+    - name: "Select.Content"
+      description: "Use `placement`, `offset`, `padding`, and outside-interaction hooks for overlay geometry and dismissal."
+    - name: "Select.Item"
+      description: "Every item needs a stable `value`; use `textValue` when the rendered child text is not the same as the semantic value label."
+  compositionPatterns:
+    - title: "Labeled trigger + portal content"
+      description: "Render the field shell in the trigger, then mount content in a portal so placement and dismissal stay reliable."
+    - title: "Small enumerated settings"
+      description: "Use `Select` when the option set is longer than a radio group but still small enough to browse without search."
+  cautions:
+    - "Current public behavior is single-value only; use `Combobox`, `Checkbox`, or `ToggleGroup` when the selection model is different."
+    - "Overlay behavior is portal-based, so set up `PortalProvider` near the app root for predictable mounting and stacking."
+  related:
+    - label: "Combobox"
+      href: "/components/combobox/"
+    - label: "Menu"
+      href: "/components/menu/"
+    - label: "Build a Settings Dialog"
+      href: "/getting-started/build-a-settings-dialog/"
+  hasLiveDemo: true
 ---
-
-import PackageDoc from "../../../components/docs/PackageDoc.astro";
-import { packageDocs } from "../../../data/package-docs";
-
-<PackageDoc doc={packageDocs["select"]} />

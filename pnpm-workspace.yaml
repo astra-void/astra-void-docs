@@ -1,3 +1,9 @@
+packages:
+  - "."
+  - "../../rojo/lattice-ui/packages/*"
+  - "../../typescript/loom/packages/*"
 onlyBuiltDependencies:
+  - '@swc/core'
   - esbuild
+  - msw
   - sharp

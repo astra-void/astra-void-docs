@@ -1,4 +1,4 @@
-import { React } from "@lattice-ui/core";
+import * as React from "react";
 import { Toast, useToast } from "@lattice-ui/toast";
 
 function ToastDemo() {
@@ -26,7 +26,11 @@ function ToastDemo() {
         <uicorner CornerRadius={new UDim(0, 8)} />
       </textbutton>
 
-      <frame BackgroundTransparency={1} Position={UDim2.fromOffset(0, 56)} Size={UDim2.fromOffset(320, 140)}>
+      <frame
+        BackgroundTransparency={1}
+        Position={UDim2.fromOffset(0, 56)}
+        Size={UDim2.fromOffset(320, 140)}
+      >
         <Toast.Viewport />
       </frame>
     </frame>
