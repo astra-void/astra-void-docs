@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "@rbxts/react";
 import { useControllableState } from "@lattice-ui/core";
 
 type ControllableToggleProps = {

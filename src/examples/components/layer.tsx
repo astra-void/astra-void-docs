@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "@rbxts/react";
 import { DismissableLayer, PortalProvider, Presence } from "@lattice-ui/layer";
 
 type Props = {

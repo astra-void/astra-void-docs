@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "@rbxts/react";
 import { Textarea } from "@lattice-ui/textarea";
 
 export function TextareaExample() {

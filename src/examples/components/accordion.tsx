@@ -1,5 +1,5 @@
 import { Accordion } from "@lattice-ui/accordion";
-import * as React from "react";
+import React from "@rbxts/react";
 
 export function AccordionExample() {
   const [value, setValue] = React.useState<string | string[]>("general");

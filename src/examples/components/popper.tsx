@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "@rbxts/react";
 import { computePopper } from "@lattice-ui/popper";
 
 export function PopperExample() {

@@ -1,5 +1,5 @@
 import { Progress } from "@lattice-ui/progress";
-import * as React from "react";
+import React from "@rbxts/react";
 
 export function ProgressExample() {
   const [value, setValue] = React.useState(40);

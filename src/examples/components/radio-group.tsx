@@ -1,5 +1,5 @@
 import { RadioGroup } from "@lattice-ui/radio-group";
-import * as React from "react";
+import React from "@rbxts/react";
 
 const OPTIONS = [
   { value: "file", disabled: false },

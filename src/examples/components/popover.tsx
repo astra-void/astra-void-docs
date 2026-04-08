@@ -1,5 +1,5 @@
 import { Popover } from "@lattice-ui/popover";
-import * as React from "react";
+import React from "@rbxts/react";
 import { PortalProvider } from "@lattice-ui/layer";
 
 type Props = {

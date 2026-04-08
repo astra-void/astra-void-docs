@@ -1,5 +1,5 @@
 import { Combobox } from "@lattice-ui/combobox";
-import * as React from "react";
+import React from "@rbxts/react";
 import { PortalProvider } from "@lattice-ui/layer";
 
 type Props = {

@@ -1,5 +1,5 @@
 import { Menu } from "@lattice-ui/menu";
-import * as React from "react";
+import React from "@rbxts/react";
 import { PortalProvider } from "@lattice-ui/layer";
 
 type Props = {

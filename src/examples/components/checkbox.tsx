@@ -1,5 +1,5 @@
 import { Checkbox, type CheckedState } from "@lattice-ui/checkbox";
-import * as React from "react";
+import React from "@rbxts/react";
 
 function toIndicator(value: CheckedState) {
   if (value === "indeterminate") {

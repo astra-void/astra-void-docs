@@ -4,7 +4,7 @@ export const DOCS_SITE = {
   title: "Lattice UI Docs",
   description:
     "Documentation for Lattice UI: headless primitives, style and system foundations, and practical implementation guides for Roblox UI.",
-  githubUrl: "https://github.com/astra-void/astra-void-docs",
+  githubUrl: "https://github.com/astra-void/lattice-ui",
 } as const;
 
 const SECTION_CONFIG = [

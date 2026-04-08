@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "@rbxts/react";
 import { ScrollArea } from "@lattice-ui/scroll-area";
 
 export function ScrollAreaExample() {

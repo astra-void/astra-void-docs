@@ -1,5 +1,5 @@
 import { Avatar } from "@lattice-ui/avatar";
-import * as React from "react";
+import React from "@rbxts/react";
 
 export function AvatarExample() {
   const [broken, setBroken] = React.useState(false);
