@@ -65,6 +65,7 @@
     "vite-plugin-wasm": "^3.6.0"
   },
   "devDependencies": {
+    "@rbxts/react": "17.3.7-ts.1",
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.3",
     "prettier": "3.8.1",
