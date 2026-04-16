@@ -11,5 +11,5 @@ export default defineConfig({
     },
   ]),
   transformMode: "compatibility",
-  workspaceRoot: "../../rojo/lattice-ui",
+  workspaceRoot: ".",
 });

@@ -6,7 +6,7 @@ export function PopperExample() {
     anchorPosition: new Vector2(180, 60),
     anchorSize: new Vector2(160, 40),
     contentSize: new Vector2(220, 120),
-    viewportSize: new Vector2(800, 600),
+    viewportRect: new Rect(0, 0, 800, 600),
     placement: "bottom",
     offset: new Vector2(0, 8),
     padding: 12,

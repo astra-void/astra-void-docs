@@ -34,19 +34,28 @@ const unresolvedEnvShimPath = path.resolve(
   "src/shims/loom-unresolved-env.ts",
 );
 const wasm = wasmPluginModule.default ?? wasmPluginModule;
-const previewPlugins = createPreviewVitePlugin({
-  projectName: resolvedPreviewConfig.projectName,
-  reactAliases: resolvedPreviewConfig.reactAliases,
-  reactRobloxAliases: resolvedPreviewConfig.reactRobloxAliases,
-  runtimeModule: resolvedPreviewConfig.runtimeModule,
-  runtimeAliases: resolvedPreviewConfig.runtimeAliases,
-  targets: resolvedPreviewConfig.targets,
-  transformMode: resolvedPreviewConfig.transformMode,
-  workspaceRoot: resolvedPreviewConfig.workspaceRoot,
-});
+const previewPluginScopeConfig = {
+  ...resolvedPreviewConfig,
+  workspaceRoot:
+    resolvedPreviewConfig.targets[0]?.sourceRoot ??
+    resolvedPreviewConfig.workspaceRoot,
+};
+const previewPlugins = createScopedPreviewPlugins(
+  createPreviewVitePlugin({
+    projectName: resolvedPreviewConfig.projectName,
+    reactAliases: resolvedPreviewConfig.reactAliases,
+    reactRobloxAliases: resolvedPreviewConfig.reactRobloxAliases,
+    runtimeModule: resolvedPreviewConfig.runtimeModule,
+    runtimeAliases: resolvedPreviewConfig.runtimeAliases,
+    targets: resolvedPreviewConfig.targets,
+    transformMode: resolvedPreviewConfig.transformMode,
+    workspaceRoot: resolvedPreviewConfig.workspaceRoot,
+  }),
+  previewPluginScopeConfig,
+);
 const scopedPreviewPlugins = createScopedPreviewPlugins(
   [wasm()],
-  resolvedPreviewConfig,
+  previewPluginScopeConfig,
 );
 
 export default defineConfig({

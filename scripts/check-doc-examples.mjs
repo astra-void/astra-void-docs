@@ -7,10 +7,6 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsRoot = path.resolve(__dirname, "..");
 const examplesTsconfig = path.join(docsRoot, "tsconfig.examples.json");
-const latticePlaygroundTsconfig = path.resolve(
-  docsRoot,
-  "../../rojo/lattice-ui/apps/playground/tsconfig.json",
-);
 const tscPath = path.join(
   docsRoot,
   "node_modules",
@@ -18,13 +14,6 @@ const tscPath = path.join(
   "lib",
   "tsc.js",
 );
-
-if (!fs.existsSync(latticePlaygroundTsconfig)) {
-  console.error(
-    `Missing lattice-ui playground tsconfig: ${latticePlaygroundTsconfig}`,
-  );
-  process.exit(1);
-}
 
 if (!fs.existsSync(tscPath)) {
   console.error(`Missing TypeScript compiler: ${tscPath}`);
