@@ -4,7 +4,6 @@ description: Why Lattice UI exists, what it is good at, and where to start.
 draft: false
 ---
 
-import PackageMaturitySummary from "../../components/docs/PackageMaturitySummary.astro";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
 <div class="docs-landing-intro">
@@ -13,17 +12,6 @@ import latticeSnapshot from "../../data/lattice-snapshot.generated";
     focus behavior, layering, and state ownership stay in the package. Visual structure, styling,
     and screen composition stay in the app that ships the interface.
   </p>
-  <p>
-    This docs site tracks <code>lattice-ui/main</code> as the source of truth. That means CLI
-    flows like <code>init</code> can appear here before they are part of the latest tagged release.
-  </p>
-
-  <div class="docs-note">
-    <p>
-      Current CLI package: <code>{latticeSnapshot.cli.packageName}</code>. Latest tagged release in
-      the source repo: <code>{latticeSnapshot.workspace.changelog.latestRelease?.version ?? "n/a"}</code>.
-    </p>
-  </div>
 </div>
 
 ## Get Started
@@ -59,10 +47,6 @@ import latticeSnapshot from "../../data/lattice-snapshot.generated";
     </ul>
   </section>
 </div>
-
-## Package Direction
-
-<PackageMaturitySummary />
 
 ## Reading Order
 

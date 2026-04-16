@@ -4,7 +4,6 @@ import DocsHeader from "../components/docs/DocsHeader.astro";
 import DocsPager from "../components/docs/DocsPager.astro";
 import DocsSidebar from "../components/docs/DocsSidebar.astro";
 import DocsToc from "../components/docs/DocsToc.astro";
-import DocsVersionBanner from "../components/docs/DocsVersionBanner.astro";
 import { DOCS_SITE, type DocPage, type SidebarSection } from "../lib/docs";
 import "../styles/global.css";
 
@@ -122,13 +121,6 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             <p class="text-lg text-muted-foreground">
               {description}
             </p>
-          </div>
-
-          <div class="mt-4 flex items-center space-x-2 pb-8 pt-2">
-            <DocsVersionBanner
-              path={currentPage.path}
-              versionBasis={currentPage.versionBasis}
-            />
           </div>
 
           <article class="docs-prose max-w-none pb-12">
