@@ -65,7 +65,11 @@
     "vite-plugin-wasm": "^3.6.0"
   },
   "devDependencies": {
+    "@rbxts/compiler-types": "3.0.0-types.0",
     "@rbxts/react": "17.3.7-ts.1",
+    "@rbxts/react-roblox": "17.3.7-ts.1",
+    "@rbxts/services": "1.6.0",
+    "@rbxts/types": "1.0.916",
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.3",
     "prettier": "3.8.1",
