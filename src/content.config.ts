@@ -1,49 +1,49 @@
-import { defineCollection} from "astro:content";
-import * as z from "astro/zod";
+import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
+import * as z from "astro/zod";
 
 const packageDocLinkSchema = z.object({
-  label: z.string(),
-  href: z.string(),
+	label: z.string(),
+	href: z.string(),
 });
 
 const packageDocEntrySchema = z.object({
-  name: z.string(),
-  description: z.string(),
+	name: z.string(),
+	description: z.string(),
 });
 
 const packageDocPatternSchema = z.object({
-  title: z.string(),
-  description: z.string(),
+	title: z.string(),
+	description: z.string(),
 });
 
 const packageDocSchema = z.object({
-  whatItIsFor: z.array(z.string()),
-  stateModel: z.array(z.string()),
-  keyApi: z.array(packageDocEntrySchema),
-  compositionPatterns: z.array(packageDocPatternSchema),
-  cautions: z.array(z.string()),
-  related: z.array(packageDocLinkSchema),
-  hasLiveDemo: z.boolean().optional(),
+	whatItIsFor: z.array(z.string()),
+	stateModel: z.array(z.string()),
+	keyApi: z.array(packageDocEntrySchema),
+	compositionPatterns: z.array(packageDocPatternSchema),
+	cautions: z.array(z.string()),
+	related: z.array(packageDocLinkSchema),
+	hasLiveDemo: z.boolean().optional(),
 });
 
 export const collections = {
-  docs: defineCollection({
-    loader: glob({
-      pattern: "**/*.{md,mdx}",
-      base: "./src/content/docs",
-    }),
-    schema: z.object({
-      title: z.string(),
-      description: z.string(),
-      draft: z.boolean().default(false),
-      versionBasis: z.enum(["main", "stable"]).default("main"),
-      sidebar: z
-        .object({
-          order: z.number().optional(),
-        })
-        .optional(),
-      packageDoc: packageDocSchema.optional(),
-    }),
-  }),
+	docs: defineCollection({
+		loader: glob({
+			pattern: "**/*.{md,mdx}",
+			base: "./src/content/docs",
+		}),
+		schema: z.object({
+			title: z.string(),
+			description: z.string(),
+			draft: z.boolean().default(false),
+			versionBasis: z.enum(["main", "stable"]).default("main"),
+			sidebar: z
+				.object({
+					order: z.number().optional(),
+				})
+				.optional(),
+			packageDoc: packageDocSchema.optional(),
+		}),
+	}),
 };

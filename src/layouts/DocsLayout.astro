@@ -8,30 +8,30 @@ import { DOCS_SITE, type DocPage, type SidebarSection } from "../lib/docs";
 import "../styles/global.css";
 
 type Props = {
-  title: string;
-  description: string;
-  currentPage: DocPage;
-  homePage?: DocPage;
-  sections: SidebarSection[];
-  headings: MarkdownHeading[];
-  previousPage?: DocPage;
-  nextPage?: DocPage;
+	title: string;
+	description: string;
+	currentPage: DocPage;
+	homePage?: DocPage;
+	sections: SidebarSection[];
+	headings: MarkdownHeading[];
+	previousPage?: DocPage;
+	nextPage?: DocPage;
 };
 
 const {
-  title,
-  description,
-  currentPage,
-  homePage,
-  sections,
-  headings,
-  previousPage,
-  nextPage,
+	title,
+	description,
+	currentPage,
+	homePage,
+	sections,
+	headings,
+	previousPage,
+	nextPage,
 } = Astro.props;
 
 const pageTitle = currentPage.path
-  ? `${title} | ${DOCS_SITE.title}`
-  : DOCS_SITE.title;
+	? `${title} | ${DOCS_SITE.title}`
+	: DOCS_SITE.title;
 const canonical = Astro.site ? new URL(currentPage.url, Astro.site) : undefined;
 const hasToc = headings.some((heading) => heading.depth > 1);
 ---

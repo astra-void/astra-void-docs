@@ -4,7 +4,7 @@ import DocsLayout from "../layouts/DocsLayout.astro";
 import { getDocsShellData } from "../lib/docs";
 
 const { currentPage, homePage, sections, previousPage, nextPage } =
-  await getDocsShellData("");
+	await getDocsShellData("");
 const { Content, headings } = await render(currentPage.entry);
 ---
 

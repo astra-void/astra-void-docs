@@ -8,502 +8,502 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Geist Variable", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-ring: var(--ring);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-heading: var(--font-sans);
-  --color-input: var(--input);
+	--font-sans: "Geist Variable", sans-serif;
+	--font-mono: "IBM Plex Mono", monospace;
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-border: var(--border);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-ring: var(--ring);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--font-heading: var(--font-sans);
+	--color-input: var(--input);
 }
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(240 10% 3.9%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(240 10% 3.9%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(240 10% 3.9%);
-  --sidebar: hsl(0 0% 98%);
-  --primary: hsl(240 5.9% 10%);
-  --primary-foreground: hsl(0 0% 98%);
-  --secondary: hsl(240 4.8% 95.9%);
-  --secondary-foreground: hsl(240 5.9% 10%);
-  --muted: hsl(240 4.8% 95.9%);
-  --muted-foreground: hsl(240 3.8% 46.1%);
-  --accent: hsl(240 4.8% 95.9%);
-  --accent-foreground: hsl(240 5.9% 10%);
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(240 5.9% 90%);
-  --input: hsl(240 5.9% 90%);
-  --ring: hsl(240 10% 3.9%);
-  --radius: 0.5rem;
+	--background: hsl(0 0% 100%);
+	--foreground: hsl(240 10% 3.9%);
+	--card: hsl(0 0% 100%);
+	--card-foreground: hsl(240 10% 3.9%);
+	--popover: hsl(0 0% 100%);
+	--popover-foreground: hsl(240 10% 3.9%);
+	--sidebar: hsl(0 0% 98%);
+	--primary: hsl(240 5.9% 10%);
+	--primary-foreground: hsl(0 0% 98%);
+	--secondary: hsl(240 4.8% 95.9%);
+	--secondary-foreground: hsl(240 5.9% 10%);
+	--muted: hsl(240 4.8% 95.9%);
+	--muted-foreground: hsl(240 3.8% 46.1%);
+	--accent: hsl(240 4.8% 95.9%);
+	--accent-foreground: hsl(240 5.9% 10%);
+	--destructive: hsl(0 84.2% 60.2%);
+	--destructive-foreground: hsl(0 0% 98%);
+	--border: hsl(240 5.9% 90%);
+	--input: hsl(240 5.9% 90%);
+	--ring: hsl(240 10% 3.9%);
+	--radius: 0.5rem;
 }
 
 :root[data-theme="dark"],
 .dark {
-  --background: hsl(240 10% 3.9%);
-  --foreground: hsl(0 0% 98%);
-  --card: hsl(240 10% 3.9%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(240 10% 3.9%);
-  --popover-foreground: hsl(0 0% 98%);
-  --sidebar: hsl(240 10% 3.9%);
-  --primary: hsl(0 0% 98%);
-  --primary-foreground: hsl(240 5.9% 10%);
-  --secondary: hsl(240 3.7% 15.9%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(240 3.7% 15.9%);
-  --muted-foreground: hsl(240 5% 64.9%);
-  --accent: hsl(240 3.7% 15.9%);
-  --accent-foreground: hsl(0 0% 98%);
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(240 3.7% 15.9%);
-  --input: hsl(240 3.7% 15.9%);
-  --ring: hsl(240 4.9% 83.9%);
+	--background: hsl(240 10% 3.9%);
+	--foreground: hsl(0 0% 98%);
+	--card: hsl(240 10% 3.9%);
+	--card-foreground: hsl(0 0% 98%);
+	--popover: hsl(240 10% 3.9%);
+	--popover-foreground: hsl(0 0% 98%);
+	--sidebar: hsl(240 10% 3.9%);
+	--primary: hsl(0 0% 98%);
+	--primary-foreground: hsl(240 5.9% 10%);
+	--secondary: hsl(240 3.7% 15.9%);
+	--secondary-foreground: hsl(0 0% 98%);
+	--muted: hsl(240 3.7% 15.9%);
+	--muted-foreground: hsl(240 5% 64.9%);
+	--accent: hsl(240 3.7% 15.9%);
+	--accent-foreground: hsl(0 0% 98%);
+	--destructive: hsl(0 62.8% 30.6%);
+	--destructive-foreground: hsl(0 0% 98%);
+	--border: hsl(240 3.7% 15.9%);
+	--input: hsl(240 3.7% 15.9%);
+	--ring: hsl(240 4.9% 83.9%);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+	* {
+		@apply border-border outline-ring/50;
+	}
 
-  html {
-    @apply scroll-smooth font-sans;
-  }
+	html {
+		@apply scroll-smooth font-sans;
+	}
 
-  body {
-    @apply min-h-screen bg-background text-foreground antialiased;
-  }
+	body {
+		@apply min-h-screen bg-background text-foreground antialiased;
+	}
 
-  ::selection {
-    background: color-mix(in srgb, var(--accent) 28%, transparent);
-  }
+	::selection {
+		background: color-mix(in srgb, var(--accent) 28%, transparent);
+	}
 
-  a,
-  button {
-    @apply outline-none;
-  }
+	a,
+	button {
+		@apply outline-none;
+	}
 
-  a:focus-visible,
-  button:focus-visible {
-    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
+	a:focus-visible,
+	button:focus-visible {
+		@apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+	}
 }
 
 @layer components {
-  .docs-sidebar-panel {
-    transition:
-      transform 180ms ease,
-      box-shadow 180ms ease;
-  }
-
-  [data-theme="dark"] [data-theme-icon="sun"] {
-    display: none;
-  }
-
-  [data-theme="light"] [data-theme-icon="moon"] {
-    display: none;
-  }
-  @media (max-width: 1023px) {
-    .docs-sidebar-panel {
-      transform: translateX(-100%);
-    }
-
-    .docs-sidebar-overlay {
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 180ms ease;
-    }
-
-    :root[data-nav-open="true"] .docs-sidebar-panel {
-      transform: translateX(0);
-    }
-
-    :root[data-nav-open="true"] .docs-sidebar-overlay {
-      opacity: 1;
-      pointer-events: auto;
-    }
-  }
-
-  .docs-landing-intro {
-    @apply mb-6 grid gap-4;
-  }
-
-  .docs-landing-intro p {
-    max-width: 64ch;
-  }
-
-  .docs-note {
-    @apply rounded-xl border bg-card p-4 text-card-foreground shadow-sm;
-  }
-
-  .docs-section-grid,
-  .home-links,
-  .install-grid,
-  .api-grid,
-  .pattern-grid {
-    @apply mt-5 grid gap-4 md:grid-cols-2;
-  }
-
-  .docs-section-card,
-  .install-card,
-  .api-card,
-  .pattern-card,
-  .doc-section-install,
-  .doc-section-cautions,
-  .doc-section-related {
-    @apply rounded-xl border bg-card text-card-foreground shadow-sm;
-  }
-
-  .docs-section-card,
-  .doc-section-install,
-  .doc-section-cautions,
-  .doc-section-related {
-    @apply p-5;
-  }
-
-  .install-card,
-  .api-card,
-  .pattern-card {
-    @apply p-4;
-  }
-
-  .docs-section-card h3,
-  .install-card h3,
-  .api-card h3,
-  .pattern-card h3,
-  .doc-section-install h3,
-  .doc-section-cautions h3,
-  .doc-section-related h3 {
-    @apply m-0 text-base font-semibold tracking-[-0.02em] text-card-foreground;
-  }
-
-  .docs-section-card > p,
-  .install-card > p,
-  .api-card > p,
-  .pattern-card > p {
-    @apply mt-2 text-sm leading-6 text-muted-foreground;
-  }
-
-  .docs-link-list {
-    @apply m-0 mt-4 grid list-none gap-4 p-0;
-  }
-
-  .docs-link-list li {
-    @apply m-0;
-  }
-
-  .docs-link-list a {
-    @apply text-sm font-semibold text-card-foreground no-underline transition-colors hover:text-accent-foreground;
-  }
-
-  .docs-link-list p {
-    @apply mt-1 text-sm leading-6 text-muted-foreground;
-  }
-
-  .package-doc {
-    @apply grid gap-6;
-  }
-
-  .doc-section {
-    @apply border-t border-border pt-6 first:border-t-0 first:pt-0;
-  }
-
-  .doc-section-purpose p {
-    max-width: 64ch;
-  }
-
-  .package-status-row {
-    @apply flex flex-wrap items-center gap-2;
-  }
-
-  .package-status-badge {
-    @apply inline-flex min-h-8 items-center rounded-md border border-border bg-muted px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-foreground;
-  }
-
-  .package-status-badge.is-experimental {
-    @apply border-amber-500/40 bg-amber-500/10 text-amber-400;
-  }
-
-  .package-install-name {
-    @apply inline-flex min-h-8 items-center rounded-md border border-border bg-muted px-2.5 py-1 text-sm text-foreground;
-  }
-
-  .package-status-note {
-    @apply m-0 max-w-2xl text-sm leading-6 text-muted-foreground;
-  }
-
-  .package-meta-stack {
-    @apply mt-4 grid gap-4 text-sm text-muted-foreground;
-  }
-
-  .package-meta-stack p {
-    @apply m-0 text-sm text-foreground;
-  }
-
-  .export-list,
-  .state-list,
-  .caution-list,
-  .related-list {
-    @apply m-0 grid list-none gap-3 p-0;
-  }
-
-  .export-list {
-    @apply flex flex-wrap gap-2;
-  }
-
-  .export-list code {
-    @apply inline-flex min-h-8 items-center rounded-md border bg-muted px-3 py-1 text-sm text-foreground;
-  }
-
-  .state-list li,
-  .caution-list li {
-    @apply border-l-2 border-border pl-4;
-  }
-
-  .doc-section-cautions {
-    border-left-width: 1px;
-    border-left-color: color-mix(in srgb, var(--accent) 20%, var(--border));
-  }
-
-  .related-list a {
-    @apply font-medium text-card-foreground no-underline transition-colors hover:text-accent-foreground hover:underline hover:underline-offset-4;
-  }
-
-  .docs-prose {
-    @apply text-base leading-7 text-foreground;
-  }
-
-  .docs-prose > :first-child {
-    @apply mt-0;
-  }
-
-  .docs-prose h2,
-  .docs-prose h3,
-  .docs-prose h4 {
-    @apply scroll-mt-24 font-semibold tracking-tight text-foreground;
-  }
-
-  .docs-prose h2 {
-    @apply mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0;
-  }
-
-  .docs-prose h3 {
-    @apply mt-8 scroll-m-20 text-2xl font-semibold tracking-tight;
-  }
-
-  .docs-prose h4 {
-    @apply mt-8 scroll-m-20 text-xl font-semibold tracking-tight;
-  }
-
-  .docs-prose p,
-  .docs-prose ul,
-  .docs-prose ol,
-  .docs-prose pre,
-  .docs-prose blockquote,
-  .docs-prose table {
-    @apply my-6;
-  }
-
-  .docs-prose ul,
-  .docs-prose ol {
-    @apply pl-6 list-disc;
-  }
-  .docs-prose ul {
-    @apply list-disc;
-  }
-  .docs-prose ol {
-    @apply list-decimal;
-  }
-
-  .docs-prose li {
-    @apply my-2;
-  }
-
-  .docs-prose a {
-    @apply font-medium underline underline-offset-4 transition-colors;
-  }
-
-  .docs-prose a:hover {
-    @apply text-foreground;
-  }
-
-  .docs-prose :not(pre) > code {
-    @apply rounded-md border bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm text-foreground;
-  }
-
-  .docs-prose pre {
-    @apply mb-4 mt-6 overflow-x-auto rounded-lg border bg-zinc-950 py-4 dark:bg-zinc-900;
-  }
-
-  .docs-prose pre[data-language]::before {
-    display: none;
-  }
-
-  .docs-prose pre code {
-    @apply relative rounded bg-transparent px-[0.3rem] py-[0.2rem] font-mono text-sm text-zinc-50;
-  }
-
-  .docs-code-copy-button {
-    @apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-50;
-  }
-
-  .docs-code-copy-icon {
-    @apply h-4 w-4;
-  }
-
-  .docs-code-copy-icon-done,
-  .docs-code-copy-icon-error {
-    display: none;
-  }
-
-  .docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-copy,
-  .docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-copy,
-  .docs-code-copy-button[data-copy-state="idle"] .docs-code-copy-icon-done,
-  .docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-done,
-  .docs-code-copy-button[data-copy-state="idle"] .docs-code-copy-icon-error,
-  .docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-error {
-    display: none;
-  }
-
-  .docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-done,
-  .docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-error {
-    display: block;
-  }
-
-  .docs-code-copy-button[data-copy-state="done"] {
-    @apply text-zinc-50 border-zinc-600;
-  }
-
-  .docs-code-copy-button[data-copy-state="error"] {
-    @apply text-red-500 border-red-500;
-  }
-
-  .docs-prose blockquote {
-    @apply mt-6 border-l-2 border-border pl-6 italic text-muted-foreground;
-  }
-
-  .docs-prose hr {
-    @apply my-8 border-border;
-  }
-
-  .docs-prose table {
-    @apply w-full overflow-hidden text-left text-sm border-0;
-  }
-
-  .docs-prose thead {
-    @apply border-b border-border bg-transparent;
-  }
-
-  .docs-prose th {
-    @apply h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
-  }
-
-  .docs-prose td {
-    @apply p-4 align-middle [&:has([role=checkbox])]:pr-0 border-b border-border/50;
-  }
-
-  .docs-prose tbody tr:last-child td {
-    @apply border-b-0;
-  }
-
-  .docs-example-card {
-    @apply overflow-hidden rounded-xl border bg-card shadow-sm;
-  }
-
-  .docs-example-header {
-    @apply flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:justify-between;
-  }
-
-  .docs-example-summary-copy {
-    @apply min-w-0;
-  }
-
-  .docs-example-summary-meta {
-    @apply flex flex-wrap items-center gap-3;
-  }
-
-  .docs-example-file {
-    @apply inline-flex min-h-8 items-center rounded-md border bg-background px-3 py-1 text-sm text-foreground;
-  }
-
-  .docs-example-toggle {
-    @apply inline-flex min-h-8 items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
-  }
-
-  .docs-example-toggle-copy-open {
-    display: none;
-  }
-
-  .docs-example-toggle-icon {
-    transition: transform 180ms ease;
-  }
-
-  .docs-example-preview,
-  .docs-example-panel {
-    @apply px-4 pb-4;
-  }
-
-  .docs-example-preview {
-    @apply relative border-t;
-  }
-
-  .docs-example-preview::after {
-    content: "";
-    position: absolute;
-    inset-inline: 1rem;
-    bottom: 1rem;
-    height: 4rem;
-    pointer-events: none;
-    background: linear-gradient(to bottom, transparent, var(--card));
-    border-bottom-left-radius: var(--radius);
-    border-bottom-right-radius: var(--radius);
-  }
-
-  .docs-example-preview .docs-code-copy-button {
-    display: none;
-  }
-
-  .docs-example-panel {
-    @apply border-t;
-  }
-
-  .docs-example[data-open="true"] .docs-example-preview {
-    display: none;
-  }
-
-  .docs-example[data-open="true"] .docs-example-toggle-copy-closed {
-    display: none;
-  }
-
-  .docs-example[data-open="true"] .docs-example-toggle-copy-open {
-    display: inline;
-  }
-
-  .docs-example[data-open="true"] .docs-example-toggle-icon {
-    transform: rotate(180deg);
-  }
+	.docs-sidebar-panel {
+		transition:
+			transform 180ms ease,
+			box-shadow 180ms ease;
+	}
+
+	[data-theme="dark"] [data-theme-icon="sun"] {
+		display: none;
+	}
+
+	[data-theme="light"] [data-theme-icon="moon"] {
+		display: none;
+	}
+	@media (max-width: 1023px) {
+		.docs-sidebar-panel {
+			transform: translateX(-100%);
+		}
+
+		.docs-sidebar-overlay {
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 180ms ease;
+		}
+
+		:root[data-nav-open="true"] .docs-sidebar-panel {
+			transform: translateX(0);
+		}
+
+		:root[data-nav-open="true"] .docs-sidebar-overlay {
+			opacity: 1;
+			pointer-events: auto;
+		}
+	}
+
+	.docs-landing-intro {
+		@apply mb-6 grid gap-4;
+	}
+
+	.docs-landing-intro p {
+		max-width: 64ch;
+	}
+
+	.docs-note {
+		@apply rounded-xl border bg-card p-4 text-card-foreground shadow-sm;
+	}
+
+	.docs-section-grid,
+	.home-links,
+	.install-grid,
+	.api-grid,
+	.pattern-grid {
+		@apply mt-5 grid gap-4 md:grid-cols-2;
+	}
+
+	.docs-section-card,
+	.install-card,
+	.api-card,
+	.pattern-card,
+	.doc-section-install,
+	.doc-section-cautions,
+	.doc-section-related {
+		@apply rounded-xl border bg-card text-card-foreground shadow-sm;
+	}
+
+	.docs-section-card,
+	.doc-section-install,
+	.doc-section-cautions,
+	.doc-section-related {
+		@apply p-5;
+	}
+
+	.install-card,
+	.api-card,
+	.pattern-card {
+		@apply p-4;
+	}
+
+	.docs-section-card h3,
+	.install-card h3,
+	.api-card h3,
+	.pattern-card h3,
+	.doc-section-install h3,
+	.doc-section-cautions h3,
+	.doc-section-related h3 {
+		@apply m-0 text-base font-semibold tracking-[-0.02em] text-card-foreground;
+	}
+
+	.docs-section-card > p,
+	.install-card > p,
+	.api-card > p,
+	.pattern-card > p {
+		@apply mt-2 text-sm leading-6 text-muted-foreground;
+	}
+
+	.docs-link-list {
+		@apply m-0 mt-4 grid list-none gap-4 p-0;
+	}
+
+	.docs-link-list li {
+		@apply m-0;
+	}
+
+	.docs-link-list a {
+		@apply text-sm font-semibold text-card-foreground no-underline transition-colors hover:text-accent-foreground;
+	}
+
+	.docs-link-list p {
+		@apply mt-1 text-sm leading-6 text-muted-foreground;
+	}
+
+	.package-doc {
+		@apply grid gap-6;
+	}
+
+	.doc-section {
+		@apply border-t border-border pt-6 first:border-t-0 first:pt-0;
+	}
+
+	.doc-section-purpose p {
+		max-width: 64ch;
+	}
+
+	.package-status-row {
+		@apply flex flex-wrap items-center gap-2;
+	}
+
+	.package-status-badge {
+		@apply inline-flex min-h-8 items-center rounded-md border border-border bg-muted px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-foreground;
+	}
+
+	.package-status-badge.is-experimental {
+		@apply border-amber-500/40 bg-amber-500/10 text-amber-400;
+	}
+
+	.package-install-name {
+		@apply inline-flex min-h-8 items-center rounded-md border border-border bg-muted px-2.5 py-1 text-sm text-foreground;
+	}
+
+	.package-status-note {
+		@apply m-0 max-w-2xl text-sm leading-6 text-muted-foreground;
+	}
+
+	.package-meta-stack {
+		@apply mt-4 grid gap-4 text-sm text-muted-foreground;
+	}
+
+	.package-meta-stack p {
+		@apply m-0 text-sm text-foreground;
+	}
+
+	.export-list,
+	.state-list,
+	.caution-list,
+	.related-list {
+		@apply m-0 grid list-none gap-3 p-0;
+	}
+
+	.export-list {
+		@apply flex flex-wrap gap-2;
+	}
+
+	.export-list code {
+		@apply inline-flex min-h-8 items-center rounded-md border bg-muted px-3 py-1 text-sm text-foreground;
+	}
+
+	.state-list li,
+	.caution-list li {
+		@apply border-l-2 border-border pl-4;
+	}
+
+	.doc-section-cautions {
+		border-left-width: 1px;
+		border-left-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+	}
+
+	.related-list a {
+		@apply font-medium text-card-foreground no-underline transition-colors hover:text-accent-foreground hover:underline hover:underline-offset-4;
+	}
+
+	.docs-prose {
+		@apply text-base leading-7 text-foreground;
+	}
+
+	.docs-prose > :first-child {
+		@apply mt-0;
+	}
+
+	.docs-prose h2,
+	.docs-prose h3,
+	.docs-prose h4 {
+		@apply scroll-mt-24 font-semibold tracking-tight text-foreground;
+	}
+
+	.docs-prose h2 {
+		@apply mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0;
+	}
+
+	.docs-prose h3 {
+		@apply mt-8 scroll-m-20 text-2xl font-semibold tracking-tight;
+	}
+
+	.docs-prose h4 {
+		@apply mt-8 scroll-m-20 text-xl font-semibold tracking-tight;
+	}
+
+	.docs-prose p,
+	.docs-prose ul,
+	.docs-prose ol,
+	.docs-prose pre,
+	.docs-prose blockquote,
+	.docs-prose table {
+		@apply my-6;
+	}
+
+	.docs-prose ul,
+	.docs-prose ol {
+		@apply pl-6 list-disc;
+	}
+	.docs-prose ul {
+		@apply list-disc;
+	}
+	.docs-prose ol {
+		@apply list-decimal;
+	}
+
+	.docs-prose li {
+		@apply my-2;
+	}
+
+	.docs-prose a {
+		@apply font-medium underline underline-offset-4 transition-colors;
+	}
+
+	.docs-prose a:hover {
+		@apply text-foreground;
+	}
+
+	.docs-prose :not(pre) > code {
+		@apply rounded-md border bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm text-foreground;
+	}
+
+	.docs-prose pre {
+		@apply mb-4 mt-6 overflow-x-auto rounded-lg border bg-zinc-950 py-4 dark:bg-zinc-900;
+	}
+
+	.docs-prose pre[data-language]::before {
+		display: none;
+	}
+
+	.docs-prose pre code {
+		@apply relative rounded bg-transparent px-[0.3rem] py-[0.2rem] font-mono text-sm text-zinc-50;
+	}
+
+	.docs-code-copy-button {
+		@apply absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-50;
+	}
+
+	.docs-code-copy-icon {
+		@apply h-4 w-4;
+	}
+
+	.docs-code-copy-icon-done,
+	.docs-code-copy-icon-error {
+		display: none;
+	}
+
+	.docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-copy,
+	.docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-copy,
+	.docs-code-copy-button[data-copy-state="idle"] .docs-code-copy-icon-done,
+	.docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-done,
+	.docs-code-copy-button[data-copy-state="idle"] .docs-code-copy-icon-error,
+	.docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-error {
+		display: none;
+	}
+
+	.docs-code-copy-button[data-copy-state="done"] .docs-code-copy-icon-done,
+	.docs-code-copy-button[data-copy-state="error"] .docs-code-copy-icon-error {
+		display: block;
+	}
+
+	.docs-code-copy-button[data-copy-state="done"] {
+		@apply text-zinc-50 border-zinc-600;
+	}
+
+	.docs-code-copy-button[data-copy-state="error"] {
+		@apply text-red-500 border-red-500;
+	}
+
+	.docs-prose blockquote {
+		@apply mt-6 border-l-2 border-border pl-6 italic text-muted-foreground;
+	}
+
+	.docs-prose hr {
+		@apply my-8 border-border;
+	}
+
+	.docs-prose table {
+		@apply w-full overflow-hidden text-left text-sm border-0;
+	}
+
+	.docs-prose thead {
+		@apply border-b border-border bg-transparent;
+	}
+
+	.docs-prose th {
+		@apply h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0;
+	}
+
+	.docs-prose td {
+		@apply p-4 align-middle [&:has([role=checkbox])]:pr-0 border-b border-border/50;
+	}
+
+	.docs-prose tbody tr:last-child td {
+		@apply border-b-0;
+	}
+
+	.docs-example-card {
+		@apply overflow-hidden rounded-xl border bg-card shadow-sm;
+	}
+
+	.docs-example-header {
+		@apply flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:justify-between;
+	}
+
+	.docs-example-summary-copy {
+		@apply min-w-0;
+	}
+
+	.docs-example-summary-meta {
+		@apply flex flex-wrap items-center gap-3;
+	}
+
+	.docs-example-file {
+		@apply inline-flex min-h-8 items-center rounded-md border bg-background px-3 py-1 text-sm text-foreground;
+	}
+
+	.docs-example-toggle {
+		@apply inline-flex min-h-8 items-center gap-2 rounded-md border bg-background px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground;
+	}
+
+	.docs-example-toggle-copy-open {
+		display: none;
+	}
+
+	.docs-example-toggle-icon {
+		transition: transform 180ms ease;
+	}
+
+	.docs-example-preview,
+	.docs-example-panel {
+		@apply px-4 pb-4;
+	}
+
+	.docs-example-preview {
+		@apply relative border-t;
+	}
+
+	.docs-example-preview::after {
+		content: "";
+		position: absolute;
+		inset-inline: 1rem;
+		bottom: 1rem;
+		height: 4rem;
+		pointer-events: none;
+		background: linear-gradient(to bottom, transparent, var(--card));
+		border-bottom-left-radius: var(--radius);
+		border-bottom-right-radius: var(--radius);
+	}
+
+	.docs-example-preview .docs-code-copy-button {
+		display: none;
+	}
+
+	.docs-example-panel {
+		@apply border-t;
+	}
+
+	.docs-example[data-open="true"] .docs-example-preview {
+		display: none;
+	}
+
+	.docs-example[data-open="true"] .docs-example-toggle-copy-closed {
+		display: none;
+	}
+
+	.docs-example[data-open="true"] .docs-example-toggle-copy-open {
+		display: inline;
+	}
+
+	.docs-example[data-open="true"] .docs-example-toggle-icon {
+		transform: rotate(180deg);
+	}
 }
