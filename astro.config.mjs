@@ -1,4 +1,5 @@
 import path from "node:path";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
@@ -11,7 +12,9 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 import wasmPluginModule from "vite-plugin-wasm";
 
+const require = createRequire(import.meta.url);
 const docsSiteUrl = process.env.DOCS_SITE_URL;
+const packageJson = require("./package.json");
 const resolvedPreviewConfig = await loadPreviewConfig({ cwd: process.cwd() });
 const previewPackageRoot = path.dirname(
 	path.dirname(fileURLToPath(import.meta.resolve("@loom-dev/preview"))),
@@ -31,6 +34,17 @@ const unresolvedEnvShimPath = path.resolve(
 	process.cwd(),
 	"src/shims/loom-unresolved-env.ts",
 );
+const latticePackageAliases = Object.keys(packageJson.dependencies ?? {})
+	.filter((packageName) => packageName.startsWith("@lattice-ui/"))
+	.sort()
+	.map((packageName) => {
+		const packageRoot = path.dirname(path.dirname(require.resolve(packageName)));
+
+		return {
+			find: packageName,
+			replacement: path.join(packageRoot, "src/index.ts"),
+		};
+	});
 const wasm = wasmPluginModule.default ?? wasmPluginModule;
 const previewPluginScopeConfig = {
 	...resolvedPreviewConfig,
@@ -73,6 +87,7 @@ export default defineConfig({
 		plugins: [...previewPlugins, ...scopedPreviewPlugins, tailwindcss()],
 		resolve: {
 			alias: [
+				...latticePackageAliases,
 				{
 					find: previewRobloxEnvEntry,
 					replacement: unresolvedEnvShimPath,
