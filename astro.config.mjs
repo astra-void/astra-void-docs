@@ -34,20 +34,75 @@ const unresolvedEnvShimPath = path.resolve(
 	process.cwd(),
 	"src/shims/loom-unresolved-env.ts",
 );
-const latticePackageAliases = Object.keys(packageJson.dependencies ?? {})
-	.filter((packageName) => packageName.startsWith("@lattice-ui/"))
-	.sort()
-	.map((packageName) => {
-		const packageRoot = path.dirname(path.dirname(require.resolve(packageName)));
+function isLatticePackageName(packageName) {
+	return packageName.startsWith("@lattice-ui/");
+}
 
-		return {
-			find: packageName,
+function readPackageJson(packageRoot) {
+	return require(path.join(packageRoot, "package.json"));
+}
+
+function collectLatticePackageAliases(rootDependencies) {
+	const aliasesByName = new Map();
+	const pendingPackages = Object.keys(rootDependencies ?? {})
+		.filter(isLatticePackageName)
+		.map((packageName) => ({ packageName, resolver: require }));
+
+	while (pendingPackages.length > 0) {
+		const pendingPackage = pendingPackages.shift();
+		if (!pendingPackage || aliasesByName.has(pendingPackage.packageName)) {
+			continue;
+		}
+
+		const packageRoot = path.dirname(
+			path.dirname(pendingPackage.resolver.resolve(pendingPackage.packageName)),
+		);
+		const packageMetadata = readPackageJson(packageRoot);
+
+		aliasesByName.set(pendingPackage.packageName, {
+			find: pendingPackage.packageName,
 			replacement: path.join(packageRoot, "src/index.ts"),
-		};
-	});
+		});
+
+		const packageResolver = createRequire(path.join(packageRoot, "package.json"));
+		const dependencyNames = Object.keys(packageMetadata.dependencies ?? {}).filter(
+			isLatticePackageName,
+		);
+
+		for (const dependencyName of dependencyNames) {
+			pendingPackages.push({
+				packageName: dependencyName,
+				resolver: packageResolver,
+			});
+		}
+	}
+
+	return [...aliasesByName.values()].sort((left, right) =>
+		left.find.localeCompare(right.find),
+	);
+}
+
+const latticePackageAliases = collectLatticePackageAliases(
+	packageJson.dependencies,
+);
+const latticePackageTargets = latticePackageAliases.map((alias) => {
+	const sourceRoot = path.dirname(alias.replacement);
+
+	return {
+		name: alias.find.replace("@lattice-ui/", "lattice-"),
+		packageName: alias.find,
+		packageRoot: path.dirname(sourceRoot),
+		sourceRoot,
+	};
+});
+const previewTransformTargets = [
+	...resolvedPreviewConfig.targets,
+	...latticePackageTargets,
+];
 const wasm = wasmPluginModule.default ?? wasmPluginModule;
 const previewPluginScopeConfig = {
 	...resolvedPreviewConfig,
+	targets: previewTransformTargets,
 	workspaceRoot:
 		resolvedPreviewConfig.targets[0]?.sourceRoot ??
 		resolvedPreviewConfig.workspaceRoot,
@@ -59,7 +114,7 @@ const previewPlugins = createScopedPreviewPlugins(
 		reactRobloxAliases: resolvedPreviewConfig.reactRobloxAliases,
 		runtimeModule: resolvedPreviewConfig.runtimeModule,
 		runtimeAliases: resolvedPreviewConfig.runtimeAliases,
-		targets: resolvedPreviewConfig.targets,
+		targets: previewTransformTargets,
 		transformMode: resolvedPreviewConfig.transformMode,
 		workspaceRoot: resolvedPreviewConfig.workspaceRoot,
 	}),
@@ -82,6 +137,10 @@ export default defineConfig({
 				"@loom-dev/compiler/wasm",
 				"@loom-dev/layout-engine",
 				"layout-engine",
+				...latticePackageAliases.map((alias) => alias.find),
+				"@rbxts/react",
+				"@rbxts/react-roblox",
+				"@rbxts/services",
 			],
 		},
 		plugins: [...previewPlugins, ...scopedPreviewPlugins, tailwindcss()],
