@@ -105,17 +105,17 @@ importers:
         specifier: 0.5.0-next.2
         version: 0.5.0-next.2(@rbxts/react-roblox@17.3.7-ts.1(@rbxts/react@17.3.7-ts.1))(@rbxts/react@17.3.7-ts.1)
       '@loom-dev/compiler':
-        specifier: 0.1.0-alpha.7
-        version: 0.1.0-alpha.7
+        specifier: 0.1.0-alpha.8
+        version: 0.1.0-alpha.8
       '@loom-dev/layout-engine':
-        specifier: 0.1.0-alpha.7
-        version: 0.1.0-alpha.7
+        specifier: 0.1.0-alpha.8
+        version: 0.1.0-alpha.8
       '@loom-dev/preview':
-        specifier: 0.1.0-alpha.7
-        version: 0.1.0-alpha.7(@noble/hashes@1.8.0)(@types/node@24.12.0)(esbuild@0.28.0)(jiti@2.6.1)(rollup@4.59.0)(yaml@2.8.2)
+        specifier: 0.1.0-alpha.8
+        version: 0.1.0-alpha.8(@noble/hashes@1.8.0)(@types/node@24.12.0)(esbuild@0.28.0)(jiti@2.6.1)(rollup@4.59.0)(yaml@2.8.2)
       '@loom-dev/preview-runtime':
-        specifier: 0.1.0-alpha.7
-        version: 0.1.0-alpha.7
+        specifier: 0.1.0-alpha.8
+        version: 0.1.0-alpha.8
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.2.2(vite@8.0.8(@types/node@24.12.0)(esbuild@0.28.0)(jiti@2.6.1)(yaml@2.8.2))
@@ -1262,67 +1262,67 @@ packages:
       '@rbxts/react': ^17
       '@rbxts/react-roblox': ^17
 
-  '@loom-dev/compiler-darwin-arm64@0.1.0-alpha.7':
-    resolution: {integrity: sha512-7Qz0wH+u0JnJ7RIeHy9yheulcy/Ll2YjIwjs1JdvSHQWgFv+uzvMOENBnQrcZ5r7JMaAlqnhi311a2wyPEV1Vw==}
+  '@loom-dev/compiler-darwin-arm64@0.1.0-alpha.8':
+    resolution: {integrity: sha512-jXWdY3heV/MoHpQbLMVyD5zyWkXeKtttl6gxQkXwmFZ70cmP5t68zcJXm9m2J6bowN+R1jVd6iUv7dl6utoPSw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@loom-dev/compiler-darwin-x64@0.1.0-alpha.7':
-    resolution: {integrity: sha512-vCvV29VApCfMGBdUDbLyrcSTzTPEyFwwXTNlJhiQooDJcRny++7pgNah3J+dQ/UuK+sJKhgNIS0a1eMRVAZjOw==}
+  '@loom-dev/compiler-darwin-x64@0.1.0-alpha.8':
+    resolution: {integrity: sha512-s/maV+rIgQ919RKbxSxjpxEelzYPU7uhkpaenW54mEDjlahjf+SuxOVhO5kpHsyyA96nKlRommfgG+HsqZFJKw==}
     cpu: [x64]
     os: [darwin]
 
-  '@loom-dev/compiler-linux-arm64-gnu@0.1.0-alpha.7':
-    resolution: {integrity: sha512-DuHw6/FqicmFnEfxG9Ji+z2o80aqtFfIW37Nni8pfrWqB4JlvvEpFXK0+Qhk+Av3qDQ8WmJzOluo0RA/gVl00g==}
+  '@loom-dev/compiler-linux-arm64-gnu@0.1.0-alpha.8':
+    resolution: {integrity: sha512-3O70zFhulrvzRbcsyFliC8sIV6Z5pChjGlkrGJsjfVObx9/00FcvSTrNktSLePdLaTxiJwjQHVutzm/I190zHA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@loom-dev/compiler-linux-arm64-musl@0.1.0-alpha.7':
-    resolution: {integrity: sha512-Wd0+RHVM9QAseeoXW20G3PXObetaMM3NMgCOc+3MsU7BTNpL4Aj1EDlrTP8rrnn4uCGcKkD++TB3LOtVvoE9pA==}
+  '@loom-dev/compiler-linux-arm64-musl@0.1.0-alpha.8':
+    resolution: {integrity: sha512-YiLm/hsqzIwbVnJZ1gltnTyxPvtEfhc6UFVSmTZ7aJXnGSQQ2Ro7h8v1PrS7Rn5Bvod9fDqycLN6Sdfq5yuCvw==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@loom-dev/compiler-linux-x64-gnu@0.1.0-alpha.7':
-    resolution: {integrity: sha512-tcEmwWEchfBRsbpqBBwZszuAaE0ayS7IFDwnEv54I81lKLzfYHg+jK+WpmwyJct4IL4Pc9lawQ20n4RIJFNnWw==}
+  '@loom-dev/compiler-linux-x64-gnu@0.1.0-alpha.8':
+    resolution: {integrity: sha512-m9TqVTEWsD0XAWomDmLkjINb6ycg1k7mfcXTrYSfzpxrYIkP9BV4/nOFKSXHE+LJmMtK+DwPJ8AIX+JibNiXTA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@loom-dev/compiler-linux-x64-musl@0.1.0-alpha.7':
-    resolution: {integrity: sha512-kvW+XiF9v4DrGkODzoqe8XxsorUuO9Bryk0zSYAd8avIWO0d4k0bUFla6lgnrA7h8Zd+aw4CZ1RrFl3wIYlrlg==}
+  '@loom-dev/compiler-linux-x64-musl@0.1.0-alpha.8':
+    resolution: {integrity: sha512-4N3DodlaGaNt17HujC1LJjf23EEnXQZzUoHLSSnY+RPlxS9Fy3On0W5Ztk9CqDdFeT06NEMu0DNpdN7oTFBKIg==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@loom-dev/compiler-win32-arm64-msvc@0.1.0-alpha.7':
-    resolution: {integrity: sha512-ZXLjjgzrsE/0yRWzL/ANFdwFyrtiddb+8IhydYJZUc9mz99wNST4fT8oi7lqGj/GSt9vQ2Wai0HvByITg1cYxA==}
+  '@loom-dev/compiler-win32-arm64-msvc@0.1.0-alpha.8':
+    resolution: {integrity: sha512-Qs9QXewR1piYJo4rI3o7cYE3JGaTRBXgSDhkr2XGdciCV0y9mxxHFYMgJ+CVrSZ8R+skoJhZvRN51ygrOVoBbQ==}
     cpu: [arm64]
     os: [win32]
 
-  '@loom-dev/compiler-win32-x64-msvc@0.1.0-alpha.7':
-    resolution: {integrity: sha512-HyDhlmw6LYB1DPrfLsMoAqP1sstCgGCOUS8CilIT40+KRoYXmPXXew5sibdZj9GZS2YG3Rwj9znyeHnZDR+yLQ==}
+  '@loom-dev/compiler-win32-x64-msvc@0.1.0-alpha.8':
+    resolution: {integrity: sha512-XfYycd33WhtPi/pVZVrNzekXsG0gTjJdNgbqGS7TZTDe2bRy8XVRVl11/efUJY+CUL9Khal47NQTG2QVO6o+Mg==}
     cpu: [x64]
     os: [win32]
 
-  '@loom-dev/compiler@0.1.0-alpha.7':
-    resolution: {integrity: sha512-GK2jFDV6Q7kWEX84qKv0B9WP+Ujko2CbJaqX9cgOz2W/21YRoyCQXYPjG6iT5HsYxq+saqzd02vaZwx0KE6VcA==}
+  '@loom-dev/compiler@0.1.0-alpha.8':
+    resolution: {integrity: sha512-CoMJGUB9M82+tP/br5BH5hckSQ/Ior5ZWDGZs42FwEfIU1YQoWl3zEiesoJpwQ6ukEbqgH1OupkOOcPdb3IT0w==}
 
-  '@loom-dev/layout-engine@0.1.0-alpha.7':
-    resolution: {integrity: sha512-wk3tuFxG7K37xY/kCrz8RQ/UTb3Ik89apL1RNr8SwbsR9otFrrzFZG1BF+tzfVRC0cY7Sh8JxxQss3xWBhML0Q==}
+  '@loom-dev/layout-engine@0.1.0-alpha.8':
+    resolution: {integrity: sha512-SrusFNok4BJXo11JRGjtn4iFGY+Vi20Qg+xHR7aLfI4HwVyU8JFo5KEnpeUaj3cAP9jGuU5c1m2iiMzl5UKHbg==}
 
-  '@loom-dev/preview-analysis@0.1.0-alpha.7':
-    resolution: {integrity: sha512-7vDOt879Epxi6zGyiPbB4qYZ7jKQhPV4XDlEiRKcVoKlg0Uk26GfL/3RzdqTwnTntdY1OEymQ6R8eYhVawX10w==}
+  '@loom-dev/preview-analysis@0.1.0-alpha.8':
+    resolution: {integrity: sha512-ShYD2lVEV2fA9gYGfliDviMU5XEt1O+gqGp2moXItvT9pwIYC8keJ38vunWbxO3yyiW3Ya92gx9cDCNfIAnlHQ==}
 
-  '@loom-dev/preview-engine@0.1.0-alpha.7':
-    resolution: {integrity: sha512-yn4fj6o2xFjY7f0CKhGPriaQOrk3mF4PTzzN1dRrWHOVX8hh8Le2Msx6c0TUGBQrIURZGBdCYp7+Ofyjto9Ciw==}
+  '@loom-dev/preview-engine@0.1.0-alpha.8':
+    resolution: {integrity: sha512-MAi+3sO08LP1kCKhprA/PqMDRNEjLO2F6x5eJzcTy7nmEvAymbdYmdCjikWTXVPnIUf/4K8hcCgEMPgBORdHhQ==}
 
-  '@loom-dev/preview-runtime@0.1.0-alpha.7':
-    resolution: {integrity: sha512-BB30+dTa/+6zJuUul1BpoFkuZhFTiSXp3SBPSL8co48mDEGcdoznE0xOtnTe6ig6H5MBExi29vA+2AA820MegQ==}
+  '@loom-dev/preview-runtime@0.1.0-alpha.8':
+    resolution: {integrity: sha512-vXF0q2UgmqCZfBoZn+9F6C6AXjKBBkcJh5UkoF+Y3/N5/IYj9NhKrf4EUeIwMDhNVjCATydlZIiVx3UjgeqZZw==}
 
-  '@loom-dev/preview@0.1.0-alpha.7':
-    resolution: {integrity: sha512-9zJSgL5uXJBRFruNfWaokyUCxrQOrZbrsZs44Z3KSejQ+qren2OqMkS6nnCsDa793CIb7rrsaunNQnN20Wm99w==}
+  '@loom-dev/preview@0.1.0-alpha.8':
+    resolution: {integrity: sha512-14uZiVso2hcEpgFQ+5QF5nD4FpmCa1lOMlLIITahaHYp2AB55QoAEeMe5jkUIf7K8TwQCDdPPsDeEiEAlqb4uw==}
 
   '@mdx-js/mdx@3.1.1':
     resolution: {integrity: sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ==}
@@ -6273,63 +6273,63 @@ snapshots:
       '@rbxts/react': 17.3.7-ts.1
       '@rbxts/react-roblox': 17.3.7-ts.1(@rbxts/react@17.3.7-ts.1)
 
-  '@loom-dev/compiler-darwin-arm64@0.1.0-alpha.7':
+  '@loom-dev/compiler-darwin-arm64@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-darwin-x64@0.1.0-alpha.7':
+  '@loom-dev/compiler-darwin-x64@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-linux-arm64-gnu@0.1.0-alpha.7':
+  '@loom-dev/compiler-linux-arm64-gnu@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-linux-arm64-musl@0.1.0-alpha.7':
+  '@loom-dev/compiler-linux-arm64-musl@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-linux-x64-gnu@0.1.0-alpha.7':
+  '@loom-dev/compiler-linux-x64-gnu@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-linux-x64-musl@0.1.0-alpha.7':
+  '@loom-dev/compiler-linux-x64-musl@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-win32-arm64-msvc@0.1.0-alpha.7':
+  '@loom-dev/compiler-win32-arm64-msvc@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler-win32-x64-msvc@0.1.0-alpha.7':
+  '@loom-dev/compiler-win32-x64-msvc@0.1.0-alpha.8':
     optional: true
 
-  '@loom-dev/compiler@0.1.0-alpha.7':
+  '@loom-dev/compiler@0.1.0-alpha.8':
     optionalDependencies:
-      '@loom-dev/compiler-darwin-arm64': 0.1.0-alpha.7
-      '@loom-dev/compiler-darwin-x64': 0.1.0-alpha.7
-      '@loom-dev/compiler-linux-arm64-gnu': 0.1.0-alpha.7
-      '@loom-dev/compiler-linux-arm64-musl': 0.1.0-alpha.7
-      '@loom-dev/compiler-linux-x64-gnu': 0.1.0-alpha.7
-      '@loom-dev/compiler-linux-x64-musl': 0.1.0-alpha.7
-      '@loom-dev/compiler-win32-arm64-msvc': 0.1.0-alpha.7
-      '@loom-dev/compiler-win32-x64-msvc': 0.1.0-alpha.7
+      '@loom-dev/compiler-darwin-arm64': 0.1.0-alpha.8
+      '@loom-dev/compiler-darwin-x64': 0.1.0-alpha.8
+      '@loom-dev/compiler-linux-arm64-gnu': 0.1.0-alpha.8
+      '@loom-dev/compiler-linux-arm64-musl': 0.1.0-alpha.8
+      '@loom-dev/compiler-linux-x64-gnu': 0.1.0-alpha.8
+      '@loom-dev/compiler-linux-x64-musl': 0.1.0-alpha.8
+      '@loom-dev/compiler-win32-arm64-msvc': 0.1.0-alpha.8
+      '@loom-dev/compiler-win32-x64-msvc': 0.1.0-alpha.8
 
-  '@loom-dev/layout-engine@0.1.0-alpha.7': {}
+  '@loom-dev/layout-engine@0.1.0-alpha.8': {}
 
-  '@loom-dev/preview-analysis@0.1.0-alpha.7': {}
+  '@loom-dev/preview-analysis@0.1.0-alpha.8': {}
 
-  '@loom-dev/preview-engine@0.1.0-alpha.7':
+  '@loom-dev/preview-engine@0.1.0-alpha.8':
     dependencies:
-      '@loom-dev/compiler': 0.1.0-alpha.7
-      '@loom-dev/preview-analysis': 0.1.0-alpha.7
-      '@loom-dev/preview-runtime': 0.1.0-alpha.7
+      '@loom-dev/compiler': 0.1.0-alpha.8
+      '@loom-dev/preview-analysis': 0.1.0-alpha.8
+      '@loom-dev/preview-runtime': 0.1.0-alpha.8
 
-  '@loom-dev/preview-runtime@0.1.0-alpha.7':
+  '@loom-dev/preview-runtime@0.1.0-alpha.8':
     dependencies:
-      '@loom-dev/layout-engine': 0.1.0-alpha.7
+      '@loom-dev/layout-engine': 0.1.0-alpha.8
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@loom-dev/preview@0.1.0-alpha.7(@noble/hashes@1.8.0)(@types/node@24.12.0)(esbuild@0.28.0)(jiti@2.6.1)(rollup@4.59.0)(yaml@2.8.2)':
+  '@loom-dev/preview@0.1.0-alpha.8(@noble/hashes@1.8.0)(@types/node@24.12.0)(esbuild@0.28.0)(jiti@2.6.1)(rollup@4.59.0)(yaml@2.8.2)':
     dependencies:
-      '@loom-dev/compiler': 0.1.0-alpha.7
-      '@loom-dev/layout-engine': 0.1.0-alpha.7
-      '@loom-dev/preview-engine': 0.1.0-alpha.7
-      '@loom-dev/preview-runtime': 0.1.0-alpha.7
+      '@loom-dev/compiler': 0.1.0-alpha.8
+      '@loom-dev/layout-engine': 0.1.0-alpha.8
+      '@loom-dev/preview-engine': 0.1.0-alpha.8
+      '@loom-dev/preview-runtime': 0.1.0-alpha.8
       '@vitejs/plugin-react': 6.0.1(vite@8.0.8(@types/node@24.12.0)(esbuild@0.28.0)(jiti@2.6.1)(yaml@2.8.2))
       jsdom: 29.0.2(@noble/hashes@1.8.0)
       react: 19.2.5
