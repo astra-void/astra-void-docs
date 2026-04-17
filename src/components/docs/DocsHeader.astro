@@ -1,10 +1,26 @@
 ﻿---
 import { Button } from "../ui/button";
 import { DOCS_SITE } from "../../lib/docs";
+
+const normalizedPath = Astro.url.pathname.endsWith("/")
+  ? Astro.url.pathname
+  : `${Astro.url.pathname}/`;
+const isComponentsPath = normalizedPath.startsWith("/components/");
+const isThemesPath = normalizedPath.startsWith("/themes/");
+const isPlaygroundPath = normalizedPath.startsWith("/playground/");
+const isDocsPath =
+  !isComponentsPath && !isThemesPath && !isPlaygroundPath;
+
+function navLinkClass(isActive: boolean) {
+  return [
+    "transition-colors hover:text-foreground/80",
+    isActive ? "text-foreground" : "text-foreground/60",
+  ];
+}
 ---
 
 <header
-  class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+  class="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60"
 >
   <div
     class="container mx-auto flex h-14 max-w-screen-2xl items-center px-4 md:px-8"
@@ -17,18 +33,23 @@ import { DOCS_SITE } from "../../lib/docs";
       </a>
       <nav class="flex items-center gap-6 text-sm font-medium">
         <a
-          href="/docs"
-          class="transition-colors hover:text-foreground/80 text-foreground/60"
+          href="/"
+          class:list={navLinkClass(isDocsPath)}
           >Docs</a
         >
         <a
-          href="/components"
-          class="transition-colors hover:text-foreground/80 text-foreground/60"
+          href="/components/"
+          class:list={navLinkClass(isComponentsPath)}
           >Components</a
         >
         <a
-          href="/themes"
-          class="transition-colors hover:text-foreground/80 text-foreground/60"
+          href="/playground/"
+          class:list={navLinkClass(isPlaygroundPath)}
+          >Playground</a
+        >
+        <a
+          href="/themes/"
+          class:list={navLinkClass(isThemesPath)}
           >Themes</a
         >
       </nav>
@@ -71,7 +92,7 @@ import { DOCS_SITE } from "../../lib/docs";
     >
       <div class="w-full flex-1 md:w-auto md:flex-none">
         <button
-          class="inline-flex items-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground px-4 py-2 relative h-8 w-full justify-start rounded-[0.5rem] bg-muted/50 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
+          class="inline-flex items-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground px-4 py-2 relative h-8 w-full justify-start rounded-xl bg-muted/50 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
         >
           <span class="hidden lg:inline-flex">Search documentation...</span>
           <span class="inline-flex lg:hidden">Search...</span>

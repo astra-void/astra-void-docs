@@ -1,0 +1,55 @@
+---
+import PlaygroundWorkbenchClient from "../../components/docs/PlaygroundWorkbenchClient";
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import { getDocsShellData } from "../../lib/docs";
+import { getPlaygroundTemplates } from "../../lib/playground";
+
+const docsShell = await getDocsShellData("");
+const { homePage, sections } = docsShell;
+
+if (!homePage) {
+	throw new Error(
+		"Home page metadata is required to build the playground route.",
+	);
+}
+
+const templates = await getPlaygroundTemplates();
+const currentPage = {
+	...homePage,
+	id: "playground/index",
+	path: "playground",
+	url: "/playground/",
+	title: "Playground",
+	description:
+		"Edit starter examples inline and apply updates instantly to the live Loom preview.",
+	sectionKey: "playground",
+	sectionTitle: "Playground",
+	sectionOrder: Number.MAX_SAFE_INTEGER,
+	sidebarOrder: Number.MAX_SAFE_INTEGER,
+	isSectionIndex: true,
+};
+---
+
+<DocsLayout
+	title={currentPage.title}
+	description={currentPage.description}
+	currentPage={currentPage}
+	homePage={homePage}
+	sections={sections}
+	headings={[]}
+>
+	<section class="doc-section doc-section-overview">
+		<div class="package-status-row">
+			<span class="package-status-badge">Workbench</span>
+			<code class="package-install-name">{templates.length} starter templates</code>
+		</div>
+		<p class="package-status-note">
+			Choose a starter from src/examples/components, edit code directly, and
+			watch the live preview update while you type.
+		</p>
+	</section>
+
+	<section class="doc-section">
+		<PlaygroundWorkbenchClient client:only="react" templates={templates} />
+	</section>
+</DocsLayout>

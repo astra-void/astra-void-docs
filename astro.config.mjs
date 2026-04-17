@@ -1,5 +1,5 @@
-import path from "node:path";
 import { createRequire } from "node:module";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
@@ -64,10 +64,12 @@ function collectLatticePackageAliases(rootDependencies) {
 			replacement: path.join(packageRoot, "src/index.ts"),
 		});
 
-		const packageResolver = createRequire(path.join(packageRoot, "package.json"));
-		const dependencyNames = Object.keys(packageMetadata.dependencies ?? {}).filter(
-			isLatticePackageName,
+		const packageResolver = createRequire(
+			path.join(packageRoot, "package.json"),
 		);
+		const dependencyNames = Object.keys(
+			packageMetadata.dependencies ?? {},
+		).filter(isLatticePackageName);
 
 		for (const dependencyName of dependencyNames) {
 			pendingPackages.push({
