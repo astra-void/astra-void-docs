@@ -50,6 +50,37 @@ const currentPage = {
 	</section>
 
 	<section class="doc-section">
-		<PlaygroundWorkbenchClient client:only="react" templates={templates} />
+		<PlaygroundWorkbenchClient client:only="react" templates={templates}>
+			<div
+				slot="fallback"
+				class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+			>
+				<section class="space-y-3" aria-hidden="true">
+					<div class="flex flex-wrap items-center gap-3">
+						<div class="h-8 w-36 animate-pulse rounded-md bg-muted" />
+						<div class="h-8 w-28 animate-pulse rounded-md bg-muted" />
+						<div class="h-8 w-16 animate-pulse rounded-md bg-muted" />
+					</div>
+					<div class="min-h-128 w-full animate-pulse rounded-md border bg-muted/40" />
+					<div class="h-4 w-52 animate-pulse rounded-md bg-muted" />
+				</section>
+
+				<section class="space-y-3" role="status" aria-live="polite">
+					<div class="flex items-center justify-between">
+						<div class="h-4 w-24 animate-pulse rounded-md bg-muted" />
+						<div class="h-4 w-20 animate-pulse rounded-md bg-muted" />
+					</div>
+					<div class="relative min-h-128 overflow-hidden rounded-md border bg-[#1e1e1e] p-4">
+						<div class="h-4 w-40 animate-pulse rounded-md bg-white/15" />
+						<div class="mt-4 space-y-3">
+							<div class="h-16 animate-pulse rounded-md bg-white/10" />
+							<div class="h-20 animate-pulse rounded-md bg-white/10" />
+							<div class="h-10 w-5/6 animate-pulse rounded-md bg-white/10" />
+						</div>
+						<p class="mt-4 text-xs text-zinc-300/80">Preparing playground...</p>
+					</div>
+				</section>
+			</div>
+		</PlaygroundWorkbenchClient>
 	</section>
 </DocsLayout>

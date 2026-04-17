@@ -472,6 +472,8 @@ export default function PlaygroundWorkbenchClient({
 
 	const isDebouncing = code !== debouncedCode;
 	const hasCustomCode = code !== selectedTemplate.sourceCode;
+	const showInitialPreviewSkeleton =
+		!previewElement && !error && previewKey === 0;
 
 	return (
 		<div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -516,7 +518,7 @@ export default function PlaygroundWorkbenchClient({
 				</div>
 
 				<textarea
-					className="min-h-[32rem] w-full rounded-md border bg-background px-3 py-2 font-mono text-xs leading-5 text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					className="min-h-128 w-full rounded-md border bg-background px-3 py-2 font-mono text-xs leading-5 text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					value={code}
 					onChange={(event) => {
 						setCode(event.currentTarget.value);
@@ -539,7 +541,7 @@ export default function PlaygroundWorkbenchClient({
 					</span>
 				</div>
 
-				<div className="relative min-h-[32rem] overflow-hidden rounded-md border bg-[#1e1e1e]">
+				<div className="relative min-h-128 overflow-hidden rounded-md border bg-[#1e1e1e]">
 					{previewElement ? (
 						<PreviewErrorBoundary
 							key={`${selectedTemplate.slug}-${previewKey}`}
@@ -548,9 +550,21 @@ export default function PlaygroundWorkbenchClient({
 						</PreviewErrorBoundary>
 					) : null}
 
-					{!previewElement && !error ? (
-						<div className="p-4 text-sm text-muted-foreground">
-							Compiling preview...
+					{showInitialPreviewSkeleton ? (
+						<div
+							className="absolute inset-0 flex flex-col gap-4 p-4"
+							role="status"
+							aria-live="polite"
+						>
+							<div className="h-4 w-40 animate-pulse rounded-md bg-white/15" />
+							<div className="space-y-3">
+								<div className="h-16 animate-pulse rounded-md bg-white/10" />
+								<div className="h-20 animate-pulse rounded-md bg-white/10" />
+								<div className="h-10 w-5/6 animate-pulse rounded-md bg-white/10" />
+							</div>
+							<div className="mt-auto text-xs text-zinc-300/80">
+								Preparing live preview...
+							</div>
 						</div>
 					) : null}
 
