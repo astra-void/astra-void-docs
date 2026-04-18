@@ -12,10 +12,7 @@ const isDocsPath =
   !isComponentsPath && !isThemesPath && !isPlaygroundPath;
 
 function navLinkClass(isActive: boolean) {
-  return [
-    "transition-colors hover:text-foreground/80",
-    isActive ? "text-foreground" : "text-foreground/60",
-  ];
+  return ["docs-header-nav-link", isActive ? "is-active" : undefined];
 }
 ---
 
@@ -31,25 +28,29 @@ function navLinkClass(isActive: boolean) {
           {DOCS_SITE.title}
         </span>
       </a>
-      <nav class="flex items-center gap-6 text-sm font-medium">
+      <nav class="docs-header-nav flex items-center gap-1 text-sm font-medium">
         <a
           href="/"
           class:list={navLinkClass(isDocsPath)}
+          aria-current={isDocsPath ? "page" : undefined}
           >Docs</a
         >
         <a
           href="/components/"
           class:list={navLinkClass(isComponentsPath)}
+          aria-current={isComponentsPath ? "page" : undefined}
           >Components</a
         >
         <a
           href="/playground/"
           class:list={navLinkClass(isPlaygroundPath)}
+          aria-current={isPlaygroundPath ? "page" : undefined}
           >Playground</a
         >
         <a
           href="/themes/"
           class:list={navLinkClass(isThemesPath)}
+          aria-current={isThemesPath ? "page" : undefined}
           >Themes</a
         >
       </nav>
@@ -92,7 +93,7 @@ function navLinkClass(isActive: boolean) {
     >
       <div class="w-full flex-1 md:w-auto md:flex-none">
         <button
-          class="inline-flex items-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground px-4 py-2 relative h-8 w-full justify-start rounded-xl bg-muted/50 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
+          class="docs-search-trigger inline-flex items-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input px-4 py-2 relative h-8 w-full justify-start rounded-xl bg-muted/45 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
         >
           <span class="hidden lg:inline-flex">Search documentation...</span>
           <span class="inline-flex lg:hidden">Search...</span>
@@ -106,7 +107,7 @@ function navLinkClass(isActive: boolean) {
       <nav class="flex items-center">
         <a href={DOCS_SITE.githubUrl} target="_blank" rel="noreferrer">
           <div
-            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9"
+            class="docs-header-icon-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 w-9"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -130,7 +131,7 @@ function navLinkClass(isActive: boolean) {
           size="icon"
           data-theme-toggle
           aria-label="Toggle theme"
-          className="h-9 w-9"
+          className="docs-header-icon-button h-9 w-9"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

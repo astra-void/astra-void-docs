@@ -11,21 +11,26 @@ const visibleHeadings = headings.filter((heading) => heading.depth > 1);
 
 {
   visibleHeadings.length > 0 && (
-    <div class="space-y-2">
-      <p class="font-medium">On This Page</p>
-      <ul class="m-0 list-none">
+    <nav class="docs-toc" aria-label="On this page">
+      <p class="docs-toc-title">On this page</p>
+      <ul class="docs-toc-list" role="list">
         {visibleHeadings.map((heading) => (
-          <li class="mt-0 pt-2">
+          <li
+            class="docs-toc-item"
+            style={`--toc-depth: ${Math.max(0, heading.depth - 2)};`}
+          >
             <a
               href={`#${heading.slug}`}
-              class="inline-block no-underline transition-colors hover:text-foreground text-muted-foreground"
-              style={`padding-left: ${Math.max(0, heading.depth - 2) * 1}rem;`}
+              class="docs-toc-link"
+              data-toc-link
+              data-heading-slug={heading.slug}
             >
-              {heading.text}
+              <span class="docs-toc-link-indicator" aria-hidden="true"></span>
+              <span class="docs-toc-link-text">{heading.text}</span>
             </a>
           </li>
         ))}
       </ul>
-    </div>
+    </nav>
   )
 }

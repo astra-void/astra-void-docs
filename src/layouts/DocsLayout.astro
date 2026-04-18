@@ -72,13 +72,13 @@ const hasToc = headings.some((heading) => heading.depth > 1);
     </div>
 
     <div
-      class="container mx-auto px-4 md:px-8 max-w-screen-2xl flex flex-1 px-4 sm:px-6 md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"
+      class="container mx-auto flex w-full max-w-380 flex-1 min-h-[calc(100dvh-3.5rem)] px-4 sm:px-6 lg:px-8 md:gap-8 lg:gap-12"
     >
       <aside
         id="docs-sidebar"
-        class="docs-sidebar-panel fixed top-14 left-0 z-30 -ml-2 hidden h-[calc(100dvh-3.5rem)] w-full shrink-0 overflow-hidden border-r border-border/40 md:sticky md:block md:w-[220px] lg:w-[240px]"
+        class="docs-sidebar-panel fixed left-0 top-14 z-30 hidden h-[calc(100dvh-3.5rem)] w-full shrink-0 overflow-hidden border-r border-border/50 bg-sidebar/95 md:sticky md:block md:h-[calc(100dvh-3.5rem)] md:w-58 lg:w-62"
       >
-        <div class="h-full overflow-y-auto overscroll-contain py-6 pr-6 lg:py-8">
+        <div class="h-full overflow-y-auto overscroll-contain py-6 pr-5 lg:py-8">
           <DocsSidebar
             currentPath={currentPage.path}
             homePage={homePage}
@@ -88,11 +88,11 @@ const hasToc = headings.some((heading) => heading.depth > 1);
       </aside>
 
       <main
-        class="relative py-6 lg:gap-10 lg:py-8 xl:grid xl:grid-cols-[1fr_300px] min-w-0"
+        class="relative flex-1 min-w-0 py-7 md:py-9 xl:grid xl:grid-cols-[minmax(0,1fr)_17rem] xl:gap-11 2xl:grid-cols-[minmax(0,1fr)_18rem]"
       >
-        <div class="mx-auto w-full min-w-0">
+        <div class="mx-auto w-full min-w-0 max-w-200 md:pr-2">
           <div
-            class="mb-4 flex items-center space-x-1 text-sm text-muted-foreground"
+            class="mb-4 flex items-center gap-1.5 text-[0.78rem] font-medium uppercase tracking-[0.12em] text-muted-foreground/85"
           >
             <div class="overflow-hidden text-ellipsis whitespace-nowrap">
               Docs
@@ -114,16 +114,16 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             </div>
           </div>
 
-          <div class="space-y-2">
-            <h1 class="scroll-m-20 text-4xl font-extrabold tracking-tight">
+          <div class="space-y-3 border-b border-border/55 pb-7">
+            <h1 class="scroll-m-20 text-3xl font-bold tracking-[-0.035em] text-foreground sm:text-4xl">
               {title}
             </h1>
-            <p class="text-lg text-muted-foreground">
+            <p class="max-w-[68ch] text-base leading-7 text-muted-foreground sm:text-[1.04rem]">
               {description}
             </p>
           </div>
 
-          <article class="docs-prose max-w-none pb-12">
+          <article class="docs-prose max-w-none pb-14 pt-8 md:pt-9 *:last:mb-0">
             <slot />
           </article>
 
@@ -133,7 +133,7 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         {
           hasToc && (
             <div class="hidden text-sm xl:block">
-              <div class="sticky top-16 -mt-10 pt-4">
+              <div class="sticky top-20 pt-2">
                 <DocsToc headings={headings} />
               </div>
             </div>
@@ -148,6 +148,7 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         const themeStorageKey = "lattice-ui-docs-theme";
         const themeToggleSelector = "[data-theme-toggle]";
         const codeCopyButtonSelector = "[data-copy-code]";
+        let cleanupTocTracking = () => {};
         let activeCopyFeedbackTimeout = 0;
 
         const applyTheme = (theme) => {
@@ -199,23 +200,16 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         };
 
         const copyText = async (value) => {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(value);
-            return true;
+          if (!navigator.clipboard?.writeText) {
+            return false;
           }
 
-          const selection = window.getSelection();
-          const textArea = document.createElement("textarea");
-          textArea.value = value;
-          textArea.setAttribute("readonly", "true");
-          textArea.style.position = "fixed";
-          textArea.style.opacity = "0";
-          document.body.append(textArea);
-          textArea.select();
-          const didCopy = navigator.clipboard.writeText("copy");
-          textArea.remove();
-          selection?.removeAllRanges();
-          return didCopy;
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch {
+            return false;
+          }
         };
 
         const enhanceCodeBlocks = () => {
@@ -231,6 +225,8 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             if (!(code instanceof HTMLElement)) {
               return;
             }
+
+            pre.classList.add("docs-code-pre");
 
             const button = document.createElement("button");
             button.type = "button";
@@ -283,9 +279,95 @@ const hasToc = headings.some((heading) => heading.depth > 1);
                 <path d="M12 16h.01"></path>
               </svg>
             `;
-            pre.append(button);
+
+            const codeSurface = pre.closest("[data-code-surface]");
+            const actionSlot = codeSurface?.querySelector("[data-code-actions]");
+
+            if (actionSlot instanceof HTMLElement) {
+              button.classList.add("docs-code-copy-button-inline");
+              actionSlot.append(button);
+            } else {
+              pre.classList.add("docs-code-pre-standalone");
+              button.classList.add("docs-code-copy-button-floating");
+              pre.append(button);
+            }
+
             pre.dataset.copyReady = "true";
           });
+        };
+
+        const setupTocTracking = () => {
+          cleanupTocTracking();
+
+          const tocLinks = Array.from(
+            document.querySelectorAll("[data-toc-link]"),
+          ).filter((link) => link instanceof HTMLAnchorElement);
+
+          if (tocLinks.length === 0) {
+            return;
+          }
+
+          const pairs = tocLinks
+            .map((link) => {
+              if (!(link instanceof HTMLAnchorElement)) {
+                return undefined;
+              }
+
+              const slug = link.dataset.headingSlug || link.hash.slice(1);
+              const heading = slug ? document.getElementById(slug) : null;
+
+              if (!(heading instanceof HTMLElement)) {
+                return undefined;
+              }
+
+              return { link, heading };
+            })
+            .filter((pair) => pair !== undefined);
+
+          if (pairs.length === 0) {
+            return;
+          }
+
+          const syncToc = () => {
+            const threshold = 140;
+            let activePair = pairs[0];
+
+            pairs.forEach((pair) => {
+              if (pair.heading.getBoundingClientRect().top <= threshold) {
+                activePair = pair;
+              }
+            });
+
+            pairs.forEach((pair) => {
+              if (pair === activePair) {
+                pair.link.setAttribute("aria-current", "true");
+                return;
+              }
+
+              pair.link.removeAttribute("aria-current");
+            });
+          };
+
+          let ticking = false;
+          const handleScroll = () => {
+            if (ticking) {
+              return;
+            }
+
+            ticking = true;
+            window.requestAnimationFrame(() => {
+              syncToc();
+              ticking = false;
+            });
+          };
+
+          window.addEventListener("scroll", handleScroll, { passive: true });
+          window.addEventListener("resize", handleScroll);
+          cleanupTocTracking = () => {
+            window.removeEventListener("scroll", handleScroll);
+            window.removeEventListener("resize", handleScroll);
+          };
+          syncToc();
         };
 
         const closeNav = () => {
@@ -297,6 +379,16 @@ const hasToc = headings.some((heading) => heading.depth > 1);
 
         applyTheme(root.dataset.theme === "dark" ? "dark" : "light");
         enhanceCodeBlocks();
+        setupTocTracking();
+
+        document.addEventListener("astro:page-load", () => {
+          enhanceCodeBlocks();
+          setupTocTracking();
+        });
+
+        document.addEventListener("astro:before-swap", () => {
+          cleanupTocTracking();
+        });
 
         document.addEventListener("click", async (event) => {
           const target = event.target;

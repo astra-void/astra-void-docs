@@ -8,10 +8,41 @@ type Props = {
 };
 
 const { code, lang, meta } = Astro.props;
+const normalizedLang = lang.toLowerCase();
+const languageLabelMap: Record<string, string> = {
+  bash: "Shell",
+  sh: "Shell",
+  shell: "Shell",
+  ts: "TypeScript",
+  tsx: "TSX",
+  js: "JavaScript",
+  jsx: "JSX",
+  json: "JSON",
+  md: "Markdown",
+  mdx: "MDX",
+  yaml: "YAML",
+  yml: "YAML",
+};
+const languageLabel =
+  languageLabelMap[normalizedLang] ??
+  (normalizedLang ? normalizedLang.toUpperCase() : "Code");
+const metaLabel = meta?.trim();
 ---
 
-<div
-  class="relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm"
->
-  <Code code={code} lang={lang as any} meta={meta} class="docs-code-block" />
+<div class="docs-code-surface" data-code-surface>
+  <div class="docs-code-header">
+    <div class="docs-code-context">
+      <span class="docs-code-language-badge">{languageLabel}</span>
+      {
+        metaLabel && (
+          <span class="docs-code-meta" title={metaLabel}>{metaLabel}</span>
+        )
+      }
+    </div>
+    <div class="docs-code-actions" data-code-actions></div>
+  </div>
+
+  <div class="docs-code-body">
+    <Code code={code} lang={lang as any} meta={meta} class="docs-code-block" />
+  </div>
 </div>

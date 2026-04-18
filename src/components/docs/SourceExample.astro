@@ -38,25 +38,19 @@ const isExpanded = defaultOpen || !hasOverflow;
   data-example-collapsible
   data-open={isExpanded ? "true" : "false"}
 >
-  <div
-    class="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm"
-  >
-    <div
-      class="flex flex-col gap-4 border-b px-4 py-4 md:flex-row md:items-start md:justify-between"
-    >
-      <div class="min-w-0">
-        <h2
-          class="mb-2 text-2xl font-semibold tracking-[-0.04em] text-foreground"
-        >
+  <div class="docs-example-card">
+    <div class="docs-example-header">
+      <div class="docs-example-summary-copy min-w-0">
+        <h2 class="mb-2 text-2xl font-semibold tracking-[-0.035em] text-foreground">
           {title}
         </h2>
         <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="docs-example-summary-meta">
         {
           fileName && (
-            <code class="inline-flex items-center rounded-md border bg-background px-3 py-1 text-sm text-foreground">
+            <code class="docs-example-file">
               {fileName}
             </code>
           )
@@ -65,7 +59,7 @@ const isExpanded = defaultOpen || !hasOverflow;
           hasOverflow && (
             <button
               type="button"
-              class="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              class="docs-example-toggle"
               data-example-toggle
               aria-expanded={isExpanded ? "true" : "false"}
               aria-controls={disclosureId}
@@ -97,19 +91,19 @@ const isExpanded = defaultOpen || !hasOverflow;
 
     {
       hasOverflow && (
-        <div class="border-b bg-muted/20 px-4 py-4 docs-example-preview relative">
-          <CodeBlock code={previewCode} lang="tsx" />
+        <div class="docs-example-preview" aria-hidden={isExpanded ? "true" : "false"}>
+          <CodeBlock code={previewCode} lang="tsx" meta="Preview" />
         </div>
       )
     }
 
     <div
       id={disclosureId}
-      class="px-4 py-4 docs-example-panel"
+      class="docs-example-panel"
       data-example-panel
       hidden={hasOverflow && !isExpanded}
     >
-      <CodeBlock code={normalizedCode} lang="tsx" />
+      <CodeBlock code={normalizedCode} lang="tsx" meta={fileName} />
     </div>
   </div>
 </section>
