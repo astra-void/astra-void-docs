@@ -6,10 +6,8 @@ const normalizedPath = Astro.url.pathname.endsWith("/")
   ? Astro.url.pathname
   : `${Astro.url.pathname}/`;
 const isComponentsPath = normalizedPath.startsWith("/components/");
-const isThemesPath = normalizedPath.startsWith("/themes/");
 const isPlaygroundPath = normalizedPath.startsWith("/playground/");
-const isDocsPath =
-  !isComponentsPath && !isThemesPath && !isPlaygroundPath;
+const isDocsPath = !isComponentsPath && !isPlaygroundPath;
 
 function navLinkClass(isActive: boolean) {
   return ["docs-header-nav-link", isActive ? "is-active" : undefined];
@@ -46,12 +44,6 @@ function navLinkClass(isActive: boolean) {
           class:list={navLinkClass(isPlaygroundPath)}
           aria-current={isPlaygroundPath ? "page" : undefined}
           >Playground</a
-        >
-        <a
-          href="/themes/"
-          class:list={navLinkClass(isThemesPath)}
-          aria-current={isThemesPath ? "page" : undefined}
-          >Themes</a
         >
       </nav>
     </div>
@@ -92,17 +84,43 @@ function navLinkClass(isActive: boolean) {
       class="flex flex-1 items-center justify-between space-x-2 md:justify-end"
     >
       <div class="w-full flex-1 md:w-auto md:flex-none">
-        <button
-          class="docs-search-trigger inline-flex items-center whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input px-4 py-2 relative h-8 w-full justify-start rounded-xl bg-muted/45 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-40 lg:w-64"
+        <a
+          href="/"
+          class="docs-search-trigger inline-flex h-8 w-full items-center gap-2 rounded-md border border-border/65 bg-transparent px-3 text-sm font-medium text-foreground/80 no-underline transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:w-auto md:min-w-44 lg:min-w-52"
+          aria-label="Browse docs index"
+          title="Browse docs index"
         >
-          <span class="hidden lg:inline-flex">Search documentation...</span>
-          <span class="inline-flex lg:hidden">Search...</span>
-          <kbd
-            class="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <span class="text-xs">⌘</span>K
-          </kbd>
-        </button>
+            <path d="M4 6h16"></path>
+            <path d="M4 12h16"></path>
+            <path d="M4 18h10"></path>
+          </svg>
+          <span class="hidden lg:inline-flex">Browse docs index</span>
+          <span class="inline-flex lg:hidden">Docs index</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m9 18 6-6-6-6"></path>
+          </svg>
+        </a>
       </div>
       <nav class="flex items-center">
         <a href={DOCS_SITE.githubUrl} target="_blank" rel="noreferrer">

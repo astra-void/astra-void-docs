@@ -98,6 +98,10 @@
 		@apply min-h-screen bg-background text-foreground antialiased;
 	}
 
+	body.docs-mobile-nav-open {
+		overflow: hidden;
+	}
+
 	::selection {
 		background: color-mix(in srgb, var(--accent) 28%, transparent);
 	}
@@ -157,6 +161,19 @@
 
 	.docs-sidebar-heading {
 		@apply mb-1.5 px-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80;
+	}
+
+	.docs-sidebar-heading-link {
+		@apply inline-flex rounded-sm text-inherit no-underline transition-colors;
+	}
+
+	.docs-sidebar-heading-link:hover,
+	.docs-sidebar-heading-link.is-active {
+		@apply text-foreground;
+	}
+
+	.docs-sidebar-heading-link[aria-current="location"] {
+		@apply text-foreground;
 	}
 
 	.docs-sidebar-links {
@@ -238,6 +255,38 @@
 
 	.docs-toc-link-text {
 		@apply min-w-0 text-balance;
+	}
+
+	.docs-mobile-toc {
+		@apply mt-6 overflow-hidden rounded-xl border border-border/65 bg-card/65 xl:hidden;
+	}
+
+	.docs-mobile-toc-summary {
+		@apply flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm font-semibold text-foreground;
+	}
+
+	.docs-mobile-toc-summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.docs-mobile-toc-icon {
+		transition: transform 160ms ease;
+	}
+
+	.docs-mobile-toc[open] .docs-mobile-toc-icon {
+		transform: rotate(180deg);
+	}
+
+	.docs-mobile-toc-panel {
+		@apply border-t border-border/55 p-2;
+	}
+
+	.docs-mobile-toc-panel .docs-toc {
+		@apply border-0 bg-transparent p-0;
+	}
+
+	.docs-mobile-toc-panel .docs-toc-title {
+		@apply sr-only;
 	}
 
 	.docs-pager {

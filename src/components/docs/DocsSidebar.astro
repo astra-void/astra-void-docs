@@ -1,6 +1,7 @@
 ﻿---
 import {
   isCurrentPath,
+  isSectionActive,
   type DocPage,
   type SidebarSection,
 } from "../../lib/docs";
@@ -12,6 +13,7 @@ type Props = {
 };
 
 const { currentPath, homePage, sections } = Astro.props;
+const playgroundPath = "playground";
 ---
 
 <div class="w-full">
@@ -36,36 +38,72 @@ const { currentPath, homePage, sections } = Astro.props;
           </a>
         )
       }
+      <a
+        href="/playground/"
+        class:list={[
+          "docs-sidebar-link",
+          isCurrentPath(currentPath, playgroundPath) ? "is-active" : undefined,
+        ]}
+        aria-current={isCurrentPath(currentPath, playgroundPath)
+          ? "page"
+          : undefined}
+      >
+        <span class="docs-sidebar-link-label">Playground</span>
+      </a>
     </div>
   </div>
 
   {
-    sections.map((section) => (
-      <div class="docs-sidebar-group pb-5">
-        <h4 class="docs-sidebar-heading">
-          {section.title}
-        </h4>
-        {section.entries.length > 0 && (
-          <div class="docs-sidebar-links">
-            {section.entries.map((entry) => (
+    sections.map((section) => {
+      const isSectionCurrent = isSectionActive(currentPath, section);
+      const sectionPath =
+        section.url && section.url !== "/" ? section.url.slice(1, -1) : "";
+      const sectionAriaCurrent = isSectionCurrent
+        ? isCurrentPath(currentPath, sectionPath)
+          ? "page"
+          : "location"
+        : undefined;
+
+      return (
+        <div class="docs-sidebar-group pb-5">
+          <h4 class="docs-sidebar-heading">
+            {section.url ? (
               <a
-                href={entry.url}
+                href={section.url}
                 class:list={[
-                  "docs-sidebar-link",
-                  isCurrentPath(currentPath, entry.path)
-                    ? "is-active"
-                    : undefined,
+                  "docs-sidebar-heading-link",
+                  isSectionCurrent ? "is-active" : undefined,
                 ]}
-                aria-current={isCurrentPath(currentPath, entry.path)
-                  ? "page"
-                  : undefined}
+                aria-current={sectionAriaCurrent}
               >
-                <span class="docs-sidebar-link-label">{entry.title}</span>
+                {section.title}
               </a>
-            ))}
-          </div>
-        )}
-      </div>
-    ))
+            ) : (
+              section.title
+            )}
+          </h4>
+          {section.entries.length > 0 && (
+            <div class="docs-sidebar-links">
+              {section.entries.map((entry) => (
+                <a
+                  href={entry.url}
+                  class:list={[
+                    "docs-sidebar-link",
+                    isCurrentPath(currentPath, entry.path)
+                      ? "is-active"
+                      : undefined,
+                  ]}
+                  aria-current={isCurrentPath(currentPath, entry.path)
+                    ? "page"
+                    : undefined}
+                >
+                  <span class="docs-sidebar-link-label">{entry.title}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    })
   }
 </div>

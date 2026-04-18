@@ -20,12 +20,15 @@ const tabId = Math.random().toString(36).substring(2, 9);
       <div
         class="inline-flex h-9 items-center justify-center rounded-none border-b bg-transparent p-0 text-muted-foreground w-full"
         role="tablist"
+        aria-label="Loom demo view"
       >
         <button
           type="button"
+          id={`preview-tab-${tabId}`}
           role="tab"
           aria-selected="true"
           aria-controls={`preview-${tabId}`}
+          tabindex="0"
           class="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
           data-state="active"
           data-target={`preview-${tabId}`}
@@ -34,9 +37,11 @@ const tabId = Math.random().toString(36).substring(2, 9);
         </button>
         <button
           type="button"
+          id={`code-tab-${tabId}`}
           role="tab"
           aria-selected="false"
           aria-controls={`code-${tabId}`}
+          tabindex="-1"
           class="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
           data-state="inactive"
           data-target={`code-${tabId}`}
@@ -49,6 +54,8 @@ const tabId = Math.random().toString(36).substring(2, 9);
     <div
       id={`preview-${tabId}`}
       role="tabpanel"
+      tabindex="0"
+      aria-labelledby={`preview-tab-${tabId}`}
       class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative rounded-md border"
     >
       <div
@@ -61,7 +68,10 @@ const tabId = Math.random().toString(36).substring(2, 9);
     <div
       id={`code-${tabId}`}
       role="tabpanel"
-      class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hidden"
+      tabindex="-1"
+      aria-labelledby={`code-tab-${tabId}`}
+      hidden
+      class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div class="flex flex-col space-y-4">
         <div
@@ -79,36 +89,101 @@ const tabId = Math.random().toString(36).substring(2, 9);
 </div>
 
 <script>
-  function setupTabs() {
-    const tabGroups = document.querySelectorAll(".loom-demo-tabs");
-    tabGroups.forEach((group) => {
-      const buttons = group.querySelectorAll(".demo-tab-btn");
-      const contents = group.querySelectorAll(".demo-tab-content");
+  (() => {
+    const setupTabs = () => {
+      const tabGroups = document.querySelectorAll(".loom-demo-tabs");
 
-      buttons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const targetId = btn.getAttribute("data-target");
+      tabGroups.forEach((group) => {
+        if (!(group instanceof HTMLElement) || group.dataset.tabsReady === "true") {
+          return;
+        }
 
-          // Update buttons
-          buttons.forEach((b) => {
-            b.setAttribute("data-state", b === btn ? "active" : "inactive");
-            b.setAttribute("aria-selected", b === btn ? "true" : "false");
-          });
+        const tabs = Array.from(group.querySelectorAll(".demo-tab-btn")).filter(
+          (tab): tab is HTMLButtonElement => tab instanceof HTMLButtonElement,
+        );
 
-          // Update contents
-          contents.forEach((content) => {
-            if (content.id === targetId) {
-              content.classList.remove("hidden");
-            } else {
-              content.classList.add("hidden");
+        if (tabs.length === 0) {
+          return;
+        }
+
+        const activateTab = (
+          nextTab: HTMLButtonElement,
+          { focusTab = false }: { focusTab?: boolean } = {},
+        ) => {
+          tabs.forEach((tab) => {
+            const isActive = tab === nextTab;
+            const panelId = tab.getAttribute("aria-controls");
+            const panel = panelId ? document.getElementById(panelId) : null;
+
+            tab.setAttribute("data-state", isActive ? "active" : "inactive");
+            tab.setAttribute("aria-selected", isActive ? "true" : "false");
+            tab.setAttribute("tabindex", isActive ? "0" : "-1");
+
+            if (panel instanceof HTMLElement) {
+              panel.hidden = !isActive;
+              panel.setAttribute("tabindex", isActive ? "0" : "-1");
             }
           });
-        });
-      });
-    });
-  }
 
-  // Run on initial load and after Astro page transitions
-  setupTabs();
-  document.addEventListener("astro:page-load", setupTabs);
+          if (focusTab) {
+            nextTab.focus();
+          }
+        };
+
+        const selectedTab =
+          tabs.find((tab) => tab.getAttribute("aria-selected") === "true") ||
+          tabs[0];
+        activateTab(selectedTab);
+
+        group.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) {
+            return;
+          }
+
+          const tab = target.closest(".demo-tab-btn");
+          if (!(tab instanceof HTMLButtonElement) || !tabs.includes(tab)) {
+            return;
+          }
+
+          activateTab(tab);
+        });
+
+        group.addEventListener("keydown", (event) => {
+          const target = event.target;
+
+          if (!(target instanceof HTMLButtonElement) || !tabs.includes(target)) {
+            return;
+          }
+
+          const currentIndex = tabs.indexOf(target);
+          let nextIndex = currentIndex;
+
+          if (event.key === "ArrowRight") {
+            nextIndex = (currentIndex + 1) % tabs.length;
+          } else if (event.key === "ArrowLeft") {
+            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          } else if (event.key === "Home") {
+            nextIndex = 0;
+          } else if (event.key === "End") {
+            nextIndex = tabs.length - 1;
+          } else {
+            return;
+          }
+
+          event.preventDefault();
+          activateTab(tabs[nextIndex], { focusTab: true });
+        });
+
+        group.dataset.tabsReady = "true";
+      });
+    };
+
+    setupTabs();
+
+    if (document.documentElement.dataset.loomDemoTabsBound !== "true") {
+      document.documentElement.dataset.loomDemoTabsBound = "true";
+      document.addEventListener("astro:page-load", setupTabs);
+    }
+  })();
 </script>

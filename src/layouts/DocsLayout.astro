@@ -123,6 +123,34 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             </p>
           </div>
 
+          {
+            hasToc && (
+              <details class="docs-mobile-toc" data-mobile-toc>
+                <summary class="docs-mobile-toc-summary">
+                  <span>On this page</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="docs-mobile-toc-icon h-4 w-4"
+                    aria-hidden="true"
+                  >
+                    <path d="m6 9 6 6 6-6"></path>
+                  </svg>
+                </summary>
+                <div class="docs-mobile-toc-panel">
+                  <DocsToc headings={headings} />
+                </div>
+              </details>
+            )
+          }
+
           <article class="docs-prose max-w-none pb-14 pt-8 md:pt-9 *:last:mb-0">
             <slot />
           </article>
@@ -148,8 +176,16 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         const themeStorageKey = "lattice-ui-docs-theme";
         const themeToggleSelector = "[data-theme-toggle]";
         const codeCopyButtonSelector = "[data-copy-code]";
+        const navToggleSelector = "[data-nav-toggle]";
+        const navCloseSelector = "[data-nav-close]";
+        const navPanelSelector = "#docs-sidebar";
+        const mobileNavBreakpoint = 1024;
+        const isFirstLayoutBoot =
+          document.documentElement.dataset.docsLayoutBound !== "true";
+        document.documentElement.dataset.docsLayoutBound = "true";
         let cleanupTocTracking = () => {};
         let activeCopyFeedbackTimeout = 0;
+        let lastNavToggle = null;
 
         const applyTheme = (theme) => {
           root.dataset.theme = theme;
@@ -370,107 +406,216 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           syncToc();
         };
 
-        const closeNav = () => {
-          delete root.dataset.navOpen;
-          document
-            .querySelector("[data-nav-toggle]")
-            ?.setAttribute("aria-expanded", "false");
+        const isNavOpen = () => root.dataset.navOpen === "true";
+
+        const getNavToggle = () => document.querySelector(navToggleSelector);
+        const getNavPanel = () => document.querySelector(navPanelSelector);
+
+        const syncNavToggleState = () => {
+          const navToggle = getNavToggle();
+
+          if (!(navToggle instanceof HTMLButtonElement)) {
+            return;
+          }
+
+          const navOpen = isNavOpen();
+          navToggle.setAttribute("aria-expanded", navOpen ? "true" : "false");
+          navToggle.setAttribute(
+            "aria-label",
+            navOpen ? "Close navigation" : "Open navigation",
+          );
         };
 
-        applyTheme(root.dataset.theme === "dark" ? "dark" : "light");
-        enhanceCodeBlocks();
-        setupTocTracking();
+        const getFocusableNavElements = () => {
+          const navPanel = getNavPanel();
 
-        document.addEventListener("astro:page-load", () => {
+          if (!(navPanel instanceof HTMLElement)) {
+            return [];
+          }
+
+          const nodes = navPanel.querySelectorAll(
+            "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])",
+          );
+
+          return Array.from(nodes).filter(
+            (node) => node instanceof HTMLElement,
+          );
+        };
+
+        const openNav = () => {
+          if (window.innerWidth >= mobileNavBreakpoint) {
+            return;
+          }
+
+          root.dataset.navOpen = "true";
+          document.body.classList.add("docs-mobile-nav-open");
+          syncNavToggleState();
+
+          window.requestAnimationFrame(() => {
+            const [firstFocusable] = getFocusableNavElements();
+            if (firstFocusable instanceof HTMLElement) {
+              firstFocusable.focus();
+            }
+          });
+        };
+
+        const closeNav = ({ restoreFocus = false } = {}) => {
+          delete root.dataset.navOpen;
+          document.body.classList.remove("docs-mobile-nav-open");
+          syncNavToggleState();
+
+          if (restoreFocus && lastNavToggle instanceof HTMLElement) {
+            lastNavToggle.focus();
+          }
+
+          lastNavToggle = null;
+        };
+
+        if (isFirstLayoutBoot) {
+          applyTheme(root.dataset.theme === "dark" ? "dark" : "light");
           enhanceCodeBlocks();
           setupTocTracking();
-        });
+          syncNavToggleState();
+          closeNav();
 
-        document.addEventListener("astro:before-swap", () => {
-          cleanupTocTracking();
-        });
+          document.addEventListener("astro:page-load", () => {
+            enhanceCodeBlocks();
+            setupTocTracking();
+            syncNavToggleState();
+            closeNav();
+          });
 
-        document.addEventListener("click", async (event) => {
-          const target = event.target;
+          document.addEventListener("astro:before-swap", () => {
+            cleanupTocTracking();
+            closeNav();
+          });
 
-          if (!(target instanceof Element)) {
-            return;
-          }
+          document.addEventListener("click", async (event) => {
+            const target = event.target;
 
-          const themeToggle = target.closest(themeToggleSelector);
-          if (themeToggle) {
-            const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
-            applyTheme(nextTheme);
-            return;
-          }
-
-          const codeCopyButton = target.closest(codeCopyButtonSelector);
-          if (codeCopyButton instanceof HTMLButtonElement) {
-            const pre = codeCopyButton.closest("pre");
-            const code = pre?.querySelector("code");
-
-            if (!(code instanceof HTMLElement)) {
-              showCopyFeedback(codeCopyButton, false);
+            if (!(target instanceof Element)) {
               return;
             }
 
-            const copied = await copyText(code.innerText.replace(/\n$/, ""));
-            showCopyFeedback(codeCopyButton, copied);
-            return;
-          }
+            const themeToggle = target.closest(themeToggleSelector);
+            if (themeToggle) {
+              const nextTheme =
+                root.dataset.theme === "dark" ? "light" : "dark";
+              applyTheme(nextTheme);
+              return;
+            }
 
-          const exampleToggle = target.closest("[data-example-toggle]");
-          if (exampleToggle instanceof HTMLButtonElement) {
-            const example = exampleToggle.closest("[data-example-collapsible]");
-            const panel = example?.querySelector("[data-example-panel]");
+            const codeCopyButton = target.closest(codeCopyButtonSelector);
+            if (codeCopyButton instanceof HTMLButtonElement) {
+              const pre = codeCopyButton.closest("pre");
+              const code = pre?.querySelector("code");
+
+              if (!(code instanceof HTMLElement)) {
+                showCopyFeedback(codeCopyButton, false);
+                return;
+              }
+
+              const copied = await copyText(code.innerText.replace(/\n$/, ""));
+              showCopyFeedback(codeCopyButton, copied);
+              return;
+            }
+
+            const exampleToggle = target.closest("[data-example-toggle]");
+            if (exampleToggle instanceof HTMLButtonElement) {
+              const example = exampleToggle.closest("[data-example-collapsible]");
+              const panel = example?.querySelector("[data-example-panel]");
+
+              if (
+                !(example instanceof HTMLElement) ||
+                !(panel instanceof HTMLElement)
+              ) {
+                return;
+              }
+
+              const nextOpen = example.dataset.open !== "true";
+              example.dataset.open = nextOpen ? "true" : "false";
+              exampleToggle.setAttribute(
+                "aria-expanded",
+                nextOpen ? "true" : "false",
+              );
+              panel.hidden = !nextOpen;
+              return;
+            }
+
+            const navToggle = target.closest(navToggleSelector);
+            if (navToggle instanceof HTMLButtonElement) {
+              if (isNavOpen()) {
+                closeNav({ restoreFocus: true });
+              } else {
+                lastNavToggle = navToggle;
+                openNav();
+              }
+              return;
+            }
+
+            if (target.closest(navCloseSelector)) {
+              closeNav({ restoreFocus: true });
+              return;
+            }
+
+            if (target.closest(`${navPanelSelector} a`)) {
+              closeNav();
+            }
+          });
+
+          document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && isNavOpen()) {
+              event.preventDefault();
+              closeNav({ restoreFocus: true });
+              return;
+            }
 
             if (
-              !(example instanceof HTMLElement) ||
-              !(panel instanceof HTMLElement)
+              event.key !== "Tab" ||
+              !isNavOpen() ||
+              window.innerWidth >= mobileNavBreakpoint
             ) {
               return;
             }
 
-            const nextOpen = example.dataset.open !== "true";
-            example.dataset.open = nextOpen ? "true" : "false";
-            exampleToggle.setAttribute(
-              "aria-expanded",
-              nextOpen ? "true" : "false",
-            );
-            panel.hidden = !nextOpen;
-            return;
-          }
+            const navPanel = getNavPanel();
+            const focusable = getFocusableNavElements();
 
-          const navToggle = target.closest("[data-nav-toggle]");
-          if (navToggle) {
-            root.dataset.navOpen =
-              root.dataset.navOpen === "true" ? "false" : "true";
-            navToggle.setAttribute(
-              "aria-expanded",
-              root.dataset.navOpen === "true" ? "true" : "false",
-            );
-            return;
-          }
+            if (!(navPanel instanceof HTMLElement) || focusable.length === 0) {
+              return;
+            }
 
-          if (
-            target.closest("[data-nav-close]") ||
-            target.closest("#docs-sidebar a")
-          ) {
-            closeNav();
-          }
-        });
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const activeElement = document.activeElement;
 
-        document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape") {
-            closeNav();
-          }
-        });
+            if (
+              !(activeElement instanceof HTMLElement) ||
+              !navPanel.contains(activeElement)
+            ) {
+              event.preventDefault();
+              first.focus();
+              return;
+            }
 
-        window.addEventListener("resize", () => {
-          if (window.innerWidth >= 1024) {
-            closeNav();
-          }
-        });
+            if (event.shiftKey && activeElement === first) {
+              event.preventDefault();
+              last.focus();
+              return;
+            }
+
+            if (!event.shiftKey && activeElement === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          });
+
+          window.addEventListener("resize", () => {
+            if (window.innerWidth >= mobileNavBreakpoint) {
+              closeNav();
+            }
+          });
+        }
       })();
     </script>
   </body>
