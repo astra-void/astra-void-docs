@@ -111,11 +111,75 @@ function createPreviewEntry(exportName: string): PreviewEntry {
 	} as PreviewEntry;
 }
 
+function DemoLoadingPanel() {
+	return (
+		<div className="loom-demo-state" role="status" aria-live="polite">
+			<span className="loom-demo-spinner" aria-hidden="true"></span>
+			<p className="loom-demo-state-title">Starting live demo</p>
+			<p className="loom-demo-state-message">
+				Preparing the preview runtime for this example.
+			</p>
+		</div>
+	);
+}
+
+function DemoErrorPanel({
+	title,
+	message,
+	technicalDetails,
+	onRetry,
+	playgroundHref,
+}: {
+	title?: string;
+	message: string;
+	technicalDetails?: string;
+	onRetry: () => void;
+	playgroundHref?: string;
+}) {
+	return (
+		<div className="loom-demo-state loom-demo-state-error" role="alert">
+			<p className="loom-demo-state-title">{title ?? "Demo unavailable"}</p>
+			<p className="loom-demo-state-message">{message}</p>
+			<div className="loom-demo-state-actions">
+				<button
+					type="button"
+					onClick={onRetry}
+					className="loom-demo-state-action"
+				>
+					Retry
+				</button>
+				{playgroundHref ? (
+					<a
+						href={playgroundHref}
+						className="loom-demo-state-action is-secondary"
+					>
+						Open playground
+					</a>
+				) : null}
+			</div>
+			{technicalDetails ? (
+				<details className="loom-demo-state-details">
+					<summary>Technical details</summary>
+					<pre className="loom-demo-state-pre">{technicalDetails}</pre>
+				</details>
+			) : null}
+		</div>
+	);
+}
+
 class ErrorBoundary extends React.Component<
-	{ children: React.ReactNode },
+	{
+		children: React.ReactNode;
+		onRetry: () => void;
+		playgroundHref?: string;
+	},
 	{ error: Error | null }
 > {
-	constructor(props: { children: React.ReactNode }) {
+	constructor(props: {
+		children: React.ReactNode;
+		onRetry: () => void;
+		playgroundHref?: string;
+	}) {
 		super(props);
 		this.state = { error: null };
 	}
@@ -124,12 +188,28 @@ class ErrorBoundary extends React.Component<
 		return { error };
 	}
 
+	componentDidUpdate(
+		prevProps: Readonly<{
+			children: React.ReactNode;
+			onRetry: () => void;
+			playgroundHref?: string;
+		}>,
+	) {
+		if (this.state.error && prevProps.children !== this.props.children) {
+			this.setState({ error: null });
+		}
+	}
+
 	render() {
 		if (this.state.error) {
 			return (
-				<div className="p-4 text-red-500 text-sm">
-					Render error: {this.state.error.message}
-				</div>
+				<DemoErrorPanel
+					title="Preview crashed"
+					message="This demo hit a render error. Try reloading it or continue in the playground."
+					technicalDetails={this.state.error.stack ?? this.state.error.message}
+					onRetry={this.props.onRetry}
+					playgroundHref={this.props.playgroundHref}
+				/>
 			);
 		}
 
@@ -137,14 +217,26 @@ class ErrorBoundary extends React.Component<
 	}
 }
 
-export function LoomLiveDemoClient({ slug }: { slug: string }) {
+export function LoomLiveDemoClient({
+	slug,
+	playgroundHref,
+}: {
+	slug: string;
+	playgroundHref?: string;
+}) {
 	const [previewElement, setPreviewElement] =
 		React.useState<React.ReactElement | null>(null);
 	const [error, setError] = React.useState<Error | null>(null);
+	const [reloadToken, setReloadToken] = React.useState(0);
+
+	const handleRetry = React.useCallback(() => {
+		setReloadToken((current) => current + 1);
+	}, []);
 
 	React.useEffect(() => {
 		let cancelled = false;
 		const releaseGlobals = acquirePreviewGlobals();
+		const retrySuffix = reloadToken > 0 ? ` after retry ${reloadToken}` : "";
 
 		async function load() {
 			try {
@@ -153,14 +245,16 @@ export function LoomLiveDemoClient({ slug }: { slug: string }) {
 
 				const loader = components[`../../examples/components/${slug}.tsx`];
 				if (!loader) {
-					throw new Error("Demo source file not found.");
+					throw new Error(`Demo source file not found${retrySuffix}.`);
 				}
 
 				const mod = (await loader()) as PreviewModule;
 				const exportName = findComponentExportName(mod);
 
 				if (!exportName) {
-					throw new Error("No React component exported from example.");
+					throw new Error(
+						`No React component exported from example${retrySuffix}.`,
+					);
 				}
 
 				const nextPreviewElement = createPreviewElement({
@@ -185,27 +279,32 @@ export function LoomLiveDemoClient({ slug }: { slug: string }) {
 			cancelled = true;
 			releaseGlobals();
 		};
-	}, [slug]);
+	}, [slug, reloadToken]);
 
 	if (error) {
 		return (
-			<div className="p-4 text-red-500 text-sm">
-				Demo unavailable: {error.message}
-			</div>
+			<DemoErrorPanel
+				message="We couldn't load this demo right now."
+				technicalDetails={error.stack ?? error.message}
+				onRetry={handleRetry}
+				playgroundHref={playgroundHref}
+			/>
 		);
 	}
 
 	if (!previewElement) {
-		return (
-			<div className="p-4 text-muted-foreground text-sm animate-pulse">
-				Booting preview...
-			</div>
-		);
+		return <DemoLoadingPanel />;
 	}
 
 	return (
-		<div className="relative h-96 w-full overflow-hidden bg-[#1e1e1e]">
-			<ErrorBoundary key={slug}>{previewElement}</ErrorBoundary>
+		<div className="loom-live-demo-shell">
+			<ErrorBoundary
+				key={`${slug}-${reloadToken}`}
+				onRetry={handleRetry}
+				playgroundHref={playgroundHref}
+			>
+				{previewElement}
+			</ErrorBoundary>
 		</div>
 	);
 }

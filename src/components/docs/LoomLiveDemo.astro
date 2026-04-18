@@ -14,6 +14,7 @@ const tabId = Math.random().toString(36).substring(2, 9);
 <div
   class="group relative my-4 flex flex-col space-y-2 loom-demo-tabs"
   id={`demo-${tabId}`}
+  data-preview-size="comfortable"
 >
   <div class="relative mr-auto w-full">
     <div class="flex items-center justify-between pb-3">
@@ -56,12 +57,46 @@ const tabId = Math.random().toString(36).substring(2, 9);
       role="tabpanel"
       tabindex="0"
       aria-labelledby={`preview-tab-${tabId}`}
-      class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative rounded-md border"
+      class="demo-tab-content demo-preview-panel mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative rounded-md border"
     >
-      <div
-        class="preview flex min-h-87.5 w-full justify-center p-10 items-center bg-background"
-      >
-        <LoomLiveDemoClient client:only="react" slug={slug} />
+      <div class="demo-preview-toolbar">
+        <span class="demo-preview-toolbar-label">Preview size</span>
+        <div class="demo-preview-size-controls" role="group" aria-label="Preview size">
+          <button
+            type="button"
+            class="demo-preview-size-btn"
+            data-preview-size-control="compact"
+            aria-pressed="false"
+            title="Use compact preview"
+          >
+            Compact
+          </button>
+          <button
+            type="button"
+            class="demo-preview-size-btn is-active"
+            data-preview-size-control="comfortable"
+            aria-pressed="true"
+            title="Use comfortable preview"
+          >
+            Comfortable
+          </button>
+          <button
+            type="button"
+            class="demo-preview-size-btn"
+            data-preview-size-control="expanded"
+            aria-pressed="false"
+            title="Use expanded preview"
+          >
+            Expanded
+          </button>
+        </div>
+      </div>
+      <div class="preview demo-preview-stage">
+        <LoomLiveDemoClient
+          client:only="react"
+          slug={slug}
+          playgroundHref="/playground/"
+        />
       </div>
     </div>
 
@@ -106,6 +141,35 @@ const tabId = Math.random().toString(36).substring(2, 9);
           return;
         }
 
+        const previewSizeButtons = Array.from(
+          group.querySelectorAll(".demo-preview-size-btn"),
+        ).filter(
+          (button): button is HTMLButtonElement =>
+            button instanceof HTMLButtonElement,
+        );
+
+        const activatePreviewSize = (
+          nextButton: HTMLButtonElement,
+          { focusButton = false }: { focusButton?: boolean } = {},
+        ) => {
+          const nextSize = nextButton.dataset.previewSizeControl;
+          if (!nextSize) {
+            return;
+          }
+
+          group.dataset.previewSize = nextSize;
+
+          previewSizeButtons.forEach((button) => {
+            const isActive = button === nextButton;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-pressed", isActive ? "true" : "false");
+          });
+
+          if (focusButton) {
+            nextButton.focus();
+          }
+        };
+
         const activateTab = (
           nextTab: HTMLButtonElement,
           { focusTab = false }: { focusTab?: boolean } = {},
@@ -135,9 +199,32 @@ const tabId = Math.random().toString(36).substring(2, 9);
           tabs[0];
         activateTab(selectedTab);
 
+        const selectedPreviewSizeButton =
+          previewSizeButtons.find(
+            (button) =>
+              button.dataset.previewSizeControl === group.dataset.previewSize,
+          ) ||
+          previewSizeButtons.find(
+            (button) => button.dataset.previewSizeControl === "comfortable",
+          ) ||
+          previewSizeButtons[0];
+
+        if (selectedPreviewSizeButton) {
+          activatePreviewSize(selectedPreviewSizeButton);
+        }
+
         group.addEventListener("click", (event) => {
           const target = event.target;
           if (!(target instanceof Element)) {
+            return;
+          }
+
+          const previewSizeButton = target.closest(".demo-preview-size-btn");
+          if (
+            previewSizeButton instanceof HTMLButtonElement &&
+            previewSizeButtons.includes(previewSizeButton)
+          ) {
+            activatePreviewSize(previewSizeButton);
             return;
           }
 
@@ -151,6 +238,34 @@ const tabId = Math.random().toString(36).substring(2, 9);
 
         group.addEventListener("keydown", (event) => {
           const target = event.target;
+
+          if (
+            target instanceof HTMLButtonElement &&
+            previewSizeButtons.includes(target)
+          ) {
+            const currentIndex = previewSizeButtons.indexOf(target);
+            let nextIndex = currentIndex;
+
+            if (event.key === "ArrowRight") {
+              nextIndex = (currentIndex + 1) % previewSizeButtons.length;
+            } else if (event.key === "ArrowLeft") {
+              nextIndex =
+                (currentIndex - 1 + previewSizeButtons.length) %
+                previewSizeButtons.length;
+            } else if (event.key === "Home") {
+              nextIndex = 0;
+            } else if (event.key === "End") {
+              nextIndex = previewSizeButtons.length - 1;
+            } else {
+              return;
+            }
+
+            event.preventDefault();
+            activatePreviewSize(previewSizeButtons[nextIndex], {
+              focusButton: true,
+            });
+            return;
+          }
 
           if (!(target instanceof HTMLButtonElement) || !tabs.includes(target)) {
             return;

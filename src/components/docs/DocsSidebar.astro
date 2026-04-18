@@ -30,6 +30,7 @@ const playgroundPath = "playground";
                 ? "is-active"
                 : undefined,
             ]}
+            title={homePage.title}
             aria-current={isCurrentPath(currentPath, homePage.path)
               ? "page"
               : undefined}
@@ -44,6 +45,7 @@ const playgroundPath = "playground";
           "docs-sidebar-link",
           isCurrentPath(currentPath, playgroundPath) ? "is-active" : undefined,
         ]}
+        title="Playground"
         aria-current={isCurrentPath(currentPath, playgroundPath)
           ? "page"
           : undefined}
@@ -74,6 +76,7 @@ const playgroundPath = "playground";
                   "docs-sidebar-heading-link",
                   isSectionCurrent ? "is-active" : undefined,
                 ]}
+                title={section.title}
                 aria-current={sectionAriaCurrent}
               >
                 {section.title}
@@ -93,6 +96,7 @@ const playgroundPath = "playground";
                       ? "is-active"
                       : undefined,
                   ]}
+                  title={entry.title}
                   aria-current={isCurrentPath(currentPath, entry.path)
                     ? "page"
                     : undefined}

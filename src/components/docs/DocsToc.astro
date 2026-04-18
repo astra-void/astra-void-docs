@@ -17,6 +17,7 @@ const visibleHeadings = headings.filter((heading) => heading.depth > 1);
         {visibleHeadings.map((heading) => (
           <li
             class="docs-toc-item"
+            data-toc-depth={Math.max(0, heading.depth - 2)}
             style={`--toc-depth: ${Math.max(0, heading.depth - 2)};`}
           >
             <a
