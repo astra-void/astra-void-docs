@@ -17,7 +17,7 @@
 	"dependencies": {
 		"@astrojs/check": "^0.9.8",
 		"@astrojs/mdx": "^5.0.3",
-		"@astrojs/react": "5.0.2",
+		"@astrojs/react": "5.0.3",
 		"@fontsource-variable/geist": "^5.2.8",
 		"@fontsource/ibm-plex-mono": "^5.2.7",
 		"@fontsource/ibm-plex-sans": "^5.2.8",
@@ -31,6 +31,7 @@
 		"@lattice-ui/focus": "0.5.0-next.2",
 		"@lattice-ui/layer": "0.5.0-next.2",
 		"@lattice-ui/menu": "0.5.0-next.2",
+		"@lattice-ui/motion": "0.5.0-next.2",
 		"@lattice-ui/popover": "0.5.0-next.2",
 		"@lattice-ui/popper": "0.5.0-next.2",
 		"@lattice-ui/progress": "0.5.0-next.2",
@@ -52,9 +53,10 @@
 		"@loom-dev/preview": "0.1.0-alpha.8",
 		"@loom-dev/preview-runtime": "0.1.0-alpha.8",
 		"@tailwindcss/vite": "^4.2.2",
-		"astro": "^6.1.7",
+		"astro": "^6.1.8",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"cmdk": "^1.1.1",
 		"lucide-react": "^1.8.0",
 		"radix-ui": "^1.4.3",
 		"react": "^19.2.4",
@@ -74,6 +76,7 @@
 		"@rbxts/types": "1.0.916",
 		"@types/react": "^19.2.3",
 		"@types/react-dom": "^19.2.3",
+		"remark-directive": "^4.0.0",
 		"shadcn": "^4.3.0"
 	},
 	"packageManager": "pnpm@10.33.0"
