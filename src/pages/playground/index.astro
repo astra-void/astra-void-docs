@@ -1,5 +1,7 @@
 ---
 import PlaygroundWorkbenchClient from "../../components/docs/PlaygroundWorkbenchClient";
+import { Badge } from "../../components/ui/badge";
+import { Skeleton } from "../../components/ui/skeleton";
 import DocsLayout from "../../layouts/DocsLayout.astro";
 import { getDocsShellData } from "../../lib/docs";
 import { getPlaygroundTemplates } from "../../lib/playground";
@@ -40,12 +42,14 @@ const currentPage = {
 >
 	<section class="doc-section doc-section-overview">
 		<div class="package-status-row">
-			<span class="package-status-badge">Workbench</span>
+			<Badge variant="outline" className="package-status-badge">Workbench</Badge>
 			<code class="package-install-name">{templates.length} starter templates</code>
 		</div>
 		<p class="package-status-note">
 			Choose a starter from src/examples/components, edit code directly, and
-			watch the live preview update while you type.
+			watch the live preview update while you type. Loom preview is useful
+			for iteration, but Roblox runtime verification remains the source of
+			truth for final focus, input, layering, and motion behavior.
 		</p>
 	</section>
 
@@ -57,25 +61,25 @@ const currentPage = {
 			>
 				<section class="space-y-3" aria-hidden="true">
 					<div class="flex flex-wrap items-center gap-3">
-						<div class="h-8 w-36 animate-pulse rounded-md bg-muted" />
-						<div class="h-8 w-28 animate-pulse rounded-md bg-muted" />
-						<div class="h-8 w-16 animate-pulse rounded-md bg-muted" />
+						<Skeleton className="h-8 w-36" />
+						<Skeleton className="h-8 w-28" />
+						<Skeleton className="h-8 w-16" />
 					</div>
-					<div class="min-h-128 w-full animate-pulse rounded-md border bg-muted/40" />
-					<div class="h-4 w-52 animate-pulse rounded-md bg-muted" />
+					<Skeleton className="min-h-128 w-full border bg-muted/40" />
+					<Skeleton className="h-4 w-52" />
 				</section>
 
 				<section class="space-y-3" role="status" aria-live="polite">
 					<div class="flex items-center justify-between">
-						<div class="h-4 w-24 animate-pulse rounded-md bg-muted" />
-						<div class="h-4 w-20 animate-pulse rounded-md bg-muted" />
+						<Skeleton className="h-4 w-24" />
+						<Skeleton className="h-4 w-20" />
 					</div>
 					<div class="relative min-h-128 overflow-hidden rounded-md border bg-[#1e1e1e] p-4">
-						<div class="h-4 w-40 animate-pulse rounded-md bg-white/15" />
+						<Skeleton className="h-4 w-40 bg-white/15" />
 						<div class="mt-4 space-y-3">
-							<div class="h-16 animate-pulse rounded-md bg-white/10" />
-							<div class="h-20 animate-pulse rounded-md bg-white/10" />
-							<div class="h-10 w-5/6 animate-pulse rounded-md bg-white/10" />
+							<Skeleton className="h-16 bg-white/10" />
+							<Skeleton className="h-20 bg-white/10" />
+							<Skeleton className="h-10 w-5/6 bg-white/10" />
 						</div>
 						<p class="mt-4 text-xs text-zinc-300/80">Preparing playground...</p>
 					</div>

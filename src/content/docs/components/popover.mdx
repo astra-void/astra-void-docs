@@ -29,9 +29,12 @@ packageDoc:
   cautions:
     - "Because popovers are anchored overlays, they still benefit from a shared `PortalProvider` near the app root."
     - "Use `Dialog` instead when the content should trap attention or own a stronger modal interaction contract."
+    - "Let `Popper` own placement and `motion` own the animated wrapper so anchor geometry and transition state do not fight."
   related:
     - label: "Dialog"
       href: "/components/dialog/"
+    - label: "Motion"
+      href: "/components/motion/"
     - label: "Popper"
       href: "/components/popper/"
     - label: "Layer"

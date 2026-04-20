@@ -7,7 +7,6 @@ sidebar:
 ---
 
 import latticeSnapshot from "../../../data/lattice-snapshot.generated";
-import CodeBlock from "../../../components/docs/CodeBlock.astro";
 
 ## Prerequisites
 
@@ -28,17 +27,15 @@ If you do not want a global install, you can also run one-off commands with `npx
 
 ### Global CLI
 
-<CodeBlock
-  code={`npm i -g ${latticeSnapshot.cli.packageName}
-lattice --help`}
-  lang="bash"
-/>
+```bash
+npm i -g ${latticeSnapshot.cli.packageName}
+lattice --help
+```
 
 ### Monorepo Local Script
 
-```bash
-pnpm lattice --help
-```
+:::pm-install{title="Monorepo local script" description="Run local lattice commands through your package manager wrapper." defaultManager="pnpm" npm="npm exec lattice -- --help" pnpm="pnpm lattice --help" yarn="yarn lattice --help" bun="bunx lattice --help"}
+:::
 
 ## Bootstrap a Project
 
@@ -48,26 +45,27 @@ Use `create` for a new repo and `init` for an existing repo that already has a `
 
 ```bash
 lattice create
-pnpm lattice create
 ```
+
+:::pm-install{title="Create via local script" description="Use local package-manager wrappers when the CLI is not globally installed." defaultManager="pnpm" npm="npm exec lattice -- create" pnpm="pnpm lattice create" yarn="yarn lattice create" bun="bunx lattice create"}
+:::
 
 ### Initialize an Existing Project
 
 ```bash
 lattice init
-pnpm lattice init
 ```
+
+:::pm-install{title="Initialize via local script" description="Run init with the package manager command wrapper for your workspace." defaultManager="pnpm" npm="npm exec lattice -- init" pnpm="pnpm lattice init" yarn="yarn lattice init" bun="bunx lattice init"}
+:::
 
 `create` is interactive by default.
 `init` is also interactive unless you pass `--yes`, and it supports `--dry-run` so you can inspect the merge plan first.
 
 After `create`, generated projects include `lattice-ui` in `devDependencies`, so local command execution is immediately available:
 
-```bash
-npx lattice --help
-pnpm lattice --help
-yarn lattice --help
-```
+:::pm-install{title="Run local command after create" description="Generated projects include lattice-ui in devDependencies, so local wrappers are ready." defaultManager="pnpm" npm="npm exec lattice -- --help" pnpm="pnpm lattice --help" yarn="yarn lattice --help" bun="bunx lattice --help"}
+:::
 
 ## Install Component Packages
 
@@ -80,10 +78,8 @@ lattice add dialog,toast --preset overlay
 
 ### Monorepo Local Script
 
-```bash
-pnpm lattice add core,style,system
-pnpm lattice add dialog,toast --preset overlay
-```
+:::pm-install{title="Add packages via local script" description="Install and preset commands through your selected package manager." defaultManager="pnpm" npm="npm exec lattice -- add core,style,system\nnpm exec lattice -- add dialog,toast --preset overlay" pnpm="pnpm lattice add core,style,system\npnpm lattice add dialog,toast --preset overlay" yarn="yarn lattice add core,style,system\nyarn lattice add dialog,toast --preset overlay" bun="bunx lattice add core,style,system\nbunx lattice add dialog,toast --preset overlay"}
+:::
 
 ## Validate and Upgrade
 
@@ -96,17 +92,14 @@ lattice upgrade --preset form
 
 ### Monorepo Local Script
 
-```bash
-pnpm lattice doctor
-pnpm lattice upgrade --preset form
-```
+:::pm-install{title="Validate and upgrade via local script" defaultManager="pnpm" npm="npm exec lattice -- doctor\nnpm exec lattice -- upgrade --preset form" pnpm="pnpm lattice doctor\npnpm lattice upgrade --preset form" yarn="yarn lattice doctor\nyarn lattice upgrade --preset form" bun="bunx lattice doctor\nbunx lattice upgrade --preset form"}
+:::
 
 ## Peer Dependencies
 
 Ensure compatible peers are installed:
 
-```bash
-pnpm add @rbxts/react @rbxts/react-roblox
-```
+:::pm-install{title="Install peer dependencies" description="Use your package manager to install required react peers." packages="@rbxts/react @rbxts/react-roblox" defaultManager="pnpm"}
+:::
 
 Next: [Quick Start](/getting-started/quick-start/).

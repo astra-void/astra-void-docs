@@ -1,5 +1,6 @@
 ﻿---
 import CodeBlock from "./CodeBlock.astro";
+import { Button } from "../ui/button";
 
 type Props = {
   code: string;
@@ -57,9 +58,11 @@ const isExpanded = defaultOpen || !hasOverflow;
         }
         {
           hasOverflow && (
-            <button
+            <Button
               type="button"
-              class="docs-example-toggle"
+              variant="outline"
+              size="sm"
+              className="docs-example-toggle"
               data-example-toggle
               aria-expanded={isExpanded ? "true" : "false"}
               aria-controls={disclosureId}
@@ -83,7 +86,7 @@ const isExpanded = defaultOpen || !hasOverflow;
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
-            </button>
+            </Button>
           )
         }
       </div>

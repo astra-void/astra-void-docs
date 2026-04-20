@@ -7,7 +7,6 @@ sidebar:
 ---
 
 import latticeSnapshot from "../../../data/lattice-snapshot.generated";
-import CodeBlock from "../../../components/docs/CodeBlock.astro";
 
 Audience: app developers integrating Lattice UI in project repositories.
 
@@ -28,17 +27,15 @@ unreleased `init` workflow on `main`.
 
 ### Global CLI
 
-<CodeBlock
-  code={`npm i -g ${latticeSnapshot.cli.packageName}
-lattice --help`}
-  lang="bash"
-/>
+```bash
+npm i -g ${latticeSnapshot.cli.packageName}
+lattice --help
+```
 
 ### Monorepo Local Script
 
-```bash
-pnpm lattice --help
-```
+:::pm-install{title="Monorepo local script" description="Run CLI commands through your package manager wrapper when using local dependencies." defaultManager="pnpm" npm="npm exec lattice -- --help" pnpm="pnpm lattice --help" yarn="yarn lattice --help" bun="bunx lattice --help"}
+:::
 
 The published package currently exposes these binaries:
 

@@ -2,9 +2,11 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import CodeBlock from "./CodeBlock.astro";
 import LoomLiveDemo from "./LoomLiveDemo.astro";
+import PackageManagerInstall from "./PackageManagerInstall.astro";
 import SourceExample from "./SourceExample.astro";
+import { Badge } from "../ui/badge";
+import { Card } from "../ui/card";
 import { componentGuideLinks } from "../../data/component-guides";
 import type { ResolvedPackageDocData } from "../../data/package-docs";
 
@@ -19,6 +21,12 @@ const exampleSource = await readFile(
   join(process.cwd(), "src/examples/components", `${slug}.tsx`),
   "utf8",
 );
+const statusBadgeClassName = [
+  "package-status-badge",
+  doc.maturity === "experimental" ? "is-experimental" : undefined,
+]
+  .filter(Boolean)
+  .join(" ");
 
 function escapeHtml(value: string) {
   return value
@@ -41,14 +49,9 @@ function formatProvider(raw: string, optional: boolean) {
 <div class="package-doc">
   <section class="doc-section doc-section-overview">
     <div class="package-status-row">
-      <span
-        class:list={[
-          "package-status-badge",
-          doc.maturity === "experimental" && "is-experimental",
-        ]}
-      >
+      <Badge variant="outline" className={statusBadgeClassName}>
         {doc.maturityLabel}
-      </span>
+      </Badge>
       <code class="package-install-name">{doc.npm}</code>
     </div>
     <p class="package-status-note" set:html={formatInline(doc.maturityNote)} />
@@ -78,17 +81,21 @@ function formatProvider(raw: string, optional: boolean) {
       Install
     </h2>
 
-    <div class="install-grid">
-      <div class="install-card">
-        <h3>Global CLI</h3>
-        <CodeBlock code={`lattice add ${doc.installName}`} lang="bash" />
-      </div>
-
-      <div class="install-card">
-        <h3>Monorepo Local Script</h3>
-        <CodeBlock code={`pnpm lattice add ${doc.installName}`} lang="bash" />
-      </div>
+    <div class="install-inline-note">
+      <p>
+        Global CLI command: <code>lattice add {doc.installName}</code>
+      </p>
     </div>
+
+    <PackageManagerInstall
+      title="Monorepo local script"
+      description="Use your package manager wrapper when running the local lattice command."
+      defaultManager="pnpm"
+      npm={`npm exec lattice -- add ${doc.installName}`}
+      pnpm={`pnpm lattice add ${doc.installName}`}
+      yarn={`yarn lattice add ${doc.installName}`}
+      bun={`bunx lattice add ${doc.installName}`}
+    />
 
     <div class="package-meta-stack">
       <p>
@@ -100,7 +107,12 @@ function formatProvider(raw: string, optional: boolean) {
           {
             doc.peers.map((peer) => (
               <li>
-                <code>{peer}</code>
+                <Badge
+                  variant="outline"
+                  className="min-h-8 bg-muted px-3 py-1 text-sm text-foreground"
+                >
+                  <code>{peer}</code>
+                </Badge>
               </li>
             ))
           }
@@ -113,7 +125,12 @@ function formatProvider(raw: string, optional: boolean) {
             <ul class="export-list">
               {doc.providers.map((provider) => (
                 <li>
-                  <code>{formatProvider(provider.raw, provider.optional)}</code>
+                  <Badge
+                    variant="outline"
+                    className="min-h-8 bg-muted px-3 py-1 text-sm text-foreground"
+                  >
+                    <code>{formatProvider(provider.raw, provider.optional)}</code>
+                  </Badge>
                 </li>
               ))}
             </ul>
@@ -143,7 +160,12 @@ function formatProvider(raw: string, optional: boolean) {
       {
         doc.exports.map((entry) => (
           <li>
-            <code>{entry}</code>
+            <Badge
+              variant="outline"
+              className="min-h-8 bg-muted px-3 py-1 text-sm text-foreground"
+            >
+              <code>{entry}</code>
+            </Badge>
           </li>
         ))
       }
@@ -166,12 +188,12 @@ function formatProvider(raw: string, optional: boolean) {
     <div class="api-grid">
       {
         doc.keyApi.map((entry) => (
-          <div class="api-card">
+          <Card className="api-card">
             <h3>
               <code>{entry.name}</code>
             </h3>
             <p set:html={formatInline(entry.description)} />
-          </div>
+          </Card>
         ))
       }
     </div>
@@ -184,10 +206,10 @@ function formatProvider(raw: string, optional: boolean) {
     <div class="pattern-grid">
       {
         doc.compositionPatterns.map((entry) => (
-          <div class="pattern-card">
+          <Card className="pattern-card">
             <h3>{entry.title}</h3>
             <p set:html={formatInline(entry.description)} />
-          </div>
+          </Card>
         ))
       }
     </div>

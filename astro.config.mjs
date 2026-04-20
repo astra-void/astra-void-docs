@@ -10,7 +10,9 @@ import {
 } from "@loom-dev/preview/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
+import remarkDirective from "remark-directive";
 import wasmPluginModule from "vite-plugin-wasm";
+import { remarkPmInstallDirective } from "./src/lib/remark-pm-install.ts";
 
 const require = createRequire(import.meta.url);
 const docsSiteUrl = process.env.DOCS_SITE_URL;
@@ -130,7 +132,22 @@ const scopedPreviewPlugins = createScopedPreviewPlugins(
 export default defineConfig({
 	base: "/",
 	...(docsSiteUrl ? { site: docsSiteUrl } : {}),
-	integrations: [mdx(), react()],
+	integrations: [
+		mdx({
+			remarkPlugins: [remarkDirective, remarkPmInstallDirective],
+		}),
+		react(),
+	],
+	markdown: {
+		syntaxHighlight: "shiki",
+		shikiConfig: {
+			themes: {
+				light: "github-light",
+				dark: "github-dark",
+			},
+			wrap: false,
+		},
+	},
 	vite: {
 		assetsInclude: ["**/*.wasm"],
 		optimizeDeps: {

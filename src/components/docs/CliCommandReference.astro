@@ -1,5 +1,7 @@
 ﻿---
 import CodeBlock from "./CodeBlock.astro";
+import { Badge } from "../ui/badge";
+import { Card } from "../ui/card";
 import latticeSnapshot from "../../data/lattice-snapshot.generated";
 
 type CommandName = keyof typeof latticeSnapshot.cli.commands;
@@ -13,9 +15,7 @@ const { command, showPhases = false } = Astro.props;
 const commandMeta = latticeSnapshot.cli.commands[command];
 ---
 
-<div
-  class="grid gap-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm"
->
+<Card className="cli-command-reference grid gap-3.5 p-4">
   <div class="grid gap-2">
     <p class="text-sm font-medium text-muted-foreground">Command</p>
     <p class="text-base font-semibold tracking-[-0.02em] text-foreground">
@@ -31,8 +31,13 @@ const commandMeta = latticeSnapshot.cli.commands[command];
         <p class="text-sm font-medium text-foreground">Supported flags</p>
         <ul class="flex flex-wrap gap-2">
           {commandMeta.flags.map((flag) => (
-            <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
-              <code>{flag}</code>
+            <li>
+              <Badge
+                variant="outline"
+                className="min-h-8 bg-muted/40 px-2.5 py-1 text-sm text-foreground"
+              >
+                <code>{flag}</code>
+              </Badge>
             </li>
           ))}
         </ul>
@@ -48,12 +53,17 @@ const commandMeta = latticeSnapshot.cli.commands[command];
         </p>
         <ul class="flex flex-wrap gap-2">
           {commandMeta.outputPhases.map((phase) => (
-            <li class="inline-flex rounded-md border bg-muted/40 px-2.5 py-1 text-sm text-foreground">
-              <code>{phase}</code>
+            <li>
+              <Badge
+                variant="outline"
+                className="min-h-8 bg-muted/40 px-2.5 py-1 text-sm text-foreground"
+              >
+                <code>{phase}</code>
+              </Badge>
             </li>
           ))}
         </ul>
       </div>
     )
   }
-</div>
+</Card>

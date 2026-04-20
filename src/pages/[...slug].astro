@@ -1,6 +1,7 @@
 ---
 import { render } from "astro:content";
 import PackageDoc from "../components/docs/PackageDoc.astro";
+import PackageManagerInstall from "../components/docs/PackageManagerInstall.astro";
 import { resolvePackageDoc } from "../data/package-docs";
 import DocsLayout from "../layouts/DocsLayout.astro";
 import { getDocs, getDocsShellData } from "../lib/docs";
@@ -28,6 +29,9 @@ const packageDoc =
 	componentSlug && currentPage.entry.data.packageDoc
 		? resolvePackageDoc(componentSlug, currentPage.entry.data.packageDoc)
 		: undefined;
+const contentComponents = {
+	PackageManagerInstall,
+};
 ---
 
 <DocsLayout
@@ -40,7 +44,7 @@ const packageDoc =
   previousPage={previousPage}
   nextPage={nextPage}
 >
-  <Content packageDoc={packageDoc} />
+	<Content components={contentComponents} packageDoc={packageDoc} />
   {packageDoc && componentSlug && (
     <PackageDoc slug={componentSlug} doc={packageDoc} />
   )}

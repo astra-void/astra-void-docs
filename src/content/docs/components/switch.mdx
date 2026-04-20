@@ -26,8 +26,10 @@ packageDoc:
       description: "Use `asChild` for pill, card, or toolbar-based visuals that still need the same binary state semantics."
   cautions:
     - "Use `Checkbox` instead when the control represents selection or needs an `indeterminate` state."
-    - "The package provides state semantics, not motion or skin; you still own the track and thumb visuals."
+    - "The package provides state semantics; thumb response should come from `motion`, while you still own the track and skin."
   related:
+    - label: "Motion"
+      href: "/components/motion/"
     - label: "Checkbox"
       href: "/components/checkbox/"
     - label: "Toggle Group"

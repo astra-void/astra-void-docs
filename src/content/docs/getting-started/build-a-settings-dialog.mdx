@@ -10,7 +10,8 @@ import LinkCard from "../../../components/docs/LinkCard.astro";
 
 This guide is the recommended first build for Lattice UI. It uses one practical flow to show how
 [Style](/components/style/), [System](/components/system/), [Text Field](/components/text-field/),
-[Select](/components/select/), and [Dialog](/components/dialog/) fit together.
+[Select](/components/select/), [Dialog](/components/dialog/), and [Motion](/components/motion/)
+fit together.
 
 ## Step 1. Set up the app shell
 
@@ -20,6 +21,7 @@ dialog and select content can render above the main layout.
 ```tsx
 import type React from "@rbxts/react";
 import { PortalProvider } from "@lattice-ui/layer";
+import { MotionProvider } from "@lattice-ui/motion";
 import { defaultDarkTheme } from "@lattice-ui/style";
 import { SystemProvider } from "@lattice-ui/system";
 
@@ -34,9 +36,11 @@ export function AppRoot(props: AppRootProps) {
       defaultDensity="comfortable"
       defaultTheme={defaultDarkTheme}
     >
-      <PortalProvider container={props.playerGui}>
-        {props.children}
-      </PortalProvider>
+      <MotionProvider mode="full">
+        <PortalProvider container={props.playerGui}>
+          {props.children}
+        </PortalProvider>
+      </MotionProvider>
     </SystemProvider>
   );
 }
@@ -46,6 +50,7 @@ What this step establishes:
 
 - [System](/components/system/) owns the app-wide theme and density model.
 - [Layer](/components/layer/) owns overlay mounting and stacking.
+- [Motion](/components/motion/) owns animation policy and shared transition behavior.
 - Every later component can stay headless because the environment is already prepared.
 
 ## Step 2. Define the visual language with Style + System
@@ -314,6 +319,11 @@ Once the screen exists, use the package pages as decision guides instead of read
     description="Provider model, density, layout primitives, and surfaces."
   />
   <LinkCard
+    title="Motion"
+    href="/components/motion/"
+    description="Presence, response, feedback, and reduced-motion policy."
+  />
+  <LinkCard
     title="Text Field"
     href="/components/text-field/"
     description="Value model, commit behavior, and field composition."
@@ -333,6 +343,7 @@ Once the screen exists, use the package pages as decision guides instead of read
 ## What you should keep from this tutorial
 
 - Put [System](/components/system/) and [Layer](/components/layer/) at the environment boundary.
+- Put [Motion](/components/motion/) policy there too, so primitives share reduced-motion and transition behavior.
 - Keep visual language in [Style](/components/style/) recipes and tokens.
 - Let [Text Field](/components/text-field/), [Select](/components/select/), and [Dialog](/components/dialog/) own behavior, not visuals.
 - Build a real screen first, then drill into component docs when you need sharper decisions.

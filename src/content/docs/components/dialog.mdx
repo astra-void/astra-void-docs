@@ -29,9 +29,12 @@ packageDoc:
   cautions:
     - "Dialogs depend on portal-based layering for reliable overlay behavior; use `PortalProvider` near the app root."
     - "A dialog is the right fit when content should own the interaction mode; use `Popover` for lighter anchored surfaces."
+    - "Keep overlay fade and panel reveal in `motion`; do not make dialog focus or dismissal logic depend on custom tweens."
   related:
     - label: "Layer"
       href: "/components/layer/"
+    - label: "Motion"
+      href: "/components/motion/"
     - label: "Popover"
       href: "/components/popover/"
     - label: "Build a Settings Dialog"

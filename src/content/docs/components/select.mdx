@@ -29,9 +29,12 @@ packageDoc:
   cautions:
     - "Current public behavior is single-value only; use `Combobox`, `Checkbox`, or `ToggleGroup` when the selection model is different."
     - "Overlay behavior is portal-based, so set up `PortalProvider` near the app root for predictable mounting and stacking."
+    - "Keep content mounted through presence-aware exit motion; do not unmount the portal immediately if an exit transition should complete."
   related:
     - label: "Combobox"
       href: "/components/combobox/"
+    - label: "Motion"
+      href: "/components/motion/"
     - label: "Menu"
       href: "/components/menu/"
     - label: "Build a Settings Dialog"

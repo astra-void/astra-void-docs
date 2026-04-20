@@ -37,6 +37,7 @@ export const collections = {
 			title: z.string(),
 			description: z.string(),
 			draft: z.boolean().default(false),
+			proseDensity: z.enum(["default", "compact"]).default("default"),
 			versionBasis: z.enum(["main", "stable"]).default("main"),
 			sidebar: z
 				.object({

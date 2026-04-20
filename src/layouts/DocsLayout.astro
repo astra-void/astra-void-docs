@@ -4,6 +4,14 @@ import DocsHeader from "../components/docs/DocsHeader.astro";
 import DocsPager from "../components/docs/DocsPager.astro";
 import DocsSidebar from "../components/docs/DocsSidebar.astro";
 import DocsToc from "../components/docs/DocsToc.astro";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "../components/ui/breadcrumb";
 import { DOCS_SITE, type DocPage, type SidebarSection } from "../lib/docs";
 import "../styles/global.css";
 
@@ -34,6 +42,7 @@ const pageTitle = currentPage.path
 	: DOCS_SITE.title;
 const canonical = Astro.site ? new URL(currentPage.url, Astro.site) : undefined;
 const hasToc = headings.some((heading) => heading.depth > 1);
+const proseDensity = currentPage.entry.data.proseDensity;
 ---
 
 <!doctype html>
@@ -64,6 +73,72 @@ const hasToc = headings.some((heading) => heading.depth > 1);
   <body>
     <DocsHeader />
 
+    <div class="docs-search-overlay fixed inset-0 z-70 px-3 pb-6 sm:px-6" data-search-overlay>
+      <div class="docs-search-shell">
+        <div
+          class="docs-search-panel"
+          data-search-panel
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="docs-search-label"
+        >
+          <p id="docs-search-label" class="sr-only">Search docs</p>
+
+          <div class="docs-search-input-row">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="docs-search-input-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+
+            <input
+              type="search"
+              class="docs-search-input"
+              data-search-input
+              placeholder="Search docs by title, heading, and content"
+              autocomplete="off"
+              autocapitalize="none"
+              spellcheck="false"
+              enterkeyhint="search"
+              aria-label="Search documentation"
+            />
+
+            <button type="button" class="docs-search-close" data-search-close>
+              Esc
+            </button>
+          </div>
+
+          <div class="docs-search-meta-row">
+            <p class="docs-search-status" data-search-status>
+              Start typing to search across all docs.
+            </p>
+            <p class="docs-search-hint">Use ↑ ↓ to move, Enter to open</p>
+          </div>
+
+          <p class="docs-search-empty" data-search-empty hidden>
+            No matching docs found.
+          </p>
+
+          <ul
+            class="docs-search-results"
+            data-search-results
+            role="listbox"
+            aria-label="Search results"
+          >
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <div
       class="docs-sidebar-overlay fixed inset-0 z-30 bg-background/60 lg:hidden"
       data-nav-close
@@ -76,7 +151,7 @@ const hasToc = headings.some((heading) => heading.depth > 1);
     >
       <aside
         id="docs-sidebar"
-        class="docs-sidebar-panel fixed left-0 top-14 z-30 hidden h-[calc(100dvh-3.5rem)] w-full shrink-0 overflow-hidden border-r border-border/50 bg-sidebar/95 md:sticky md:block md:h-[calc(100dvh-3.5rem)] md:w-58 lg:w-62"
+        class="docs-sidebar-panel fixed left-0 top-14 z-30 hidden h-[calc(100dvh-3.5rem)] w-full shrink-0 overflow-hidden bg-sidebar/95 md:sticky md:block md:h-[calc(100dvh-3.5rem)] md:w-58 lg:w-62"
       >
         <div class="h-full overflow-y-auto overscroll-contain py-6 pr-5 lg:py-8">
           <DocsSidebar
@@ -91,28 +166,24 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         class="relative flex-1 min-w-0 py-7 md:py-9 xl:grid xl:grid-cols-[minmax(0,1fr)_17rem] xl:gap-11 2xl:grid-cols-[minmax(0,1fr)_18rem]"
       >
         <div class="mx-auto w-full min-w-0 max-w-200 md:pr-2">
-          <div
-            class="mb-4 flex items-center gap-1.5 text-[0.78rem] font-medium uppercase tracking-[0.12em] text-muted-foreground/85"
-          >
-            <div class="overflow-hidden text-ellipsis whitespace-nowrap">
-              Docs
-            </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="h-4 w-4"><path d="m9 18 6-6-6-6"></path></svg
-            >
-            <div class="font-medium text-foreground">
-              {currentPage.sectionTitle}
-            </div>
-          </div>
+          <Breadcrumb className="mb-4" aria-label="Section breadcrumb">
+            <BreadcrumbList className="gap-1.5 text-[0.78rem] font-medium uppercase tracking-[0.12em] text-muted-foreground/85">
+              <BreadcrumbItem className="min-w-0">
+                <BreadcrumbLink
+                  href="/"
+                  className="overflow-hidden text-ellipsis whitespace-nowrap"
+                >
+                  Docs
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="text-muted-foreground/75" />
+              <BreadcrumbItem className="min-w-0">
+                <BreadcrumbPage className="overflow-hidden text-ellipsis whitespace-nowrap font-medium text-foreground">
+                  {currentPage.sectionTitle}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
 
           <div class="space-y-3 border-b border-border/55 pb-7">
             <h1 class="scroll-m-20 text-3xl font-bold tracking-[-0.035em] text-foreground sm:text-4xl">
@@ -151,7 +222,14 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             )
           }
 
-          <article class="docs-prose max-w-none pb-14 pt-8 md:pt-9 *:last:mb-0">
+          <article
+            class:list={[
+              "docs-prose max-w-none *:last:mb-0",
+              proseDensity === "compact"
+                ? "docs-prose-compact pb-9 pt-5 md:pt-6"
+                : "pb-14 pt-8 md:pt-9",
+            ]}
+          >
             <slot />
           </article>
 
@@ -179,6 +257,17 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         const navToggleSelector = "[data-nav-toggle]";
         const navCloseSelector = "[data-nav-close]";
         const navPanelSelector = "#docs-sidebar";
+        const searchOpenSelector = "[data-search-open]";
+        const searchCloseSelector = "[data-search-close]";
+        const searchOverlaySelector = "[data-search-overlay]";
+        const searchPanelSelector = "[data-search-panel]";
+        const searchInputSelector = "[data-search-input]";
+        const searchStatusSelector = "[data-search-status]";
+        const searchResultsSelector = "[data-search-results]";
+        const searchEmptySelector = "[data-search-empty]";
+        const searchResultLinkSelector = "[data-search-result-link]";
+        const searchIndexUrl = "/search-index.json";
+        const maxSearchResults = 28;
         const mobileNavBreakpoint = 1024;
         const isFirstLayoutBoot =
           document.documentElement.dataset.docsLayoutBound !== "true";
@@ -186,6 +275,11 @@ const hasToc = headings.some((heading) => heading.depth > 1);
         let cleanupTocTracking = () => {};
         let activeCopyFeedbackTimeout = 0;
         let lastNavToggle = null;
+        let lastSearchTrigger = null;
+        let searchIndexRequest = null;
+        let searchEntries = [];
+        let activeSearchResults = [];
+        let activeSearchIndex = -1;
 
         const applyTheme = (theme) => {
           root.dataset.theme = theme;
@@ -252,7 +346,8 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           document.querySelectorAll(".docs-prose pre").forEach((pre) => {
             if (
               !(pre instanceof HTMLPreElement) ||
-              pre.dataset.copyReady === "true"
+              pre.dataset.copyReady === "true" ||
+              pre.closest("[data-pm-install]")
             ) {
               return;
             }
@@ -471,23 +566,462 @@ const hasToc = headings.some((heading) => heading.depth > 1);
           lastNavToggle = null;
         };
 
+        const isSearchOpen = () => root.dataset.searchOpen === "true";
+
+        const getSearchOverlay = () => document.querySelector(searchOverlaySelector);
+        const getSearchPanel = () => document.querySelector(searchPanelSelector);
+        const getSearchInput = () => document.querySelector(searchInputSelector);
+        const getSearchStatus = () => document.querySelector(searchStatusSelector);
+        const getSearchResults = () => document.querySelector(searchResultsSelector);
+        const getSearchEmpty = () => document.querySelector(searchEmptySelector);
+
+        const normalizeSearchText = (value) =>
+          value
+            .toLowerCase()
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^\p{L}\p{N}\s/_-]+/gu, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const tokenizeSearchQuery = (value) => {
+          const normalized = normalizeSearchText(value);
+          if (!normalized) {
+            return [];
+          }
+
+          const tokens = normalized.split(" ").filter(Boolean);
+          if (tokens.length <= 1) {
+            return tokens;
+          }
+
+          return tokens.filter((token) => token.length > 1);
+        };
+
+        const setSearchStatus = (message) => {
+          const status = getSearchStatus();
+          if (status instanceof HTMLElement) {
+            status.textContent = message;
+          }
+        };
+
+        const setSearchEmptyState = (isVisible) => {
+          const empty = getSearchEmpty();
+          if (empty instanceof HTMLElement) {
+            empty.hidden = !isVisible;
+          }
+        };
+
+        const clearSearchResults = () => {
+          activeSearchResults = [];
+          activeSearchIndex = -1;
+          const results = getSearchResults();
+          if (results instanceof HTMLElement) {
+            results.replaceChildren();
+          }
+        };
+
+        const buildSearchSnippet = (entry, normalizedQuery) => {
+          if (typeof entry.text !== "string" || !entry.text) {
+            return "";
+          }
+
+          const snippetLength = 170;
+          const lowerText = entry.text.toLowerCase();
+          const lowerQuery = normalizedQuery.toLowerCase();
+          const matchIndex = lowerQuery ? lowerText.indexOf(lowerQuery) : -1;
+
+          if (matchIndex === -1) {
+            return entry.text.length <= snippetLength
+              ? entry.text
+              : `${entry.text.slice(0, snippetLength).trim()} ...`;
+          }
+
+          const start = Math.max(0, matchIndex - 56);
+          const end = Math.min(entry.text.length, matchIndex + lowerQuery.length + 92);
+          const prefix = start > 0 ? "... " : "";
+          const suffix = end < entry.text.length ? " ..." : "";
+          return `${prefix}${entry.text.slice(start, end).trim()}${suffix}`;
+        };
+
+        const renderSearchResults = (results, normalizedQuery) => {
+          const list = getSearchResults();
+          if (!(list instanceof HTMLElement)) {
+            return;
+          }
+
+          if (results.length === 0) {
+            list.replaceChildren();
+            return;
+          }
+
+          const fragment = document.createDocumentFragment();
+
+          results.forEach((result, index) => {
+            const item = document.createElement("li");
+            item.className = "docs-search-result-item";
+            item.setAttribute("role", "option");
+            item.setAttribute(
+              "aria-selected",
+              index === activeSearchIndex ? "true" : "false",
+            );
+
+            const link = document.createElement("a");
+            link.href = result.url;
+            link.className = "docs-search-result-link";
+            link.dataset.searchResultLink = "true";
+            link.dataset.searchResultIndex = String(index);
+            if (index === activeSearchIndex) {
+              link.dataset.active = "true";
+            }
+
+            const top = document.createElement("div");
+            top.className = "docs-search-result-top";
+
+            const title = document.createElement("p");
+            title.className = "docs-search-result-title";
+            title.textContent = result.title;
+
+            const section = document.createElement("span");
+            section.className = "docs-search-result-section";
+            section.textContent = result.section;
+
+            top.append(title, section);
+            link.append(top);
+
+            if (result.description) {
+              const description = document.createElement("p");
+              description.className = "docs-search-result-description";
+              description.textContent = result.description;
+              link.append(description);
+            }
+
+            const snippet = buildSearchSnippet(result, normalizedQuery);
+            if (snippet) {
+              const snippetNode = document.createElement("p");
+              snippetNode.className = "docs-search-result-snippet";
+              snippetNode.textContent = snippet;
+              link.append(snippetNode);
+            }
+
+            const path = document.createElement("p");
+            path.className = "docs-search-result-path";
+            path.textContent = result.url;
+            link.append(path);
+
+            item.append(link);
+            fragment.append(item);
+          });
+
+          list.replaceChildren(fragment);
+        };
+
+        const hydrateSearchEntries = (payload) => {
+          const rawEntries = Array.isArray(payload?.entries) ? payload.entries : [];
+
+          return rawEntries
+            .map((entry) => {
+              if (!entry || typeof entry !== "object") {
+                return null;
+              }
+
+              const headings = Array.isArray(entry.headings)
+                ? entry.headings.filter((value) => typeof value === "string")
+                : [];
+              const title = typeof entry.title === "string" ? entry.title : "";
+              const description =
+                typeof entry.description === "string" ? entry.description : "";
+              const section = typeof entry.section === "string" ? entry.section : "Docs";
+              const text = typeof entry.text === "string" ? entry.text : "";
+              const path = typeof entry.path === "string" ? entry.path : "";
+              const url = typeof entry.url === "string" ? entry.url : "/";
+              const headingText = headings.join(" ");
+
+              return {
+                id: typeof entry.id === "string" ? entry.id : path || url,
+                path,
+                url,
+                title,
+                description,
+                section,
+                headings,
+                text,
+                titleNorm: normalizeSearchText(title),
+                descriptionNorm: normalizeSearchText(description),
+                sectionNorm: normalizeSearchText(section),
+                headingsNorm: normalizeSearchText(headingText),
+                textNorm: normalizeSearchText(text),
+                pathNorm: normalizeSearchText(path),
+              };
+            })
+            .filter((entry) => entry !== null);
+        };
+
+        const loadSearchIndex = async () => {
+          if (searchEntries.length > 0) {
+            return searchEntries;
+          }
+
+          if (!searchIndexRequest) {
+            searchIndexRequest = fetch(searchIndexUrl, {
+              headers: {
+                Accept: "application/json",
+              },
+            })
+              .then(async (response) => {
+                if (!response.ok) {
+                  throw new Error(
+                    `Search index request failed with status ${response.status}`,
+                  );
+                }
+
+                const payload = await response.json();
+                searchEntries = hydrateSearchEntries(payload);
+                return searchEntries;
+              })
+              .catch((error) => {
+                searchIndexRequest = null;
+                throw error;
+              });
+          }
+
+          return searchIndexRequest;
+        };
+
+        const scoreSearchEntry = (entry, normalizedQuery, tokens) => {
+          let score = 0;
+
+          if (entry.titleNorm.includes(normalizedQuery)) {
+            score += 170;
+          }
+          if (entry.headingsNorm.includes(normalizedQuery)) {
+            score += 110;
+          }
+          if (entry.descriptionNorm.includes(normalizedQuery)) {
+            score += 86;
+          }
+          if (entry.sectionNorm.includes(normalizedQuery)) {
+            score += 46;
+          }
+          if (entry.pathNorm.includes(normalizedQuery)) {
+            score += 40;
+          }
+          if (entry.textNorm.includes(normalizedQuery)) {
+            score += 34;
+          }
+
+          for (const token of tokens) {
+            if (entry.titleNorm.includes(token)) {
+              score += 26;
+            }
+            if (entry.headingsNorm.includes(token)) {
+              score += 18;
+            }
+            if (entry.descriptionNorm.includes(token)) {
+              score += 12;
+            }
+            if (entry.sectionNorm.includes(token)) {
+              score += 8;
+            }
+            if (entry.pathNorm.includes(token)) {
+              score += 7;
+            }
+            if (entry.textNorm.includes(token)) {
+              score += 4;
+            }
+          }
+
+          if (entry.titleNorm.startsWith(normalizedQuery)) {
+            score += 44;
+          }
+
+          return score;
+        };
+
+        const runSearch = async (query) => {
+          const normalizedQuery = normalizeSearchText(query);
+
+          if (!normalizedQuery) {
+            clearSearchResults();
+            setSearchEmptyState(false);
+            setSearchStatus(
+              searchEntries.length > 0
+                ? `Search ${searchEntries.length} docs.`
+                : "Start typing to search across all docs.",
+            );
+            return;
+          }
+
+          if (searchEntries.length === 0) {
+            setSearchStatus("Loading search index...");
+            try {
+              await loadSearchIndex();
+            } catch {
+              clearSearchResults();
+              setSearchEmptyState(true);
+              setSearchStatus("Search index could not be loaded.");
+              return;
+            }
+          }
+
+          const tokens = tokenizeSearchQuery(query);
+          const rankedResults = searchEntries
+            .map((entry) => ({
+              entry,
+              score: scoreSearchEntry(entry, normalizedQuery, tokens),
+            }))
+            .filter((candidate) => candidate.score > 0)
+            .sort(
+              (left, right) =>
+                right.score - left.score ||
+                left.entry.title.localeCompare(right.entry.title),
+            )
+            .slice(0, maxSearchResults)
+            .map((candidate) => candidate.entry);
+
+          activeSearchResults = rankedResults;
+          activeSearchIndex = rankedResults.length > 0 ? 0 : -1;
+          renderSearchResults(rankedResults, normalizedQuery);
+          setSearchEmptyState(rankedResults.length === 0);
+
+          if (rankedResults.length === 0) {
+            setSearchStatus(`No results for \"${query.trim()}\".`);
+            return;
+          }
+
+          setSearchStatus(
+            `${rankedResults.length} result${
+              rankedResults.length === 1 ? "" : "s"
+            } for \"${query.trim()}\".`,
+          );
+        };
+
+        const scrollActiveSearchResultIntoView = () => {
+          if (activeSearchIndex < 0) {
+            return;
+          }
+
+          const results = getSearchResults();
+          if (!(results instanceof HTMLElement)) {
+            return;
+          }
+
+          const activeResult = results.querySelector(
+            `[data-search-result-index=\"${activeSearchIndex}\"]`,
+          );
+
+          if (activeResult instanceof HTMLElement) {
+            activeResult.scrollIntoView({ block: "nearest" });
+          }
+        };
+
+        const moveActiveSearchResult = (step) => {
+          if (activeSearchResults.length === 0) {
+            return;
+          }
+
+          const nextIndex =
+            (activeSearchIndex + step + activeSearchResults.length) %
+            activeSearchResults.length;
+          activeSearchIndex = nextIndex;
+
+          const searchInput = getSearchInput();
+          const normalizedQuery =
+            searchInput instanceof HTMLInputElement
+              ? normalizeSearchText(searchInput.value)
+              : "";
+          renderSearchResults(activeSearchResults, normalizedQuery);
+          scrollActiveSearchResultIntoView();
+        };
+
+        const closeSearch = ({ restoreFocus = false, clearQuery = true } = {}) => {
+          delete root.dataset.searchOpen;
+          document.body.classList.remove("docs-search-open");
+
+          if (clearQuery) {
+            const searchInput = getSearchInput();
+            if (searchInput instanceof HTMLInputElement) {
+              searchInput.value = "";
+            }
+          }
+
+          clearSearchResults();
+          setSearchEmptyState(false);
+          setSearchStatus(
+            searchEntries.length > 0
+              ? `Search ${searchEntries.length} docs.`
+              : "Start typing to search across all docs.",
+          );
+
+          if (restoreFocus && lastSearchTrigger instanceof HTMLElement) {
+            window.requestAnimationFrame(() => {
+              if (lastSearchTrigger instanceof HTMLElement) {
+                lastSearchTrigger.focus();
+              }
+            });
+          }
+
+          lastSearchTrigger = null;
+        };
+
+        const openSearch = async ({ trigger = null } = {}) => {
+          if (trigger instanceof HTMLElement) {
+            lastSearchTrigger = trigger;
+          }
+
+          root.dataset.searchOpen = "true";
+          document.body.classList.add("docs-search-open");
+          closeNav();
+
+          const searchInput = getSearchInput();
+          if (searchInput instanceof HTMLInputElement) {
+            window.requestAnimationFrame(() => {
+              searchInput.focus();
+              if (searchInput.value) {
+                searchInput.select();
+              }
+            });
+          }
+
+          if (searchEntries.length === 0) {
+            setSearchStatus("Loading search index...");
+            try {
+              await loadSearchIndex();
+            } catch {
+              setSearchStatus("Search index could not be loaded.");
+              return;
+            }
+          }
+
+          if (searchInput instanceof HTMLInputElement && searchInput.value.trim()) {
+            await runSearch(searchInput.value);
+            return;
+          }
+
+          setSearchStatus(`Search ${searchEntries.length} docs.`);
+          setSearchEmptyState(false);
+        };
+
         if (isFirstLayoutBoot) {
           applyTheme(root.dataset.theme === "dark" ? "dark" : "light");
           enhanceCodeBlocks();
           setupTocTracking();
           syncNavToggleState();
           closeNav();
+          closeSearch({ clearQuery: false });
 
           document.addEventListener("astro:page-load", () => {
             enhanceCodeBlocks();
             setupTocTracking();
             syncNavToggleState();
             closeNav();
+            closeSearch({ clearQuery: false });
           });
 
           document.addEventListener("astro:before-swap", () => {
             cleanupTocTracking();
             closeNav();
+            closeSearch({ clearQuery: false });
           });
 
           document.addEventListener("click", async (event) => {
@@ -495,6 +1029,43 @@ const hasToc = headings.some((heading) => heading.depth > 1);
 
             if (!(target instanceof Element)) {
               return;
+            }
+
+            const searchTrigger = target.closest(searchOpenSelector);
+            if (searchTrigger instanceof HTMLElement) {
+              if (searchTrigger instanceof HTMLAnchorElement) {
+                event.preventDefault();
+              }
+
+              await openSearch({ trigger: searchTrigger });
+              return;
+            }
+
+            const searchCloseButton = target.closest(searchCloseSelector);
+            if (searchCloseButton instanceof HTMLElement) {
+              event.preventDefault();
+              closeSearch({ restoreFocus: true });
+              return;
+            }
+
+            const searchResultLink = target.closest(searchResultLinkSelector);
+            if (searchResultLink instanceof HTMLAnchorElement) {
+              closeSearch();
+              return;
+            }
+
+            if (isSearchOpen()) {
+              const searchOverlay = getSearchOverlay();
+              const searchPanel = getSearchPanel();
+              if (
+                searchOverlay instanceof HTMLElement &&
+                searchPanel instanceof HTMLElement &&
+                searchOverlay.contains(target) &&
+                !searchPanel.contains(target)
+              ) {
+                closeSearch({ restoreFocus: true });
+                return;
+              }
             }
 
             const themeToggle = target.closest(themeToggleSelector);
@@ -563,7 +1134,68 @@ const hasToc = headings.some((heading) => heading.depth > 1);
             }
           });
 
+          document.addEventListener("input", (event) => {
+            const target = event.target;
+
+            if (
+              !(target instanceof HTMLInputElement) ||
+              !target.matches(searchInputSelector)
+            ) {
+              return;
+            }
+
+            void runSearch(target.value);
+          });
+
           document.addEventListener("keydown", (event) => {
+            const isSearchShortcut =
+              (event.metaKey || event.ctrlKey) &&
+              !event.altKey &&
+              !event.shiftKey &&
+              event.key.toLowerCase() === "k";
+
+            if (isSearchShortcut) {
+              event.preventDefault();
+              void openSearch({
+                trigger:
+                  document.activeElement instanceof HTMLElement
+                    ? document.activeElement
+                    : null,
+              });
+              return;
+            }
+
+            if (event.key === "Escape" && isSearchOpen()) {
+              event.preventDefault();
+              closeSearch({ restoreFocus: true });
+              return;
+            }
+
+            if (isSearchOpen()) {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                moveActiveSearchResult(1);
+                return;
+              }
+
+              if (event.key === "ArrowUp") {
+                event.preventDefault();
+                moveActiveSearchResult(-1);
+                return;
+              }
+
+              if (event.key === "Enter" && activeSearchIndex >= 0) {
+                const activeResult = activeSearchResults[activeSearchIndex];
+                if (activeResult) {
+                  event.preventDefault();
+                  closeSearch();
+                  window.location.href = activeResult.url;
+                }
+              }
+
+              return;
+            }
+
             if (event.key === "Escape" && isNavOpen()) {
               event.preventDefault();
               closeNav({ restoreFocus: true });

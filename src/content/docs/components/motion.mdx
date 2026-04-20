@@ -1,0 +1,107 @@
+---
+title: "Motion"
+description: "Shared motion policy, runtime, recipes, and hooks for Lattice UI."
+draft: false
+sidebar:
+  order: 8.5
+packageDoc:
+  whatItIsFor:
+    - "Use `@lattice-ui/motion` when animation behavior needs to be shared across primitives instead of recreated inside each component."
+    - "It owns motion policy, presence transitions, response motion, feedback effects, interpolation, and the scheduler that applies those changes to Roblox instances."
+    - "The package is part of the Lattice UI foundation layer with `core`, `focus`, `layer`, `style`, and `system`."
+  stateModel:
+    - "`MotionProvider` owns the app-level motion policy. Use it when a screen needs full motion or reduced motion through `mode=\"none\"`."
+    - "Presence motion coordinates mounted, visible, exiting, and exited phases so overlays and indicators can finish exit work before disappearing."
+    - "Response motion settles a control toward active or inactive state, such as selected menu items, slider thumbs, switch thumbs, and progress ranges."
+    - "Feedback motion applies short-lived accent and recovery effects for press, focus, or interaction confirmation."
+    - "Motion target contracts define whether motion owns appearance, an offset wrapper, a size wrapper, layout, or an explicit custom property set."
+  keyApi:
+    - name: "MotionProvider"
+      description: "Set app or subtree policy with `mode=\"full\"` or `mode=\"none\"` so reduced-motion behavior is centralized instead of scattered through components."
+    - name: "usePresenceMotionController"
+      description: "Use this for enter and exit phases when content must stay mounted until motion completes."
+    - name: "useResponseMotion"
+      description: "Use this when a persistent control needs to settle between active and inactive visual states."
+    - name: "useFeedbackEffect"
+      description: "Use this for transient press or focus effects that should accent and recover without creating local tween code."
+    - name: "motionTargets"
+      description: "Declare which properties motion owns so layout, placement, and visual styling do not fight each other."
+  compositionPatterns:
+    - title: "Presence for mounted surfaces"
+      description: "Use presence motion for `Dialog`, `Popover`, `Select`, `Tooltip`, `Menu`, `Combobox`, and indicator content that needs exit transitions."
+    - title: "Response for controls"
+      description: "Use response motion for `Slider`, `Switch`, `Progress`, selected items, and other controls that move or settle while staying mounted."
+    - title: "Feedback for short interaction effects"
+      description: "Use feedback motion for press and focus accents when the effect should be brief and policy-aware."
+    - title: "Package-owned animation behavior"
+      description: "Extend motion through recipes, targets, and hooks in this package instead of adding one-off tweens inside primitives."
+  cautions:
+    - "`motion` does not replace `layer`: `layer` owns portals, stacking, dismissal, and basic presence mounting; `motion` owns how animated state is applied while content is mounted."
+    - "`motion` does not replace `focus`: focus trapping, restoration, and keyboard flow still belong in `focus` and the consuming primitive."
+    - "Do not let motion own placement geometry unless you deliberately use a layout target; anchored overlays should let `popper` compute placement and let motion animate an isolated wrapper."
+    - "Loom preview is useful for iteration, but final timing, focus, and input behavior still need Roblox runtime verification."
+  related:
+    - label: "Layer"
+      href: "/components/layer/"
+    - label: "Focus"
+      href: "/components/focus/"
+    - label: "Dialog"
+      href: "/components/dialog/"
+    - label: "Popover"
+      href: "/components/popover/"
+    - label: "Select"
+      href: "/components/select/"
+    - label: "Tooltip"
+      href: "/components/tooltip/"
+    - label: "Toast"
+      href: "/components/toast/"
+    - label: "Slider"
+      href: "/components/slider/"
+    - label: "Switch"
+      href: "/components/switch/"
+---
+
+`@lattice-ui/motion` is the shared place for animation behavior in Lattice UI.
+When a primitive needs transition timing, reduced-motion handling, enter/exit
+state, or interpolation, it should use the motion package instead of owning a
+private tween model.
+
+## How to apply it
+
+Use [System](/components/system/) for app-wide theme and density, [Layer](/components/layer/)
+for overlay mounting and stacking, [Focus](/components/focus/) for trapped scopes
+and restoration, and Motion for animated state. Keeping those ownership lines
+clear prevents `Dialog`, `Popover`, `Select`, `Tooltip`, and `Toast` from each
+inventing different rules for the same lifecycle.
+
+- Use presence motion when content appears and disappears, especially portal
+  content and indicators with exit transitions.
+- Use response motion when a mounted control settles between states, such as a
+  [Slider](/components/slider/) thumb, [Switch](/components/switch/) thumb, or
+  selected item background.
+- Use feedback motion for brief press or focus accents.
+- Put reduced-motion policy behind `MotionProvider` so components can respect
+  one shared policy.
+
+For layered components, animate a visual wrapper rather than the placement
+owner. [Popover](/components/popover/), [Select](/components/select/), and
+[Tooltip](/components/tooltip/) still need placement to come from
+[Popper](/components/popper/); Motion should make the content feel responsive
+without invalidating the anchor geometry.
+
+## Consumer guidance
+
+For [Dialog](/components/dialog/), keep overlay fade and panel reveal as separate
+motion concerns. The dialog owns open state, dismissal, focus trapping, and focus
+restoration; Motion owns the visual transition while those semantics stay active.
+
+For [Popover](/components/popover/), [Select](/components/select/), and
+[Tooltip](/components/tooltip/), let the content remain mounted while exit motion
+runs. Do not unmount portal content immediately on close if the user expects an
+exit transition.
+
+For [Toast](/components/toast/), keep queue timing and visibility in the toast
+provider, then use Motion for the surface response. For [Slider](/components/slider/)
+and [Switch](/components/switch/), let the component package own state and let
+Motion settle the moving part instead of deriving animation from raw pointer or
+toggle events.

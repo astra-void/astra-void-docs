@@ -95,9 +95,10 @@ function navLinkClass(isActive: boolean) {
       <div class="hidden sm:block">
         <a
           href="/"
+          data-search-open
           class="docs-index-trigger inline-flex h-8 items-center gap-2 rounded-md border border-border/65 bg-muted/30 px-3 text-sm font-semibold text-foreground/85 no-underline transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          aria-label="Open docs index"
-          title="Open docs index"
+          aria-label="Search docs"
+          title="Search docs (Cmd/Ctrl+K)"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -114,14 +115,47 @@ function navLinkClass(isActive: boolean) {
             <path d="M4 12h16"></path>
             <path d="M4 18h10"></path>
           </svg>
-          <span class="hidden lg:inline-flex">Open docs index</span>
-          <span class="inline-flex lg:hidden">Docs index</span>
+          <span class="hidden lg:inline-flex">Search docs</span>
+          <span class="inline-flex lg:hidden">Search</span>
+          <kbd class="docs-search-shortcut hidden xl:inline-flex" aria-hidden="true"
+            >Cmd+K</kbd
+          >
         </a>
       </div>
       <nav class="flex items-center">
-        <a href={DOCS_SITE.githubUrl} target="_blank" rel="noreferrer">
-          <div
-            class="docs-header-icon-button inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 w-9"
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          data-search-open
+          aria-label="Search docs"
+          title="Search docs"
+          className="docs-header-icon-button h-9 w-9 sm:hidden"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <span class="sr-only">Search docs</span>
+        </Button>
+
+        <Button asChild variant="ghost" size="icon" className="docs-header-icon-button h-9 w-9">
+          <a
+            href={DOCS_SITE.githubUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="GitHub"
+            title="GitHub"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -136,8 +170,8 @@ function navLinkClass(isActive: boolean) {
               ></path>
             </svg>
             <span class="sr-only">GitHub</span>
-          </div>
-        </a>
+          </a>
+        </Button>
 
         <Button
           type="button"

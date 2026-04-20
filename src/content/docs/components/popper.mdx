@@ -26,8 +26,11 @@ packageDoc:
       description: "Use the `update()` function when geometry needs to be recomputed after layout or content changes."
   cautions:
     - "Popper solves positioning only; it does not manage dismissal, focus, portals, or presence."
+    - "If anchored content animates, keep motion on an isolated wrapper so placement measurement remains authoritative."
     - "The public placement model is intentionally small, so build more complex policies above it rather than expecting full menu-like behavior from the package alone."
   related:
+    - label: "Motion"
+      href: "/components/motion/"
     - label: "Popover"
       href: "/components/popover/"
     - label: "Select"

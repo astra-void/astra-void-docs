@@ -1,6 +1,6 @@
 ---
 title: "Overlay and State Pitfalls"
-description: "Common Lattice UI integration failures around portals, stacking, focus, disabled items, and state ownership."
+description: "Common Lattice UI integration failures around portals, stacking, motion, focus, disabled items, and state ownership."
 draft: false
 versionBasis: main
 sidebar:
@@ -49,6 +49,88 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
   </section>
 </div>
 
+## Layering, portals, and presence need one lifecycle
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>What breaks</h3>
+    <p>
+      Portal content can unmount as soon as <code>open</code> flips false, while
+      presence or exit motion still expects the subtree to exist. The result is
+      a flash, missing exit transition, or stale dismissable layer.
+    </p>
+  </section>
+  <section class="docs-section-card">
+    <h3>What to do</h3>
+    <p>
+      Let <a href="/components/layer/">Layer</a> own mounting and stacking, then
+      let <a href="/components/motion/">Motion</a> own the animated phase while
+      the content remains mounted through exit completion.
+    </p>
+  </section>
+</div>
+
+## Motion should not fight Popper placement
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>What breaks</h3>
+    <p>
+      Anchored surfaces drift or measure incorrectly when custom animation code
+      changes the same position, anchor, or size properties that Popper uses for
+      placement.
+    </p>
+  </section>
+  <section class="docs-section-card">
+    <h3>What to do</h3>
+    <p>
+      Keep <a href="/components/popper/">Popper</a> responsible for anchor
+      geometry. Animate an isolated appearance or offset wrapper through Motion
+      so placement can update without being treated as animation state.
+    </p>
+  </section>
+</div>
+
+## Dialog overlay and panel motion are separate concerns
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>What breaks</h3>
+    <p>
+      A dialog feels wrong when one transition tries to own backdrop opacity,
+      panel reveal, focus trapping, and dismissal at the same time.
+    </p>
+  </section>
+  <section class="docs-section-card">
+    <h3>What to do</h3>
+    <p>
+      Keep <code>Dialog.Overlay</code> and <code>Dialog.Content</code> visually
+      independent. Dialog owns interaction semantics; Motion owns the overlay
+      fade and panel transition without changing the focus contract.
+    </p>
+  </section>
+</div>
+
+## forceMount is not an exit-motion switch by itself
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>What breaks</h3>
+    <p>
+      <code>forceMount</code> keeps a subtree in the React tree, but it does not
+      automatically define which phase is visible, exiting, or inert.
+    </p>
+  </section>
+  <section class="docs-section-card">
+    <h3>What to do</h3>
+    <p>
+      Use <code>forceMount</code> for measurement or retained state, then pair it
+      with presence-aware behavior when users should see an exit transition.
+      Closed content still needs correct visibility and interaction state.
+    </p>
+  </section>
+</div>
+
 ## Focus contracts matter more than visuals
 
 <div class="docs-section-grid">
@@ -65,6 +147,27 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
       Treat the trigger as part of the focus contract. Use{" "}
       <code>restoreFocus</code> intentionally and keep trigger ownership stable
       when possible.
+    </p>
+  </section>
+</div>
+
+## Keyboard flow must survive open, exit, and restore
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>What breaks</h3>
+    <p>
+      Trapped scopes can restore to a missing trigger, move focus into exiting
+      content, or let keyboard selection escape while an overlay is still
+      visually present.
+    </p>
+  </section>
+  <section class="docs-section-card">
+    <h3>What to do</h3>
+    <p>
+      Treat open state, presence state, and focus scope state as one interaction
+      contract. Keep triggers stable, restore focus intentionally, and validate
+      keyboard flow in Roblox after preview iteration.
     </p>
   </section>
 </div>
@@ -111,9 +214,31 @@ Review them before wiring production overlays, keyboard navigation, or mixed con
   </section>
 </div>
 
+## Preview is useful, but Roblox runtime is authoritative
+
+<div class="docs-section-grid">
+  <section class="docs-section-card">
+    <h3>What breaks</h3>
+    <p>
+      Loom preview can make an overlay, motion recipe, or focus path look done
+      even though Roblox Studio input, selection, timing, or rendering behaves
+      differently.
+    </p>
+  </section>
+  <section class="docs-section-card">
+    <h3>What to do</h3>
+    <p>
+      Use preview for fast iteration and screenshots, then manually verify final
+      behavior in the Roblox runtime. Preview is not the source of truth for
+      shipping keyboard, focus, layering, or motion correctness.
+    </p>
+  </section>
+</div>
+
 ## Cross-check pages
 
 - Read [Layer](/components/layer/) when the issue is where overlays mount or why display order feels unstable.
+- Read [Motion](/components/motion/) when the issue is presence, exit timing, reduced motion, or response/feedback behavior.
 - Read [Focus](/components/focus/) when the issue is trapped selection, restore behavior, or nested focus regions.
 - Read [Select](/components/select/) and [Combobox](/components/combobox/) when the issue is mixed value, input, and open ownership.
 - Read [Dialog](/components/dialog/) and [Popover](/components/popover/) when the issue is interaction ownership rather than styling.

@@ -1,0 +1,21 @@
+---
+import { PackageManagerInstallClient } from "./PackageManagerInstallClient";
+import { resolvePackageManagerInstallInput } from "../../lib/package-manager-install";
+
+const resolved = resolvePackageManagerInstallInput(
+	Astro.props as Record<string, unknown>,
+);
+---
+
+{
+	resolved.managers.length > 0 && (
+		<PackageManagerInstallClient
+			client:load
+			title={resolved.title}
+			description={resolved.description}
+			commands={resolved.commands}
+			managers={resolved.managers}
+			defaultManager={resolved.defaultManager}
+		/>
+	)
+}

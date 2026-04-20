@@ -29,7 +29,10 @@ packageDoc:
   cautions:
     - "A provider without a mounted viewport can still manage queue state, but nothing will render visibly."
     - "Toasts are intentionally transient; use `Dialog` or inline validation when the user must acknowledge or resolve something before proceeding."
+    - "Queue timing belongs to `Toast.Provider`; surface response and reduced-motion behavior belong in `motion`."
   related:
+    - label: "Motion"
+      href: "/components/motion/"
     - label: "Dialog"
       href: "/components/dialog/"
     - label: "Progress"

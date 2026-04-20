@@ -1,5 +1,10 @@
 ---
 import type { DocPage } from "../../lib/docs";
+import {
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from "../ui/pagination";
 
 type Props = {
 	previousPage?: DocPage;
@@ -7,6 +12,10 @@ type Props = {
 };
 
 const { previousPage, nextPage } = Astro.props;
+
+const pagerContentClassName = previousPage && nextPage
+  ? "grid w-full gap-3 sm:grid-cols-2"
+  : "grid w-full gap-3";
 ---
 
 {
@@ -22,53 +31,67 @@ const { previousPage, nextPage } = Astro.props;
       ]}
       aria-label="Page navigation"
     >
-      {previousPage && (
-        <a href={previousPage.url} class="docs-pager-link docs-pager-link-prev">
-          <span class="docs-pager-kicker">Previous</span>
-          <span class="docs-pager-main">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="h-4 w-4 shrink-0"
-              aria-hidden="true"
+      <PaginationContent className={pagerContentClassName}>
+        {previousPage && (
+          <PaginationItem>
+            <PaginationLink
+              href={previousPage.url}
+              size="default"
+              className="docs-pager-link docs-pager-link-prev h-auto w-full justify-start p-3.5"
             >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-            <span class="docs-pager-title">{previousPage.title}</span>
-          </span>
-        </a>
-      )}
+              <span class="docs-pager-kicker">Previous</span>
+              <span class="docs-pager-main">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+                <span class="docs-pager-title">{previousPage.title}</span>
+              </span>
+            </PaginationLink>
+          </PaginationItem>
+        )}
 
-      {nextPage && (
-        <a href={nextPage.url} class="docs-pager-link docs-pager-link-next">
-          <span class="docs-pager-kicker">Next</span>
-          <span class="docs-pager-main">
-            <span class="docs-pager-title">{nextPage.title}</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="h-4 w-4 shrink-0"
-              aria-hidden="true"
+        {nextPage && (
+          <PaginationItem>
+            <PaginationLink
+              href={nextPage.url}
+              size="default"
+              className="docs-pager-link docs-pager-link-next h-auto w-full justify-end p-3.5 text-right"
             >
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </span>
-        </a>
-      )}
+              <span class="docs-pager-kicker">Next</span>
+              <span class="docs-pager-main">
+                <span class="docs-pager-title">{nextPage.title}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </PaginationLink>
+          </PaginationItem>
+        )}
+      </PaginationContent>
     </nav>
   )
 }

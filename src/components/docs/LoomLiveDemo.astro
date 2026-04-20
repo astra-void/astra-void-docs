@@ -134,7 +134,7 @@ const tabId = Math.random().toString(36).substring(2, 9);
         }
 
         const tabs = Array.from(group.querySelectorAll(".demo-tab-btn")).filter(
-          (tab): tab is HTMLButtonElement => tab instanceof HTMLButtonElement,
+          (tab) => tab instanceof HTMLButtonElement,
         );
 
         if (tabs.length === 0) {
@@ -144,14 +144,17 @@ const tabId = Math.random().toString(36).substring(2, 9);
         const previewSizeButtons = Array.from(
           group.querySelectorAll(".demo-preview-size-btn"),
         ).filter(
-          (button): button is HTMLButtonElement =>
-            button instanceof HTMLButtonElement,
+          (button) => button instanceof HTMLButtonElement,
         );
 
         const activatePreviewSize = (
-          nextButton: HTMLButtonElement,
-          { focusButton = false }: { focusButton?: boolean } = {},
+          nextButton = previewSizeButtons[0],
+          { focusButton = false } = {},
         ) => {
+          if (!(nextButton instanceof HTMLButtonElement)) {
+            return;
+          }
+
           const nextSize = nextButton.dataset.previewSizeControl;
           if (!nextSize) {
             return;
@@ -170,10 +173,11 @@ const tabId = Math.random().toString(36).substring(2, 9);
           }
         };
 
-        const activateTab = (
-          nextTab: HTMLButtonElement,
-          { focusTab = false }: { focusTab?: boolean } = {},
-        ) => {
+        const activateTab = (nextTab = tabs[0], { focusTab = false } = {}) => {
+          if (!(nextTab instanceof HTMLButtonElement)) {
+            return;
+          }
+
           tabs.forEach((tab) => {
             const isActive = tab === nextTab;
             const panelId = tab.getAttribute("aria-controls");
