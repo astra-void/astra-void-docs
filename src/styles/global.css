@@ -1143,6 +1143,18 @@
 		transition: transform 180ms ease;
 	}
 
+	.docs-example-toggle[data-state="open"] .docs-example-toggle-copy-closed {
+		display: none;
+	}
+
+	.docs-example-toggle[data-state="open"] .docs-example-toggle-copy-open {
+		display: inline;
+	}
+
+	.docs-example-toggle[data-state="open"] .docs-example-toggle-icon {
+		transform: rotate(180deg);
+	}
+
 	.docs-example-preview,
 	.docs-example-panel {
 		@apply px-4 py-4;
@@ -1182,19 +1194,7 @@
 		@apply bg-card/40;
 	}
 
-	.docs-example[data-open="true"] .docs-example-preview {
+	.docs-example-panel[data-state="open"] ~ .docs-example-preview {
 		display: none;
-	}
-
-	.docs-example[data-open="true"] .docs-example-toggle-copy-closed {
-		display: none;
-	}
-
-	.docs-example[data-open="true"] .docs-example-toggle-copy-open {
-		display: inline;
-	}
-
-	.docs-example[data-open="true"] .docs-example-toggle-icon {
-		transform: rotate(180deg);
 	}
 }

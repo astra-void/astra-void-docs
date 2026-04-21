@@ -1091,28 +1091,6 @@ const proseDensity = currentPage.entry.data.proseDensity;
               return;
             }
 
-            const exampleToggle = target.closest("[data-example-toggle]");
-            if (exampleToggle instanceof HTMLButtonElement) {
-              const example = exampleToggle.closest("[data-example-collapsible]");
-              const panel = example?.querySelector("[data-example-panel]");
-
-              if (
-                !(example instanceof HTMLElement) ||
-                !(panel instanceof HTMLElement)
-              ) {
-                return;
-              }
-
-              const nextOpen = example.dataset.open !== "true";
-              example.dataset.open = nextOpen ? "true" : "false";
-              exampleToggle.setAttribute(
-                "aria-expanded",
-                nextOpen ? "true" : "false",
-              );
-              panel.hidden = !nextOpen;
-              return;
-            }
-
             const navToggle = target.closest(navToggleSelector);
             if (navToggle instanceof HTMLButtonElement) {
               if (isNavOpen()) {

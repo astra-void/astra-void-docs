@@ -1,6 +1,11 @@
 ﻿---
 import CodeBlock from "./CodeBlock.astro";
 import { Button } from "../ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../ui/collapsible";
 
 type Props = {
   code: string;
@@ -34,79 +39,93 @@ const disclosureId = `docs-example-${disclosureSource}`;
 const isExpanded = defaultOpen || !hasOverflow;
 ---
 
-<section
-  class="doc-section doc-section-example docs-example"
-  data-example-collapsible
-  data-open={isExpanded ? "true" : "false"}
->
-  <div class="docs-example-card">
-    <div class="docs-example-header">
-      <div class="docs-example-summary-copy min-w-0">
-        <h2 class="mb-2 text-2xl font-semibold tracking-[-0.035em] text-foreground">
-          {title}
-        </h2>
-        <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p>
-      </div>
+<section class="doc-section doc-section-example docs-example">
+  {
+    hasOverflow ? (
+      <Collapsible client:load className="docs-example-collapsible" defaultOpen={isExpanded}>
+        <div class="docs-example-card">
+          <div class="docs-example-header">
+            <div class="docs-example-summary-copy min-w-0">
+              <h2 class="mb-2 text-2xl font-semibold tracking-[-0.035em] text-foreground">
+                {title}
+              </h2>
+              <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p>
+            </div>
 
-      <div class="docs-example-summary-meta">
-        {
-          fileName && (
-            <code class="docs-example-file">
-              {fileName}
-            </code>
-          )
-        }
-        {
-          hasOverflow && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="docs-example-toggle"
-              data-example-toggle
-              aria-expanded={isExpanded ? "true" : "false"}
-              aria-controls={disclosureId}
-            >
-              <span class="docs-example-toggle-copy docs-example-toggle-copy-closed">
-                Show full example
-              </span>
-              <span class="docs-example-toggle-copy docs-example-toggle-copy-open">
-                Hide full example
-              </span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 docs-example-toggle-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </Button>
-          )
-        }
-      </div>
-    </div>
+            <div class="docs-example-summary-meta">
+              {
+                fileName && (
+                  <code class="docs-example-file">
+                    {fileName}
+                  </code>
+                )
+              }
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="docs-example-toggle"
+                  aria-controls={disclosureId}
+                >
+                  <span class="docs-example-toggle-copy docs-example-toggle-copy-closed">
+                    Show full example
+                  </span>
+                  <span class="docs-example-toggle-copy docs-example-toggle-copy-open">
+                    Hide full example
+                  </span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4 docs-example-toggle-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </Button>
+              </CollapsibleTrigger>
+            </div>
+          </div>
 
-    {
-      hasOverflow && (
-        <div class="docs-example-preview" aria-hidden={isExpanded ? "true" : "false"}>
-          <CodeBlock code={previewCode} lang="tsx" meta="Preview" />
+          <CollapsibleContent id={disclosureId} className="docs-example-panel">
+            <CodeBlock code={normalizedCode} lang="tsx" meta={fileName} />
+          </CollapsibleContent>
+
+          <div class="docs-example-preview" aria-hidden="true">
+            <CodeBlock code={previewCode} lang="tsx" meta="Preview" />
+          </div>
         </div>
-      )
-    }
+      </Collapsible>
+    ) : (
+      <div class="docs-example-card">
+        <div class="docs-example-header">
+          <div class="docs-example-summary-copy min-w-0">
+            <h2 class="mb-2 text-2xl font-semibold tracking-[-0.035em] text-foreground">
+              {title}
+            </h2>
+            <p class="m-0 text-sm leading-6 text-muted-foreground">{description}</p>
+          </div>
 
-    <div
-      id={disclosureId}
-      class="docs-example-panel"
-      data-example-panel
-      hidden={hasOverflow && !isExpanded}
-    >
-      <CodeBlock code={normalizedCode} lang="tsx" meta={fileName} />
-    </div>
-  </div>
+          <div class="docs-example-summary-meta">
+            {
+              fileName && (
+                <code class="docs-example-file">
+                  {fileName}
+                </code>
+              )
+            }
+          </div>
+        </div>
+
+        <div id={disclosureId} class="docs-example-panel">
+          <CodeBlock code={normalizedCode} lang="tsx" meta={fileName} />
+        </div>
+      </div>
+    )
+  }
 </section>

@@ -1,6 +1,7 @@
 ---
 import CodeBlock from "./CodeBlock.astro";
 import { LoomLiveDemoClient } from "./LoomLiveDemoClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 interface Props {
 	slug: string;
@@ -16,48 +17,30 @@ const tabId = Math.random().toString(36).substring(2, 9);
   id={`demo-${tabId}`}
   data-preview-size="comfortable"
 >
-  <div class="relative mr-auto w-full">
+  <Tabs client:load defaultValue="preview" className="relative mr-auto w-full gap-0">
     <div class="flex items-center justify-between pb-3">
-      <div
-        class="inline-flex h-9 items-center justify-center rounded-none border-b bg-transparent p-0 text-muted-foreground w-full"
-        role="tablist"
-        aria-label="Loom demo view"
+      <TabsList
+        variant="line"
+        className="inline-flex h-9 w-full items-center justify-center rounded-none border-b bg-transparent p-0 text-muted-foreground"
       >
-        <button
-          type="button"
-          id={`preview-tab-${tabId}`}
-          role="tab"
-          aria-selected="true"
-          aria-controls={`preview-${tabId}`}
-          tabindex="0"
-          class="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-          data-state="active"
-          data-target={`preview-${tabId}`}
+        <TabsTrigger
+          value="preview"
+          className="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
         >
           Preview
-        </button>
-        <button
-          type="button"
-          id={`code-tab-${tabId}`}
-          role="tab"
-          aria-selected="false"
-          aria-controls={`code-${tabId}`}
-          tabindex="-1"
-          class="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-          data-state="inactive"
-          data-target={`code-${tabId}`}
+        </TabsTrigger>
+        <TabsTrigger
+          value="code"
+          className="demo-tab-btn inline-flex items-center justify-center whitespace-nowrap px-4 pb-3 pt-2 text-sm font-semibold ring-offset-background transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative h-9 rounded-none border-b-2 border-b-transparent bg-transparent shadow-none data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
         >
           Code
-        </button>
-      </div>
+        </TabsTrigger>
+      </TabsList>
     </div>
 
-    <div
-      id={`preview-${tabId}`}
-      role="tabpanel"
-      tabindex="0"
-      aria-labelledby={`preview-tab-${tabId}`}
-      class="demo-tab-content demo-preview-panel mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative rounded-md border"
+    <TabsContent
+      value="preview"
+      className="demo-tab-content demo-preview-panel mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 relative rounded-md border"
     >
       <div class="demo-preview-toolbar">
         <span class="demo-preview-toolbar-label">Preview size</span>
@@ -98,15 +81,11 @@ const tabId = Math.random().toString(36).substring(2, 9);
           playgroundHref="/playground/"
         />
       </div>
-    </div>
+    </TabsContent>
 
-    <div
-      id={`code-${tabId}`}
-      role="tabpanel"
-      tabindex="-1"
-      aria-labelledby={`code-tab-${tabId}`}
-      hidden
-      class="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    <TabsContent
+      value="code"
+      className="demo-tab-content mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div class="flex flex-col space-y-4">
         <div
@@ -115,29 +94,24 @@ const tabId = Math.random().toString(36).substring(2, 9);
           <CodeBlock code={sourceCode} lang="tsx" />
         </div>
       </div>
-    </div>
+    </TabsContent>
 
     <p class="mt-3 text-xs text-muted-foreground">
       Live demo is experimental and may contain bugs.
     </p>
-  </div>
+  </Tabs>
 </div>
 
 <script>
   (() => {
-    const setupTabs = () => {
+    const setupPreviewSizing = () => {
       const tabGroups = document.querySelectorAll(".loom-demo-tabs");
 
       tabGroups.forEach((group) => {
-        if (!(group instanceof HTMLElement) || group.dataset.tabsReady === "true") {
-          return;
-        }
-
-        const tabs = Array.from(group.querySelectorAll(".demo-tab-btn")).filter(
-          (tab) => tab instanceof HTMLButtonElement,
-        );
-
-        if (tabs.length === 0) {
+        if (
+          !(group instanceof HTMLElement) ||
+          group.dataset.previewSizeReady === "true"
+        ) {
           return;
         }
 
@@ -173,36 +147,6 @@ const tabId = Math.random().toString(36).substring(2, 9);
           }
         };
 
-        const activateTab = (nextTab = tabs[0], { focusTab = false } = {}) => {
-          if (!(nextTab instanceof HTMLButtonElement)) {
-            return;
-          }
-
-          tabs.forEach((tab) => {
-            const isActive = tab === nextTab;
-            const panelId = tab.getAttribute("aria-controls");
-            const panel = panelId ? document.getElementById(panelId) : null;
-
-            tab.setAttribute("data-state", isActive ? "active" : "inactive");
-            tab.setAttribute("aria-selected", isActive ? "true" : "false");
-            tab.setAttribute("tabindex", isActive ? "0" : "-1");
-
-            if (panel instanceof HTMLElement) {
-              panel.hidden = !isActive;
-              panel.setAttribute("tabindex", isActive ? "0" : "-1");
-            }
-          });
-
-          if (focusTab) {
-            nextTab.focus();
-          }
-        };
-
-        const selectedTab =
-          tabs.find((tab) => tab.getAttribute("aria-selected") === "true") ||
-          tabs[0];
-        activateTab(selectedTab);
-
         const selectedPreviewSizeButton =
           previewSizeButtons.find(
             (button) =>
@@ -232,12 +176,7 @@ const tabId = Math.random().toString(36).substring(2, 9);
             return;
           }
 
-          const tab = target.closest(".demo-tab-btn");
-          if (!(tab instanceof HTMLButtonElement) || !tabs.includes(tab)) {
-            return;
-          }
-
-          activateTab(tab);
+          return;
         });
 
         group.addEventListener("keydown", (event) => {
@@ -268,41 +207,18 @@ const tabId = Math.random().toString(36).substring(2, 9);
             activatePreviewSize(previewSizeButtons[nextIndex], {
               focusButton: true,
             });
-            return;
           }
-
-          if (!(target instanceof HTMLButtonElement) || !tabs.includes(target)) {
-            return;
-          }
-
-          const currentIndex = tabs.indexOf(target);
-          let nextIndex = currentIndex;
-
-          if (event.key === "ArrowRight") {
-            nextIndex = (currentIndex + 1) % tabs.length;
-          } else if (event.key === "ArrowLeft") {
-            nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-          } else if (event.key === "Home") {
-            nextIndex = 0;
-          } else if (event.key === "End") {
-            nextIndex = tabs.length - 1;
-          } else {
-            return;
-          }
-
-          event.preventDefault();
-          activateTab(tabs[nextIndex], { focusTab: true });
         });
 
-        group.dataset.tabsReady = "true";
+        group.dataset.previewSizeReady = "true";
       });
     };
 
-    setupTabs();
+    setupPreviewSizing();
 
-    if (document.documentElement.dataset.loomDemoTabsBound !== "true") {
-      document.documentElement.dataset.loomDemoTabsBound = "true";
-      document.addEventListener("astro:page-load", setupTabs);
+    if (document.documentElement.dataset.loomDemoPreviewBound !== "true") {
+      document.documentElement.dataset.loomDemoPreviewBound = "true";
+      document.addEventListener("astro:page-load", setupPreviewSizing);
     }
   })();
 </script>
