@@ -1,4 +1,4 @@
-import { getDocs, type DocPage } from "./docs";
+import { type DocPage, getDocs } from "./docs";
 
 const MAX_SEARCH_TEXT_CHARS = 9_000;
 const MAX_HEADING_ENTRIES = 16;
@@ -24,7 +24,9 @@ function collapseWhitespace(value: string) {
 }
 
 function stripCodeFences(value: string) {
-	return value.replace(/```[\s\S]*?```/gu, " ").replace(/~~~[\s\S]*?~~~/gu, " ");
+	return value
+		.replace(/```[\s\S]*?```/gu, " ")
+		.replace(/~~~[\s\S]*?~~~/gu, " ");
 }
 
 function stripInlineCode(value: string) {

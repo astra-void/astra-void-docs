@@ -1,12 +1,13 @@
 ---
-import PlaygroundWorkbenchClient from "../../components/docs/PlaygroundWorkbenchClient";
-import { Badge } from "../../components/ui/badge";
-import { Skeleton } from "../../components/ui/skeleton";
-import DocsLayout from "../../layouts/DocsLayout.astro";
-import { getDocsShellData } from "../../lib/docs";
-import { getPlaygroundTemplates } from "../../lib/playground";
+import PlaygroundWorkbenchClient from "../../../components/docs/PlaygroundWorkbenchClient";
+import { Badge } from "../../../components/ui/badge";
+import { Skeleton } from "../../../components/ui/skeleton";
+import DocsLayout from "../../../layouts/DocsLayout.astro";
+import { getDocsShellData } from "../../../lib/docs";
+import { getDocsSiteTitle } from "../../../lib/docs-sites";
+import { getPlaygroundTemplates } from "../../../lib/playground";
 
-const docsShell = await getDocsShellData("");
+const docsShell = await getDocsShellData("", "/lattice-ui");
 const { homePage, sections } = docsShell;
 
 if (!homePage) {
@@ -18,9 +19,9 @@ if (!homePage) {
 const templates = await getPlaygroundTemplates();
 const currentPage = {
 	...homePage,
-	id: "playground/index",
+	id: "lattice-ui/playground/index",
 	path: "playground",
-	url: "/playground/",
+	url: "/lattice-ui/playground/",
 	title: "Playground",
 	description:
 		"Edit starter examples inline and apply updates instantly to the live Loom preview.",
@@ -30,11 +31,13 @@ const currentPage = {
 	sidebarOrder: Number.MAX_SAFE_INTEGER,
 	isSectionIndex: true,
 };
+const siteTitle = getDocsSiteTitle(Astro.url.pathname);
 ---
 
 <DocsLayout
 	title={currentPage.title}
 	description={currentPage.description}
+	siteTitle={siteTitle}
 	currentPage={currentPage}
 	homePage={homePage}
 	sections={sections}

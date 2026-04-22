@@ -1,0 +1,85 @@
+---
+import type { MarkdownHeading } from "astro";
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import { type DocPage } from "../../lib/docs";
+import { DOCS_SITES, getDocsSiteById } from "../../lib/docs-sites";
+
+type Props = {
+	siteId: "loom" | "rbxts-tailwind";
+	slug?: string;
+};
+
+const { siteId, slug } = Astro.props;
+const site = getDocsSiteById(siteId) ?? DOCS_SITES[0];
+const path = slug ? `${siteId}/${slug}` : siteId;
+const url = slug ? `${site.rootPath}/${slug}/` : `${site.rootPath}/`;
+const title = slug ? slug : `${site.displayName} docs`;
+const description = slug
+	? `${site.displayName} documentation for "${slug}" is not implemented yet.`
+	: `${site.displayName} documentation is coming soon.`;
+
+const currentPage = {
+	entry: {
+		data: {
+			proseDensity: "default",
+		},
+	} as DocPage["entry"],
+	id: `placeholder/${path}`,
+	path: slug ? path : "",
+	url,
+	title,
+	description,
+	versionBasis: "main",
+	sectionKey: site.id,
+	sectionTitle: site.displayName,
+	sectionOrder: Number.MAX_SAFE_INTEGER,
+	sidebarOrder: Number.MAX_SAFE_INTEGER,
+	isSectionIndex: !slug,
+} satisfies DocPage;
+
+const headings: MarkdownHeading[] = [];
+---
+
+<DocsLayout
+  title={title}
+  description={description}
+  siteTitle={site.displayName}
+  currentPage={currentPage}
+  homePage={currentPage}
+  sections={[]}
+  headings={headings}
+>
+  <section class="doc-section doc-section-overview">
+    <div class="docs-landing-intro">
+      <p>
+        This docs site is reserved for <code>{site.displayName}</code>.
+      </p>
+      <p>
+        The route shell, site switcher, and placeholder navigation are in place.
+        Content can be filled in later without changing the site routing shape.
+      </p>
+    </div>
+
+    <div class="docs-section-grid">
+      <section class="docs-section-card">
+        <h3>Current route</h3>
+        <p>
+          {slug ? (
+            <>
+              Placeholder route for <code>{slug}</code>.
+            </>
+          ) : (
+            <>This is the site landing page placeholder.</>
+          )}
+        </p>
+      </section>
+
+      <section class="docs-section-card">
+        <h3>Next step</h3>
+        <p>
+          Replace this shell with real docs content when the site is ready.
+        </p>
+      </section>
+    </div>
+  </section>
+</DocsLayout>

@@ -44,6 +44,14 @@ export type SidebarSection = {
 	entries: DocPage[];
 };
 
+export type DocsShellData = {
+	currentPage: DocPage;
+	homePage?: DocPage;
+	sections: SidebarSection[];
+	previousPage?: DocPage;
+	nextPage?: DocPage;
+};
+
 export function getDocPathFromId(id: string) {
 	const withoutExtension = id.replace(/\.(md|mdx)$/u, "");
 
@@ -56,6 +64,39 @@ export function getDocPathFromId(id: string) {
 
 export function getDocUrl(path: string) {
 	return path ? `/${path}/` : "/";
+}
+
+function normalizeBasePath(basePath: string) {
+	if (!basePath || basePath === "/") {
+		return "";
+	}
+
+	return basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+}
+
+function prefixUrl(url: string, basePath: string) {
+	const normalizedBasePath = normalizeBasePath(basePath);
+
+	if (!normalizedBasePath) {
+		return url;
+	}
+
+	return url === "/" ? `${normalizedBasePath}/` : `${normalizedBasePath}${url}`;
+}
+
+function prefixDocPage(page: DocPage, basePath: string): DocPage {
+	return {
+		...page,
+		url: prefixUrl(page.url, basePath),
+	};
+}
+
+function prefixSidebarSection(section: SidebarSection, basePath: string) {
+	return {
+		...section,
+		url: section.url ? prefixUrl(section.url, basePath) : undefined,
+		entries: section.entries.map((entry) => prefixDocPage(entry, basePath)),
+	};
 }
 
 function startCase(value: string) {
@@ -171,7 +212,10 @@ export async function getDocByPath(path: string) {
 	return docs.find((doc) => doc.path === path);
 }
 
-export async function getDocsShellData(currentPath: string) {
+export async function getDocsShellData(
+	currentPath: string,
+	basePath = "",
+): Promise<DocsShellData> {
 	const docs = await getDocs();
 	const currentIndex = docs.findIndex((doc) => doc.path === currentPath);
 
@@ -180,11 +224,19 @@ export async function getDocsShellData(currentPath: string) {
 	}
 
 	return {
-		currentPage: docs[currentIndex],
-		homePage: docs.find((doc) => doc.path === ""),
-		sections: groupSidebarSections(docs),
-		previousPage: docs[currentIndex - 1],
-		nextPage: docs[currentIndex + 1],
+		currentPage: prefixDocPage(docs[currentIndex], basePath),
+		homePage: docs.find((doc) => doc.path === "")
+			? prefixDocPage(docs.find((doc) => doc.path === "")!, basePath)
+			: undefined,
+		sections: groupSidebarSections(docs).map((section) =>
+			prefixSidebarSection(section, basePath),
+		),
+		previousPage: docs[currentIndex - 1]
+			? prefixDocPage(docs[currentIndex - 1], basePath)
+			: undefined,
+		nextPage: docs[currentIndex + 1]
+			? prefixDocPage(docs[currentIndex + 1], basePath)
+			: undefined,
 	};
 }
 

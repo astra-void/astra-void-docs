@@ -1,6 +1,11 @@
 ﻿---
 import { Button } from "../ui/button";
 import { DOCS_SITE } from "../../lib/docs";
+import DocsSiteSwitcher from "./DocsSiteSwitcher";
+import {
+	getDocsSiteDisplayName,
+	getDocsSiteSelectionId,
+} from "../../lib/docs-sites";
 
 const normalizedPath = Astro.url.pathname.endsWith("/")
   ? Astro.url.pathname
@@ -13,6 +18,7 @@ const currentSectionLabel = isComponentsPath
   : isPlaygroundPath
     ? "Playground"
     : "Docs";
+const currentSiteId = getDocsSiteSelectionId(Astro.url.pathname);
 
 function navLinkClass(isActive: boolean) {
   return ["docs-header-nav-link", isActive ? "is-active" : undefined];
@@ -25,12 +31,12 @@ function navLinkClass(isActive: boolean) {
   <div
     class="container mx-auto flex h-14 max-w-screen-2xl items-center px-4 md:px-8"
   >
-    <div class="mr-4 hidden md:flex">
-      <a href="/" class="mr-6 flex items-center space-x-2">
-        <span class="hidden font-bold sm:inline-block">
-          {DOCS_SITE.title}
-        </span>
-      </a>
+    <div class="mr-4 hidden md:flex items-center gap-3">
+      <DocsSiteSwitcher
+        client:load
+        currentPathname={Astro.url.pathname}
+        currentSiteId={currentSiteId}
+      />
       <nav class="docs-header-nav flex items-center gap-1 text-sm font-medium">
         <a
           href="/"
@@ -78,11 +84,9 @@ function navLinkClass(isActive: boolean) {
     </Button>
 
     <div class="md:hidden flex min-w-0 flex-1 items-center gap-2">
-      <a href="/" class="mr-6 flex items-center space-x-2">
-        <span class="font-bold inline-block">
-          {DOCS_SITE.title}
-        </span>
-      </a>
+      <span class="mr-6 font-bold inline-block">
+        {getDocsSiteDisplayName(Astro.url.pathname)}
+      </span>
       <span
         class="docs-mobile-section-indicator"
         aria-label={`Current section: ${currentSectionLabel}`}

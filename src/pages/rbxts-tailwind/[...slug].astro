@@ -1,0 +1,27 @@
+---
+import DocsSitePlaceholder from "../../components/docs/DocsSitePlaceholder.astro";
+import { getDocs } from "../../lib/docs";
+
+export async function getStaticPaths() {
+	const docs = await getDocs();
+
+	return [
+		...docs
+			.filter((doc) => doc.path)
+			.map((doc) => ({
+				params: {
+					slug: doc.path,
+				},
+			})),
+		{
+			params: {
+				slug: "playground",
+			},
+		},
+	];
+}
+
+const slug = Astro.params.slug ?? "";
+---
+
+<DocsSitePlaceholder siteId="rbxts-tailwind" slug={slug} />

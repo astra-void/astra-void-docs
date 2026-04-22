@@ -1,10 +1,11 @@
 ---
 import { render } from "astro:content";
-import PackageDoc from "../components/docs/PackageDoc.astro";
-import PackageManagerInstall from "../components/docs/PackageManagerInstall.astro";
-import { resolvePackageDoc } from "../data/package-docs";
-import DocsLayout from "../layouts/DocsLayout.astro";
-import { getDocs, getDocsShellData } from "../lib/docs";
+import PackageDoc from "../../components/docs/PackageDoc.astro";
+import PackageManagerInstall from "../../components/docs/PackageManagerInstall.astro";
+import { resolvePackageDoc } from "../../data/package-docs";
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import { getDocs, getDocsShellData } from "../../lib/docs";
+import { getDocsSiteTitle } from "../../lib/docs-sites";
 
 export async function getStaticPaths() {
 	const docs = await getDocs();
@@ -20,7 +21,8 @@ export async function getStaticPaths() {
 
 const currentPath = Astro.params.slug ?? "";
 const { currentPage, homePage, sections, previousPage, nextPage } =
-	await getDocsShellData(currentPath);
+	await getDocsShellData(currentPath, "/lattice-ui");
+const siteTitle = getDocsSiteTitle(Astro.url.pathname);
 const { Content, headings } = await render(currentPage.entry);
 const componentSlug = currentPath.startsWith("components/")
 	? currentPath.slice("components/".length)
@@ -37,6 +39,7 @@ const contentComponents = {
 <DocsLayout
   title={currentPage.title}
   description={currentPage.description}
+  siteTitle={siteTitle}
   currentPage={currentPage}
   homePage={homePage}
   sections={sections}

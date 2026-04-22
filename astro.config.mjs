@@ -138,6 +138,12 @@ export default defineConfig({
 		}),
 		react(),
 	],
+	redirects: {
+		"/": {
+			status: 301,
+			destination: "/lattice-ui",
+		},
+	},
 	markdown: {
 		syntaxHighlight: "shiki",
 		shikiConfig: {

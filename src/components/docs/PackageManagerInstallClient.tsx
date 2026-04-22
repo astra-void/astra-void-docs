@@ -1,6 +1,4 @@
 import * as React from "react";
-import { Button } from "../ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import {
 	PACKAGE_MANAGER_CHANGE_EVENT,
 	PACKAGE_MANAGER_STORAGE_KEY,
@@ -8,6 +6,8 @@ import {
 	type PackageManagerCommandMap,
 	SUPPORTED_PACKAGE_MANAGERS,
 } from "../../lib/package-manager-install";
+import { Button } from "../ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 type CopyState = "idle" | "done" | "error";
 

@@ -5,12 +5,12 @@ import DocsPager from "../components/docs/DocsPager.astro";
 import DocsSidebar from "../components/docs/DocsSidebar.astro";
 import DocsToc from "../components/docs/DocsToc.astro";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
 } from "../components/ui/breadcrumb";
 import { DOCS_SITE, type DocPage, type SidebarSection } from "../lib/docs";
 import "../styles/global.css";
@@ -18,6 +18,7 @@ import "../styles/global.css";
 type Props = {
 	title: string;
 	description: string;
+	siteTitle?: string;
 	currentPage: DocPage;
 	homePage?: DocPage;
 	sections: SidebarSection[];
@@ -29,6 +30,7 @@ type Props = {
 const {
 	title,
 	description,
+	siteTitle,
 	currentPage,
 	homePage,
 	sections,
@@ -37,9 +39,10 @@ const {
 	nextPage,
 } = Astro.props;
 
+const resolvedSiteTitle = siteTitle ?? DOCS_SITE.title;
 const pageTitle = currentPage.path
-	? `${title} | ${DOCS_SITE.title}`
-	: DOCS_SITE.title;
+	? `${title} | ${resolvedSiteTitle}`
+	: resolvedSiteTitle;
 const canonical = Astro.site ? new URL(currentPage.url, Astro.site) : undefined;
 const hasToc = headings.some((heading) => heading.depth > 1);
 const proseDensity = currentPage.entry.data.proseDensity;

@@ -1,9 +1,9 @@
 ---
 import type { DocPage } from "../../lib/docs";
 import {
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
 } from "../ui/pagination";
 
 type Props = {
@@ -13,9 +13,10 @@ type Props = {
 
 const { previousPage, nextPage } = Astro.props;
 
-const pagerContentClassName = previousPage && nextPage
-  ? "grid w-full gap-3 sm:grid-cols-2"
-  : "grid w-full gap-3";
+const pagerContentClassName =
+	previousPage && nextPage
+		? "grid w-full gap-3 sm:grid-cols-2"
+		: "grid w-full gap-3";
 ---
 
 {

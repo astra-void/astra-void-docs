@@ -1,6 +1,6 @@
 ---
-import { PackageManagerInstallClient } from "./PackageManagerInstallClient";
 import { resolvePackageManagerInstallInput } from "../../lib/package-manager-install";
+import { PackageManagerInstallClient } from "./PackageManagerInstallClient";
 
 const resolved = resolvePackageManagerInstallInput(
 	Astro.props as Record<string, unknown>,
