@@ -1,0 +1,48 @@
+---
+title: Core
+description: Semantic boundary contracts shared across compiler and host layers.
+draft: false
+sidebar:
+  order: 5
+---
+
+## What It Is For
+
+- Use `@rbxts-tailwind/core` when you are working at the semantic contract boundary between the compiler and the host adapter.
+- Treat it as an internal coordination layer, not a general component authoring package.
+
+## Public Exports
+
+- `semanticOwnership`
+- `SEMANTIC_OWNER_PACKAGE`
+- `SEMANTIC_OWNER_RUNTIME`
+- `SUPPORTED_HOST_ELEMENT_TAGS`
+- `ClassNameSemanticRequest`
+- `ClassNameSemanticResult`
+
+## State Model
+
+- The package defines contracts only.
+- Runtime semantic resolution lives in `@rbxts-tailwind/compiler`.
+- `semanticOwnership` exists to make the ownership boundary explicit.
+
+## Key API
+
+- `SUPPORTED_HOST_ELEMENT_TAGS` lists the Roblox host elements that the compiler currently recognizes.
+- `ClassNameSemanticRequest` is the input contract for lowering a `className` literal.
+- `ClassNameSemanticResult` is the IR returned after semantic resolution.
+
+## Composition Patterns
+
+- Use the request and result types when you are writing tests or adapters around the lowering pipeline.
+- Use `semanticOwnership` to make the ownership boundary obvious in code that bridges packages.
+
+## Cautions / Limits
+
+- `core` is intentionally low-level and should not be treated as a public UI toolkit.
+- Do not assume it owns state, rendering, or config loading.
+
+## Related
+
+- [Compiler](/rbxts-tailwind/reference/compiler/)
+- [rbxtsc-host](/rbxts-tailwind/reference/rbxtsc-host/)

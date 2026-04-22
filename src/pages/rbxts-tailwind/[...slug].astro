@@ -1,27 +1,41 @@
 ---
-import DocsSitePlaceholder from "../../components/docs/DocsSitePlaceholder.astro";
-import { getDocs } from "../../lib/docs";
+import { render } from "astro:content";
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import { getDocsSiteTitle } from "../../lib/docs-sites";
+import {
+	getRbxtsTailwindDocs,
+	getRbxtsTailwindDocsShellData,
+} from "../../lib/rbxts-tailwind-docs";
 
 export async function getStaticPaths() {
-	const docs = await getDocs();
+	const docs = await getRbxtsTailwindDocs();
 
-	return [
-		...docs
-			.filter((doc) => doc.path)
-			.map((doc) => ({
-				params: {
-					slug: doc.path,
-				},
-			})),
-		{
+	return docs
+		.filter((doc) => doc.path)
+		.map((doc) => ({
 			params: {
-				slug: "playground",
+				slug: doc.path,
 			},
-		},
-	];
+		}));
 }
 
-const slug = Astro.params.slug ?? "";
+const currentPath = Astro.params.slug ?? "";
+const { currentPage, homePage, sections, previousPage, nextPage } =
+	await getRbxtsTailwindDocsShellData(currentPath);
+const siteTitle = getDocsSiteTitle(Astro.url.pathname);
+const { Content, headings } = await render(currentPage.entry as never);
 ---
 
-<DocsSitePlaceholder siteId="rbxts-tailwind" slug={slug} />
+<DocsLayout
+  title={currentPage.title}
+  description={currentPage.description}
+  siteTitle={siteTitle}
+  currentPage={currentPage}
+  homePage={homePage}
+  sections={sections}
+  headings={headings}
+  previousPage={previousPage}
+  nextPage={nextPage}
+>
+  <Content />
+</DocsLayout>

@@ -1,0 +1,32 @@
+---
+title: Introduction
+description: Public entrypoint map for rbxts-tailwind and the lower-level packages behind it.
+draft: false
+sidebar:
+  order: 0
+---
+
+`rbxts-tailwind` is the app-facing package surface. Start here if you want the shortest path from a Roblox TSX app to a working transformer setup, then drop into the lower-level packages only when you need a more specific integration point.
+
+## Start Here
+
+- [Installation](/rbxts-tailwind/getting-started/installation/)
+- [Quick Start](/rbxts-tailwind/getting-started/quick-start/)
+- [Reference Index](/rbxts-tailwind/reference/)
+
+## Public Surface
+
+- `rbxts-tailwind`: main app entrypoint with config helpers and React className augmentation.
+- `rbxts-tailwind/transformer`: TypeScript program transformer subpath for `rbxtsc` plugin wiring.
+- `@rbxts-tailwind/config`: pure config shape and default merge helper.
+- `@rbxts-tailwind/types`: shared class value and stylable prop types.
+- `@rbxts-tailwind/core`: semantic boundary contracts used by compiler and host layers.
+- `@rbxts-tailwind/compiler`: direct source-to-output transformer.
+- `@rbxts-tailwind/rbxtsc-host`: host adapter for project config discovery and TypeScript transformer integration.
+
+## Read This In Order
+
+1. Install the main package and wire the `transformer` subpath into `tsconfig.json`.
+2. Use `defineConfig()` to establish the theme baseline for your project.
+3. Read `config`, `types`, and `core` only if you need to reason about lower-level contracts.
+4. Move to `compiler` or `rbxtsc-host` if you are integrating outside the default app entrypoint.

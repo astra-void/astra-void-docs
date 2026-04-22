@@ -47,4 +47,23 @@ export const collections = {
 			packageDoc: packageDocSchema.optional(),
 		}),
 	}),
+	rbxtsTailwindDocs: defineCollection({
+		loader: glob({
+			pattern: "**/*.{md,mdx}",
+			base: "./src/content/docs/rbxts-tailwind",
+		}),
+		schema: z.object({
+			title: z.string(),
+			description: z.string(),
+			draft: z.boolean().default(false),
+			proseDensity: z.enum(["default", "compact"]).default("default"),
+			versionBasis: z.enum(["main", "stable"]).default("main"),
+			sidebar: z
+				.object({
+					order: z.number().optional(),
+				})
+				.optional(),
+			packageDoc: packageDocSchema.optional(),
+		}),
+	}),
 };

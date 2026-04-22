@@ -1,5 +1,6 @@
 ﻿---
 import { Button } from "../ui/button";
+import { Kbd, KbdGroup } from "../ui/kbd";
 import { DOCS_SITE } from "../../lib/docs";
 import DocsSiteSwitcher from "./DocsSiteSwitcher";
 import {
@@ -23,6 +24,8 @@ const currentSiteId = getDocsSiteSelectionId(Astro.url.pathname);
 function navLinkClass(isActive: boolean) {
   return ["docs-header-nav-link", isActive ? "is-active" : undefined];
 }
+
+const searchShortcutTitle = "Search docs (⌘+K)";
 ---
 
 <header
@@ -102,7 +105,7 @@ function navLinkClass(isActive: boolean) {
           data-search-open
           class="docs-index-trigger inline-flex h-8 items-center gap-2 rounded-md border border-border/65 bg-muted/30 px-3 text-sm font-semibold text-foreground/85 no-underline transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           aria-label="Search docs"
-          title="Search docs (Cmd/Ctrl+K)"
+          title={searchShortcutTitle}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -121,9 +124,15 @@ function navLinkClass(isActive: boolean) {
           </svg>
           <span class="hidden lg:inline-flex">Search docs</span>
           <span class="inline-flex lg:hidden">Search</span>
-          <kbd class="docs-search-shortcut hidden xl:inline-flex" aria-hidden="true"
-            >Cmd+K</kbd
+          <KbdGroup
+            className="docs-search-shortcut hidden md:inline-flex"
+            aria-hidden="true"
+            data-search-shortcut
           >
+            <Kbd data-search-shortcut-modifier>⌘</Kbd>
+            <span class="text-muted-foreground/70">+</span>
+            <Kbd>K</Kbd>
+          </KbdGroup>
         </a>
       </div>
       <nav class="flex items-center">
@@ -223,3 +232,25 @@ function navLinkClass(isActive: boolean) {
     </div>
   </div>
 </header>
+
+<script is:inline>
+  const shortcutModifier = document.querySelector(
+    "[data-search-shortcut-modifier]",
+  );
+  const searchTrigger = document.querySelector("[data-search-open]");
+
+  const isMac = (() => {
+    const platform =
+      navigator.userAgentData?.platform ?? navigator.platform ?? "";
+
+    return /mac|iphone|ipad|ipod/i.test(platform);
+  })();
+
+  if (shortcutModifier instanceof HTMLElement) {
+    shortcutModifier.textContent = isMac ? "⌘" : "Ctrl";
+  }
+
+  if (searchTrigger instanceof HTMLElement) {
+    searchTrigger.title = `Search docs (${isMac ? "⌘" : "Ctrl"}+K)`;
+  }
+</script>

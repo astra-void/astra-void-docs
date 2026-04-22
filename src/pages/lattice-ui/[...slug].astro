@@ -23,7 +23,7 @@ const currentPath = Astro.params.slug ?? "";
 const { currentPage, homePage, sections, previousPage, nextPage } =
 	await getDocsShellData(currentPath, "/lattice-ui");
 const siteTitle = getDocsSiteTitle(Astro.url.pathname);
-const { Content, headings } = await render(currentPage.entry);
+const { Content, headings } = await render(currentPage.entry as never);
 const componentSlug = currentPath.startsWith("components/")
 	? currentPath.slice("components/".length)
 	: undefined;

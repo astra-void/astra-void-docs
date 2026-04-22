@@ -1,0 +1,64 @@
+---
+title: Quick Start
+description: Minimal config and TSX usage for rbxts-tailwind.
+draft: false
+sidebar:
+  order: 2
+---
+
+This path shows the shortest working loop: declare a config, register the transformer, and write a TSX `className`.
+
+## 1. Declare the Config
+
+`defineConfig()` returns a `TailwindConfig` object that the compiler can consume directly.
+
+```ts
+import { defineConfig } from "rbxts-tailwind";
+
+export default defineConfig({
+  theme: {
+    extend: {
+      colors: {
+        surface: "Color3.fromRGB(40, 48, 66)",
+      },
+      radius: {
+        md: "new UDim(0, 6)",
+      },
+      spacing: {
+        "4": "new UDim(0, 16)",
+      },
+    },
+  },
+});
+```
+
+## 2. Register the Transformer
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "transform": "rbxts-tailwind/transformer",
+        "type": "program"
+      }
+    ]
+  }
+}
+```
+
+## 3. Write TSX with `className`
+
+```tsx
+<frame className="rounded-md px-4 bg-surface" />
+```
+
+The `rbxts-tailwind` entrypoint augments `React.Attributes` so `className` is accepted on Roblox TSX hosts without extra local type declarations.
+
+## 4. Confirm the Output
+
+- `className` should disappear from the emitted Luau.
+- Tailwind-style utilities should lower into Roblox property writes.
+- Unsupported utilities should surface diagnostics instead of silently passing through.
+
+Next: [Reference Index](/rbxts-tailwind/reference/)

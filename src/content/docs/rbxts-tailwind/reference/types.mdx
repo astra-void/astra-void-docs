@@ -1,0 +1,42 @@
+---
+title: Types
+description: Shared className typing helpers for rbxts-tailwind consumers.
+draft: false
+sidebar:
+  order: 4
+---
+
+## What It Is For
+
+- Use `@rbxts-tailwind/types` when you need the shared `className` value shape or a convenience prop helper.
+- Treat it as the lowest-friction way to type wrapper components that accept style tokens.
+
+## Public Exports
+
+- `ClassValue`
+- `StylableProps`
+
+## State Model
+
+- These types do not own runtime behavior.
+- `ClassValue` is a flexible input union for class-like values.
+- `StylableProps<P>` keeps the caller's props and adds an optional `className`.
+
+## Key API
+
+- `ClassValue` accepts strings, numbers, booleans, dictionaries, arrays, `null`, and `undefined`.
+- `StylableProps<P>` preserves object props and falls back to an empty prop object when `P` is not an object.
+
+## Composition Patterns
+
+- Use `ClassValue` when a prop should accept the same broad shapes as `class-variance-authority` style helpers.
+- Use `StylableProps<P>` for wrapper components that need to forward all normal props plus a `className`.
+
+## Cautions / Limits
+
+- `ClassValue` is permissive by design; it is not a validator.
+- `StylableProps<P>` is only meaningful for object-shaped props.
+
+## Related
+
+- [rbxts-tailwind](/rbxts-tailwind/reference/rbxts-tailwind/)

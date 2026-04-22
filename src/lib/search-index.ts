@@ -1,4 +1,5 @@
 import { type DocPage, getDocs } from "./docs";
+import { getRbxtsTailwindDocs } from "./rbxts-tailwind-docs";
 
 const MAX_SEARCH_TEXT_CHARS = 9_000;
 const MAX_HEADING_ENTRIES = 16;
@@ -149,11 +150,15 @@ function buildSearchText(doc: DocPage) {
 }
 
 export async function buildDocsSearchIndex(): Promise<DocsSearchIndex> {
-	const docs = await getDocs();
-	const entries: DocsSearchIndexEntry[] = docs.map((doc) => {
+	const [docs, rbxtsTailwindDocs] = await Promise.all([
+		getDocs(),
+		getRbxtsTailwindDocs(),
+	]);
+	const entries: DocsSearchIndexEntry[] = [...docs, ...rbxtsTailwindDocs].map(
+		(doc) => {
 		const { headings, text } = buildSearchText(doc);
 		return {
-			id: doc.path || "index",
+			id: doc.url,
 			path: doc.path,
 			url: doc.url,
 			title: doc.title,
@@ -162,7 +167,8 @@ export async function buildDocsSearchIndex(): Promise<DocsSearchIndex> {
 			headings,
 			text,
 		};
-	});
+		},
+	);
 
 	return {
 		generatedAt: new Date().toISOString(),

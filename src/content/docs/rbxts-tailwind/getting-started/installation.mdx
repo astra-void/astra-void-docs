@@ -1,0 +1,58 @@
+---
+title: Installation
+description: Install rbxts-tailwind and wire the transformer entrypoint into a Roblox TS project.
+draft: false
+sidebar:
+  order: 1
+---
+
+Audience: app developers integrating `rbxts-tailwind` into a Roblox TS project.
+
+## Install the Main Package
+
+```bash
+pnpm add -D rbxts-tailwind
+```
+
+Use the main package when you want the app-facing config helper and the React `className` augmentation.
+
+## Add the Transformer Plugin
+
+Add the program transformer subpath to `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "transform": "rbxts-tailwind/transformer",
+        "type": "program"
+      }
+    ]
+  }
+}
+```
+
+## Create a Config File
+
+Create `rbxtw.config.ts` at the project root:
+
+```ts
+import { defineConfig } from "rbxts-tailwind";
+
+export default defineConfig();
+```
+
+## Reach for Lower-Level Packages Only When Needed
+
+If you are building custom tooling around the compiler or host integration, install the lower-level packages directly:
+
+```bash
+pnpm add -D @rbxts-tailwind/compiler @rbxts-tailwind/rbxtsc-host
+```
+
+That path is for integration work, not the normal app setup.
+
+## Next Step
+
+[Quick Start](/rbxts-tailwind/getting-started/quick-start/)

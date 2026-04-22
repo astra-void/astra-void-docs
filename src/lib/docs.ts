@@ -1,4 +1,4 @@
-import { type CollectionEntry, getCollection } from "astro:content";
+import { getCollection } from "astro:content";
 
 export const DOCS_SITE = {
 	title: "Lattice UI Docs",
@@ -20,7 +20,38 @@ const SECTION_CONFIG = [
 	{ key: "reference", title: "Reference", slug: "reference", order: 4 },
 ] as const;
 
-export type DocEntry = CollectionEntry<"docs">;
+export type DocEntry = {
+	id: string;
+	body?: string;
+	data: {
+		title: string;
+		description: string;
+		draft: boolean;
+		proseDensity: "default" | "compact";
+		versionBasis: "main" | "stable";
+		sidebar?: {
+			order?: number;
+		};
+		packageDoc?: {
+			whatItIsFor: string[];
+			stateModel: string[];
+			keyApi: {
+				name: string;
+				description: string;
+			}[];
+			compositionPatterns: {
+				title: string;
+				description: string;
+			}[];
+			cautions: string[];
+			related: {
+				label: string;
+				href: string;
+			}[];
+			hasLiveDemo?: boolean;
+		};
+	};
+};
 
 export type DocPage = {
 	entry: DocEntry;

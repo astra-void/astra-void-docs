@@ -1,0 +1,54 @@
+---
+title: rbxts-tailwind
+description: App-facing entrypoint that combines config helpers, transformer wiring, and className typings.
+draft: false
+sidebar:
+  order: 1
+---
+
+## What It Is For
+
+- Use `rbxts-tailwind` when your app code needs the default entrypoint for configuration and TSX typing.
+- Treat it as the stable import surface for normal project usage.
+- Reach for the lower-level packages only when you are integrating with custom tooling or inspecting compiler behavior directly.
+
+## Public Exports
+
+- `defaultConfig`
+- `defineConfig`
+- `createTransformer`
+- `TailwindConfig`
+- `TailwindConfigInput`
+- `ClassValue`
+- `StylableProps`
+
+## State Model
+
+- The package itself is configuration and type surface, not a runtime state owner.
+- `defineConfig()` returns a pure config object.
+- The React attribute augmentation is global once the package is imported.
+- `createTransformer` delegates to the lower-level host integration rather than owning compiler state itself.
+
+## Key API
+
+- `defineConfig()` is the main helper for merging `theme.extend` with the built-in defaults.
+- `createTransformer` is the app-facing bridge to the transformer implementation.
+- `ClassValue` and `StylableProps` are the shared typing helpers for component props that accept `className`.
+
+## Composition Patterns
+
+- Put `defineConfig()` in `rbxtw.config.ts` and import the result from your compiler or harness setup.
+- Use `createTransformer` when a project wants the main package surface instead of reaching for host internals.
+- Use `StylableProps<P>` for component props that should accept both normal props and a `className`.
+
+## Cautions / Limits
+
+- `defineConfig()` only knows about `colors`, `radius`, and `spacing` in this package slice.
+- `createTransformer` is a thin alias, not a separate compiler API.
+- `ClassValue` is intentionally broad, so do not use it as a semantic style system by itself.
+
+## Related
+
+- [Config](/rbxts-tailwind/reference/config/)
+- [Types](/rbxts-tailwind/reference/types/)
+- [rbxtsc-host](/rbxts-tailwind/reference/rbxtsc-host/)

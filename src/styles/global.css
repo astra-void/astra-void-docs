@@ -157,7 +157,7 @@
 	}
 
 	.docs-search-shortcut {
-		@apply items-center rounded-md border border-border/70 bg-background/75 px-1.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+		@apply inline-flex items-center gap-1;
 	}
 
 	.docs-search-overlay {
@@ -894,6 +894,29 @@
 
 	.docs-code-body pre code {
 		@apply px-4 py-3;
+	}
+
+	/* Astro/Shiki emits inline light-theme colors and background values.
+	   Force the generated code blocks to follow the active app theme. */
+	.docs-prose pre.astro-code,
+	.docs-code-body pre.astro-code {
+		background-color: var(--surface-panel-muted) !important;
+		color: var(--foreground) !important;
+	}
+
+	:root[data-theme="dark"] .docs-prose pre.astro-code,
+	:root[data-theme="dark"] .docs-code-body pre.astro-code,
+	.dark .docs-prose pre.astro-code,
+	.dark .docs-code-body pre.astro-code {
+		background-color: var(--shiki-dark-bg) !important;
+		color: var(--shiki-dark) !important;
+	}
+
+	:root[data-theme="dark"] .docs-prose pre.astro-code span,
+	:root[data-theme="dark"] .docs-code-body pre.astro-code span,
+	.dark .docs-prose pre.astro-code span,
+	.dark .docs-code-body pre.astro-code span {
+		color: var(--shiki-dark) !important;
 	}
 
 	.docs-code-pre-standalone {

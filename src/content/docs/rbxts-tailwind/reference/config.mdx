@@ -1,0 +1,47 @@
+---
+title: Config
+description: Theme config types and the default merge helper for rbxts-tailwind.
+draft: false
+sidebar:
+  order: 3
+---
+
+## What It Is For
+
+- Use `@rbxts-tailwind/config` when you want the config shape without the rest of the app-facing surface.
+- Use it to create a typed `TailwindConfig` object for the compiler and host layers.
+
+## Public Exports
+
+- `defaultConfig`
+- `defineConfig`
+- `TailwindConfig`
+- `TailwindConfigInput`
+
+## State Model
+
+- Config is pure data.
+- `defineConfig()` merges the built-in defaults with user overrides and returns a new object.
+- `theme.extend.*` augments the defaults, while top-level `theme.*` replaces the final scale for that family.
+
+## Key API
+
+- `defaultConfig` is the built-in baseline used by the package.
+- `defineConfig()` accepts an optional `TailwindConfigInput` and returns the resolved config object.
+- `TailwindConfigInput.theme.extend` is the main hook for additive scale overrides.
+
+## Composition Patterns
+
+- Use `defineConfig()` in `rbxtw.config.ts` or any helper that needs the same merged config shape.
+- Prefer `theme.extend` for project-specific tokens that should keep the defaults intact.
+- Replace a scale entirely only when you intentionally want to discard the package defaults.
+
+## Cautions / Limits
+
+- This slice only models `colors`, `radius`, and `spacing`.
+- It does not manage runtime theme state or app-level token switching.
+
+## Related
+
+- [rbxts-tailwind](/rbxts-tailwind/reference/rbxts-tailwind/)
+- [Compiler](/rbxts-tailwind/reference/compiler/)

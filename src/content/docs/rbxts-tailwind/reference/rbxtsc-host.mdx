@@ -1,0 +1,55 @@
+---
+title: rbxtsc-host
+description: Host adapter and TypeScript transformer bridge for rbxts-tailwind.
+draft: false
+sidebar:
+  order: 7
+---
+
+## What It Is For
+
+- Use `@rbxts-tailwind/rbxtsc-host` when you need the adapter layer that sits between the compiler and `rbxtsc`.
+- Treat it as the package that resolves project config, filters eligible files, and exposes the TypeScript transformer bridge.
+
+## Public Exports
+
+- `createRbxtscTransformerBridge`
+- `createHostDiagnostic`
+- `mapCompilerDiagnosticsToHostDiagnostics`
+- `mapCompilerDiagnosticToHostDiagnostic`
+- `getHostFileEligibility`
+- `isTransformableHostFile`
+- `transformSourceForHost`
+- `createRbxtsTailwindProgramTransformer`
+- `RbxtscTransformerBridgeOptions`
+- `TransformSourceForHostOptions`
+
+## State Model
+
+- The host adapter is mostly orchestration.
+- It resolves project config, filters source files, and delegates transformation work to the compiler.
+- Diagnostic mapping happens on the host side so `rbxtsc` sees TypeScript-friendly errors.
+
+## Key API
+
+- `transformSourceForHost()` is the direct host-facing entrypoint.
+- `createRbxtscTransformerBridge()` exposes the lower-level bridge object used by host integrations.
+- `createRbxtsTailwindProgramTransformer()` returns the TypeScript program transformer factory used by `rbxtsc`.
+- `getHostFileEligibility()` and `isTransformableHostFile()` explain why a file will or will not be transformed.
+
+## Composition Patterns
+
+- Use `transformSourceForHost()` in tools that already have a source file and want host-compatible diagnostics.
+- Use the bridge factory when you need to plug into a custom program transformer lifecycle.
+- Use the program transformer when you want the standard `rbxtsc` plugin shape with as little glue as possible.
+
+## Cautions / Limits
+
+- This package expects `rbxtsc` or a TypeScript program environment to provide the `typescript` module when building a transformer.
+- Files outside the supported eligibility rules are skipped instead of being forced through the compiler.
+- If project config resolution fails, the host layer returns diagnostics instead of hiding the error.
+
+## Related
+
+- [Compiler](/rbxts-tailwind/reference/compiler/)
+- [rbxts-tailwind/transformer](/rbxts-tailwind/reference/transformer/)

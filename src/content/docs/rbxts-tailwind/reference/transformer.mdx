@@ -1,0 +1,43 @@
+---
+title: Transformer
+description: Program transformer entrypoint for tsconfig plugin wiring.
+draft: false
+sidebar:
+  order: 2
+---
+
+## What It Is For
+
+- Use `rbxts-tailwind/transformer` in `tsconfig.json` plugin entries.
+- Treat it as the package subpath that TypeScript or `rbxtsc` loads when it needs a program transformer.
+
+## Public Exports
+
+- `default`
+- `createTransformer`
+
+## State Model
+
+- The transformer factory is stateless at the package boundary.
+- Callers provide the TypeScript program and any bridge options at runtime.
+- The entrypoint forwards to `@rbxts-tailwind/rbxtsc-host` rather than reimplementing host behavior.
+
+## Key API
+
+- `default` exports the program transformer factory.
+- `createTransformer` is the named alias for the same factory.
+
+## Composition Patterns
+
+- Register it in `compilerOptions.plugins` with `"type": "program"`.
+- Keep the plugin path stable and let `rbxtw.config.ts` own the config object.
+
+## Cautions / Limits
+
+- This subpath is not the same thing as the direct compiler API.
+- It expects a program transformer environment, not a plain source-to-source call.
+
+## Related
+
+- [rbxts-tailwind](/rbxts-tailwind/reference/rbxts-tailwind/)
+- [rbxtsc-host](/rbxts-tailwind/reference/rbxtsc-host/)

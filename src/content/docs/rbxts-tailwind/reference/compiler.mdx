@@ -1,0 +1,48 @@
+---
+title: Compiler
+description: Direct source-to-source transform API for rbxts-tailwind.
+draft: false
+sidebar:
+  order: 6
+---
+
+## What It Is For
+
+- Use `@rbxts-tailwind/compiler` when you want the direct transform API instead of the host adapter.
+- Treat it as the core lowering step from TSX source to transformed output.
+
+## Public Exports
+
+- `implementationKind`
+- `transform`
+- `Diagnostic`
+- `TransformOptions`
+- `TransformResult`
+
+## State Model
+
+- `transform()` is a pure source transform with optional config input.
+- `implementationKind` tells you whether the build is running the native or wasm implementation.
+- The compiler does not discover project config on its own; callers pass config JSON explicitly.
+
+## Key API
+
+- `transform(source, options)` lowers className-aware TSX and returns transformed code plus diagnostics.
+- `TransformOptions.configJson` accepts a JSON string produced from a `TailwindConfig`.
+- `implementationKind` is useful in harnesses and tests that care about the active backend.
+
+## Composition Patterns
+
+- Use `transform()` in harnesses, isolated tests, or tools that already have a resolved config object.
+- Serialize config with `JSON.stringify()` before passing it into the compiler API.
+
+## Cautions / Limits
+
+- The current slice only supports string-literal `className` values.
+- Unsupported utilities and missing theme keys produce diagnostics instead of silent fallback.
+- The compiler is not responsible for project config discovery; that belongs to `rbxtsc-host`.
+
+## Related
+
+- [Config](/rbxts-tailwind/reference/config/)
+- [rbxtsc-host](/rbxts-tailwind/reference/rbxtsc-host/)
