@@ -17,7 +17,7 @@ const tabId = Math.random().toString(36).substring(2, 9);
   id={`demo-${tabId}`}
   data-preview-size="comfortable"
 >
-  <Tabs client:load defaultValue="preview" className="relative mr-auto w-full gap-0">
+  <Tabs client:only="react" defaultValue="preview" className="relative mr-auto w-full gap-0">
     <div class="flex items-center justify-between pb-3">
       <TabsList
         variant="line"
