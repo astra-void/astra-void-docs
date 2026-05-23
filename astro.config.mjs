@@ -170,8 +170,13 @@ export default defineConfig({
 		},
 		plugins: [...previewPlugins, ...scopedPreviewPlugins, tailwindcss()],
 		resolve: {
+			tsconfigPaths: false,
 			alias: [
 				...latticePackageAliases,
+				{
+					find: /^@\//,
+					replacement: `${fileURLToPath(new URL("./src", import.meta.url)).replaceAll("\\", "/")}/`,
+				},
 				{
 					find: previewRobloxEnvEntry,
 					replacement: unresolvedEnvShimPath,
@@ -179,7 +184,7 @@ export default defineConfig({
 				{
 					find: "@loom-dev/preview-runtime",
 					replacement: previewRuntimeSourceEntry,
-				},
+				}
 			],
 		},
 		server: {

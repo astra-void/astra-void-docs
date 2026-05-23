@@ -1,3 +1,10 @@
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  msw: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@rbxts/types@1.0.923'
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
