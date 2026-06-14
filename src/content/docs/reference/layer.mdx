@@ -1,0 +1,207 @@
+---
+title: Layer
+description: Portals into ScreenGuis, dismissable outside-press layers, and presence mounting for overlays and anchored surfaces in Roblox.
+section: reference
+sidebar:
+  order: 30
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/layer"
+  status="stable-direction"
+  dependencies={["@lattice-ui/core", "@lattice-ui/focus"]}
+/>
+
+Layer provides the three behaviors every overlay surface needs in Roblox: rendering **outside the local tree** into a `ScreenGui`, **dismissing on outside interaction** while optionally blocking input behind the surface, and **staying mounted through an exit animation**. Dialog, Popover, Menu, Select, Tooltip, and Toast are all built on these primitives.
+
+It composes with the other foundations directly — `DismissableLayer` renders through `Portal` and wraps its children in a `FocusLayerProvider` from the Focus package, so stacked layers trap and order correctly.
+
+## Import
+
+```ts
+import {
+  Portal,
+  PortalProvider,
+  usePortalContext,
+  DismissableLayer,
+  Presence,
+} from "@lattice-ui/layer";
+```
+
+## API reference
+
+### PortalProvider
+
+```tsx
+function PortalProvider(props: {
+  container: BasePlayerGui;
+  displayOrderBase?: number;
+  children?: React.ReactNode;
+}): React.Element;
+```
+
+```tsx title="Setting the portal target near the app root"
+<PortalProvider container={playerGui}>
+  <App />
+</PortalProvider>
+```
+
+Establishes the portal context for everything below it: the `BasePlayerGui` that portalled surfaces render into, and the base `DisplayOrder` used to stack layers. `displayOrderBase` defaults to `1000`. Mount this once near your app root so every overlay resolves a consistent target and stacking baseline. It is a strict context provider — components that read the context throw if no provider is above them.
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "The PlayerGui (or comparable BasePlayerGui) that portalled surfaces render into.", required: true },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for generated ScreenGuis. Layers stack above it by mount order. Defaults to 1000." },
+    { name: "children", type: "React.ReactNode", description: "The subtree that can portal into this container." },
+  ]}
+/>
+
+### usePortalContext
+
+```ts
+function usePortalContext(): {
+  container: BasePlayerGui;
+  displayOrderBase: number;
+};
+```
+
+Reads the current portal context — the resolved `container` and `displayOrderBase`. Throws if called outside a `PortalProvider`. `Portal` and `DismissableLayer` both use it to find their render target and stacking base.
+
+### Portal
+
+```tsx
+function Portal(props: {
+  children?: React.ReactNode;
+  container?: Instance;
+}): React.Element;
+```
+
+```tsx title="Rendering content into the PlayerGui"
+<Portal>
+  <screengui>
+    <frame Size={UDim2.fromScale(1, 1)} />
+  </screengui>
+</Portal>
+```
+
+Renders its children into a different part of the Roblox instance tree using `ReactRoblox.createPortal`, while keeping them in the React tree (context and state still flow through). By default it targets the `container` from the nearest `PortalProvider`; pass an explicit `container` to override the target for a single portal. Render your own `screengui` inside if you need a `LayerCollector` — `Portal` itself only relocates the subtree.
+
+<PropTable
+  rows={[
+    { name: "children", type: "React.ReactNode", description: "Content to render at the target instead of in place." },
+    { name: "container", type: "Instance", description: "Override the render target. Defaults to the PortalProvider container." },
+  ]}
+/>
+
+### DismissableLayer
+
+```tsx
+function DismissableLayer(props: {
+  children?: React.ReactNode;
+  enabled?: boolean;
+  contentBoundaryRef?: React.MutableRefObject<GuiObject | undefined>;
+  insideRefs?: Array<React.MutableRefObject<GuiObject | undefined>>;
+  modal?: boolean;
+  disableOutsidePointerEvents?: boolean;
+  onPointerDownOutside?: (event: LayerInteractEvent) => void;
+  onInteractOutside?: (event: LayerInteractEvent) => void;
+  onDismiss?: () => void;
+}): React.Element;
+```
+
+```tsx title="A dismissable surface"
+const contentRef = React.useRef<Frame>();
+
+<DismissableLayer
+  modal
+  contentBoundaryRef={contentRef}
+  onDismiss={() => setOpen(false)}
+>
+  <frame ref={contentRef} Size={UDim2.fromOffset(280, 160)} />
+</DismissableLayer>;
+```
+
+The core overlay primitive. It portals a `ScreenGui` whose `DisplayOrder` is the provider base plus this layer's mount order, registers itself on the shared layer stack, and watches for pointer interactions outside its content boundary. A press outside the boundary fires `onPointerDownOutside`, any other outside interaction fires `onInteractOutside`, and unless an event is vetoed with `preventDefault`, `onDismiss` is called.
+
+The content boundary defaults to the layer's internal content wrapper; pass `contentBoundaryRef` to treat a specific `GuiObject` as the "inside" region, and `insideRefs` to mark additional instances (such as a separate trigger) as inside so pressing them does not dismiss. When `modal` or `disableOutsidePointerEvents` is set, the layer renders a full-screen modal blocker behind the content so input cannot reach anything underneath.
+
+<PropTable
+  rows={[
+    { name: "children", type: "React.ReactNode", description: "The layer contents, rendered inside the portalled ScreenGui." },
+    { name: "enabled", type: "boolean", description: "Whether the layer participates in dismissal and input blocking. Defaults to true." },
+    { name: "contentBoundaryRef", type: "React.MutableRefObject<GuiObject | undefined>", description: "GuiObject treated as the inside boundary. Defaults to the internal content wrapper." },
+    { name: "insideRefs", type: "Array<React.MutableRefObject<GuiObject | undefined>>", description: "Extra instances treated as inside, so interacting with them does not dismiss." },
+    { name: "modal", type: "boolean", description: "Blocks input behind the surface and enables outside-press dismissal." },
+    { name: "disableOutsidePointerEvents", type: "boolean", description: "Blocks pointer input behind the surface without implying full modality." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called on a pointer press outside the boundary, before dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called on any other outside interaction, before dismissal." },
+    { name: "onDismiss", type: "() => void", description: "Called to request dismissal when an outside interaction is not vetoed." },
+  ]}
+/>
+
+### LayerInteractEvent
+
+```ts
+type LayerInteractEvent = {
+  originalEvent: InputObject;
+  defaultPrevented: boolean;
+  preventDefault: () => void;
+};
+```
+
+The event handed to `onPointerDownOutside` and `onInteractOutside`. `originalEvent` is the Roblox `InputObject` that triggered the interaction. Call `preventDefault()` to keep the layer from dismissing for that interaction; `defaultPrevented` reflects whether it has been vetoed.
+
+### Presence
+
+```tsx
+function Presence(props: {
+  present: boolean;
+  exitFallbackMs?: number;
+  onExitComplete?: () => void;
+  children?: PresenceRender;
+  render?: PresenceRender;
+}): React.Element | undefined;
+
+type PresenceRender = (state: {
+  isPresent: boolean;
+  onExitComplete: () => void;
+}) => React.ReactElement | undefined;
+```
+
+```tsx title="Keeping content mounted through its exit"
+<Presence present={open}>
+  {({ isPresent, onExitComplete }) => (
+    <AnimatedSurface visible={isPresent} onHidden={onExitComplete} />
+  )}
+</Presence>
+```
+
+A mount controller for exit animations. `Presence` keeps its content mounted after `present` flips to `false` so an exit animation can play, then unmounts once the animation signals completion. It calls its render function (passed as `children` or `render`) with `isPresent` — drive your animation off this — and an `onExitComplete` callback to call when the exit finishes. As a safety net, if `onExitComplete` is never called, the content is force-unmounted after `exitFallbackMs` (default `140`). `onExitComplete` on the props fires whenever the exit completes through either path.
+
+<PropTable
+  rows={[
+    { name: "present", type: "boolean", description: "Whether the content should be present. Flipping to false starts the exit.", required: true },
+    { name: "exitFallbackMs", type: "number", description: "Fallback timeout that force-unmounts if exit is never reported. Defaults to 140." },
+    { name: "onExitComplete", type: "() => void", description: "Called once the exit completes, via report or fallback." },
+    { name: "children", type: "PresenceRender", description: "Render function receiving { isPresent, onExitComplete }." },
+    { name: "render", type: "PresenceRender", description: "Alternative to children; same signature. Used when children is not provided." },
+  ]}
+/>
+
+<Callout title="Layers render into their own ScreenGuis">
+`DismissableLayer` portals into a generated `ScreenGui` parented to the provider's `BasePlayerGui`, not into your component tree. Its `DisplayOrder` is `displayOrderBase + mountOrder`, so later layers naturally stack on top. Set `displayOrderBase` on `PortalProvider` to order Lattice surfaces relative to your own `ScreenGui`s.
+</Callout>
+
+<Callout title="The modal blocker uses an invisible Modal textbutton">
+When `modal` or `disableOutsidePointerEvents` is set, the blocker is a full-screen transparent `textbutton` with `Modal = true` behind the content. This is what prevents clicks and gameplay input from reaching instances underneath the surface.
+</Callout>
+
+## Related
+
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [Positioning with Popper](/lattice-ui/guides/positioning-with-popper/)
+- [Dialog](/lattice-ui/components/dialog/)
+- [Popover](/lattice-ui/components/popover/)

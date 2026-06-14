@@ -1,0 +1,337 @@
+---
+title: Motion
+description: Intent-based motion for Roblox UI — presence, response, and feedback hooks, ready-made recipes, target contracts, and a global motion policy.
+section: reference
+sidebar:
+  order: 40
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/motion"
+  status="stable-direction"
+  dependencies={["@lattice-ui/core", "@rbxts/services"]}
+/>
+
+Motion is the animation foundation for Lattice UI. Rather than asking you to hand-write tweens, it works in terms of **intent** (a tempo and tone) and **target contracts** (which properties motion is allowed to own on a given instance). Three hooks cover the three motion domains — **presence** for mount/unmount transitions, **response** for state-to-state settling, and **feedback** for momentary accents — and a library of recipes encodes the project's house style for common surfaces.
+
+Dialog, Popover, Menu, Tooltip, Toast, Slider, Switch, and others animate through these hooks and recipes. The whole system also respects a global policy, so motion can be reduced or disabled app-wide.
+
+## Import
+
+```ts
+import {
+  MotionProvider,
+  useMotionPolicy,
+  usePresenceMotion,
+  usePresenceMotionController,
+  useResponseMotion,
+  useFeedbackEffect,
+  motionTargets,
+  createCanvasGroupRevealRecipe,
+} from "@lattice-ui/motion";
+```
+
+## API reference
+
+### MotionProvider
+
+```tsx
+function MotionProvider(props: {
+  mode?: "full" | "none";
+  disableAllMotion?: boolean;
+  children: React.ReactNode;
+}): React.Element;
+```
+
+```tsx title="Disabling motion app-wide"
+<MotionProvider disableAllMotion={reducedMotionSetting}>
+  <App />
+</MotionProvider>
+```
+
+Sets the ambient motion policy for the subtree. With `mode="full"` (the default) animations run normally; with `mode="none"`, or `disableAllMotion` set, every hook snaps directly to its goal values instead of animating. Setting `disableAllMotion` forces `mode` to `"none"`. Wrap this near your app root and bind it to a player's reduced-motion preference.
+
+### useMotionPolicy
+
+```ts
+function useMotionPolicy(): { mode: "full" | "none"; disableAllMotion: boolean };
+```
+
+Reads the current motion policy. Defaults to `{ mode: "full", disableAllMotion: false }` when no provider is present. The motion hooks read this internally; call it directly only if your own component needs to branch on whether motion is enabled.
+
+### usePresenceMotion
+
+```ts
+function usePresenceMotion<T extends Instance>(
+  present: boolean,
+  config: PresenceMotionConfig,
+  onExitComplete?: () => void,
+): React.MutableRefObject<T | undefined>;
+```
+
+```tsx title="Animating a surface in and out"
+const ref = usePresenceMotion<Frame>(open, createCanvasGroupRevealRecipe(), () => unmount());
+
+return <frame ref={ref} Size={UDim2.fromOffset(320, 180)} />;
+```
+
+The simplest presence entry point. Attach the returned ref to the instance you want to animate, flip `present` to drive reveal and exit, and pass `onExitComplete` to run when the exit finishes. It is a thin wrapper over `usePresenceMotionController` with `forceMount` set, so the instance stays mounted while you handle unmounting yourself (for example, inside a `Presence` from the Layer package).
+
+### usePresenceMotionController
+
+```ts
+function usePresenceMotionController<T extends Instance>(
+  options: PresenceMotionControllerOptions,
+): PresenceMotionController<T>;
+
+interface PresenceMotionControllerOptions {
+  present: boolean;
+  config: PresenceMotionConfig;
+  ready?: boolean;
+  forceMount?: boolean;
+  onExitComplete?: () => void;
+}
+
+interface PresenceMotionController<T extends Instance> {
+  ref: React.MutableRefObject<T | undefined>;
+  phase: PresenceMotionPhase;
+  mounted: boolean;
+  ready: boolean;
+  present: boolean;
+  isExiting: boolean;
+  isVisible: boolean;
+  markReady: () => void;
+}
+```
+
+The full presence controller. It exposes the lifecycle so you can gate the reveal on layout being measured (`ready` / `markReady` — useful for anchored surfaces that must position before appearing), keep an instance mounted across its exit (`forceMount`), and read fine-grained state (`phase`, `isExiting`, `isVisible`, `mounted`). When the policy disables motion, the reveal and exit snapshots are applied instantly. `phase` advances through `exited`, `mounted`, `preparing`, `ready`, `visible`, and `exiting`.
+
+<PropTable
+  rows={[
+    { name: "present", type: "boolean", description: "Whether the content should be shown. Drives reveal and exit.", required: true },
+    { name: "config", type: "PresenceMotionConfig", description: "The reveal/exit recipe describing initial, reveal, and exit steps.", required: true },
+    { name: "ready", type: "boolean", description: "Gates the reveal. While false the controller holds in the preparing phase." },
+    { name: "forceMount", type: "boolean", description: "Keeps the instance mounted regardless of phase, so you control unmounting." },
+    { name: "onExitComplete", type: "() => void", description: "Called once the exit animation completes." },
+  ]}
+/>
+
+### useResponseMotion
+
+```ts
+function useResponseMotion<T extends Instance>(
+  active: boolean,
+  properties: MotionStateTargets,
+  config?: ResponseMotionConfig,
+): React.MutableRefObject<T | undefined>;
+```
+
+```tsx title="Settling between two states"
+const ref = useResponseMotion<Frame>(checked, {
+  active: { Position: UDim2.fromScale(1, 0) },
+  inactive: { Position: UDim2.fromScale(0, 0) },
+});
+```
+
+Animates an instance between two property sets as `active` toggles, settling toward `properties.active` or `properties.inactive`. The first mount applies the current state instantly with no animation; subsequent toggles settle using `config.settle` intent (or snap when motion is disabled). This is the hook behind toggles, sliders, selection indicators, and progress fills.
+
+### useFeedbackEffect
+
+```ts
+function useFeedbackEffect<T extends Instance>(
+  active: boolean,
+  properties: MotionStateTargets,
+  config?: FeedbackEffectConfig,
+): React.MutableRefObject<T | undefined>;
+```
+
+```tsx title="A press accent"
+const ref = useFeedbackEffect<TextButton>(pressed, {
+  active: { BackgroundTransparency: 0.1 },
+  inactive: { BackgroundTransparency: 0.2 },
+}, createPressFeedbackEffect());
+```
+
+Applies a momentary accent/recover effect as `active` toggles — the accent intent on the way in, the recover intent on the way out. Use it for press, hover, and focus emphasis where the motion is a brief reaction rather than a persistent state change.
+
+### MotionStateTargets
+
+```ts
+type MotionStateTargets = {
+  active: MotionProperties;
+  inactive: MotionProperties;
+};
+
+type MotionProperties = Record<string, unknown>;
+```
+
+The two-state property bag consumed by `useResponseMotion` and `useFeedbackEffect`: the values to apply when `active` is true and when it is false.
+
+### Target contracts
+
+Motion will only write properties an instance has explicitly delegated to it. A `MotionTargetContract` declares that ownership boundary by `role`, with optional allow/deny lists.
+
+```ts
+type MotionTargetRole =
+  | "appearance"
+  | "offset-wrapper"
+  | "size-wrapper"
+  | "layout"
+  | "custom";
+
+type MotionTargetContract = {
+  role: MotionTargetRole;
+  label?: string;
+  allowProperties?: Array<string>;
+  denyProperties?: Array<string>;
+};
+
+function createMotionTargetContract(
+  role: MotionTargetRole,
+  options?: { label?: string; allowProperties?: Array<string>; denyProperties?: Array<string> },
+): MotionTargetContract;
+
+const motionTargets: {
+  appearance: (label?: string) => MotionTargetContract;
+  offsetWrapper: (label?: string) => MotionTargetContract;
+  sizeWrapper: (label?: string) => MotionTargetContract;
+  layout: (label?: string) => MotionTargetContract;
+  custom: (options: { label?: string; allowProperties?: Array<string>; denyProperties?: Array<string> }) => MotionTargetContract;
+};
+```
+
+Each role permits a different set of properties (appearance properties — colors and transparencies, plus `Rotation` — are always allowed):
+
+<PropTable
+  rows={[
+    { name: "appearance", type: "role", description: "Only direct visual properties (colors, transparencies, Rotation). The default role." },
+    { name: "offset-wrapper", type: "role", description: "An isolated wrapper whose Position is motion-owned. Adds Position." },
+    { name: "size-wrapper", type: "role", description: "An isolated wrapper whose Size is motion-owned. Adds Size." },
+    { name: "layout", type: "role", description: "The component has delegated layout. Adds AnchorPoint, Position, and Size." },
+    { name: "custom", type: "role", description: "Nothing is owned by default; only properties listed in allowProperties." },
+  ]}
+/>
+
+Use `motionTargets.*` for the common cases and `createMotionTargetContract` (or `motionTargets.custom`) when you need explicit allow/deny lists. Reserved properties such as `AbsolutePosition`, `AutomaticSize`, `LayoutOrder`, `Parent`, `Visible`, and `ZIndex` are never writable by motion.
+
+### Intent and config types
+
+```ts
+type MotionTempo = "instant" | "swift" | "steady" | "gentle";
+type MotionTone = "calm" | "responsive" | "expressive";
+type MotionIntent = { tempo?: MotionTempo; tone?: MotionTone; duration?: number };
+
+type MotionStep = { values: MotionProperties; intent?: MotionIntent; target?: MotionTargetContract };
+
+interface PresenceMotionConfig {
+  target?: MotionTargetContract;
+  initial?: MotionProperties;
+  reveal?: MotionStep;
+  exit?: MotionStep;
+}
+
+interface ResponseMotionConfig {
+  target?: MotionTargetContract;
+  settle?: MotionIntent;
+}
+
+interface FeedbackEffectConfig {
+  target?: MotionTargetContract;
+  accent?: MotionIntent;
+  recover?: MotionIntent;
+}
+```
+
+`MotionIntent` is how you express *how* something should move — a `tempo`, a `tone`, and/or an explicit `duration` — rather than raw easing curves. The three config interfaces shape each domain: presence has `initial`/`reveal`/`exit` steps, response has a single `settle` intent, and feedback has `accent`/`recover` intents.
+
+Other exported types include `MotionDomain` (`"presence" | "response" | "feedback"`), `PresenceMotionPhase`, `MotionTargetContractOptions`, and `MotionPolicy`.
+
+### Presence recipes
+
+Ready-made `PresenceMotionConfig` builders encoding the house style. Each takes optional tuning parameters and returns a config you pass straight to a presence hook.
+
+```ts
+function createSurfaceRevealRecipe(offsetY?: number, duration?: number): PresenceMotionConfig;
+function createCanvasGroupRevealRecipe(offsetY?: number, duration?: number): PresenceMotionConfig;
+function createOverlayFadeRecipe(duration?: number): PresenceMotionConfig;
+function createPopperEntranceRecipe(placement?: MotionPlacement, distance?: number, duration?: number): PresenceMotionConfig;
+function createCanvasGroupPopperEntranceRecipe(placement?: MotionPlacement, distance?: number, duration?: number): PresenceMotionConfig;
+function createIndicatorRevealRecipe(size: UDim2, duration?: number): PresenceMotionConfig;
+```
+
+- **`createSurfaceRevealRecipe`** — a small upward slide plus background fade for opaque surfaces.
+- **`createCanvasGroupRevealRecipe`** — the same slide using `GroupTransparency`, for content wrapped in a `CanvasGroup`.
+- **`createOverlayFadeRecipe`** — a plain backdrop fade (to half transparency on reveal).
+- **`createPopperEntranceRecipe`** / **`createCanvasGroupPopperEntranceRecipe`** — directional entrances offset by `placement` for anchored popovers, the second variant for `CanvasGroup` content.
+- **`createIndicatorRevealRecipe`** — grows an indicator from zero to `size` with a fade, for selection/check indicators.
+
+### Response recipes
+
+`ResponseMotionConfig` builders for state-to-state settling:
+
+```ts
+function createIndicatorSettleRecipe(duration?: number): ResponseMotionConfig;
+function createSliderThumbResponseRecipe(isDragging: boolean, duration?: number): ResponseMotionConfig;
+function createToggleResponseRecipe(duration?: number): ResponseMotionConfig;
+function createSelectionResponseRecipe(duration?: number): ResponseMotionConfig;
+function createFieldResponseRecipe(duration?: number): ResponseMotionConfig;
+function createProgressResponseRecipe(duration?: number): ResponseMotionConfig;
+function createToastResponseRecipe(duration?: number): ResponseMotionConfig;
+```
+
+`createSliderThumbResponseRecipe` takes the current `isDragging` state and tightens to an instant tempo while dragging; the rest map their named surface to a tuned settle intent.
+
+### Feedback recipes
+
+`FeedbackEffectConfig` builders for momentary accents:
+
+```ts
+function createPressFeedbackEffect(duration?: number): FeedbackEffectConfig;
+function createFocusAccentEffect(duration?: number): FeedbackEffectConfig;
+```
+
+`createPressFeedbackEffect` gives an expressive accent on press and a calm recover; `createFocusAccentEffect` does the same for focus emphasis, with a slightly longer accent.
+
+### Target utilities
+
+Lower-level helpers operating on motion property values and instances, used by the runtime. They respect target contracts via an optional `MotionPropertyContext` (`{ domain, phase?, instance?, target? }`).
+
+```ts
+function validateMotionProperty(instance: Instance, key: string, context?: MotionPropertyContext): boolean;
+function readMotionProperty(instance: Instance, key: string, context?: MotionPropertyContext): unknown;
+function writeMotionProperty(instance: Instance, key: string, value: unknown, context?: MotionPropertyContext): boolean;
+function applyMotionProperties(instance: Instance, values?: MotionProperties, context?: MotionPropertyContext): void;
+function areMotionValuesEqual(a: unknown, b: unknown, precision?: number): boolean;
+function canInterpolateMotionValue(from: unknown, to: unknown): boolean;
+function interpolateMotionValue(from: unknown, to: unknown, alpha: number, context?: MotionPropertyContext & { propertyKey?: string }): unknown;
+function isMotionValueSettled(current: unknown, target: unknown, precision?: number): boolean;
+```
+
+These validate that a property is motion-owned before reading or writing it, and interpolate the supported Roblox value kinds: `number`, `UDim`, `UDim2`, `Vector2`, `Vector3`, `Color3`, and `CFrame`. Reach for them when implementing a custom motion host; most components never call them directly.
+
+### Placement offsets
+
+```ts
+type MotionPlacement = "top" | "bottom" | "left" | "right";
+
+function createPlacementOffset(placement: MotionPlacement | undefined, distance: number): UDim2;
+```
+
+Builds the directional `UDim2` offset a surface animates from, given a placement and pixel distance (defaulting to `"bottom"`). The popper entrance recipes use it to slide content in from the correct side relative to its anchor.
+
+<Callout title="Motion can only touch delegated properties">
+Every write goes through a target contract. If a recipe or hook tries to animate a property the contract does not own — say, animating `Position` under an `appearance` role — the write is rejected and a diagnostic is reported. Move geometry into an isolated offset/size wrapper, or use a `layout` target, when motion needs to own position or size.
+</Callout>
+
+<Callout title="Disabled motion snaps instead of animating">
+Under `MotionProvider` with `disableAllMotion` (or `mode="none"`), the hooks apply their target snapshots immediately and still fire completion callbacks. Lifecycle behavior — mounting, exit completion, response settling — stays identical; only the in-between animation is skipped.
+</Callout>
+
+## Related
+
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)
+- [Dialog](/lattice-ui/components/dialog/)

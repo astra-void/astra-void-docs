@@ -1,0 +1,136 @@
+---
+title: Roblox UI constraints
+description: The Roblox-specific realities — GuiObject selection, BasePlayerGui portals, ScreenGui ordering and inset, default selection limits — that shape every lattice-ui primitive.
+section: guides
+sidebar:
+  order: 70
+draft: false
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+If you come from the web, most UI-library instincts transfer to Roblox — but a handful do not, and those are exactly the ones that make overlays, menus, and modals tricky. There is no DOM, no document-level z-index, no tab order, and no event that says "the user clicked outside this element." Instead there is a single selected `GuiObject`, a `PlayerGui` you portal into, `ScreenGui` layers ordered by a number, and a default gamepad selection engine that was never designed for layered surfaces.
+
+lattice-ui exists largely to paper over these constraints so you do not re-solve them per screen. This guide collects the Roblox realities the primitives are built around, so that when you compose or extend them, the behavior makes sense.
+
+## Selection is a single GuiObject
+
+Gamepad and keyboard navigation on Roblox is **selection**: `GuiService.SelectedObject` holds at most one `GuiObject`. There is no focus tree and no built-in "previously focused" concept. A `GuiObject` is only selectable when its `Selectable` property is `true`, it is `Visible`, and its whole ancestor chain is visible and (for the `LayerCollector`) enabled.
+
+This is why lattice-ui ships `@lattice-ui/focus`: a single mutable property cannot, on its own, express "trap selection inside this dialog" or "restore selection to the trigger that opened it." The focus manager keeps a model of scopes and nodes, decides what *should* be selected, and writes it to `GuiService.SelectedObject` — reading it back when the player moves selection so the two stay in agreement.
+
+```tsx title="Keep Selectable in lockstep with disabled state"
+<textbutton
+  Active={!disabled}
+  Selectable={!disabled} // the only thing Roblox actually enforces
+  AutoButtonColor={false}
+  Text={label}
+/>
+```
+
+<Callout title="Disabled means not Selectable">
+Setting only `Active={false}` still leaves the button selectable by gamepad. Whenever something is disabled, set `Selectable={false}` too — the focus manager's `getDisabled` mirrors intent in the model, but Roblox's selection engine obeys `Selectable`. If they disagree, the player can land on a control your logic treats as off.
+</Callout>
+
+## Portals target BasePlayerGui
+
+A surface that must visually escape its parent — a dialog, a popover anchored to a deeply nested button — cannot just render in place; a parent's clipping or `ZIndex` would trap it. On Roblox the destination for top-level UI is the player's `BasePlayerGui` (the `PlayerGui`), and `@lattice-ui/layer`'s `Portal` renders there via `ReactRoblox.createPortal`.
+
+You set the container once at the root with `PortalProvider`, and every `Portal` (and every primitive that portals, like `Dialog.Portal`) inherits it:
+
+```tsx title="UIRoot.tsx"
+import { Players } from "@rbxts/services";
+import { PortalProvider } from "@lattice-ui/layer";
+
+export function UIRoot(props: { children: React.ReactNode }) {
+  const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui") as PlayerGui;
+
+  return (
+    <PortalProvider container={playerGui} displayOrderBase={1000}>
+      {props.children}
+    </PortalProvider>
+  );
+}
+```
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Where portalled surfaces mount. Usually the LocalPlayer's PlayerGui." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for layered ScreenGuis. Defaults to 1000." },
+    { name: "children", type: "React.ReactNode", description: "Your app tree." },
+  ]}
+/>
+
+<Callout title="PlayerGui is not there on the first frame">
+`StarterGui` is copied into `PlayerGui` after the player loads, so reading it too early yields `nil`. Use `WaitForChild("PlayerGui")` (or resolve it from a player-ready signal) before handing it to `PortalProvider`. The provider uses a strict context — primitives that portal will error if no provider is mounted above them.
+</Callout>
+
+## ScreenGui ordering and inset
+
+Two `ScreenGui` properties decide how a layered surface sits on screen.
+
+**`DisplayOrder`** is Roblox's only cross-`ScreenGui` stacking control — higher numbers render on top. Within a single `ScreenGui`, `ZIndex` orders children, but across separate `ScreenGui`s only `DisplayOrder` matters. lattice-ui derives layer order from a base (`displayOrderBase`, default `1000`) so dialogs, popovers, and toasts stack in a predictable, app-controlled band rather than colliding with your game HUD.
+
+**`IgnoreGuiInset`** controls whether the surface starts below the top-bar inset or covers the full viewport. Full-screen overlays and backdrops want to ignore the inset so they truly cover everything; lattice-ui's layer defaults reflect this (`DEFAULT_LAYER_IGNORE_GUI_INSET` is `true`).
+
+```tsx title="A full-screen backdrop covers the inset"
+// Backdrops should fill the whole viewport, top-bar included.
+<screengui IgnoreGuiInset={true} DisplayOrder={1000}>
+  <frame
+    BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+    BackgroundTransparency={0.5}
+    Size={UDim2.fromScale(1, 1)}
+  />
+</screengui>
+```
+
+<Callout title="Order layers above your HUD, not against it">
+Pick a `displayOrderBase` that sits above your game's own HUD `ScreenGui`s. If your HUD uses `DisplayOrder` in the hundreds, the default base of `1000` keeps lattice-ui surfaces on top. Mixing `ZIndex` and `DisplayOrder` to fight stacking is a sign two surfaces should be in different `ScreenGui`s with explicit `DisplayOrder`s instead.
+</Callout>
+
+## Default selection is not enough
+
+Roblox's built-in gamepad selection picks the "nearest" selectable object by on-screen geometry. That is fine for a static menu, but it breaks down for the interactions lattice-ui composes:
+
+- It does not understand **modality** — nothing stops the cursor from selecting a button *behind* an open dialog.
+- It has no concept of **restore** — close a menu and selection does not return to the item that opened it.
+- It cannot express **ordered, wrapping movement** that skips disabled or hidden items in a known sequence.
+- It has no **layer awareness** for nested overlays (a popover inside a dialog).
+
+lattice-ui replaces this with explicit models: focus scopes (trap and restore), focus nodes (what may be selected), and ordered-selection helpers (deterministic next/previous). When you build a custom composite, lean on those rather than the default engine.
+
+```tsx title="Move selection deterministically instead of by geometry"
+import {
+  getCurrentOrderedSelectionEntry,
+  getRelativeOrderedSelectionEntry,
+  focusOrderedSelectionEntry,
+} from "@lattice-ui/focus";
+
+function focusNext(entries: Array<OrderedSelectionEntry>) {
+  const current = getCurrentOrderedSelectionEntry(entries);
+  const next = getRelativeOrderedSelectionEntry(entries, current?.id, 1);
+  focusOrderedSelectionEntry(next); // skips disabled/hidden, clamps at the end
+}
+```
+
+## Stable GuiObject refs
+
+The focus model, motion hosts, and dismissable layers all key off the actual `GuiObject` instance behind a ref. If that instance is swapped between renders — a different branch of a ternary, a remounted subtree — the manager sees the old node disappear and the new one as unrelated, which drops trap targets and restore snapshots.
+
+Keep the host instance stable across renders: toggle `Visible`, `Selectable`, or color instead of conditionally rendering a *different* element for triggers, anchors, and content roots. Reserve mount/unmount for genuine presence changes — and when you do unmount an animating surface, let [presence motion](/lattice-ui/guides/presence-and-motion/) hold it until the exit completes.
+
+<Callout title="One instance per role">
+A trigger, an anchor, and a content boundary should each be a single, stable `GuiObject` for its lifetime. Re-creating it every render is the most common cause of "selection jumps to the wrong place" and "the dialog won't restore focus" bugs.
+</Callout>
+
+## Related
+
+- [Dialog](/lattice-ui/components/dialog/)
+- [Menu](/lattice-ui/components/menu/)
+- [Popover](/lattice-ui/components/popover/)
+- [Tooltip](/lattice-ui/components/tooltip/)
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Layer reference](/lattice-ui/reference/layer/)
+- [Focus reference](/lattice-ui/reference/focus/)

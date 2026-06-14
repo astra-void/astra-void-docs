@@ -1,0 +1,115 @@
+---
+title: asChild composition
+description: Merge primitive behavior onto your own host element with asChild and the Slot component, instead of accepting the primitive's default wrapper.
+section: guides
+sidebar:
+  order: 30
+draft: false
+---
+
+import { Callout, PackageInstall } from "@/components/docs/mdx";
+
+Every interactive part of a Lattice primitive has to render *something* — a `Dialog.Trigger` needs a button to click, a `Menu.Item` needs a row to select. By default each part renders a sensible host element (usually a `textbutton`) and wires its behavior onto it. That is convenient, but it is also opinionated: you inherit the primitive's element type and base props.
+
+`asChild` flips that around. Instead of rendering its own wrapper, the part takes the single element *you* provide and merges its behavior — event handlers, refs, and selection flags — onto it. Your element becomes the host; the primitive just enhances it. This is how you keep full control of the visual element while still getting the primitive's interaction contract.
+
+Under the hood this is powered by the `Slot` component from `@lattice-ui/core`, which clones your child and composes props onto it.
+
+## The problem `asChild` solves
+
+Without `asChild`, a trigger renders the primitive's default element:
+
+```tsx title="Default host element"
+<Popover.Trigger>
+  {/* renders a Lattice <textbutton> with default styling */}
+</Popover.Trigger>
+```
+
+That `textbutton` is the primitive's choice, not yours. If your design system already has a `Button` component, or you want an `imagebutton`, or a frame styled exactly your way, you would otherwise be fighting the wrapper.
+
+With `asChild`, you hand the part your element and it merges behavior onto it:
+
+```tsx title="Your element, primitive behavior"
+<Popover.Trigger asChild>
+  <imagebutton Image="rbxassetid://0" Size={UDim2.fromOffset(48, 48)} />
+</Popover.Trigger>
+```
+
+Now the `imagebutton` *is* the trigger. The primitive composes its `Activated` handler, its ref, and its selection flags onto your element instead of rendering a second node.
+
+## How `Slot` merges props
+
+When a part is in `asChild` mode it renders through `Slot`. `Slot` takes exactly one child and clones it, combining the primitive's props with the child's props. The merge rules are important to understand:
+
+- **Refs are composed.** Your child's ref and the primitive's ref both fire, so the primitive can measure or focus the node while your own ref still receives it. You never have to choose between them.
+- **`Event` and `Change` handler tables are chained.** If both the primitive and your child define a handler for the same signal (say `Activated`), both run — the child's handler first, then the primitive's. Neither one clobbers the other.
+- **Other props are shallow-merged,** with the primitive's props taking precedence for the keys it sets (for example `Active` or `Selectable` on a trigger).
+
+```tsx title="Both Activated handlers run"
+<Menu.Item asChild>
+  <textbutton
+    Text="Copy link"
+    Event={{
+      // Your handler runs, then the primitive's selection handler runs.
+      Activated: () => print("copied"),
+    }}
+  />
+</Menu.Item>
+```
+
+Because `Slot` composes rather than replaces, you can attach your own analytics or sound effects to the same event the primitive uses for its behavior.
+
+<Callout title="asChild requires exactly one element child">
+`Slot` clones a single child. Pass exactly one `GuiObject` element — not a string, not a fragment, not multiple siblings. Parts like `Popover.Trigger` and `PopoverContent` call `error("... `asChild` requires a child element.")` when the child is missing or invalid, so a wrong shape fails loudly rather than silently dropping behavior.
+</Callout>
+
+## Where you'll use it
+
+`asChild` shows up on the parts that wrap a single interactive or visual host:
+
+- **Triggers** — `Dialog.Trigger`, `Popover.Trigger`, `Select.Trigger`, and friends, so your own button opens the surface.
+- **Close buttons** — `Dialog.Close`, so a styled button inside the content closes it.
+- **Items** — `Menu.Item` and similar, so each row is your element.
+- **Overlays and content hosts** — so the backdrop or panel frame is yours, with the primitive's dismissal/positioning behavior merged on.
+
+A trigger that forwards its ref correctly also becomes the focus-restore target and the positioning anchor for free, because the primitive composes its ref onto your element.
+
+```tsx title="A custom Button as a dialog trigger"
+import { Dialog } from "@lattice-ui/dialog";
+import { Button } from "../ui/Button"; // your design-system button
+
+export function SettingsButton() {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>
+        <Button text="Settings" variant="ghost" />
+      </Dialog.Trigger>
+      {/* ...portal, overlay, content... */}
+    </Dialog.Root>
+  );
+}
+```
+
+<Callout title="Your host must forward its ref">
+`Slot` composes the primitive's ref onto your child, but only if your child actually accepts and forwards a `ref` to a real `GuiObject`. A wrapper component that drops `ref` will break focus restoration, positioning, and outside-press detection. Make custom host components forward their ref to the underlying element.
+</Callout>
+
+## When to use it
+
+- Your app **already has the right visual element** — a design-system button, a styled frame — and you only want the behavior.
+- You want a **native-looking host** (`imagebutton`, custom frame) but still need primitive-driven interaction.
+- You want to **attach your own handlers** to the same event the primitive uses, without losing either.
+
+## When not to use it
+
+- The part needs to **render multiple internal nodes** to do its job. `Slot` clones one child only; let the part render its own structure.
+- You would have to **spread the merged behavior across several siblings**. That is a sign the default host is the right contract.
+- The **host element is part of the package contract** (some parts deliberately render a specific structure). Overriding it can break the primitive's assumptions.
+
+## Related
+
+- [Composition model](/lattice-ui/getting-started/composition-model/)
+- [Dialog](/lattice-ui/components/dialog/)
+- [Popover](/lattice-ui/components/popover/)
+- [Menu](/lattice-ui/components/menu/)
+- [Core reference](/lattice-ui/reference/core/)

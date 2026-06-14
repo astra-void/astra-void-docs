@@ -1,0 +1,186 @@
+---
+title: Slider
+description: Single-thumb slider primitive that owns clamped, stepped value state and pointer-drag plus keyboard adjustment while you own the track, range, and thumb visuals.
+section: components
+sidebar:
+  order: 120
+---
+
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/slider"
+  status="feature-limited"
+  importName="Slider"
+  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+/>
+
+Slider is the primitive for picking a number from a continuous range: volume, sensitivity, brightness, and any "drag to set a value" control. It owns the value — clamping it to `[min, max]` and snapping it to `step` — and translates pointer drags and keyboard input on the track and thumb into value changes, so your component only renders the track, the filled range, and the thumb.
+
+Reach for Slider when a control needs a **single numeric value**, **drag interaction on a track**, and **predictable clamping and stepping** without you doing the pointer math.
+
+## Import
+
+```ts
+import { Slider } from "@lattice-ui/slider";
+```
+
+## Anatomy
+
+`Root`, `Track`, and `Thumb` form the minimum useful slider. `Range` is optional but is the usual way to show the filled portion up to the current value.
+
+<PrimitiveAnatomy title="Slider anatomy">
+
+```tsx title="Slider anatomy"
+<Slider.Root>
+  <Slider.Track>
+    <Slider.Range />
+    <Slider.Thumb />
+  </Slider.Track>
+</Slider.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Slider.Root` | yes | Owns clamped/stepped value state, drag lifecycle, and orientation, shared through context. |
+| `Slider.Track` | yes | The draggable rail; an input on it starts a drag toward that position. |
+| `Slider.Range` | no | The filled portion from the start of the track to the current value. |
+| `Slider.Thumb` | yes | The draggable handle positioned at the current value; also handles keyboard adjustment. |
+
+</PrimitiveAnatomy>
+
+## Example
+
+A controlled volume slider from 0 to 100 in steps of 5, committing the value only when the drag ends.
+
+```tsx title="VolumeSlider.tsx"
+import { useState } from "@rbxts/react";
+import { Slider } from "@lattice-ui/slider";
+
+export function VolumeSlider() {
+  const [volume, setVolume] = useState(50);
+
+  return (
+    <Slider.Root
+      value={volume}
+      onValueChange={setVolume}
+      onValueCommit={(value) => print(`committed: ${value}`)}
+      min={0}
+      max={100}
+      step={5}
+    >
+      <Slider.Track>
+        <frame
+          BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(260, 10)}
+        >
+          <Slider.Range>
+            <frame
+              BackgroundColor3={Color3.fromRGB(86, 142, 255)}
+              BorderSizePixel={0}
+              Size={UDim2.fromScale(1, 1)}
+            />
+          </Slider.Range>
+
+          <Slider.Thumb>
+            <frame
+              AnchorPoint={new Vector2(0.5, 0.5)}
+              BackgroundColor3={Color3.fromRGB(235, 241, 250)}
+              BorderSizePixel={0}
+              Size={UDim2.fromOffset(16, 16)}
+            />
+          </Slider.Thumb>
+        </frame>
+      </Slider.Track>
+    </Slider.Root>
+  );
+}
+```
+
+<Callout title="Single thumb only">
+This release of Slider is **single-thumb only**. There is no range/dual-thumb mode, and `value`/`defaultValue` are a single `number`, not an array. Compose two independent sliders or track your own state if you need a min/max range until multi-thumb lands.
+</Callout>
+
+## How it behaves
+
+### Value, clamping, and stepping
+
+The value is a single `number`. `Slider.Root` is controllable via `value`/`onValueChange`, or uncontrolled via `defaultValue` (which itself defaults to `min`). Every value — incoming, dragged, or keyed — is clamped to `[min, max]` and snapped to the nearest multiple of `step`. `min`/`max` default to `0`/`100` and are normalized so the lower bound is always the smaller of the two; `step` defaults to `1`.
+
+### Change vs. commit
+
+`onValueChange` fires continuously as the value moves (every drag tick, every keypress). `onValueCommit` fires once at the end of an interaction — when a drag ends, or on a keyboard `Return`/`Space` — making it the right place to persist or send the final value over the network.
+
+### Dragging
+
+A pointer press (`MouseButton1` or `Touch`) on either `Slider.Track` or `Slider.Thumb` starts a drag and immediately jumps the value to the pressed position. While dragging, the root listens to `UserInputService` input changes and updates the value as the pointer moves, then commits on release. Touch drags are tracked per input object so multi-touch doesn't cross wires. Drag listeners are cleaned up when the slider unmounts.
+
+### Keyboard adjustment
+
+`Slider.Thumb` handles keyboard input when focused: arrow `Right`/`Up` increase and `Left`/`Down` decrease by `step`; `PageUp`/`PageDown` move by `step * 10`; `Home`/`End` jump to `min`/`max`. Each of these both changes and commits the value. `Return`/`Space` commits the current value without changing it.
+
+### Orientation
+
+Set `orientation` to `"horizontal"` (default) or `"vertical"`. It governs which pointer axis maps to the value, where the default track sizes itself, and how `Slider.Range` and `Slider.Thumb` position themselves — horizontally the range grows from the left and the thumb tracks left-to-right; vertically the range grows from the bottom and the thumb tracks bottom-to-top.
+
+### Motion
+
+`Slider.Range` and `Slider.Thumb` animate toward their target position/size with a response recipe, using a slightly snappier settle while a drag is in progress so the handle stays under the pointer.
+
+<Callout title="Roblox gotchas">
+Drag uses Roblox pointer input on the track and thumb, so those nodes are made `Active` and `Selectable` only while the slider is enabled — when `disabled`, input is ignored and selection is removed. Keyboard adjustment fires through the thumb's `InputBegan`, so the thumb must be able to receive selection (e.g. via gamepad) for arrow/page keys to reach it.
+</Callout>
+
+## API reference
+
+### Slider.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "number", description: "Controlled value. Pair with onValueChange." },
+    { name: "defaultValue", type: "number", description: "Initial value for uncontrolled usage. Defaults to min." },
+    { name: "onValueChange", type: "(value: number) => void", description: "Called continuously as the value changes during drag or keyboard input." },
+    { name: "onValueCommit", type: "(value: number) => void", description: "Called once when an interaction ends (drag release or keyboard commit)." },
+    { name: "min", type: "number", description: "Lower bound of the range. Defaults to 0." },
+    { name: "max", type: "number", description: "Upper bound of the range. Defaults to 100." },
+    { name: "step", type: "number", description: "Increment the value snaps to. Defaults to 1." },
+    { name: "orientation", type: '"horizontal" | "vertical"', description: "Axis the slider runs along. Defaults to \"horizontal\"." },
+    { name: "disabled", type: "boolean", description: "Disables drag and keyboard input and removes the track/thumb from selection. Defaults to false." },
+    { name: "children", type: "React.ReactNode", description: "The slider parts." },
+  ]}
+/>
+
+### Slider.Track
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge track behavior (drag start, ref, selection) onto the single child element instead of rendering the default frame." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set; otherwise rendered inside the default track (typically the Range and Thumb)." },
+  ]}
+/>
+
+### Slider.Range
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the animated fill onto the single child element; the child is stretched to fill the animated range frame." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Slider.Thumb
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge thumb behavior (drag start, keyboard handling, ref, selection) onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

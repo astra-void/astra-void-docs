@@ -1,0 +1,189 @@
+---
+title: Tooltip
+description: Hover- and focus-triggered surface primitive that owns open delay, popper positioning, portal layering, and presence motion while you own the content.
+section: components
+sidebar:
+  order: 190
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/tooltip"
+  status="stable-direction"
+  importName="Tooltip"
+  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+/>
+
+Tooltip is the primitive for a small, transient surface that explains a control: button hints, icon labels, and stat breakdowns. It opens on hover or selection after a delay, positions itself against the trigger with popper, and animates in and out — so your component only renders the label.
+
+Reach for Tooltip when a surface should **appear on hover or focus**, **wait a beat before showing** (and skip that wait when moving between nearby triggers), **anchor to its trigger** with collision-aware placement, and **dismiss** when the pointer or selection leaves.
+
+## Import
+
+```ts
+import { Tooltip } from "@lattice-ui/tooltip";
+```
+
+## Anatomy
+
+`Root`, `Trigger`, `Portal`, and `Content` form the working tooltip. Wrap a region (or your whole app) in `Provider` to share open-delay behavior across many tooltips.
+
+```tsx title="Tooltip anatomy"
+<Tooltip.Provider>
+  <Tooltip.Root>
+    <Tooltip.Trigger />
+    <Tooltip.Portal>
+      <Tooltip.Content />
+    </Tooltip.Portal>
+  </Tooltip.Root>
+</Tooltip.Provider>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Tooltip.Provider` | no | Shares delay defaults and the skip-delay grace window across the tooltips inside it. |
+| `Tooltip.Root` | yes | Owns open state and the delayed-open / close logic; shares trigger and content refs. |
+| `Tooltip.Trigger` | yes | The element whose hover/selection opens and closes the tooltip; the popper anchor. |
+| `Tooltip.Portal` | yes | Renders the content into a `ScreenGui` outside the local tree. |
+| `Tooltip.Content` | yes | The popper-positioned, motion-driven, dismissable surface. |
+
+## Example
+
+A provider wrapping a tooltip with a custom trigger and an app-owned label surface.
+
+```tsx title="StatTooltip.tsx"
+import { Tooltip } from "@lattice-ui/tooltip";
+
+export function StatTooltip() {
+  return (
+    <Tooltip.Provider delayDuration={500}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <textbutton Text="ATK 142" Size={UDim2.fromOffset(96, 32)} />
+        </Tooltip.Trigger>
+
+        <Tooltip.Portal>
+          <Tooltip.Content placement="top" sideOffset={8}>
+            <frame
+              BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+              Size={UDim2.fromOffset(200, 56)}
+            >
+              <uicorner CornerRadius={new UDim(0, 8)} />
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromScale(1, 1)}
+                Text="Base 120 + 22 from gear"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
+            </frame>
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  );
+}
+```
+
+<Callout title="Controlled usage">
+`Tooltip.Root` is controllable. Pass `open` and `onOpenChange` to drive it yourself, or `defaultOpen` to set the initial state and let it run uncontrolled. Controlled mode still uses the same open/close logic, so hover and focus continue to call `onOpenChange`.
+</Callout>
+
+## How it behaves
+
+### Open behavior
+
+`Tooltip.Trigger` tracks two activity sources — hover (`MouseEnter`/`MouseLeave`) and focus (`SelectionGained`/`SelectionLost`). The tooltip opens when either becomes active and closes when both are inactive. Hover opens go through the delay; focus opens are immediate, which suits gamepad and keyboard selection. A disabled trigger never opens and closes immediately if it loses activity.
+
+### Open delay and skip window
+
+Hover opens wait for a delay before showing. The delay resolves from `Root`'s `delayDuration`, then the `Provider`'s `delayDuration` (default `700` ms). When a tooltip was opened recently — within the provider's `skipDelayDuration` (default `300` ms) — the next hover open is shortened to at most that skip window, so moving between adjacent triggers feels instant instead of re-waiting the full delay. Leaving a trigger cancels any pending open.
+
+### Positioning
+
+`Tooltip.Content` positions itself with popper, anchored to the trigger. Set `placement` for the preferred side, `sideOffset` for the gap from the trigger, `alignOffset` to shift along the side, and `collisionPadding` to keep the content inside the viewport. The content is hidden off-screen until popper has measured and positioned it, so it never flashes in the wrong spot.
+
+### Layering
+
+`Tooltip.Portal` renders the content into a `ScreenGui` outside the local component tree. By default it inherits the surrounding portal container and display order; pass `container` to target a specific `PlayerGui` and `displayOrderBase` to order it against other layered surfaces.
+
+### Dismissal
+
+`Tooltip.Content` runs as a non-modal dismissable layer: it does not block interaction behind it, and an outside interaction closes it. Use `onPointerDownOutside` and `onInteractOutside` to observe those interactions before the tooltip closes.
+
+### Motion and presence
+
+`Tooltip.Content` runs a default canvas-group popper entrance/exit recipe keyed to the resolved placement, so it animates from the trigger's side without setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+
+<Callout title="Provider is optional but shared">
+Without a `Tooltip.Provider`, each tooltip uses the built-in defaults (700 ms delay, 300 ms skip window). Wrap a region in a provider when you want consistent timing and the skip-delay grace to carry between neighboring tooltips. `Root`'s own `delayDuration` still overrides the provider per tooltip.
+</Callout>
+
+## API reference
+
+### Tooltip.Provider
+
+<PropTable
+  rows={[
+    { name: "delayDuration", type: "number", description: "Default hover-open delay in milliseconds for tooltips inside this provider. Defaults to 700." },
+    { name: "skipDelayDuration", type: "number", description: "Grace window in milliseconds during which a subsequent hover open is shortened. Defaults to 300." },
+    { name: "children", type: "React.ReactNode", description: "The tooltips that share these delay defaults." },
+  ]}
+/>
+
+### Tooltip.Root
+
+<PropTable
+  rows={[
+    { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
+    { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
+    { name: "delayDuration", type: "number", description: "Overrides the provider's hover-open delay for this tooltip, in milliseconds." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
+    { name: "children", type: "React.ReactNode", description: "The trigger, portal, and content parts." },
+  ]}
+/>
+
+### Tooltip.Trigger
+
+<PropTable
+  rows={[
+    { name: "disabled", type: "boolean", description: "Prevents the trigger from opening the tooltip and removes it from selection. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Merge the trigger behavior and anchor ref onto the single child element instead of the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Tooltip.Portal
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the content into. Defaults to the surrounding portal container." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers." },
+    { name: "children", type: "React.ReactNode", description: "The content part." },
+  ]}
+/>
+
+### Tooltip.Content
+
+<PropTable
+  rows={[
+    { name: "placement", type: "PopperPlacement", description: "Preferred side/alignment of the content relative to the trigger." },
+    { name: "sideOffset", type: "number", description: "Gap between the content and the trigger along the placement side." },
+    { name: "alignOffset", type: "number", description: "Shift of the content along the placement axis." },
+    { name: "collisionPadding", type: "number", description: "Minimum padding kept between the content and the viewport edges." },
+    { name: "transition", type: "MotionConfig", description: "Overrides the default canvas-group popper entrance/exit recipe." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned surface instead of arbitrary children." },
+    { name: "children", type: "React.ReactNode", description: "The tooltip contents." },
+  ]}
+/>
+
+## Related
+
+- [Positioning with popper](/lattice-ui/guides/positioning-with-popper/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

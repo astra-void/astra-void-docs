@@ -1,0 +1,217 @@
+---
+title: Toast
+description: Queued notification primitive that owns scheduling, visibility limits, and exit timing while you own the toast surface and its parts.
+section: components
+sidebar:
+  order: 170
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/toast"
+  status="stable-direction"
+  importName="Toast"
+  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion"]}
+/>
+
+Toast is the primitive for transient, non-blocking notifications: saved-changes confirmations, reward pop-ups, connection warnings, and inline status messages. A `Provider` owns the queue — enqueuing, the visible-count limit, per-toast duration, and exit timing — so your component only renders the surface for each toast and reacts to actions.
+
+Reach for Toast when messages should **stack and expire on their own**, stay **capped to a few at a time**, and **animate out** without you tracking timers by hand. You drive it imperatively with the `useToast` hook from anywhere inside the provider.
+
+## Import
+
+```ts
+import { Toast, useToast } from "@lattice-ui/toast";
+```
+
+## Anatomy
+
+`Provider` and `Viewport` form the minimum system: the provider owns the queue and the viewport renders it. `Viewport` renders a default surface for every visible toast out of the box, so you only reach for `Root`, `Title`, `Description`, `Action`, and `Close` when you compose your own toast layout.
+
+```tsx title="Toast anatomy"
+<Toast.Provider>
+  <Toast.Viewport>
+    <Toast.Root>
+      <Toast.Title />
+      <Toast.Description />
+      <Toast.Action />
+      <Toast.Close />
+    </Toast.Root>
+  </Toast.Viewport>
+</Toast.Provider>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Toast.Provider` | yes | Owns the queue, default duration, visible cap, and exit timing; exposes `useToast`. |
+| `Toast.Viewport` | yes | Stacks visible toasts; renders a default surface per toast unless `asChild`. |
+| `Toast.Root` | no | A single toast surface that animates between visible and hidden. |
+| `Toast.Title` | no | The toast heading. |
+| `Toast.Description` | no | The toast supporting text. |
+| `Toast.Action` | no | A button that runs `onAction` when activated. |
+| `Toast.Close` | no | A button that runs `onClose` when activated. |
+
+## Example
+
+A provider at the top of the UI plus a button that enqueues toasts. The default `Viewport` stacks each queued toast's surface automatically, so you only choose where the stack sits.
+
+```tsx title="SaveStatusToasts.tsx"
+import { Toast, useToast } from "@lattice-ui/toast";
+
+function SaveButton() {
+  const toast = useToast();
+
+  return (
+    <textbutton
+      Size={UDim2.fromOffset(140, 38)}
+      Text="Save layout"
+      Event={{
+        Activated: () =>
+          toast.enqueue({
+            title: "Layout saved",
+            description: "Your changes are live for everyone.",
+            durationMs: 3000,
+          }),
+      }}
+    />
+  );
+}
+
+export function SaveStatusToasts() {
+  return (
+    <Toast.Provider defaultDurationMs={4000} maxVisible={3}>
+      <SaveButton />
+
+      <frame
+        AnchorPoint={new Vector2(1, 1)}
+        BackgroundTransparency={1}
+        Position={UDim2.new(1, -16, 1, -16)}
+        Size={UDim2.fromOffset(340, 320)}
+      >
+        <Toast.Viewport />
+      </frame>
+    </Toast.Provider>
+  );
+}
+```
+
+To render a fully custom toast surface, set `asChild` on `Viewport` and map the queue yourself with `useToast().visibleToasts`, composing `Toast.Root`, `Toast.Title`, `Toast.Action`, and `Toast.Close` by hand. Wire each `Toast.Close` to `remove(toast.id)`.
+
+<Callout title="Imperative, not declarative">
+There is no `open`/`onOpenChange` on a toast. You add toasts by calling `enqueue` and remove them with `remove`; the provider decides what is visible and when each one leaves. Treat the queue as the source of truth, not local component state.
+</Callout>
+
+## How it behaves
+
+### The queue
+
+`Toast.Provider` keeps an ordered queue of records. `enqueue(options)` appends a toast and returns its `id` (auto-generated as `toast-N` unless you pass `id`). `remove(id)` starts a toast's exit, and `clear()` empties the queue immediately. The provider runs a `RunService.Heartbeat` connection while any toasts exist, pruning expired ones each frame, and disconnects once the queue drains.
+
+### Visibility limit
+
+`maxVisible` (default `3`) caps how many toasts are rendered at once; the rest wait in the queue. `useToast().visibleToasts` is the capped slice the viewport renders, while `toasts` is the full queue. Toasts beyond the cap do not start their duration countdown until they enter the visible window.
+
+### Duration and expiry
+
+Each toast expires after its own `durationMs`, falling back to the provider's `defaultDurationMs` (default `4000`). A duration of `0` or less makes a toast sticky — it never expires on its own and must be removed via `remove`, `Toast.Close`, or `clear`. When a visible toast's time elapses, the provider marks it `exiting` and keeps it around for a short exit window (~160 ms) so its motion can finish before it is dropped.
+
+### Motion and presence
+
+`Toast.Root` animates its background between an active (opaque) and inactive (transparent) state based on `visible`, using a default response recipe. The default `Viewport` wires `visible` to each toast's non-exiting state, so toasts fade as they leave. Override the recipe per root with `transition`.
+
+<Callout title="Provider placement">
+Mount `Toast.Provider` high in your UI tree, above everything that calls `useToast`. `useToast` reads the provider through context and throws if used outside it. The `Viewport` does not have to be a direct child — it only needs to be somewhere inside the same provider.
+</Callout>
+
+## API reference
+
+### Toast.Provider
+
+<PropTable
+  rows={[
+    { name: "defaultDurationMs", type: "number", description: "Fallback lifetime for toasts without their own durationMs. Clamped to >= 0. Defaults to 4000." },
+    { name: "maxVisible", type: "number", description: "Maximum toasts rendered at once; the rest queue. Clamped to >= 1. Defaults to 3." },
+    { name: "children", type: "React.ReactNode", description: "The UI tree that enqueues toasts and renders the viewport." },
+  ]}
+/>
+
+### useToast
+
+Returns the imperative API for the nearest provider.
+
+<PropTable
+  rows={[
+    { name: "toasts", type: "Array<ToastRecord>", description: "The full queue, including toasts beyond the visible cap." },
+    { name: "visibleToasts", type: "Array<ToastRecord>", description: "The capped slice currently eligible to render." },
+    { name: "enqueue", type: "(options: ToastOptions) => string", description: "Adds a toast and returns its id." },
+    { name: "remove", type: "(id: string) => void", description: "Starts the exit for the matching toast." },
+    { name: "clear", type: "() => void", description: "Removes every toast immediately." },
+  ]}
+/>
+
+`ToastOptions` accepts `id`, `title`, `description`, and `durationMs` — all optional.
+
+### Toast.Viewport
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Render the single child element instead of the default stacking frame and per-toast surfaces. You then map the queue yourself." },
+    { name: "children", type: "React.ReactNode", description: "Extra content appended after the rendered toasts, or the single element when asChild is set." },
+  ]}
+/>
+
+### Toast.Root
+
+<PropTable
+  rows={[
+    { name: "visible", type: "boolean", description: "Drives the active/inactive motion state. Defaults to true." },
+    { name: "transition", type: "MotionConfig", description: "Overrides the default toast response recipe used for the show/hide animation." },
+    { name: "asChild", type: "boolean", description: "Apply the visibility and motion ref to the single child element instead of the default frame." },
+    { name: "children", type: "React.ReactNode", description: "The toast contents." },
+  ]}
+/>
+
+### Toast.Title
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Render the single child element instead of the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Toast.Description
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Render the single child element instead of the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Toast.Action
+
+<PropTable
+  rows={[
+    { name: "onAction", type: "() => void", description: "Called when the action button is activated." },
+    { name: "asChild", type: "boolean", description: "Merge the activation behavior onto the single child element instead of the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Toast.Close
+
+<PropTable
+  rows={[
+    { name: "onClose", type: "() => void", description: "Called when the close button is activated. Wire this to remove(id)." },
+    { name: "asChild", type: "boolean", description: "Merge the activation behavior onto the single child element instead of the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

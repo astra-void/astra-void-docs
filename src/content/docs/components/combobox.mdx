@@ -1,0 +1,268 @@
+---
+title: Combobox
+description: Single-value selection primitive that owns value state, input filtering, item registration, and popper positioning while you own the visuals.
+section: components
+sidebar:
+  order: 40
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/combobox"
+  status="stable-direction"
+  importName="Combobox"
+  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+/>
+
+Combobox is the primitive for a filterable, single-value picker: searchable selects, command palettes, and autocomplete fields. It coordinates value state, input text, query filtering, item registration, positioning, and dismissal so your component only has to render the field, the listbox, and the items.
+
+Reach for Combobox when a select needs **type-to-filter** behavior: an input narrows a registered list of items by text, the user picks one, and the chosen value drives the field. Combobox owns three pieces of state at once — the selected **value**, the **input text**, and the **open** state — and keeps them in sync, falling back to a forced selection so the field is never left in an invalid state.
+
+## Import
+
+```ts
+import { Combobox } from "@lattice-ui/combobox";
+```
+
+## Anatomy
+
+Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the working picker. Use either `Input` (type-to-filter) or `Trigger` + `Value` (toggle and display) as the anchor, and `Group`, `Label`, and `Separator` to structure longer lists.
+
+```tsx title="Combobox anatomy"
+<Combobox.Root>
+  <Combobox.Trigger>
+    <Combobox.Value />
+  </Combobox.Trigger>
+  <Combobox.Input />
+  <Combobox.Portal>
+    <Combobox.Content>
+      <Combobox.Label />
+      <Combobox.Group>
+        <Combobox.Item value="..." />
+      </Combobox.Group>
+      <Combobox.Separator />
+      <Combobox.Item value="..." />
+    </Combobox.Content>
+  </Combobox.Portal>
+</Combobox.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Combobox.Root` | yes | Owns value, input, and open state, plus the item registry and filter function. |
+| `Combobox.Input` | no | A `TextBox` that drives the query and opens the list as the user types. Acts as the anchor. |
+| `Combobox.Trigger` | no | A button that toggles the list and acts as the anchor when no input is present. |
+| `Combobox.Value` | no | A label that displays the selected item's text (or a placeholder). |
+| `Combobox.Portal` | yes | Renders the listbox into a `ScreenGui` outside the local tree. |
+| `Combobox.Content` | yes | The positioned, dismissable, motion-driven listbox. |
+| `Combobox.Item` | yes | A selectable option that registers its value and text, and hides when filtered out. |
+| `Combobox.Group` | no | A container that visually groups related items. |
+| `Combobox.Label` | no | A non-interactive heading for a group or section. |
+| `Combobox.Separator` | no | A thin divider between items or groups. |
+
+## Example
+
+A controlled combobox with a filtering input. Typing narrows the list; selecting an item sets the value and syncs the input.
+
+```tsx title="WorldPicker.tsx"
+import { useState } from "@rbxts/react";
+import { Combobox } from "@lattice-ui/combobox";
+
+const WORLDS = ["Aurora", "Basalt", "Cinder", "Driftwood", "Ember"];
+
+export function WorldPicker() {
+  const [value, setValue] = useState<string>();
+
+  return (
+    <Combobox.Root value={value} onValueChange={setValue}>
+      <Combobox.Input placeholder="Search worlds" />
+
+      <Combobox.Portal>
+        <Combobox.Content sideOffset={4}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(240, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} />
+            <Combobox.Label asChild>
+              <textlabel Text="Worlds" />
+            </Combobox.Label>
+            {WORLDS.map((world) => (
+              <Combobox.Item key={world} value={world}>
+                <textbutton Text={world} />
+              </Combobox.Item>
+            ))}
+          </frame>
+        </Combobox.Content>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `value`/`onValueChange` (and `inputValue`/`open`) and pass `defaultValue`, `defaultInputValue`, or `defaultOpen` instead to let Combobox own its state. Each of value, input text, and open state can be controlled independently — control only the pieces something outside the combobox needs to drive.
+</Callout>
+
+## How it behaves
+
+### Open state
+
+`Combobox.Root` is controllable. Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled (defaults to closed). `Combobox.Trigger` toggles the list on activation (and on `Return`/`Space`), and typing in `Combobox.Input` opens it automatically. Selecting an item closes the list.
+
+### Value and input state
+
+The selected **value** and the **input text** are separate, independently controllable pieces of state. Selecting an item sets the value and syncs the input to that item's display text. Typing in the input updates the query (and opens the list) without changing the value until a selection is made; when the list closes, the input is re-synced from the current value so the field always shows the selected item. Set `required` to force a selection: while the list is open, Combobox keeps a valid enabled item selected, falling back to the first enabled item rather than leaving the value empty.
+
+`Combobox.Value` displays the selected item's text, resolved from the item registry, or its `placeholder` when nothing is selected. `disabled` blocks all state changes; `readOnly` blocks input edits but still allows selection through items.
+
+### Filtering
+
+`Combobox.Item` declares a `value` and an optional `textValue` (the text matched and displayed; defaults to `value`). The root's `filterFn` decides whether each item matches the current query — the default does a case-insensitive substring match. Items that do not match are hidden and made non-interactive, so the list shows only what fits the query. Provide your own `filterFn` for fuzzy matching, token search, or locale-aware comparison.
+
+### Positioning
+
+`Combobox.Content` is positioned by the popper foundation against the active anchor — the input when present, otherwise the trigger. It flips to the opposite side on collision. Tune it with `placement` (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` (gap from the anchor, default `0`), `alignOffset` (shift along the cross axis, default `0`), and `collisionPadding` (minimum distance from the screen edge, default `8`).
+
+### Dismissal
+
+`Combobox.Content` participates in dismissable-layer behavior and is always **non-modal**, so the rest of the UI stays interactive while the list is open. The trigger and input are registered as inside refs, so interacting with them does not dismiss the list. Any other outside press closes it. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the list closes.
+
+### Motion and presence
+
+`Combobox.Content` runs a default popper-aware canvas-group reveal/exit recipe that animates from the resolved placement, so the list animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+
+<Callout title="Three states, kept in sync">
+Combobox tracks value, input text, and open state separately and reconciles them automatically: selecting syncs the input, closing re-syncs the input from the value, and `required` forces a valid selection while open. Control each piece only when you need to — mixing controlled value with uncontrolled input is fully supported.
+</Callout>
+
+## API reference
+
+### Combobox.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled selected value. Pair with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Initial selected value for uncontrolled usage." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called whenever the selected value changes." },
+    { name: "inputValue", type: "string", description: "Controlled input text. Pair with onInputValueChange." },
+    { name: "defaultInputValue", type: "string", description: "Initial input text for uncontrolled usage. Defaults to an empty string." },
+    { name: "onInputValueChange", type: "(inputValue: string) => void", description: "Called whenever the input text changes." },
+    { name: "open", type: "boolean", description: "Controlled open state of the listbox. Pair with onOpenChange." },
+    { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
+    { name: "disabled", type: "boolean", description: "Disables the whole combobox, blocking opening, input edits, and selection. Defaults to false." },
+    { name: "readOnly", type: "boolean", description: "Blocks input edits while still allowing selection through items. Defaults to false." },
+    { name: "required", type: "boolean", description: "Forces a valid enabled item to stay selected while the list is open. Defaults to false." },
+    { name: "filterFn", type: "(itemText: string, query: string) => boolean", description: "Decides whether an item matches the query. Defaults to a case-insensitive substring match." },
+    { name: "children", type: "React.ReactNode", description: "The combobox parts." },
+  ]}
+/>
+
+### Combobox.Input
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default textbox." },
+    { name: "disabled", type: "boolean", description: "Disables the input. Combined with the root's disabled state." },
+    { name: "readOnly", type: "boolean", description: "Blocks edits to the input text. Combined with the root's readOnly state." },
+    { name: "placeholder", type: "string", description: "Placeholder text shown when the input is empty. Defaults to \"Type to filter\"." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Combobox.Trigger
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Prevents the trigger from toggling the list. Combined with the root's disabled state." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Combobox.Value
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the resolved value onto the single child element instead of rendering the default textlabel." },
+    { name: "placeholder", type: "string", description: "Text shown when no value is selected. Defaults to an empty string." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Combobox.Portal
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the listbox into. Defaults to the surrounding portal context's container." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers. Defaults to the surrounding portal context's value." },
+    { name: "children", type: "React.ReactNode", description: "The content part." },
+  ]}
+/>
+
+### Combobox.Content
+
+<PropTable
+  rows={[
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the listbox on. Flips on collision. Defaults to \"bottom\"." },
+    { name: "sideOffset", type: "number", description: "Gap in pixels between the anchor and the listbox. Defaults to 0." },
+    { name: "alignOffset", type: "number", description: "Shift in pixels along the anchor's cross axis. Defaults to 0." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the default canvasgroup contents." },
+    { name: "forceMount", type: "boolean", description: "Keeps the listbox mounted while exit motion runs." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper-aware canvas-group reveal/exit recipe." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the listbox, before dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
+    { name: "children", type: "React.ReactNode", description: "The listbox contents." },
+  ]}
+/>
+
+### Combobox.Item
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Required. The value selected when this item is chosen." },
+    { name: "textValue", type: "string", description: "Text used for filtering and display. Defaults to value." },
+    { name: "disabled", type: "boolean", description: "Prevents selection and excludes the item from forced selection." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Combobox.Group
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the group onto the single child element instead of rendering the default container frame." },
+    { name: "children", type: "React.ReactElement", description: "The grouped items to render. Required when asChild is set." },
+  ]}
+/>
+
+### Combobox.Label
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the label onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The label element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Combobox.Separator
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the separator onto the single child element instead of rendering the default 1px divider frame." },
+    { name: "children", type: "React.ReactElement", description: "The divider element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Positioning with popper](/lattice-ui/guides/positioning-with-popper/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

@@ -1,0 +1,83 @@
+---
+title: Installation
+description: Add a Lattice UI primitive to an rbxts/react app, by hand or with the lattice CLI.
+section: getting-started
+sidebar:
+  order: 10
+---
+
+import { PackageInstall, Callout } from "@/components/docs/mdx";
+
+Lattice UI is a set of headless primitives for `rbxts/react`. Each primitive ships as its own `@lattice-ui/<name>` package, owns the tricky interaction work — open state, focus, layering, motion — and leaves the visuals to you. You install only the packages a screen actually uses.
+
+This page gets one primitive into your project. The rest of getting started uses Dialog as the worked example, so installing `@lattice-ui/dialog` here is a good place to start.
+
+## Prerequisites
+
+Lattice UI runs on top of `rbxts/react`, so your project should already have the React runtime available.
+
+```ts title="React runtime"
+import React from "@rbxts/react";
+import ReactRoblox from "@rbxts/react-roblox";
+```
+
+`@rbxts/react` and `@rbxts/react-roblox` are **peer dependencies** of every primitive (`^17`). Install them yourself if they are not already in your project — the primitive packages do not bundle them.
+
+## Install a package
+
+<PackageInstall packageName="@lattice-ui/dialog" />
+
+Install one primitive at a time. Each package pulls in the shared foundations it needs (`@lattice-ui/core`, and depending on the primitive, `@lattice-ui/focus`, `@lattice-ui/layer`, `@lattice-ui/motion`), so you do not add those by hand.
+
+```ts title="Import the primitive"
+import { Dialog } from "@lattice-ui/dialog";
+```
+
+## Use the lattice CLI
+
+If you would rather not manage packages by hand, the `lattice` CLI installs primitives for you and resolves your package manager automatically from the project lockfile.
+
+```bash title="Add a primitive"
+npx lattice-ui add dialog
+```
+
+You can add several primitives at once, or pull in a curated preset:
+
+```bash title="Add multiple primitives and a preset"
+npx lattice-ui add dialog toast --preset overlay
+```
+
+The CLI also scaffolds and maintains projects: `lattice create` starts a new `rbxts` project, `lattice init` wires the toolchain into an existing one, and `lattice remove` / `lattice upgrade` keep your installed primitives in sync. Run `lattice doctor` if you want it to check your setup.
+
+<Callout title="Pick a package manager">
+Both the manual install and the CLI work with pnpm, npm, and yarn. Pass `--pm <pnpm|npm|yarn>` to any CLI command to override the manager it detects from your lockfile.
+</Callout>
+
+## Verify it works
+
+Render the minimum useful surface to confirm the import resolves and the primitive mounts:
+
+```tsx title="smoke-test.tsx"
+import React from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function SmokeTest() {
+  return (
+    <Dialog.Root defaultOpen>
+      <Dialog.Portal>
+        <Dialog.Content>
+          <textlabel
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(220, 40)}
+            Text="Lattice UI is installed"
+          />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+## Next step
+
+Build a real, controlled surface in [Your first dialog](/lattice-ui/getting-started/first-dialog/).

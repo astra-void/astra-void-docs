@@ -1,0 +1,177 @@
+---
+title: Tabs
+description: Tablist primitive that owns the active value, registers triggers in order, moves selection with the arrow keys, and reveals panels with presence motion.
+section: components
+sidebar:
+  order: 50
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/tabs"
+  status="stable-direction"
+  importName="Tabs"
+  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion"]}
+/>
+
+Tabs is the primitive for switching between mutually exclusive views: settings categories, inventory sections, shop pages, or any place where one panel is visible at a time. It owns the active value, keeps its triggers ordered, handles arrow-key movement between them, and mounts the matching panel with presence motion.
+
+Reach for Tabs when a set of triggers should drive **value-based selection** — exactly one active at a time — with **keyboard and gamepad movement** across the list and **panels that animate in and out** as the value changes.
+
+## Import
+
+```ts
+import { Tabs } from "@lattice-ui/tabs";
+```
+
+## Anatomy
+
+Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every `Trigger` and `Content` is tied to the active value through a shared `value` string.
+
+```tsx title="Tabs anatomy"
+<Tabs.Root>
+  <Tabs.List>
+    <Tabs.Trigger value="..." />
+  </Tabs.List>
+  <Tabs.Content value="..." />
+</Tabs.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Tabs.Root` | yes | Owns the active value, the trigger registry, and orientation; shares them through context. |
+| `Tabs.List` | yes | A container `frame` that groups the triggers. |
+| `Tabs.Trigger` | yes | A `textbutton` that selects its `value` on activation, selection, or Enter/Space. |
+| `Tabs.Content` | yes | A panel that mounts and animates while its `value` is active. |
+
+## Example
+
+A controlled tab group with three panels, driven by `value`/`onValueChange`, with a disabled trigger.
+
+```tsx title="SettingsTabs.tsx"
+import { useState } from "@rbxts/react";
+import { Tabs } from "@lattice-ui/tabs";
+
+export function SettingsTabs() {
+  const [tab, setTab] = useState("general");
+
+  return (
+    <Tabs.Root value={tab} onValueChange={setTab} orientation="horizontal">
+      <Tabs.List>
+        <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+        <Tabs.Trigger value="general">
+          <textlabel BackgroundTransparency={1} Text="General" Size={UDim2.fromOffset(120, 34)} />
+        </Tabs.Trigger>
+        <Tabs.Trigger value="audio">
+          <textlabel BackgroundTransparency={1} Text="Audio" Size={UDim2.fromOffset(120, 34)} />
+        </Tabs.Trigger>
+        <Tabs.Trigger value="advanced" disabled>
+          <textlabel BackgroundTransparency={1} Text="Advanced" Size={UDim2.fromOffset(120, 34)} />
+        </Tabs.Trigger>
+      </Tabs.List>
+
+      <Tabs.Content value="general">
+        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(320, 200)}>
+          <textlabel BackgroundTransparency={1} Text="General settings" Size={UDim2.fromScale(1, 1)} />
+        </frame>
+      </Tabs.Content>
+
+      <Tabs.Content value="audio">
+        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(320, 200)}>
+          <textlabel BackgroundTransparency={1} Text="Audio settings" Size={UDim2.fromScale(1, 1)} />
+        </frame>
+      </Tabs.Content>
+
+      <Tabs.Content value="advanced">
+        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(320, 200)}>
+          <textlabel BackgroundTransparency={1} Text="Advanced settings" Size={UDim2.fromScale(1, 1)} />
+        </frame>
+      </Tabs.Content>
+    </Tabs.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `value`/`onValueChange` and pass `defaultValue` to let Tabs own the active value. When neither is set, `Root` selects the first enabled trigger automatically once the registry settles.
+</Callout>
+
+## How it behaves
+
+### Value state
+
+`Tabs.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled. The active value is a plain string that each `Trigger` and `Content` matches against. `onValueChange` fires only with a defined value, so you never receive an `undefined` selection.
+
+When the active value points at no enabled trigger — on first mount with no default, or after the selected trigger is removed or disabled — `Root` resolves a replacement: it falls back to the first enabled trigger, or to the next enabled trigger after the one that was last selected. This keeps a valid panel visible as triggers mount, unmount, or toggle their `disabled` state.
+
+### Selection
+
+Each `Tabs.Trigger` registers itself with `Root` in mount order, exposing a stable `order` used to resolve fallbacks and arrow-key movement. A trigger becomes active in three ways: pointer activation, Roblox `SelectionGained` (so moving a gamepad cursor onto a trigger selects it), and pressing Enter or Space while focused. Disabled triggers set `Active` and `Selectable` to `false`, are skipped during movement, and never become the active value.
+
+`Tabs.Trigger` registers with the focus system through `useFocusNode`, so it participates in gamepad selection alongside other focusable nodes.
+
+### Orientation
+
+`orientation` defaults to `"horizontal"`. It controls which arrow keys move the selection: Left/Right when horizontal, Up/Down when vertical. Pressing a movement key focuses the next enabled trigger in that direction and selects it in one step. Orientation is purely behavioral — it does not lay out the `List`, so add your own `uilistlayout` (as in the example) to position the triggers.
+
+### Panels and presence
+
+`Tabs.Content` is tied to a `value` and is present only while that value is active. By default it mounts through a `Presence` boundary running a surface-reveal recipe, so the panel animates in when selected and animates out when another value takes over, unmounting after the exit completes. Override the recipe with `transition`. Pass `forceMount` to keep the panel mounted at all times and drive visibility yourself — the content stays in the tree and toggles its `Visible` property based on the active value and motion phase.
+
+<Callout title="Default trigger visuals">
+The built-in `Tabs.Trigger` renders a `textbutton` whose `Text` is its `value`, with response motion between an active and inactive color. Use `asChild` on `Trigger`, `List`, and `Content` to supply your own elements while keeping all selection, registration, and presence behavior.
+</Callout>
+
+## API reference
+
+### Tabs.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled active value. Pair with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Initial active value for uncontrolled usage. When omitted, the first enabled trigger is selected." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called whenever the active value changes. Always receives a defined value." },
+    { name: "orientation", type: '"horizontal" | "vertical"', description: "Arrow-key movement axis. Defaults to \"horizontal\"." },
+    { name: "children", type: "React.ReactNode", description: "The List and Content parts." },
+  ]}
+/>
+
+### Tabs.List
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the list onto the single child element instead of rendering the default frame." },
+    { name: "children", type: "React.ReactNode", description: "The trigger elements. Required as a single element when asChild is set." },
+  ]}
+/>
+
+### Tabs.Trigger
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "The value this trigger selects when activated. Required." },
+    { name: "asChild", type: "boolean", description: "Merge selection behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Removes the trigger from selection and movement and prevents it from becoming active. Defaults to false." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Tabs.Content
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "The value this panel is shown for. Required." },
+    { name: "asChild", type: "boolean", description: "Merge the panel onto the single child element instead of rendering the default frame." },
+    { name: "forceMount", type: "boolean", description: "Keeps the panel mounted at all times and toggles visibility instead of unmounting on exit." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default surface-reveal recipe." },
+    { name: "children", type: "React.ReactNode", description: "The panel contents." },
+  ]}
+/>
+
+## Related
+
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

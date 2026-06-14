@@ -1,0 +1,189 @@
+---
+title: CLI
+description: The lattice CLI scaffolds rbxts/react projects and manages @lattice-ui packages, their peers, and providers.
+section: reference
+sidebar:
+  order: 80
+---
+
+import { PackageMeta, PackageInstall, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="lattice-ui"
+  status="stable-direction"
+  importName="lattice"
+/>
+
+The `lattice` CLI is a Node tool for Lattice UI projects. It scaffolds new `rbxts/react` games, installs primitive packages together with their required peers and providers, and audits an existing project for missing dependencies. It is published to npm as `lattice-ui` and exposes two equivalent binaries: `lattice` and `lattice-ui`.
+
+Use the CLI when you want package selection, peer resolution, and project health checks handled for you instead of editing `package.json` by hand.
+
+## Running the CLI
+
+The CLI requires **Node 20+**. Run it on demand with `npx` — no install needed:
+
+```bash
+npx lattice-ui <command> [options]
+```
+
+Or install it globally to get the shorter `lattice` binary:
+
+<PackageInstall packageName="lattice-ui" />
+
+```bash
+npm i -g lattice-ui
+lattice <command> [options]
+```
+
+Both binaries (`lattice` and `lattice-ui`) run the same program. Run `lattice help` for the built-in usage summary or `lattice version` to print the installed version.
+
+<Callout title="Global options">
+`--help` / `-h` prints usage and `--version` / `-v` prints the version. As the first argument they short-circuit any command. An unknown global option (any other leading `-` token) is a usage error.
+</Callout>
+
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `create` | Scaffold a new project from the rbxts template. |
+| `init` | Add Lattice to an existing project. |
+| `add` | Install component packages plus their peers and required providers. |
+| `remove` | Remove selected component packages. |
+| `upgrade` | Upgrade installed `@lattice-ui/*` packages. |
+| `doctor` | Audit lockfiles, peers, and provider expectations. |
+| `help` / `version` | Print usage or the CLI version. |
+
+### create
+
+Scaffolds a new project into an optional `[project-path]` (defaults to the current directory) from the `rbxts` template.
+
+```bash
+npx lattice-ui create my-game --pm npm --git --no-lint
+```
+
+<PropTable
+  rows={[
+    { name: "[project-path]", type: "positional", description: "Target directory for the new project. At most one is accepted; defaults to the current directory." },
+    { name: "--yes", type: "flag", description: "Accept defaults and skip interactive prompts." },
+    { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager instead of auto-detecting one." },
+    { name: "--git", type: "flag", description: "Initialize a git repository in the new project." },
+    { name: "--template", type: "<rbxts>", description: "Project template to scaffold from. Currently rbxts." },
+    { name: "--lint", type: "flag", description: "Include the lint setup. Conflicts with --no-lint." },
+    { name: "--no-lint", type: "flag", description: "Skip the lint setup. Conflicts with --lint." },
+  ]}
+/>
+
+### init
+
+Initializes Lattice inside an existing project. Unlike `create`, it accepts no positional path and no `--git`/`--no-lint` flags, and it supports `--dry-run`.
+
+```bash
+npx lattice-ui init --dry-run
+```
+
+<PropTable
+  rows={[
+    { name: "--yes", type: "flag", description: "Accept defaults and skip prompts." },
+    { name: "--dry-run", type: "flag", description: "Show what would change without writing files." },
+    { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager instead of auto-detecting one." },
+    { name: "--template", type: "<rbxts>", description: "Template to initialize from." },
+    { name: "--lint", type: "flag", description: "Include the lint setup." },
+  ]}
+/>
+
+### add
+
+Installs one or more component packages along with everything they need. Pass component names directly (comma- or space-separated) and/or `--preset` groups. With no names or presets and without `--yes`, `add` prompts you to pick presets and components interactively.
+
+```bash
+npx lattice-ui add dialog,toast --preset overlay
+```
+
+For each selected component the CLI gathers its npm package, its **peers** (`@rbxts/react`, `@rbxts/react-roblox`), and any **required providers**, then installs the set minus whatever is already present. **Optional providers** are reported as suggestions but not installed. After a real run it points you at `doctor`.
+
+<PropTable
+  rows={[
+    { name: "[name...]", type: "positional", description: "Component names to add. Comma-separated lists are split (e.g. dialog,toast)." },
+    { name: "--preset", type: "<preset...>", description: "Add every component in a preset. Repeatable and comma-separated." },
+    { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager instead of auto-detecting one." },
+    { name: "--yes", type: "flag", description: "Skip the install confirmation prompt." },
+    { name: "--dry-run", type: "flag", description: "Print the planned install command without changing anything." },
+  ]}
+/>
+
+### remove
+
+Removes the selected component packages. Accepts the same selection inputs and flags as `add`.
+
+```bash
+npx lattice-ui remove dialog --dry-run
+```
+
+<PropTable
+  rows={[
+    { name: "[name...]", type: "positional", description: "Component names to remove (comma- or space-separated)." },
+    { name: "--preset", type: "<preset...>", description: "Remove every component in a preset." },
+    { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager." },
+    { name: "--yes", type: "flag", description: "Skip the confirmation prompt." },
+    { name: "--dry-run", type: "flag", description: "Preview the changes without applying them." },
+  ]}
+/>
+
+### upgrade
+
+Upgrades installed `@lattice-ui/*` packages. Same selection inputs and flags as `add` and `remove`.
+
+```bash
+npx lattice-ui upgrade --dry-run
+```
+
+<PropTable
+  rows={[
+    { name: "[name...]", type: "positional", description: "Specific packages to upgrade. Omit to consider all installed @lattice-ui packages." },
+    { name: "--preset", type: "<preset...>", description: "Upgrade every component in a preset." },
+    { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager." },
+    { name: "--yes", type: "flag", description: "Skip the confirmation prompt." },
+    { name: "--dry-run", type: "flag", description: "Preview the upgrade without applying it." },
+  ]}
+/>
+
+### doctor
+
+Audits the project and reports issues without changing anything. It checks for a missing or duplicated lockfile, a `packageManager` field that disagrees with the resolved manager, whether any `@lattice-ui` component packages are installed, unknown `@lattice-ui` packages, and missing peers or providers. Missing **required** providers are errors (non-zero exit); everything else is a warning. It finishes with recommended commands.
+
+```bash
+npx lattice-ui doctor
+```
+
+<PropTable
+  rows={[
+    { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force the package manager used for the audit instead of auto-detecting." },
+  ]}
+/>
+
+## Presets
+
+Presets are named bundles of components so you can install a related set in one go with `--preset`.
+
+| Preset | Components |
+| --- | --- |
+| `overlay` | `popover`, `tooltip`, `dialog`, `toast` |
+| `form` | `checkbox`, `radio-group`, `switch`, `text-field`, `textarea` |
+
+## Package manager resolution
+
+When `--pm` is omitted, the CLI resolves a package manager automatically from the project lockfile or installed managers, and pass `--pm <pnpm|npm|yarn>` to override that choice. `doctor` surfaces resolution problems: a missing lockfile, multiple lockfiles, or a `packageManager` field that does not match the resolved manager.
+
+<Callout title="Peers and providers">
+Every component declares the peers it needs (`@rbxts/react`, `@rbxts/react-roblox`) and, for layered primitives, optional providers such as `@lattice-ui/layer`'s `PortalProvider`. `add` installs peers and required providers automatically but only *suggests* optional providers — wire those up yourself when you want the behavior they enable (for example, portal-mounted dialog or menu content).
+</Callout>
+
+## Dry runs
+
+`init`, `add`, `remove`, and `upgrade` all accept `--dry-run`. A dry run prints the exact package-manager command it would run and reports that no files were changed, which is the safest way to preview a change before committing to it.
+
+## Related
+
+- [Installation](/lattice-ui/getting-started/installation/)
+- [Package stability](/lattice-ui/getting-started/package-stability/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)

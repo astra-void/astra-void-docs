@@ -1,0 +1,202 @@
+---
+title: Textarea
+description: Multi-line text input primitive that owns the value, separates change from commit, auto-resizes to its content within row bounds, and wires label, description, and message parts together.
+section: components
+sidebar:
+  order: 160
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/textarea"
+  status="stable-direction"
+  importName="Textarea"
+  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+/>
+
+Textarea is the primitive for multi-line input: a report description, a tribe message, feedback, or any field where text spans several lines. It wraps a multi-line Roblox `TextBox`, owns the value, splits live changes from commit, and grows its height to fit the content between configurable row bounds.
+
+Reach for Textarea when an input needs **controlled or uncontrolled value state**, a clean **change-versus-commit** split, **auto-resizing** that clamps between a minimum and maximum number of rows, and shared **disabled / readOnly / required / invalid** state across a label, description, and message.
+
+## Import
+
+```ts
+import { Textarea } from "@lattice-ui/textarea";
+```
+
+The package also exports the pure height helper used internally:
+
+```ts
+import { resolveTextareaHeight } from "@lattice-ui/textarea";
+```
+
+## Anatomy
+
+Compose `Root` around an `Input`, plus any of the optional text parts. Only `Root` and `Input` are required; `Label`, `Description`, and `Message` read shared state from context.
+
+```tsx title="Textarea anatomy"
+<Textarea.Root>
+  <Textarea.Label />
+  <Textarea.Input />
+  <Textarea.Description />
+  <Textarea.Message />
+</Textarea.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Textarea.Root` | yes | Owns the value, commit callback, shared state, and the auto-resize bounds. |
+| `Textarea.Input` | yes | The multi-line `TextBox` that renders the value, reports changes, and resizes to fit. |
+| `Textarea.Label` | no | A `textbutton` that focuses the input when activated. |
+| `Textarea.Description` | no | A static `textlabel` for helper text. |
+| `Textarea.Message` | no | A `textlabel` for validation text that recolors when `invalid` is set. |
+
+## Example
+
+A controlled, auto-resizing description field bounded between 3 and 8 rows, with commit-time validation.
+
+```tsx title="ReportField.tsx"
+import { useState } from "@rbxts/react";
+import { Textarea } from "@lattice-ui/textarea";
+
+export function ReportField() {
+  const [text, setText] = useState("");
+  const [error, setError] = useState(false);
+
+  return (
+    <Textarea.Root
+      value={text}
+      onValueChange={setText}
+      onValueCommit={(committed) => setError(committed.size() === 0)}
+      invalid={error}
+      autoResize
+      minRows={3}
+      maxRows={8}
+      name="report"
+    >
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(280, 160)}>
+        <uilistlayout Padding={new UDim(0, 4)} />
+
+        <Textarea.Label>
+          <textbutton BackgroundTransparency={1} Text="What happened?" Size={UDim2.fromOffset(280, 22)} />
+        </Textarea.Label>
+
+        <Textarea.Input>
+          <textbox PlaceholderText="Describe the issue" Size={UDim2.fromOffset(280, 68)} />
+        </Textarea.Input>
+
+        {error ? (
+          <Textarea.Message>
+            <textlabel BackgroundTransparency={1} Text="A description is required." Size={UDim2.fromOffset(280, 20)} />
+          </Textarea.Message>
+        ) : (
+          <Textarea.Description>
+            <textlabel BackgroundTransparency={1} Text="Include as much detail as you can." Size={UDim2.fromOffset(280, 20)} />
+          </Textarea.Description>
+        )}
+      </frame>
+    </Textarea.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `value`/`onValueChange` and pass `defaultValue` to let Textarea own the value internally (it defaults to an empty string). Use controlled state when something outside the field needs to read or set the value.
+</Callout>
+
+## How it behaves
+
+### Value state
+
+`Textarea.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled; when neither is set the value starts empty. The value is mirrored onto the `TextBox` every render, so the displayed text always reflects the owned state. The underlying `TextBox` renders with `MultiLine` and `TextWrapped` enabled and top-aligned text.
+
+### Change and commit
+
+A keystroke fires the text change, calling `onValueChange` with the new text; editing ends on `FocusLost`, calling `onValueCommit` with the final text. Use `onValueChange` for live updates and `onValueCommit` for validation or persistence after editing settles. As with Text Field, a disabled field suppresses the commit callback.
+
+### Auto-resize
+
+`autoResize` defaults to `true`. After each change — and whenever the value changes externally — the `Input` measures the content and sets its height to `rows × lineHeight + verticalPadding`. The row count is the larger of the newline count and the measured text bounds, then clamped: `minRows` defaults to `3` (floored at 1), and `maxRows`, if set, is raised to at least `minRows`. Line height defaults to `ceil(TextSize × 1.2)` unless you pass an explicit `lineHeight` on `Input`; vertical padding is summed from the input's `UIPadding` children (falling back to 14 when none are present). With `maxRows` set, the field stops growing past that bound and the `TextBox` scrolls internally. Set `autoResize={false}` to keep a fixed height and size the input yourself.
+
+The height math is exposed as the pure function `resolveTextareaHeight(text, options)` if you need to compute a layout without mounting the component.
+
+### Disabled, readOnly, and validation
+
+`disabled` and `readOnly` both stop edits from updating the value: while either is set, the `Input` rewrites the `TextBox` back to the owned value (still re-running auto-resize). `disabled` also clears `Active`/`Selectable`, dims the text, and suppresses commit; `readOnly` keeps the field selectable but not editable. `Input` can set `disabled`/`readOnly` locally, combined with `Root`'s via OR. `required` is exposed for your own validation and is not enforced, and `invalid` is a visual/semantic marker that recolors `Textarea.Message`. The `name` prop is passed through context for form identification.
+
+### Label and focus
+
+`Textarea.Label` renders a `textbutton`; activating it calls `CaptureFocus()` on the input, so clicking the label focuses the field. When disabled, the label drops its `Active`/`Selectable` state and does nothing. `Description` and `Message` are non-interactive labels that read shared state for their text color.
+
+<Callout title="Default text and visuals">
+Used without `asChild`, each part renders defaults: the `Input` shows a `"Type..."` placeholder with built-in vertical padding, and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the example) to supply real copy and styling while keeping the auto-resize and state wiring intact.
+</Callout>
+
+## API reference
+
+### Textarea.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled value. Pair with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage. Defaults to an empty string." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called on every text change while the field is editable." },
+    { name: "onValueCommit", type: "(value: string) => void", description: "Called with the final text when editing ends (focus lost). Suppressed when disabled." },
+    { name: "disabled", type: "boolean", description: "Blocks edits, clears Active/Selectable, dims the input, and suppresses commit. Defaults to false." },
+    { name: "readOnly", type: "boolean", description: "Blocks edits while keeping the field selectable. Defaults to false." },
+    { name: "required", type: "boolean", description: "Shared flag exposed for your own validation; not enforced. Defaults to false." },
+    { name: "invalid", type: "boolean", description: "Marks the field invalid and recolors the Message part. Defaults to false." },
+    { name: "name", type: "string", description: "Identifier passed through context for form usage." },
+    { name: "autoResize", type: "boolean", description: "Grows the input height to fit its content within the row bounds. Defaults to true." },
+    { name: "minRows", type: "number", description: "Minimum visible rows. Floored at 1. Defaults to 3." },
+    { name: "maxRows", type: "number", description: "Maximum visible rows before the content scrolls. Raised to at least minRows when set. Unbounded by default." },
+    { name: "children", type: "React.ReactNode", description: "The field parts." },
+  ]}
+/>
+
+### Textarea.Input
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default multi-line textbox." },
+    { name: "disabled", type: "boolean", description: "Local disabled state, combined with Root's via OR. Defaults to false." },
+    { name: "readOnly", type: "boolean", description: "Local readOnly state, combined with Root's via OR. Defaults to false." },
+    { name: "lineHeight", type: "number", description: "Explicit per-row pixel height used by auto-resize. Defaults to ceil(TextSize × 1.2)." },
+    { name: "children", type: "React.ReactElement", description: "The textbox element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Textarea.Label
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge label behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Textarea.Description
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the description onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Textarea.Message
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the message onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

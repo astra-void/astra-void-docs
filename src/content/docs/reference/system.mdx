@@ -1,0 +1,246 @@
+---
+title: System
+description: Density scaling, layout primitives, and surface tones layered on top of the style foundation, wired together by a single SystemProvider.
+section: reference
+sidebar:
+  order: 70
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/system"
+  status="stable-direction"
+  dependencies={["@lattice-ui/core", "@lattice-ui/style"]}
+/>
+
+System sits one level above `@lattice-ui/style`. Where Style owns the raw theme and host-prop helpers, System adds the app-facing layer: a **density** system that scales spacing, radius, and type globally; **layout primitives** (`Stack`, `Row`, `Grid`) that drive Roblox layout instances from theme spacing tokens; and **surface tones** for consistent backgrounds and borders. `SystemProvider` ties the theme and density together and feeds a density-resolved `Theme` down through `ThemeProvider`.
+
+## Import
+
+```ts
+import { SystemProvider, useSystemTheme } from "@lattice-ui/system";
+import { DensityProvider, useDensity, applyDensity, density } from "@lattice-ui/system";
+import { Stack, Row, Grid } from "@lattice-ui/system";
+import { Surface, surface } from "@lattice-ui/system";
+```
+
+## API reference
+
+### SystemProvider
+
+The top-level provider. It owns the raw (base) theme, wraps a `DensityProvider`, and exposes both through a system context. Density transforms are applied internally and the resolved theme is passed down via `@lattice-ui/style`'s `ThemeProvider`, so any `useTheme` consumer below sees the density-scaled theme automatically.
+
+```tsx
+function SystemProvider(props: SystemProviderProps): React.Element;
+
+<SystemProvider defaultTheme={defaultDarkTheme} defaultDensity="comfortable">
+  {app}
+</SystemProvider>
+```
+
+Theme and density are each independently controllable (`theme`/`defaultTheme`, `density`/`defaultDensity`). Writes always target the base theme; the resolved theme is derived from base theme plus current density.
+
+<PropTable
+  rows={[
+    { name: "theme", type: "Theme", description: "Controlled base theme. When set, SystemProvider does not own theme state." },
+    { name: "defaultTheme", type: "Theme", description: "Initial base theme for uncontrolled usage. Defaults to defaultLightTheme." },
+    { name: "onThemeChange", type: "(nextTheme: Theme) => void", description: "Called when the base theme changes." },
+    { name: "density", type: "DensityToken", description: "Controlled density. \"compact\", \"comfortable\", or \"spacious\"." },
+    { name: "defaultDensity", type: "DensityToken", description: "Initial density for uncontrolled usage. Defaults to \"comfortable\"." },
+    { name: "onDensityChange", type: "(next: DensityToken) => void", description: "Called when density changes." },
+    { name: "children", type: "React.ReactNode", description: "The subtree governed by this system." },
+  ]}
+/>
+
+### useSystemTheme
+
+```ts
+function useSystemTheme(): SystemThemeContextValue;
+
+const { theme, baseTheme, density, setBaseTheme, setDensity } = useSystemTheme();
+```
+
+Returns the system context: the density-resolved `theme` for reading, the `baseTheme` before density transforms, the current `density`, and setters. Writes go through `setBaseTheme` (raw theme) and `setDensity`. Must be called under a `SystemProvider`.
+
+### DensityProvider
+
+The density layer used internally by `SystemProvider`, also usable on its own. It reads the base theme from the surrounding system base-theme context, resolves a density-scaled theme, and republishes it through `ThemeProvider`. Density is controllable via `density`/`defaultDensity`.
+
+```tsx
+function DensityProvider(props: DensityProviderProps): React.Element;
+
+<DensityProvider density="compact">{children}</DensityProvider>
+```
+
+<PropTable
+  rows={[
+    { name: "density", type: "DensityToken", description: "Controlled density value." },
+    { name: "defaultDensity", type: "DensityToken", description: "Initial density for uncontrolled usage. Defaults to \"comfortable\"." },
+    { name: "onDensityChange", type: "(next: DensityToken) => void", description: "Called when density changes." },
+    { name: "children", type: "React.ReactNode", description: "The subtree receiving the density-resolved theme." },
+  ]}
+/>
+
+### useDensity
+
+```ts
+function useDensity(): DensityContextValue;
+
+const { density, setDensity } = useDensity();
+```
+
+Returns the current `density` token and a `setDensity` setter. Must be called under a `DensityProvider` (or `SystemProvider`).
+
+### applyDensity
+
+```ts
+function applyDensity(theme: Theme, token: DensityToken): Theme;
+
+const compact = applyDensity(defaultLightTheme, "compact");
+```
+
+Pure theme transformer. Returns a new `Theme` with `space`, `radius`, and `typography` scaled by the token's factors and `colors` carried through unchanged. Spacing and radius are rounded and clamped to a non-negative minimum; text sizes clamp to a minimum of 10. Density does not create layout or child instances — it only reshapes token values.
+
+### density
+
+```ts
+function density(token: DensityToken): (theme: Theme) => Theme;
+
+const compact = density("compact");
+const scaled = compact(theme);
+```
+
+A curried form of `applyDensity` — returns a theme transformer bound to a token, convenient where a `(theme) => Theme` function is expected.
+
+### Stack
+
+Vertical-by-default flex layout primitive. Renders a transparent `frame` with a `uilistlayout`, mapping `align`/`justify` to Roblox alignment enums and resolving `gap` and padding through theme spacing tokens.
+
+```tsx
+function Stack(props: StackProps): React.Element;
+
+<Stack gap={8} align="center" padding={16}>
+  {children}
+</Stack>
+```
+
+`align` controls the cross axis and `justify` the main axis (their effect swaps with `direction`). `gap` and every padding field accept a `SpaceToken` (resolved through the theme) or a raw pixel `number`. `autoSize` maps to `AutomaticSize`; `sx` and any direct host props are merged on top of the transparent base. `asChild` is not supported and throws if passed.
+
+<PropTable
+  rows={[
+    { name: "direction", type: "LayoutDirection", description: "\"vertical\" (default) or \"horizontal\"." },
+    { name: "gap", type: "SpaceValue", description: "Spacing between children: a space token or pixel number. Defaults to 0." },
+    { name: "align", type: "StackAlign", description: "Cross-axis alignment: \"start\", \"center\", or \"end\". Defaults to \"start\"." },
+    { name: "justify", type: "StackJustify", description: "Main-axis alignment: \"start\", \"center\", or \"end\". Defaults to \"start\"." },
+    { name: "autoSize", type: "StackAutoSize", description: "boolean | \"x\" | \"y\" | \"xy\". Maps to AutomaticSize; true picks the main axis." },
+    { name: "padding...", type: "SpaceValue", description: "padding, paddingX/Y, and paddingTop/Right/Bottom/Left, resolved via theme spacing." },
+    { name: "sx", type: "Sx<StyleProps>", description: "Extra host props, merged over the transparent base." },
+    { name: "children", type: "React.ReactNode", description: "Laid-out children." },
+  ]}
+/>
+
+### Row
+
+```tsx
+function Row(props: RowProps): React.Element;
+
+<Row gap={6}>{children}</Row>
+```
+
+A `Stack` with `direction` fixed to `"horizontal"`. Accepts every `StackProps` field except `direction` (`RowProps = Omit<StackProps, "direction">`).
+
+### Grid
+
+Responsive grid primitive backed by a `uigridlayout`. It measures its own `AbsoluteSize` and resolves the column count and cell width on layout changes — either honoring a fixed `columns` or fitting as many `minColumnWidth` cells as the container allows.
+
+```tsx
+function Grid(props: GridProps): React.Element;
+
+<Grid minColumnWidth={120} gap={8} cellHeight={48}>
+  {children}
+</Grid>
+```
+
+`gap` sets both axes; `rowGap`/`columnGap` override per axis. All spacing accepts tokens or pixels. `cellHeight` defaults to 32. Like `Stack`, `asChild` is not supported and throws.
+
+<PropTable
+  rows={[
+    { name: "columns", type: "number", description: "Fixed column count. When omitted, columns are derived from minColumnWidth and container width." },
+    { name: "minColumnWidth", type: "SpaceValue", description: "Minimum cell width used to compute responsive column count." },
+    { name: "cellHeight", type: "SpaceValue", description: "Height of each cell. Defaults to 32." },
+    { name: "gap", type: "SpaceValue", description: "Spacing for both axes. Defaults to 0." },
+    { name: "rowGap", type: "SpaceValue", description: "Vertical spacing override. Defaults to gap." },
+    { name: "columnGap", type: "SpaceValue", description: "Horizontal spacing override. Defaults to gap." },
+    { name: "autoSize", type: "StackAutoSize", description: "Maps to AutomaticSize; true resolves to the Y axis. Defaults to false." },
+    { name: "padding...", type: "SpaceValue", description: "Same padding fields as Stack, resolved via theme spacing." },
+    { name: "sx", type: "Sx<StyleProps>", description: "Extra host props, merged over the transparent base." },
+    { name: "children", type: "React.ReactNode", description: "Grid cells." },
+  ]}
+/>
+
+### Surface
+
+Decorated surface host primitive. Renders a `frame` styled with the chosen tone and, for non-overlay tones, adds a `uicorner` and `uistroke` for rounded corners and a themed border.
+
+```tsx
+function Surface(props: SurfaceProps): React.Element;
+
+<Surface tone="elevated" Size={UDim2.fromOffset(240, 120)}>
+  {children}
+</Surface>
+```
+
+For decorated tones the host `BorderSizePixel` is forced to 0 since the border is drawn by `uistroke`; the `overlay` tone renders a translucent fill with no decoration. `sx` and direct host props merge on top. `asChild` is not supported and throws.
+
+<PropTable
+  rows={[
+    { name: "tone", type: "SurfaceToken", description: "\"surface\" (default), \"elevated\", \"sunken\", or \"overlay\"." },
+    { name: "sx", type: "Sx<StyleProps>", description: "Extra host props, merged over the tone." },
+    { name: "children", type: "React.ReactNode", description: "Surface contents." },
+  ]}
+/>
+
+### surface
+
+```ts
+function surface<Props>(token: SurfaceToken): Sx<Props>;
+
+const elevatedSx = surface("elevated");
+```
+
+Props-only counterpart to the `Surface` primitive. Returns an `Sx` value that resolves to background, border color, and border-size host props for the given tone — no child instances (no `uicorner`/`uistroke`). Use it when you only want the tone's host props on an existing element. The `overlay` tone resolves to a translucent overlay fill with no border.
+
+### Types
+
+<PropTable
+  rows={[
+    { name: "DensityToken", type: "\"compact\" | \"comfortable\" | \"spacious\"", description: "The three density levels." },
+    { name: "DensityContextValue", type: "{ density; setDensity }", description: "Value returned by useDensity." },
+    { name: "DensityProviderProps", type: "object", description: "Props for DensityProvider." },
+    { name: "SystemProviderProps", type: "object", description: "Props for SystemProvider." },
+    { name: "SystemThemeContextValue", type: "object", description: "theme, baseTheme, density, setBaseTheme, setDensity from useSystemTheme." },
+    { name: "LayoutDirection", type: "\"vertical\" | \"horizontal\"", description: "Stack fill direction." },
+    { name: "StackAlign", type: "\"start\" | \"center\" | \"end\"", description: "Cross-axis alignment." },
+    { name: "StackJustify", type: "\"start\" | \"center\" | \"end\"", description: "Main-axis alignment." },
+    { name: "StackAutoSize", type: "boolean | \"x\" | \"y\" | \"xy\"", description: "AutomaticSize selector." },
+    { name: "StackPadding", type: "object", description: "The padding/paddingX/paddingTop... field group." },
+    { name: "SpaceToken", type: "keyof Theme[\"space\"]", description: "A key of the theme spacing scale." },
+    { name: "SpaceValue", type: "SpaceToken | number", description: "A space token or a raw pixel value." },
+    { name: "StackProps", type: "object", description: "Props for Stack." },
+    { name: "RowProps", type: "Omit<StackProps, \"direction\">", description: "Props for Row." },
+    { name: "GridProps", type: "object", description: "Props for Grid." },
+    { name: "SurfaceToken", type: "\"surface\" | \"elevated\" | \"sunken\" | \"overlay\"", description: "The four surface tones." },
+    { name: "SurfaceProps", type: "object", description: "Props for the Surface primitive." },
+  ]}
+/>
+
+<Callout title="Density is a theme transform, not a layout engine">
+`applyDensity` and `density` only reshape token values — they never create or modify Roblox instance graphs. Spacing and radius are rounded and clamped to non-negative values, and text sizes never drop below 10 so labels stay legible at compact density. Layout itself is produced by `Stack`, `Row`, `Grid`, and `Surface` reading the resolved tokens.
+</Callout>
+
+## Related links
+
+- [Style](/lattice-ui/reference/style/)
+- [Core](/lattice-ui/reference/core/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

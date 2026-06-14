@@ -1,0 +1,245 @@
+---
+title: Focus management
+description: How lattice-ui keeps GuiObject selection predictable across overlays — focus scopes, focus nodes, restore snapshots, and ordered selection.
+section: guides
+sidebar:
+  order: 10
+draft: false
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+On Roblox, "focus" is gamepad and keyboard **selection**: a single `GuiObject` held by `GuiService.SelectedObject`. There is no DOM focus tree, no tab order, and no implicit notion of "the thing the user is on" beyond that one property. The moment you start layering surfaces — a dialog over a menu, a popover inside a panel — that single property becomes a contended resource. Open a modal and selection should move into it; close the modal and selection should land back on whatever opened it; while it is open, the player's gamepad should not be able to wander out of it.
+
+`@lattice-ui/focus` is the foundation that makes this deterministic. It maintains its own model of **focus scopes** and **focus nodes**, decides which node should be selected, and bridges that decision to `GuiService.SelectedObject`. Every layered primitive in lattice-ui — Dialog, Menu, Popover, Select, and the rest — sits on top of it, so trapping and restoring selection works the same way everywhere.
+
+You rarely call this package directly when you compose primitives — Dialog and friends wire it for you. Reach for it when you are **building your own selectable surface** or need to drive selection by hand.
+
+## Import
+
+```ts
+import {
+  FocusScope,
+  useFocusNode,
+  focusGuiObject,
+  focusNode,
+  getFocusedGuiObject,
+  captureRestoreSnapshot,
+  restoreSnapshot,
+} from "@lattice-ui/focus";
+```
+
+## The model: scopes and nodes
+
+Two registrations drive everything.
+
+- A **focus node** is a selectable `GuiObject` the manager is allowed to select. You register one with `useFocusNode`, handing it a ref to the instance. The manager only ever selects a registered node (or an *implicit* node it infers when selection arrives from outside).
+- A **focus scope** is a region — a dialog body, a menu list — with rules about activity, trapping, and restoration. `FocusScope` registers one and shares its id through context so any `useFocusNode` rendered inside is owned by that scope.
+
+The manager keeps both in ordered lists, resolves which node is currently focusable, and writes the result to `GuiService.SelectedObject`. When the selected object changes from outside (the player moves the gamepad), it reads it back and re-resolves. That two-way bridge is the whole point: your model and Roblox's selection stay in agreement.
+
+### Registering a focusable node
+
+`useFocusNode` takes a ref to the `GuiObject` and registers it under the nearest scope. It returns a ref to the node id, which you generally do not need.
+
+```tsx title="SelectableTile.tsx"
+import { React } from "@rbxts/react";
+import { useFocusNode } from "@lattice-ui/focus";
+
+export function SelectableTile(props: { label: string; disabled?: boolean }) {
+  const tileRef = React.useRef<TextButton>();
+
+  useFocusNode({
+    ref: tileRef,
+    getDisabled: () => props.disabled === true,
+  });
+
+  return (
+    <textbutton
+      ref={tileRef}
+      Active={!props.disabled}
+      Selectable={!props.disabled}
+      Size={UDim2.fromOffset(160, 40)}
+      Text={props.label}
+    />
+  );
+}
+```
+
+<Callout title="Selectable is the source of truth">
+The manager will never select a node whose `GuiObject.Selectable` is `false`, whose `Visible` chain is broken, or whose `getDisabled()` returns `true`. Keep `Selectable` and `Active` in sync with your disabled state — `getDisabled` mirrors it in the model, but `Selectable` is what Roblox enforces.
+</Callout>
+
+### Defining a scope
+
+Wrap a region in `FocusScope` to make it a focus boundary. By default a scope is `active`, does **not** trap, and **does** restore focus on deactivation.
+
+```tsx title="Panel.tsx"
+import { FocusScope } from "@lattice-ui/focus";
+
+export function Panel(props: { open: boolean; children: React.ReactNode }) {
+  return (
+    <FocusScope active={props.open} trapped restoreFocus>
+      <frame Size={UDim2.fromOffset(320, 220)}>{props.children}</frame>
+    </FocusScope>
+  );
+}
+```
+
+Use `asChild` when you want the scope root to *be* your frame instead of an extra wrapper — the child element receives the scope's ref:
+
+```tsx
+<FocusScope active={props.open} trapped asChild>
+  <frame Size={UDim2.fromOffset(320, 220)}>{props.children}</frame>
+</FocusScope>
+```
+
+<PropTable
+  rows={[
+    { name: "active", type: "boolean", description: "Whether the scope is participating. Defaults to true. Flipping to false triggers restore." },
+    { name: "trapped", type: "boolean", description: "Keeps selection inside this scope while it is the topmost trapped scope. Defaults to false." },
+    { name: "restoreFocus", type: "boolean", description: "Restores selection to the previously selected object when the scope deactivates. Defaults to true." },
+    { name: "asChild", type: "boolean", description: "Use the single child element as the scope root instead of rendering a wrapper frame." },
+    { name: "children", type: "React.ReactNode", description: "The scope contents." },
+  ]}
+/>
+
+## Trapping selection
+
+A **trapped** scope keeps gamepad and keyboard selection inside it. While a trapped scope is active, the manager refuses to resolve any node outside its root: if the player moves selection out — or external code sets `SelectedObject` to something outside — selection is pulled back to a focusable node inside the scope.
+
+```tsx title="ModalSurface.tsx"
+import { FocusScope } from "@lattice-ui/focus";
+
+export function ModalSurface(props: { open: boolean; children: React.ReactNode }) {
+  // While open, selection cannot leave this frame.
+  return (
+    <FocusScope active={props.open} trapped>
+      <frame Size={UDim2.fromOffset(360, 240)}>{props.children}</frame>
+    </FocusScope>
+  );
+}
+```
+
+Trapping is **layer-aware**, not a stack of mutually exclusive locks. When several trapped scopes are active, the manager picks the *topmost* one — first by `FocusLayerProvider` layer order, then by registration order — and traps within it. Closing the top scope hands the trap to the next one down. This is exactly what lets a Popover open inside a Dialog without either fighting the other.
+
+<Callout title="Provide a focusable target before trapping">
+A trapped scope needs something to hold. On activation the manager looks for the scope's last-focused node, then the first focusable descendant. If the scope has no selectable `GuiObject` yet — for example because its content mounts a frame later — selection clears until one appears. Make sure at least one child is `Selectable` by the time the scope becomes active.
+</Callout>
+
+## Restoring selection
+
+When a scope with `restoreFocus` activates, it captures a **restore snapshot**: the node (or raw `GuiObject`) that was selected just before. When that scope deactivates, the manager replays the snapshot, returning selection to whatever opened the surface — typically the trigger.
+
+Restoration degrades gracefully. If the snapshot node is gone (unmounted, now invisible, or disabled), the manager walks up to the parent scope and selects its best fallback, then falls back to the topmost remaining trapped scope. It never leaves selection pointing at a dead instance.
+
+You can drive this yourself for surfaces you build outside the primitives:
+
+```tsx title="useRestoreOnClose.ts"
+import { React } from "@rbxts/react";
+import {
+  captureRestoreSnapshot,
+  restoreSnapshot,
+  type FocusRestoreSnapshot,
+} from "@lattice-ui/focus";
+
+export function useRestoreOnClose(open: boolean) {
+  const snapshotRef = React.useRef<FocusRestoreSnapshot>();
+
+  React.useEffect(() => {
+    if (open) {
+      // Remember what was selected before the surface took over.
+      snapshotRef.current = captureRestoreSnapshot();
+      return;
+    }
+
+    // On close, hand selection back.
+    restoreSnapshot(snapshotRef.current);
+    snapshotRef.current = undefined;
+  }, [open]);
+}
+```
+
+<Callout title="Snapshots reference nodes, not raw selection">
+`captureRestoreSnapshot` records the focus node id, not the current `GuiObject` directly. If nothing is focused in the model, it falls back to an implicit node inferred from `GuiService.SelectedObject`. Capture *before* you change selection — once your surface has stolen it, the snapshot would point at your own content.
+</Callout>
+
+## Moving selection by hand
+
+Sometimes you need to put selection somewhere explicitly — the first item of a freshly opened list, a confirm button, a recovered field after validation. The manager exposes imperative helpers:
+
+- `focusGuiObject(guiObject)` — select a specific `GuiObject` (registering it implicitly if needed). Returns the object that ended up selected, or `undefined` if it was not focusable.
+- `focusNode(nodeId)` — select a known node by id.
+- `getFocusedGuiObject()` — read the currently focused object from the model.
+- `clearFocus()` — clear selection.
+
+```tsx title="autoFocusFirst.ts"
+import { focusGuiObject } from "@lattice-ui/focus";
+
+export function autoFocusFirst(firstItem: GuiObject | undefined) {
+  // Defer a frame so the instance is parented and visible before selecting.
+  task.defer(() => {
+    focusGuiObject(firstItem);
+  });
+}
+```
+
+<Callout title="Why defer">
+A `GuiObject` is not focusable until it is parented and effectively visible. Right after mount the instance may not satisfy that yet, so `focusGuiObject` returns `undefined`. Deferring one frame (or marking the scope active and letting trap enforcement pick it up) is the reliable path.
+</Callout>
+
+## Ordered selection
+
+Grids, menus, and radio groups need **directional movement** — "next item", "previous item" — that skips disabled and hidden entries and wraps predictably. The ordered-selection helpers operate on a list of entries you maintain (each with an `id`, an `order`, and a ref) and resolve which one to move to.
+
+```tsx title="useArrowNavigation.ts"
+import {
+  getCurrentOrderedSelectionEntry,
+  getRelativeOrderedSelectionEntry,
+  focusOrderedSelectionEntry,
+  type OrderedSelectionEntry,
+  type OrderedSelectionDirection,
+} from "@lattice-ui/focus";
+
+export function moveSelection(
+  entries: Array<OrderedSelectionEntry>,
+  direction: OrderedSelectionDirection,
+) {
+  const current = getCurrentOrderedSelectionEntry(entries);
+  const next = getRelativeOrderedSelectionEntry(entries, current?.id, direction);
+  focusOrderedSelectionEntry(next);
+}
+```
+
+Key behaviors to rely on:
+
+- Entries are sorted by their `order` field, not array position, so registration order does not have to match visual order.
+- `getRelativeOrderedSelectionEntry` filters out unavailable entries (not present, disabled, hidden, or not `Selectable`) before stepping, and **clamps** at the ends — it does not wrap. Add your own wrap if you want it.
+- With no current selection, a `+1` direction lands on the first available entry and `-1` on the last.
+
+<Callout title="Direction is a fixed type">
+`OrderedSelectionDirection` is `-1 | 1`, not an arbitrary number. Map your gamepad/arrow input to one of those two values — for a horizontal group, `Left` is `-1` and `Right` is `1`; for vertical, `Up`/`Down`.
+</Callout>
+
+## How primitives wire all of this
+
+When you use Dialog or Menu, the wiring above is already done. `Dialog.Content` renders a `FocusScope` with `trapFocus` and `restoreFocus`; `Dialog.Trigger` registers a focus node so it is the natural restore target. You only reach for `@lattice-ui/focus` directly when building a selectable surface the primitives do not cover.
+
+```tsx title="Reading what a primitive already does"
+// Equivalent to what Dialog.Content sets up for you:
+<FocusScope active={open} trapped restoreFocus>
+  {/* trigger captured the restore snapshot when this activated */}
+  {children}
+</FocusScope>
+```
+
+## Related
+
+- [Dialog](/lattice-ui/components/dialog/)
+- [Menu](/lattice-ui/components/menu/)
+- [Popover](/lattice-ui/components/popover/)
+- [Select](/lattice-ui/components/select/)
+- [Radio group](/lattice-ui/components/radio-group/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Focus reference](/lattice-ui/reference/focus/)

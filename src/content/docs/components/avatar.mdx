@@ -1,0 +1,135 @@
+---
+title: Avatar
+description: An image-with-fallback primitive that tracks load status, debounces the fallback with a delay, and lets your component own the visuals.
+section: components
+sidebar:
+  order: 20
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/avatar"
+  status="stable-direction"
+  importName="Avatar"
+  dependencies={["@lattice-ui/core"]}
+/>
+
+Avatar represents a player or entity with an image, falling back to placeholder content when there is no source or the image has not loaded. It tracks the load lifecycle of the underlying `ImageLabel` and coordinates when the image versus the fallback is shown, so you never flash a placeholder during a fast load or leave an empty box on a broken asset.
+
+Reach for Avatar wherever you show a thumbnail that might be missing or slow — headshots, group icons, item images — and want the image-then-fallback handoff handled for you, including a short delay before the fallback appears so quick loads stay seamless.
+
+## Import
+
+```ts
+import { Avatar } from "@lattice-ui/avatar";
+```
+
+## Anatomy
+
+Compose `Root` around an `Image` and a `Fallback`. The root owns the source and status; the image shows once loaded and the fallback shows otherwise.
+
+```tsx title="Avatar anatomy"
+<Avatar.Root src="...">
+  <Avatar.Image />
+  <Avatar.Fallback />
+</Avatar.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Avatar.Root` | yes | Owns the source, load status, and the fallback delay; shares them through context. |
+| `Avatar.Image` | yes | Renders the image and reports its load status back to the root. |
+| `Avatar.Fallback` | no | Placeholder shown while the image is missing, loading past the delay, or errored. |
+
+## Example
+
+A player headshot that resolves a thumbnail from a `UserId` and shows initials while it loads.
+
+```tsx title="PlayerAvatar.tsx"
+import { useMemo } from "@rbxts/react";
+import { Players } from "@rbxts/services";
+import { Avatar } from "@lattice-ui/avatar";
+
+export function PlayerAvatar(props: { userId: number; initials: string }) {
+  const src = useMemo(() => {
+    const [content] = Players.GetUserThumbnailAsync(
+      props.userId,
+      Enum.ThumbnailType.HeadShot,
+      Enum.ThumbnailSize.Size48x48,
+    );
+    return content;
+  }, [props.userId]);
+
+  return (
+    <Avatar.Root src={src} delayMs={200}>
+      <Avatar.Image />
+      <Avatar.Fallback>
+        <textlabel
+          BackgroundTransparency={1}
+          Size={UDim2.fromScale(1, 1)}
+          Text={props.initials}
+          TextColor3={Color3.fromRGB(235, 240, 248)}
+          TextSize={14}
+        />
+      </Avatar.Fallback>
+    </Avatar.Root>
+  );
+}
+```
+
+## How it behaves
+
+### Load status
+
+`Avatar.Root` tracks a status of `idle`, `loading`, `loaded`, or `error`. On mount and whenever `src` changes, it starts in `loading` if a non-empty source is set, or `error` if the source is empty or absent. `Avatar.Image` watches its `ImageLabel`'s `IsLoaded` property and reports `loaded` once the asset finishes; if the resolved source is empty it reports `error`. The image is only visible while the status is `loaded`.
+
+`Avatar.Image` resolves its source from its own `src` prop first, then falls back to the root's `src`. This lets you set the source once on the root, or override it per image.
+
+### Fallback timing
+
+`Avatar.Fallback` is shown based on status and a delay. It is hidden once the image is `loaded`, always shown on `error`, and otherwise shown only after the delay has elapsed. The root starts a `delayMs` timer (default `250`, clamped to at least `0`) when a source begins loading; until that timer fires, the fallback stays hidden so a fast load does not flash a placeholder. When there is no source, the delay is considered elapsed immediately so the fallback appears at once.
+
+<Callout title="Render both Image and Fallback together">
+Keep `Avatar.Image` and `Avatar.Fallback` mounted as siblings at the same time. Visibility of each is driven by the shared status — the image hides itself until loaded and the fallback hides itself until needed — so you should not conditionally mount one or the other yourself.
+</Callout>
+
+<Callout title="Roblox image loading">
+Status comes from the `ImageLabel.IsLoaded` signal, so it reflects the engine's own asset pipeline. Pass a resolved asset string (for example from `Players.GetUserThumbnailAsync`) as `src`. An empty string is treated as an error and shows the fallback immediately.
+</Callout>
+
+## API reference
+
+### Avatar.Root
+
+<PropTable
+  rows={[
+    { name: "src", type: "string", description: "Default image source shared with Avatar.Image through context. An empty or absent source resolves to the error status." },
+    { name: "delayMs", type: "number", description: "Milliseconds to wait before showing the fallback while loading, so fast loads do not flash a placeholder. Defaults to 250 and is clamped to a minimum of 0." },
+    { name: "children", type: "React.ReactNode", description: "The image and fallback parts." },
+  ]}
+/>
+
+### Avatar.Image
+
+<PropTable
+  rows={[
+    { name: "src", type: "string", description: "Image source for this part. Overrides the root's src when set; otherwise the root's src is used." },
+    { name: "asChild", type: "boolean", description: "Merge the image source and visibility onto the single child element instead of rendering the default imagelabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Avatar.Fallback
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the fallback visibility onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The placeholder element to render, such as initials or an icon. Required when asChild is set; otherwise rendered inside the default label." },
+  ]}
+/>
+
+## Related
+
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

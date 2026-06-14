@@ -1,0 +1,171 @@
+---
+title: Your first dialog
+description: Build a controlled, modal dialog step by step with the Dialog primitive.
+section: getting-started
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Dialog is a good first primitive because it shows the whole Lattice UI model in one surface: a `Root` that owns state, parts that read from it, and an app-owned frame for the visuals. By the end of this walkthrough you will have a working confirmation dialog that opens from a button, traps focus, and closes predictably.
+
+This page is a guided build, not a reference. For the full prop list and behavior details, see the [Dialog component page](/lattice-ui/components/dialog/).
+
+<Callout title="Before you start">
+This assumes `@lattice-ui/dialog` is installed. If it is not, follow [Installation](/lattice-ui/getting-started/installation/) first.
+</Callout>
+
+## Step 1 — Import and sketch the anatomy
+
+`Dialog` is a compound component: a `Root` and a set of parts hanging off it. Start from the import and the shape you are going to fill in.
+
+```tsx title="ConfirmDialog.tsx"
+import React from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function ConfirmDialog() {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger />
+      <Dialog.Portal>
+        <Dialog.Overlay />
+        <Dialog.Content />
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+`Root`, `Portal`, and `Content` are the minimum useful surface; `Trigger`, `Overlay`, and `Close` are there to drive and dress it.
+
+## Step 2 — Add a trigger
+
+`Dialog.Trigger` is the button that opens the surface. Use `asChild` so your own `textbutton` becomes the trigger instead of rendering a default one — the trigger behavior merges onto the element you provide.
+
+```tsx title="The trigger"
+<Dialog.Trigger asChild>
+  <textbutton
+    Text="Delete save"
+    Size={UDim2.fromOffset(140, 38)}
+  />
+</Dialog.Trigger>
+```
+
+The trigger also registers itself as the focus-restore target, so when the dialog closes, selection returns here automatically.
+
+## Step 3 — Build the surface
+
+`Dialog.Portal` renders the surface into a `ScreenGui` above your game UI, `Dialog.Overlay` is the backdrop, and `Dialog.Content` is the focus-trapped, dismissable panel. The visuals are entirely yours — Lattice only owns the behavior.
+
+```tsx title="Overlay and content"
+<Dialog.Portal>
+  <Dialog.Overlay>
+    <frame
+      BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+      BackgroundTransparency={0.5}
+      Size={UDim2.fromScale(1, 1)}
+    />
+  </Dialog.Overlay>
+
+  <Dialog.Content>
+    <frame
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromOffset(320, 180)}
+    >
+      <textlabel
+        BackgroundTransparency={1}
+        Size={UDim2.fromOffset(280, 40)}
+        Text="Delete this save?"
+        TextColor3={Color3.fromRGB(240, 244, 250)}
+      />
+    </frame>
+  </Dialog.Content>
+</Dialog.Portal>
+```
+
+By default `Dialog.Content` traps focus while open, restores focus on close, and runs a canvas-group reveal/exit animation — you get all of that without configuring anything.
+
+## Step 4 — Add a close action
+
+Put a `Dialog.Close` inside the content for an explicit close. Like the trigger, it accepts `asChild` so your own button drives it.
+
+```tsx title="Close from inside"
+<Dialog.Close asChild>
+  <textbutton
+    Text="Cancel"
+    Size={UDim2.fromOffset(100, 34)}
+  />
+</Dialog.Close>
+```
+
+Because the dialog is **modal** by default, an outside press also dismisses it — so the close button is a convenience, not the only way out.
+
+## Step 5 — Control the open state
+
+So far the dialog runs uncontrolled: the trigger and close button drive it through shared context. That is enough for most cases. When something outside the dialog needs to open or close it, lift the state with `open` and `onOpenChange`.
+
+```tsx title="ConfirmDialog.tsx"
+import React, { useState } from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function ConfirmDialog() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <textbutton Text="Delete save" Size={UDim2.fromOffset(140, 38)} />
+      </Dialog.Trigger>
+
+      <Dialog.Portal>
+        <Dialog.Overlay>
+          <frame
+            BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+            BackgroundTransparency={0.5}
+            Size={UDim2.fromScale(1, 1)}
+          />
+        </Dialog.Overlay>
+
+        <Dialog.Content>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(320, 180)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(280, 40)}
+              Text="Delete this save?"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+            />
+            <Dialog.Close asChild>
+              <textbutton Text="Cancel" Size={UDim2.fromOffset(100, 34)} />
+            </Dialog.Close>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+Controlled and uncontrolled usage behave identically — the trigger, the close button, and an outside press all flow through the same state, so `onOpenChange` fires no matter how the dialog opens or closes.
+
+<Callout title="When to control state">
+Reach for `open`/`onOpenChange` only when an outside actor needs to drive the dialog — a server response, a hotkey, or a parent screen. Otherwise prefer `defaultOpen` and let Dialog own it.
+</Callout>
+
+## Recap
+
+- `Dialog.Root` owns the open state; every part reads it through context.
+- `asChild` lets your own `textbutton` become the trigger and close button.
+- `Dialog.Content` traps and restores focus and animates in and out for free.
+- A modal dialog dismisses on an outside press, not just the close button.
+
+## Next step
+
+See how this same shape repeats across every primitive in the [Composition model](/lattice-ui/getting-started/composition-model/), or read the full [Dialog reference](/lattice-ui/components/dialog/) for every prop.

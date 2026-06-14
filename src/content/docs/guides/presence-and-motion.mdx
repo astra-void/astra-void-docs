@@ -1,0 +1,238 @@
+---
+title: Presence and motion
+description: How lattice-ui animates GuiObjects — presence reveal/exit, response settling, feedback effects, and the target contracts that keep motion from fighting layout.
+section: guides
+sidebar:
+  order: 30
+draft: false
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+UI motion on Roblox is just property tweening over time — `BackgroundTransparency` easing to `0`, a `Position` sliding into place. The hard part is not the tween; it is **coordination**. A surface that fades out has to stay mounted until the fade finishes. A property the layout system owns must not also be driven by an animation, or they overwrite each other every frame. And motion should collapse cleanly to an instant state change when a player has motion disabled.
+
+`@lattice-ui/motion` is the foundation that solves this. It splits animation into three intents, each with a hook and a set of recipes:
+
+- **Presence** — reveal and exit motion tied to whether a node should exist. Keeps the node mounted through its exit.
+- **Response** — state-driven settling between two visual states (selected/unselected, on/off). Eases toward the active state.
+- **Feedback** — short one-shot accents for input (press, focus). Accent on, recover off.
+
+Underpinning all three is the **target contract**, which declares *which properties motion is allowed to own* on a given instance — the mechanism that stops motion and layout from stepping on each other.
+
+## Import
+
+```ts
+import {
+  usePresenceMotion,
+  useResponseMotion,
+  useFeedbackEffect,
+  motionTargets,
+  createSelectionResponseRecipe,
+  createCanvasGroupRevealRecipe,
+  createPressFeedbackEffect,
+  type PresenceMotionConfig,
+  type ResponseMotionConfig,
+  type FeedbackEffectConfig,
+} from "@lattice-ui/motion";
+```
+
+Like `@lattice-ui/focus`, you rarely import this when composing primitives — Dialog, Popover, and friends animate themselves. Reach for it when you build a custom surface or want motion on your own visuals.
+
+## Target contracts: who owns the property
+
+Every motion hook animates a single `Instance` and, optionally, a `MotionTargetContract` describing the **ownership boundary** for that instance. The contract's `role` decides which properties motion may write:
+
+| Role | Motion may own | Use when |
+| --- | --- | --- |
+| `appearance` | Visual props only — `BackgroundTransparency`, `*Color3`, `*Transparency`, `Rotation`, `GroupTransparency` | Color/opacity changes on a node whose geometry is laid out elsewhere. |
+| `offset-wrapper` | `Position` (plus appearance) | An isolated wrapper whose `Position` is motion-owned — slide-in surfaces. |
+| `size-wrapper` | `Size` (plus appearance) | An isolated wrapper whose `Size` is motion-owned — indicators that grow. |
+| `layout` | `AnchorPoint`, `Position`, `Size` (plus appearance) | The component has *deliberately* handed geometry to motion. |
+| `custom` | Only the keys listed in `allowProperties` | You need an exact, hand-picked set. |
+
+Build a contract with the `motionTargets` helpers (or `createMotionTargetContract` for `custom`):
+
+```ts
+import { motionTargets } from "@lattice-ui/motion";
+
+const appearance = motionTargets.appearance("tile");
+const slide = motionTargets.offsetWrapper("drawer");
+const custom = motionTargets.custom({
+  label: "ring",
+  allowProperties: ["ImageTransparency"],
+});
+```
+
+<Callout title="Reserved properties are never animated">
+`AbsolutePosition`, `AbsoluteSize`, `AutomaticSize`, `LayoutOrder`, `Parent`, `Visible`, and `ZIndex` are reserved for Roblox/layout ownership and are rejected regardless of role. Attempting to animate a property the contract does not own is dropped and reported as a motion diagnostic — it will not silently fight your layout. If motion needs to own geometry, animate a dedicated wrapper with an `offset-wrapper`/`size-wrapper` contract instead of the laid-out node itself.
+</Callout>
+
+## Presence: reveal and exit
+
+`usePresenceMotion(present, config, onExitComplete?)` returns a ref you attach to the animated instance. When `present` flips to `false`, the node is **not** torn down immediately — the exit motion runs first, and `onExitComplete` fires when it finishes. This is what lets you delay unmount until the animation is done.
+
+```tsx title="RevealCard.tsx"
+import { React } from "@rbxts/react";
+import { usePresenceMotion, createCanvasGroupRevealRecipe } from "@lattice-ui/motion";
+
+export function RevealCard(props: { open: boolean }) {
+  const [mounted, setMounted] = React.useState(props.open);
+
+  React.useEffect(() => {
+    if (props.open) setMounted(true);
+  }, [props.open]);
+
+  const ref = usePresenceMotion<CanvasGroup>(
+    props.open,
+    createCanvasGroupRevealRecipe(),
+    () => setMounted(false), // unmount only after the exit finishes
+  );
+
+  if (!mounted) return undefined;
+
+  return (
+    <canvasgroup
+      ref={ref}
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromOffset(320, 180)}
+    />
+  );
+}
+```
+
+A `PresenceMotionConfig` has up to four parts. `initial` is the snapshot applied before reveal; `reveal` and `exit` are timed steps; `target` is the contract:
+
+<PropTable
+  rows={[
+    { name: "target", type: "MotionTargetContract", description: "Ownership boundary for the animated instance. Recipes set this for you." },
+    { name: "initial", type: "MotionProperties", description: "Property snapshot applied before the reveal runs (the hidden starting state)." },
+    { name: "reveal", type: "MotionStep", description: "Timed step toward the visible state. Omit to appear instantly." },
+    { name: "exit", type: "MotionStep", description: "Timed step toward the hidden state. Omit to disappear instantly (onExitComplete still fires)." },
+  ]}
+/>
+
+Prefer a shared recipe over hand-rolling a config — they encode tested timing and the right target contract:
+
+- `createCanvasGroupRevealRecipe()` / `createSurfaceRevealRecipe()` — slide-and-fade for surfaces.
+- `createOverlayFadeRecipe()` — backdrop fade (`appearance` target).
+- `createPopperEntranceRecipe(placement)` / `createCanvasGroupPopperEntranceRecipe(placement)` — directional entrance for anchored content.
+- `createIndicatorRevealRecipe(size)` — grow-from-zero for indicators (`size-wrapper`).
+
+<Callout title="Match the transparency property to the instance">
+The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup`. The plain surface recipes animate `BackgroundTransparency`. Pick the recipe that matches the instance you attach the ref to, or the property write is rejected by the target contract.
+</Callout>
+
+### forceMount and the lifecycle
+
+`usePresenceMotion` keeps the node mounted through exit for you. If you need finer control — keeping the node alive even before it has ever entered, or reading the animation phase — use the lower-level `usePresenceMotionController`, which returns `{ ref, phase, mounted, isExiting, isVisible, ... }`. The phase walks through `exited → mounted → preparing → ready → visible → exiting`, so you can gate other behavior (like enabling input only once `isVisible`).
+
+## Response: settling between states
+
+`useResponseMotion(active, properties, config?)` eases an instance between an **active** and **inactive** property set whenever `active` changes. Unlike presence, there is no mount/unmount story — it is for nodes that stay mounted and change appearance. The first application is instant (no animation on mount); subsequent changes settle.
+
+```tsx title="SelectableChip.tsx"
+import { useResponseMotion, createSelectionResponseRecipe } from "@lattice-ui/motion";
+
+export function SelectableChip(props: { selected: boolean; label: string }) {
+  const ref = useResponseMotion<TextButton>(
+    props.selected,
+    {
+      active: { BackgroundColor3: Color3.fromRGB(88, 142, 255) },
+      inactive: { BackgroundColor3: Color3.fromRGB(47, 53, 68) },
+    },
+    createSelectionResponseRecipe(),
+  );
+
+  return (
+    <textbutton
+      ref={ref}
+      Selectable
+      Size={UDim2.fromOffset(140, 34)}
+      Text={props.label}
+    />
+  );
+}
+```
+
+This is the exact pattern lattice-ui's own Checkbox and Radio group use. Recipes for response motion include `createSelectionResponseRecipe`, `createToggleResponseRecipe`, `createSliderThumbResponseRecipe(isDragging)`, `createFieldResponseRecipe`, and `createToastResponseRecipe`.
+
+<Callout title="active and inactive must define the same keys">
+`useResponseMotion` writes whichever set matches the current state, so both objects should describe the same properties. If `active` sets `BackgroundColor3` but `inactive` does not, the color will not return when the state flips back.
+</Callout>
+
+## Feedback: one-shot accents
+
+`useFeedbackEffect(active, properties, config?)` is for short input accents — a press depression, a focus glow. It applies an `accent` step when `active` is `true` and a `recover` step when `false`, both as quick one-shots.
+
+```tsx title="PressableButton.tsx"
+import { React } from "@rbxts/react";
+import { useFeedbackEffect, createPressFeedbackEffect } from "@lattice-ui/motion";
+
+export function PressableButton(props: { label: string }) {
+  const [pressed, setPressed] = React.useState(false);
+
+  const ref = useFeedbackEffect<TextButton>(
+    pressed,
+    {
+      active: { BackgroundTransparency: 0.2 },
+      inactive: { BackgroundTransparency: 0 },
+    },
+    createPressFeedbackEffect(),
+  );
+
+  return (
+    <textbutton
+      ref={ref}
+      Size={UDim2.fromOffset(120, 36)}
+      Text={props.label}
+      Event={{
+        InputBegan: () => setPressed(true),
+        InputEnded: () => setPressed(false),
+      }}
+    />
+  );
+}
+```
+
+## Respecting the motion policy
+
+All three hooks read a `MotionPolicy` from context. When `disableAllMotion` is set, every animation collapses to an **instant** property write — the end state is applied immediately, with no tween, and presence still completes its exit so unmount logic runs. Wrap your app (or a subtree) in `MotionProvider` to control it:
+
+```tsx title="App.tsx"
+import { MotionProvider } from "@lattice-ui/motion";
+
+export function App(props: { reduceMotion: boolean; children: React.ReactNode }) {
+  return (
+    <MotionProvider disableAllMotion={props.reduceMotion}>
+      {props.children}
+    </MotionProvider>
+  );
+}
+```
+
+<Callout title="Motion stays correct, not just pretty">
+Because disabled motion still applies the final values and still fires `onExitComplete`, you never have to special-case reduced motion in your component logic. Build for the animated path; the instant path falls out for free.
+</Callout>
+
+## How primitives wire all of this
+
+The layered primitives accept a `transition` prop that is exactly a `PresenceMotionConfig`. They default to the right recipe — `Dialog.Content` runs a canvas-group reveal, `Popover` a popper entrance — and pass `forceMount` through so you can keep content mounted while you drive motion yourself. Overriding `transition` is how you customize their entrance and exit without rebuilding the lifecycle.
+
+```tsx
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/motion";
+
+// Slower, larger reveal for a hero dialog:
+<Dialog.Content transition={createCanvasGroupRevealRecipe(12, 0.2)} />
+```
+
+## Related
+
+- [Dialog](/lattice-ui/components/dialog/)
+- [Popover](/lattice-ui/components/popover/)
+- [Tooltip](/lattice-ui/components/tooltip/)
+- [Toast](/lattice-ui/components/toast/)
+- [Checkbox](/lattice-ui/components/checkbox/)
+- [Slider](/lattice-ui/components/slider/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Motion reference](/lattice-ui/reference/motion/)

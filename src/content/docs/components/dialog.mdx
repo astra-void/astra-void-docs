@@ -1,0 +1,199 @@
+---
+title: Dialog
+description: Modal surface primitive that owns open state, focus trapping, layered dismissal, and presence motion while you own the visuals.
+section: components
+sidebar:
+  order: 10
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/dialog"
+  status="stable-direction"
+  importName="Dialog"
+  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion"]}
+/>
+
+Dialog is the primitive for any surface that should take over the screen: confirmations, forms, settings panels, and store windows. It coordinates open state, focus, dismissal, and exit motion so your component only has to render the frame and its contents.
+
+Reach for Dialog when a surface needs to be **modal** (block interaction behind it), **restore focus** to whatever opened it, and **dismiss predictably** — by an explicit close, an outside interaction, or a controlled state change.
+
+## Import
+
+```ts
+import { Dialog } from "@lattice-ui/dialog";
+```
+
+## Anatomy
+
+Compose the full set of parts. `Trigger`, `Overlay`, and `Close` are optional depending on how you drive the dialog, but `Root`, `Portal`, and `Content` form the minimum useful surface.
+
+```tsx title="Dialog anatomy"
+<Dialog.Root>
+  <Dialog.Trigger />
+  <Dialog.Portal>
+    <Dialog.Overlay />
+    <Dialog.Content />
+  </Dialog.Portal>
+</Dialog.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Dialog.Root` | yes | Owns open state and shares it with every part through context. |
+| `Dialog.Trigger` | no | A button that opens the dialog and is the default focus-restore target. |
+| `Dialog.Portal` | yes | Renders the surface into a `ScreenGui` outside the local tree. |
+| `Dialog.Overlay` | no | A full-screen backdrop behind the content. |
+| `Dialog.Content` | yes | The focus-trapped, dismissable, motion-driven surface. |
+| `Dialog.Close` | no | A button that closes the dialog from inside the content. |
+
+## Example
+
+A controlled dialog driven by a trigger, with an app-owned frame inside the content.
+
+```tsx title="InvitePlayerDialog.tsx"
+import { useState } from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function InvitePlayerDialog() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <textbutton Text="Invite player" Size={UDim2.fromOffset(140, 38)} />
+      </Dialog.Trigger>
+
+      <Dialog.Portal>
+        <Dialog.Overlay>
+          <frame
+            BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+            BackgroundTransparency={0.5}
+            Size={UDim2.fromScale(1, 1)}
+          />
+        </Dialog.Overlay>
+
+        <Dialog.Content trapFocus restoreFocus>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(320, 180)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(280, 40)}
+              Text="Invite a player"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+            />
+            <Dialog.Close asChild>
+              <textbutton Text="Close" Size={UDim2.fromOffset(100, 34)} />
+            </Dialog.Close>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its state. Use controlled state only when something outside the dialog needs to open or close it.
+</Callout>
+
+## How it behaves
+
+### Open state
+
+`Dialog.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled. `Dialog.Trigger` opens it on activation and `Dialog.Close` closes it; both go through the same state, so controlled and uncontrolled usage behave identically.
+
+### Focus and selection
+
+`Dialog.Content` wraps its children in a focus scope. By default it **traps focus** (`trapFocus` defaults to `true`) so gamepad and selection movement stay inside the surface while it is open, and **restores focus** (`restoreFocus` defaults to `true`) to the element that was selected before it opened — usually the trigger. The trigger registers itself as the restore target, so wiring focus back is automatic.
+
+### Dismissal
+
+`Dialog.Content` participates in dismissable-layer behavior. When `modal` is `true` (the default), interaction behind the surface is blocked and an outside press dismisses it. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the dialog closes.
+
+### Motion and presence
+
+`Dialog.Content` runs a default canvas-group reveal/exit recipe, so it animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+
+<Callout title="Roblox layering">
+`Dialog.Portal` renders into a `ScreenGui` on `BasePlayerGui`, not the local component tree. Use `container` to target a specific `PlayerGui` and `displayOrderBase` to control its `DisplayOrder` relative to other layered surfaces.
+</Callout>
+
+## API reference
+
+### Dialog.Root
+
+<PropTable
+  rows={[
+    { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
+    { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
+    { name: "modal", type: "boolean", description: "When true, blocks interaction behind the dialog and enables outside-press dismissal. Defaults to true." },
+    { name: "children", type: "React.ReactNode", description: "The dialog parts." },
+  ]}
+/>
+
+### Dialog.Trigger
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Prevents the trigger from opening the dialog and removes it from selection." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Dialog.Portal
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the surface into. Defaults to the player's PlayerGui." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers." },
+    { name: "children", type: "React.ReactNode", description: "Overlay and content parts." },
+  ]}
+/>
+
+### Dialog.Overlay
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the overlay behavior onto the single child element." },
+    { name: "forceMount", type: "boolean", description: "Keeps the overlay mounted while exit motion runs." },
+    { name: "children", type: "React.ReactElement", description: "The backdrop element to render." },
+  ]}
+/>
+
+### Dialog.Content
+
+<PropTable
+  rows={[
+    { name: "trapFocus", type: "boolean", description: "Traps focus and selection inside the content while open. Defaults to true." },
+    { name: "restoreFocus", type: "boolean", description: "Restores focus to the previously focused element on close. Defaults to true." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default canvas-group reveal/exit recipe." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
+    { name: "children", type: "React.ReactNode", description: "The surface contents." },
+  ]}
+/>
+
+### Dialog.Close
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

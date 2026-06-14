@@ -1,0 +1,262 @@
+---
+title: Select
+description: Single-value selection primitive that owns open and value state, registers items in order, and anchors popper-positioned content in a portal while you own the visuals.
+section: components
+sidebar:
+  order: 40
+---
+
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/select"
+  status="feature-limited"
+  importName="Select"
+  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+/>
+
+Select is the primitive for picking one value from a list: difficulty pickers, region menus, sort dropdowns, and any "choose one" control. It coordinates open state, the selected value, item registration, popper positioning, and outside-press dismissal so your component only has to render a trigger, a value label, and the items.
+
+Reach for Select when a control needs to **hold a single value**, **open an anchored popup** over a trigger, and **dismiss predictably** on selection or an outside interaction.
+
+## Import
+
+```ts
+import { Select } from "@lattice-ui/select";
+```
+
+## Anatomy
+
+`Root`, `Trigger`, `Portal`, `Content`, and at least one `Item` form the minimum useful select. `Value`, `Group`, `Label`, and `Separator` are optional and help you structure the trigger label and the list.
+
+<PrimitiveAnatomy title="Select anatomy">
+
+```tsx title="Select anatomy"
+<Select.Root>
+  <Select.Trigger>
+    <Select.Value />
+  </Select.Trigger>
+  <Select.Portal>
+    <Select.Content>
+      <Select.Group>
+        <Select.Label />
+        <Select.Item value="..." />
+        <Select.Separator />
+        <Select.Item value="..." />
+      </Select.Group>
+    </Select.Content>
+  </Select.Portal>
+</Select.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Select.Root` | yes | Owns open + value state and the item registry, shared through context. |
+| `Select.Trigger` | yes | A button that toggles the content open and closed. |
+| `Select.Value` | no | Renders the selected item's text, or a placeholder when nothing is chosen. |
+| `Select.Portal` | yes | Renders the content into a `ScreenGui` outside the local tree. |
+| `Select.Content` | yes | The popper-positioned, dismissable list surface. |
+| `Select.Item` | yes | A selectable option that registers itself and sets the value on activation. |
+| `Select.Group` | no | A non-semantic container for grouping related items. |
+| `Select.Label` | no | A heading for a group. |
+| `Select.Separator` | no | A thin divider between items or groups. |
+
+</PrimitiveAnatomy>
+
+## Example
+
+A controlled select for a match difficulty, with a placeholder, a labelled group, and a disabled option.
+
+```tsx title="DifficultySelect.tsx"
+import { useState } from "@rbxts/react";
+import { Select } from "@lattice-ui/select";
+
+export function DifficultySelect() {
+  const [value, setValue] = useState<string>();
+
+  return (
+    <Select.Root value={value} onValueChange={setValue}>
+      <Select.Trigger>
+        <Select.Value placeholder="Choose difficulty" />
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content placement="bottom" sideOffset={6}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            <Select.Group>
+              <Select.Label>
+                <textlabel
+                  BackgroundTransparency={1}
+                  Size={UDim2.fromOffset(220, 20)}
+                  Text="Standard"
+                  TextColor3={Color3.fromRGB(168, 176, 191)}
+                  TextSize={13}
+                />
+              </Select.Label>
+
+              <Select.Item value="easy" textValue="Easy" />
+              <Select.Item value="normal" textValue="Normal" />
+              <Select.Separator />
+              <Select.Item value="hard" textValue="Hard" />
+              <Select.Item value="nightmare" textValue="Nightmare" disabled />
+            </Select.Group>
+          </frame>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+```
+
+<Callout title="Single value only">
+This release of Select is **single-value only**. There is no multi-select mode, and `value`/`defaultValue` are a single `string`, not an array. Track multiple selections with separate controls or your own state until multi-select lands.
+</Callout>
+
+## How it behaves
+
+### Open state
+
+`Select.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to `false`). `Select.Trigger` toggles open on activation and on `Return`/`Space`, and selecting an item closes it. When the root is `disabled`, the trigger cannot open the content.
+
+### Value and selection
+
+The selected value is a single `string`. `Select.Root` is controllable via `value`/`onValueChange`, or uncontrolled via `defaultValue`. Each `Select.Item` registers itself with the root on mount — recording its `value`, `textValue`, disabled state, and document order — so the root always knows the full ordered set of options. Activating an item (click, `Return`, or `Space`) sets the value and closes the content. Selecting a disabled item is ignored, and if the current value ever points at a disabled or missing item, the root falls back to the first enabled item.
+
+### The value label
+
+`Select.Value` reads the current value from context and renders the matching item's `textValue` (falling back to the raw value, then to `placeholder` when nothing is selected). Because the label resolves through the item registry, it stays correct without you wiring text manually.
+
+### Positioning
+
+`Select.Content` is positioned with popper, anchored to the trigger. Control the side with `placement` (`"top" | "bottom" | "left" | "right"`, defaulting to `"bottom"`), nudge it with `sideOffset` and `alignOffset`, and keep it inside the viewport with `collisionPadding`. The content is measured and flipped automatically when it would collide with an edge.
+
+### Dismissal
+
+`Select.Content` participates in dismissable-layer behavior in non-modal mode: interaction behind it is not blocked, but an outside press closes it. Use `onPointerDownOutside` and `onInteractOutside` to observe those interactions before the content dismisses.
+
+### Motion and presence
+
+`Select.Content` runs a default popper entrance/exit recipe — a canvas-group reveal by default, or a transform-based reveal when `asChild` is set. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation.
+
+<Callout title="Roblox gotchas">
+`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state, but Select does **not** install Roblox native directional selection or keyboard navigation between items — wire `GuiObject.Selectable` and selection order yourself if you need gamepad list traversal.
+</Callout>
+
+## API reference
+
+### Select.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled selected value. Pair with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called when the selected value changes." },
+    { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
+    { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the open state changes." },
+    { name: "disabled", type: "boolean", description: "Disables the whole select: the trigger cannot open and values cannot change. Defaults to false." },
+    { name: "required", type: "boolean", description: "Marks the select as required; surfaced through context for consumer use. Defaults to false." },
+    { name: "children", type: "React.ReactNode", description: "The select parts." },
+  ]}
+/>
+
+### Select.Trigger
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Prevents this trigger from opening the select, in addition to the root's disabled state. Defaults to false." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set; otherwise rendered inside the default button (e.g. a Select.Value)." },
+  ]}
+/>
+
+### Select.Value
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the resolved text onto the single child element instead of rendering the default textlabel." },
+    { name: "placeholder", type: "string", description: "Text shown when no value is selected. Defaults to an empty string." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Select.Portal
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the content into. Defaults to the surrounding portal context's container." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers. Defaults to the surrounding portal context's value." },
+    { name: "children", type: "React.ReactNode", description: "The content part." },
+  ]}
+/>
+
+### Select.Content
+
+<PropTable
+  rows={[
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Preferred side to anchor the content against the trigger. Defaults to \"bottom\"." },
+    { name: "sideOffset", type: "number", description: "Gap between the trigger and the content along the placement axis." },
+    { name: "alignOffset", type: "number", description: "Offset along the cross axis from the aligned edge." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance to keep from the viewport edges when repositioning." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper reveal/exit recipe." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
+    { name: "asChild", type: "boolean", description: "Render onto the single child element instead of the default canvasgroup; also switches the default recipe to a transform-based reveal." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
+    { name: "children", type: "React.ReactNode", description: "The list surface contents." },
+  ]}
+/>
+
+### Select.Item
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", required: true, description: "The value this item selects when activated." },
+    { name: "textValue", type: "string", description: "Text used for the value label and the default item button. Defaults to value." },
+    { name: "disabled", type: "boolean", description: "Prevents selection and removes the item from value resolution. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Select.Group
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default frame container." },
+    { name: "children", type: "React.ReactElement", description: "The grouped items (and optional label)." },
+  ]}
+/>
+
+### Select.Label
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The label element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Select.Separator
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default 1px divider frame." },
+    { name: "children", type: "React.ReactElement", description: "The divider element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Positioning with Popper](/lattice-ui/guides/positioning-with-popper/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

@@ -1,0 +1,152 @@
+---
+title: Progress
+description: Progress-value primitive that owns a clamped numeric range and feeds a motion-driven indicator, plus a standalone spinner for indeterminate work.
+section: components
+sidebar:
+  order: 80
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/progress"
+  status="stable-direction"
+  importName="Progress"
+  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+/>
+
+Progress is the primitive for visualizing how far along a task is: loading bars, download meters, XP bars, and quest trackers. `Root` clamps the value against a maximum and derives a `0..1` ratio; `Indicator` animates a fill to that ratio; and `Spinner` provides a self-rotating element for work that has no measurable progress.
+
+Reach for Progress when you have a **bounded value** you want to render as a fill, or when you only need an **indeterminate** busy indicator. The primitive owns the math and the motion — your component owns the colors, sizing, and surrounding layout.
+
+## Import
+
+```ts
+import { Progress } from "@lattice-ui/progress";
+```
+
+## Anatomy
+
+`Root` provides the value context that `Indicator` reads. `Spinner` is independent: it needs no `Root` and is used on its own for indeterminate states.
+
+```tsx title="Progress anatomy"
+<Progress.Root>
+  <Progress.Indicator />
+</Progress.Root>
+
+<Progress.Spinner />
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Progress.Root` | yes | Clamps the value to `[0, max]`, derives the fill ratio, and shares it via context. |
+| `Progress.Indicator` | no | A clipped track whose inner fill animates its width to the current ratio. |
+| `Progress.Spinner` | no | A standalone, self-rotating element for indeterminate work. Does not use `Root`. |
+
+## Example
+
+A determinate download bar driven by app state, with a custom-colored fill passed through `asChild`.
+
+```tsx title="DownloadBar.tsx"
+import { useState } from "@rbxts/react";
+import { Progress } from "@lattice-ui/progress";
+
+export function DownloadBar() {
+  const [percent, setPercent] = useState(0);
+
+  return (
+    <frame
+      BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+      Size={UDim2.fromOffset(280, 16)}
+    >
+      <uicorner CornerRadius={new UDim(0, 8)} />
+
+      <Progress.Root value={percent} max={100}>
+        <Progress.Indicator asChild>
+          <frame BackgroundColor3={Color3.fromRGB(102, 200, 140)}>
+            <uicorner CornerRadius={new UDim(0, 8)} />
+          </frame>
+        </Progress.Indicator>
+      </Progress.Root>
+    </frame>
+  );
+}
+```
+
+For work with no measurable end, drop in a spinner:
+
+```tsx title="Saving.tsx"
+import { Progress } from "@lattice-ui/progress";
+
+export function Saving() {
+  return <Progress.Spinner speedDegPerSecond={240} />;
+}
+```
+
+## How it behaves
+
+### Value and range
+
+`Progress.Root` accepts a `value` and a `max` (default `100`, floored to at least `1`). The value is clamped to `[0, max]`, and the fill ratio is `clampedValue / max`. `Root` is controllable: pass `value` to drive it from app state, or `defaultValue` (default `0`) to run uncontrolled. `onValueChange` mirrors the [core controllable-state](/lattice-ui/guides/controlled-state/) contract.
+
+### Indeterminate
+
+Set `indeterminate` on `Root` to signal work without a known endpoint. The shared ratio resolves to `0.25`, and `Progress.Indicator` renders a fixed `0.35`-width fill instead of tracking the value — a partial bar you can animate or style as a busy state. Use `Spinner` instead when you want a rotating glyph rather than a bar.
+
+### Motion
+
+`Progress.Indicator` is a clipped (`ClipsDescendants`) track. Its inner fill animates its `Size` width toward the current ratio using the default progress response recipe from `@lattice-ui/motion`. Pass `transition` to override that recipe — for snappier or slower fills. By default the fill is a solid frame in `Color3.fromRGB(102, 156, 255)`; use `asChild` to swap in your own fill element (its `Position` and `Size` are forced to fill the track).
+
+### Spinner rotation
+
+`Progress.Spinner` rotates its root `GuiObject` every `Heartbeat`, advancing `Rotation` by `speedDegPerSecond` (default `180`) times the frame delta. When `spinning` is `false`, the rotation loop stops and the element is hidden (`Visible = false`). The default render is a 22x22 ring with an accent dot; with `asChild`, your child element is rotated and its visibility is bound to `spinning`.
+
+<Callout title="Controlled vs uncontrolled">
+`Progress.Root` ignores out-of-range input by clamping rather than erroring, so a `value` above `max` simply renders a full bar. Drive `value` from your own state for live progress; use `defaultValue` only for a static initial fill that never changes.
+</Callout>
+
+<Callout title="Spinner stands alone">
+`Progress.Spinner` does not read `Root` context — it is a self-contained indeterminate indicator. You can place it anywhere, including outside a `Progress.Root`. Rotation runs on `RunService.Heartbeat`, so it keeps animating as long as the element is mounted and `spinning` is `true`.
+</Callout>
+
+## API reference
+
+### Progress.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "number", description: "Controlled progress value. Clamped to [0, max]." },
+    { name: "defaultValue", type: "number", description: "Initial value for uncontrolled usage. Defaults to 0." },
+    { name: "onValueChange", type: "(value: number) => void", description: "Called when the controllable value changes." },
+    { name: "max", type: "number", description: "Upper bound of the range. Defaults to 100; floored to a minimum of 1." },
+    { name: "indeterminate", type: "boolean", description: "Marks the progress as having no known endpoint. Forces the shared ratio to a fixed value. Defaults to false." },
+    { name: "children", type: "React.ReactNode", description: "The indicator and any surrounding content." },
+  ]}
+/>
+
+### Progress.Indicator
+
+<PropTable
+  rows={[
+    { name: "transition", type: "ResponseMotionConfig", description: "Overrides the default progress response recipe used to animate the fill width." },
+    { name: "asChild", type: "boolean", description: "Render your own fill element instead of the default frame. Its Position and Size are forced to fill the track." },
+    { name: "children", type: "React.ReactElement", description: "The fill element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Progress.Spinner
+
+<PropTable
+  rows={[
+    { name: "spinning", type: "boolean", description: "Whether the spinner rotates and is visible. Defaults to true." },
+    { name: "speedDegPerSecond", type: "number", description: "Rotation speed in degrees per second. Defaults to 180." },
+    { name: "asChild", type: "boolean", description: "Rotate your own element instead of the default ring. Its visibility is bound to spinning." },
+    { name: "children", type: "React.ReactElement", description: "The element to rotate. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Controllable state](/lattice-ui/guides/controlled-state/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

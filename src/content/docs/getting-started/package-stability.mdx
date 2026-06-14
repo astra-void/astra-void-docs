@@ -1,0 +1,56 @@
+---
+title: Package stability
+description: How to read Lattice UI's 0.x lockedstep versions and which packages are stable-direction versus experimental.
+section: getting-started
+sidebar:
+  order: 40
+---
+
+import { StatusBadge, Callout } from "@/components/docs/mdx";
+
+Lattice UI is in the `0.x` phase. The whole workspace shares one **lockedstep** version, so the number bumps together across every package — but that single number is not a maturity guarantee. Some packages are on a clear path to `v1.0`; others are available today while their APIs are still settling. This page tells you which is which so you can pick packages with the right expectations.
+
+## What lockedstep 0.x means
+
+Every package publishes at the same version. That keeps installs coherent — you never have to reconcile mismatched primitive versions — but it also means the version alone cannot tell you how stable any single package is.
+
+<Callout title="Read the tier, not just the number">
+Treat the version as a release coordinate and the stability tier below as the real maturity signal. A `0.x` release can contain both a hardened foundation and an intentionally narrow experimental package.
+</Callout>
+
+## Stability tiers
+
+### Stable direction <StatusBadge status="stable-direction" />
+
+These packages represent the long-term direction of Lattice UI and are the main path toward `v1.0`. Build on them with confidence.
+
+- **Foundations:** `core`, `focus`, `layer`, `motion`, `style`, `system`
+- **Primary UI:** `accordion`, `avatar`, `checkbox`, `combobox`, `dialog`, `menu`, `popover`, `progress`, `radio-group`, `scroll-area`, `switch`, `tabs`, `text-field`, `textarea`, `toast`, `toggle-group`, `tooltip`
+
+### Experimental and feature-limited <StatusBadge status="experimental" /> <StatusBadge status="feature-limited" />
+
+These packages are usable, but treat them as evolving or intentionally limited in scope. Expect their APIs to move more than the stable-direction surface.
+
+- `popper` — experimental positioning foundation with placement-relative offsets and viewport collision handling
+- `select` — currently single-value only
+- `slider` — currently single-thumb only
+
+<Callout title="Plan for change">
+If you depend on `popper`, `select`, or `slider`, pin to a known-good version and expect to revisit the integration as their surfaces firm up. The single-value and single-thumb limits are current scope, not the end state.
+</Callout>
+
+## What v1.0 means here
+
+The `v1.0` milestone targets the **main stable UI layer**, not every package in the workspace. The priority is a dependable foundation (`core`, `focus`, `layer`, `motion`, `style`, `system`) with predictable composition, state, focus, keyboard navigation, layering, portal, and motion behavior across the primary primitives — plus clearer semver expectations for that surface.
+
+Crucially, reaching `v1` for the main UI layer does **not** automatically stabilize the experimental or tooling packages. Some primary primitives may feel `v1`-ready in practice before the milestone lands, while feature-limited packages can stay in `0.x` for longer and only graduate when their APIs are actually ready.
+
+## What is coming
+
+The `v0.6.x` line focuses on hardening: more reliable layered and composite primitives, steadier motion and exit transitions, a real keyboard-navigation foundation rather than leaning on Roblox default selection, stronger focus restoration and trapping, and wider regression coverage for the stable-direction surface — while keeping the feature-limited packages flexible.
+
+After `v1.0`, the feature-limited packages continue maturing independently and are promoted to stable versioning only once their APIs and behavior are ready.
+
+## Next step
+
+Start from a stable-direction primitive: follow [Installation](/lattice-ui/getting-started/installation/) and then [Your first dialog](/lattice-ui/getting-started/first-dialog/).

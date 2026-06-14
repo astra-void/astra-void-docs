@@ -1,0 +1,167 @@
+---
+title: Popper
+description: Placement math, layout observers, and a positioning hook for anchoring a content surface to a GuiObject with viewport collision handling.
+section: reference
+sidebar:
+  order: 50
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/popper"
+  status="experimental"
+  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+/>
+
+Popper is the positioning foundation for anchored surfaces — the placement engine behind Popover, Tooltip, Menu, and Select listboxes. Given an anchor `GuiObject` and a content `GuiObject`, it computes where the content should sit, falls back to a better side when the requested one would overflow, and keeps the result in sync as the anchor, content, or viewport changes.
+
+It works entirely in screen space using `AbsolutePosition` and `AbsoluteSize`, so it does not care how the surface is composed. It only returns a `UDim2` position and an `AnchorPoint` for you to apply to the content node.
+
+<Callout title="Experimental">
+This package is experimental. The placement-relative offsets and viewport collision handling are in active development, and the API — option names, defaults, and the shape of the computed result — may change in a future release.
+</Callout>
+
+## Import
+
+```ts
+import { computePopper, usePopper } from "@lattice-ui/popper";
+import { subscribeAnchor, subscribeContent, subscribeViewport } from "@lattice-ui/popper";
+```
+
+## API reference
+
+### usePopper
+
+The primary entry point. Pass refs to the anchor and content `GuiObject`s and it tracks their layout, recomputes positioning on change, and returns a position and anchor point to apply to the content.
+
+```ts
+function usePopper(options: UsePopperOptions): UsePopperResult;
+
+const { position, anchorPoint, placement, isPositioned } = usePopper({
+  anchorRef,
+  contentRef,
+  placement: "bottom",
+  sideOffset: 8,
+});
+
+return (
+  <frame
+    ref={contentRef}
+    AnchorPoint={anchorPoint}
+    Position={position}
+    Visible={isPositioned}
+  />
+);
+```
+
+`usePopper` reads both refs, measures the anchor's `AbsolutePosition`/`AbsoluteSize` and the content's `AbsoluteSize`, and runs `computePopper`. It subscribes to anchor layout changes, content size changes, and viewport resizes through the observers below, and reconciles the observed instances every `Heartbeat` so the correct nodes stay tracked even as refs swap. Updates run inside a layout effect, so positioning is applied before paint.
+
+Viewport bounds come from the nearest `ScreenGui` ancestor of the content (honoring the topbar inset unless `IgnoreGuiInset` is set), falling back to the current camera's `ViewportSize`. Until the content has a measured size, `isPositioned` is `false` — gate the surface's `Visible` on it to avoid a one-frame flash at the origin.
+
+<PropTable
+  rows={[
+    { name: "anchorRef", type: "RefObject<GuiObject> | MutableRefObject<GuiObject | undefined>", description: "Ref to the element the surface anchors to. Its AbsolutePosition and AbsoluteSize drive placement." },
+    { name: "contentRef", type: "RefObject<GuiObject> | MutableRefObject<GuiObject | undefined>", description: "Ref to the surface being positioned. Its AbsoluteSize is measured for collision math." },
+    { name: "placement", type: "PopperPlacement", description: "Preferred side: \"top\", \"bottom\", \"left\", or \"right\". Defaults to \"bottom\"." },
+    { name: "sideOffset", type: "number", description: "Gap between anchor and content along the placement axis. Defaults to 0." },
+    { name: "alignOffset", type: "number", description: "Shift along the cross axis. Defaults to 0." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance kept between the content and the viewport edges. Defaults to 8." },
+    { name: "enabled", type: "boolean", description: "When false, skips computation and detaches observers. Defaults to true." },
+  ]}
+/>
+
+The returned `UsePopperResult` extends `ComputePopperResult` with the live measurement and an imperative escape hatch:
+
+<PropTable
+  rows={[
+    { name: "position", type: "UDim2", description: "Offset-based position to apply to the content's Position." },
+    { name: "anchorPoint", type: "Vector2", description: "AnchorPoint to apply to the content, derived from the resolved placement." },
+    { name: "placement", type: "PopperPlacement", description: "The placement actually used after collision resolution, which may differ from the requested one." },
+    { name: "contentSize", type: "Vector2", description: "Last measured AbsoluteSize of the content. Zero until first measured." },
+    { name: "isPositioned", type: "boolean", description: "True once the content has a non-zero measured size and a real position has been computed." },
+    { name: "update", type: "() => void", description: "Forces an immediate recompute. Rarely needed — observers cover normal changes." },
+  ]}
+/>
+
+### computePopper
+
+The pure placement function behind the hook. It takes fully measured geometry and returns a position, anchor point, and resolved placement. No Roblox instances, refs, or side effects, which makes it useful for testing or driving positioning yourself.
+
+```ts
+function computePopper(input: ComputePopperInput): ComputePopperResult;
+
+const { position, anchorPoint, placement } = computePopper({
+  anchorPosition: anchor.AbsolutePosition,
+  anchorSize: anchor.AbsoluteSize,
+  contentSize: content.AbsoluteSize,
+  viewportRect: new Rect(new Vector2(0, 0), camera.ViewportSize),
+  placement: "bottom",
+  sideOffset: 8,
+});
+```
+
+It evaluates the requested placement, then its opposite, then the two orthogonal sides, scoring each candidate by how far it overflows the viewport plus a small penalty for falling back to an orthogonal side. The first zero-overflow candidate wins immediately; otherwise the least-bad candidate is chosen and clamped inside the viewport with `collisionPadding`. The returned `position` is an offset `UDim2` already adjusted for the resolved `anchorPoint`.
+
+`ComputePopperInput` merges the positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) with the required geometry:
+
+<PropTable
+  rows={[
+    { name: "anchorPosition", type: "Vector2", description: "The anchor's top-left in screen space (AbsolutePosition)." },
+    { name: "anchorSize", type: "Vector2", description: "The anchor's AbsoluteSize." },
+    { name: "contentSize", type: "Vector2", description: "The content's AbsoluteSize. May be zero before the surface is measured." },
+    { name: "viewportRect", type: "Rect", description: "The bounds to keep the content inside, in screen space." },
+  ]}
+/>
+
+### subscribeAnchor
+
+```ts
+function subscribeAnchor(anchor: GuiObject, onChange: () => void): ObserverUnsubscribe;
+```
+
+Calls `onChange` whenever the anchor's `AbsolutePosition` or `AbsoluteSize` changes. Returns an unsubscribe function that disconnects both signals.
+
+### subscribeContent
+
+```ts
+function subscribeContent(content: GuiObject, onChange: () => void): ObserverUnsubscribe;
+```
+
+Calls `onChange` when the content's `AbsoluteSize` changes. It deliberately ignores position changes: the positioned ancestor owns placement, and relative content movement may be motion-owned, so it should not invalidate the computed result.
+
+### subscribeViewport
+
+```ts
+function subscribeViewport(anchor: GuiObject | undefined, onChange: () => void): ObserverUnsubscribe;
+```
+
+Watches whatever defines the viewport bounds. If the anchor lives under a `ScreenGui`, it tracks that `ScreenGui`'s `AbsoluteSize`; otherwise it falls back to the current camera's `ViewportSize`, re-binding automatically when `Workspace.CurrentCamera` changes. Returns an unsubscribe function.
+
+### Types
+
+The package re-exports the types backing the API above:
+
+<PropTable
+  rows={[
+    { name: "PopperPlacement", type: "\"top\" | \"bottom\" | \"left\" | \"right\"", description: "The four sides a surface can attach to." },
+    { name: "PopperPositioningOptions", type: "object", description: "Optional placement, sideOffset, alignOffset, and collisionPadding." },
+    { name: "NormalizedPopperPositioningOptions", type: "object", description: "The same options with every field resolved to a concrete value." },
+    { name: "ComputePopperInput", type: "object", description: "Positioning options plus the measured geometry computePopper needs." },
+    { name: "ComputePopperResult", type: "object", description: "The computed position, anchorPoint, and resolved placement." },
+    { name: "UsePopperOptions", type: "object", description: "Positioning options plus anchorRef, contentRef, and enabled." },
+    { name: "UsePopperResult", type: "object", description: "ComputePopperResult plus contentSize, isPositioned, and update." },
+    { name: "ObserverUnsubscribe", type: "() => void", description: "The disconnect callback returned by every subscribe helper." },
+  ]}
+/>
+
+<Callout title="Roblox bounds and the topbar inset">
+Viewport bounds come from the nearest `ScreenGui` ancestor of the content, not the raw camera viewport. When that `ScreenGui` does not set `IgnoreGuiInset`, the topbar inset from `GuiService:GetGuiInset()` is folded into the bounds so surfaces are not clamped under the topbar. Render anchored surfaces inside a `ScreenGui` for accurate collision handling.
+</Callout>
+
+## Related links
+
+- [Popover](/lattice-ui/components/popover/)
+- [Tooltip](/lattice-ui/components/tooltip/)
+- [Menu](/lattice-ui/components/menu/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)

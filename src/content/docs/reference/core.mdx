@@ -1,0 +1,184 @@
+---
+title: Core
+description: The shared React runtime, slot composition, ref merging, and controllable state primitives every Lattice UI package builds on.
+section: reference
+sidebar:
+  order: 10
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/core"
+  status="stable-direction"
+  dependencies={[]}
+/>
+
+Core is the foundation layer underneath every other Lattice UI package. It pins a single React and React-Roblox runtime, and provides the small set of composition utilities that primitives reuse over and over: a strict context factory, ref-merging helpers, the `Slot` component that powers `asChild`, and a controllable-state hook for components that can run either controlled or uncontrolled.
+
+You rarely import Core directly when consuming a primitive — but every primitive depends on it, and if you build your own primitive on top of Lattice UI, this is the package you reach for first.
+
+## Import
+
+```ts
+import {
+  React,
+  ReactRoblox,
+  Slot,
+  createStrictContext,
+  useControllableState,
+  composeRefs,
+  setRef,
+  getElementRef,
+  toRef,
+} from "@lattice-ui/core";
+```
+
+## API reference
+
+### React
+
+```ts
+import { React } from "@lattice-ui/core";
+```
+
+A re-export of `@rbxts/react`, exposed as a default-style named binding. Every Lattice UI package imports React through Core so the whole tree shares one React instance — sharing context, hooks, and reconciler state. When you build on top of Lattice UI, prefer importing `React` from here over `@rbxts/react` directly to avoid pulling in a second copy.
+
+### ReactRoblox
+
+```ts
+import { ReactRoblox } from "@lattice-ui/core";
+```
+
+A re-export of `@rbxts/react-roblox`. This is the host renderer used to create roots and portals (`ReactRoblox.createRoot`, `ReactRoblox.createPortal`). The Layer package's `Portal` is built on `ReactRoblox.createPortal`.
+
+### createStrictContext
+
+```ts
+function createStrictContext<T>(
+  name: string,
+): readonly [React.Provider<T | undefined>, () => T];
+```
+
+```tsx title="Strict context for a primitive"
+const [AccordionProvider, useAccordion] = createStrictContext<AccordionState>("Accordion");
+
+function Item() {
+  // Throws a clear error if rendered outside <AccordionProvider>.
+  const state = useAccordion();
+  return <frame />;
+}
+```
+
+Creates a React context paired with a reader hook that **throws** when no provider is present, instead of silently returning `undefined`. The `name` is used in the error message (`[Accordion] context is undefined. Wrap components with <Accordion.Provider>.`), so pass the display name of the primitive. Returns a tuple of `[Provider, useContext]` — the provider accepts a `value` prop of type `T`, and the hook returns a non-nullable `T`.
+
+### useControllableState
+
+```ts
+function useControllableState<T>(props: {
+  value?: T;
+  defaultValue: T;
+  onChange?: (next: T) => void;
+}): readonly [T, (next: T | ((prev: T) => T)) => void];
+```
+
+```tsx title="A controllable toggle"
+const [open, setOpen] = useControllableState({
+  value: props.open,
+  defaultValue: props.defaultOpen ?? false,
+  onChange: props.onOpenChange,
+});
+```
+
+Powers the controlled/uncontrolled pattern used across Lattice UI primitives (the `open`/`defaultOpen`/`onOpenChange` triad on Dialog, Popover, and friends). When `value` is provided the state is **controlled** — internal state is ignored and `value` is returned verbatim. When `value` is `undefined` the hook manages state internally starting from `defaultValue`. The returned setter accepts either a value or an updater function, calls `onChange` whenever the resolved value actually changes, and only writes internal state when uncontrolled. Identical values are skipped, so `onChange` never fires for no-op updates.
+
+<PropTable
+  rows={[
+    { name: "value", type: "T | undefined", description: "Controlled value. When provided, the hook is controlled and never mutates internal state." },
+    { name: "defaultValue", type: "T", description: "Initial value used when running uncontrolled.", required: true },
+    { name: "onChange", type: "(next: T) => void", description: "Called whenever the resolved value changes, in both controlled and uncontrolled modes." },
+  ]}
+/>
+
+### Slot
+
+```tsx
+const Slot: React.ForwardRefExoticComponent<SlotProps>;
+
+type SlotProps = {
+  children: React.ReactElement;
+  ref?: React.ForwardedRef<Instance>;
+} & Record<string, unknown>;
+```
+
+```tsx title="Forwarding props onto a caller's element"
+function Trigger(props: { asChild?: boolean; children: React.ReactElement }) {
+  if (props.asChild) {
+    return <Slot Event={{ Activated: () => open() }}>{props.children}</Slot>;
+  }
+  return <textbutton Event={{ Activated: () => open() }}>{props.children}</textbutton>;
+}
+```
+
+`Slot` clones its single child element and merges the props it receives onto that child instead of rendering its own host instance. This is the engine behind the `asChild` prop you see throughout Lattice UI: it lets a primitive hand off rendering to a caller-supplied element while still attaching its own behavior.
+
+Merging rules:
+
+- **Props** — the slot's own props override the child's props of the same key (`{ ...childProps, ...slotProps }`).
+- **`Event` and `Change` tables** — handler tables are merged rather than replaced. Both the child's handler and the slot's handler run, with the slot's handler invoked first, so a caller's `Activated` and the primitive's `Activated` both fire.
+- **Refs** — the child's ref, the forwarded ref, and any `ref` passed in props are composed with `composeRefs`, so every party observes the underlying Instance.
+
+<Callout title="Slot expects exactly one child element">
+`asChild` composition requires a single valid React element as the child. Passing text, `undefined`, fragments, or multiple children will not merge correctly — wrap your content in one host element first.
+</Callout>
+
+### composeRefs
+
+```ts
+function composeRefs<T>(
+  ...refs: Array<AnyRef<T> | undefined>
+): (node: T | undefined) => void;
+
+type AnyRef<T> = React.Ref<T> | React.ForwardedRef<T>;
+```
+
+```tsx title="Attaching multiple refs to one Instance"
+const mergedRef = composeRefs(localRef, props.forwardedRef);
+return <frame ref={mergedRef} />;
+```
+
+Combines several refs into a single callback ref. When the resulting callback runs, every supplied ref is updated with the node — callback refs are invoked, and mutable ref objects have their `current` assigned. `undefined` entries are skipped. Use it whenever a component needs to keep its own ref to an Instance while also forwarding that Instance to the caller.
+
+### setRef
+
+```ts
+function setRef<T>(ref: AnyRef<T> | undefined, value: T | undefined): void;
+```
+
+Writes a value into a single ref, handling both forms: callback refs are called with the value, and mutable ref objects have `current` assigned. A no-op when `ref` is `undefined`. `composeRefs` is built on top of this.
+
+### getElementRef
+
+```ts
+function getElementRef<T>(child: React.ReactElement): AnyRef<T> | undefined;
+```
+
+Extracts the ref from a React element, checking both `element.props.ref` and the legacy `element.ref` location and normalizing the result with `toRef`. `Slot` uses this to recover a child's ref before composing it. Returns `undefined` when the element carries no usable ref.
+
+### toRef
+
+```ts
+function toRef<T>(value: unknown): AnyRef<T> | undefined;
+```
+
+Narrows an unknown value to a usable ref, accepting either a function (callback ref) or a table (mutable ref object) and returning `undefined` for anything else. Useful when a ref arrives through an untyped prop bag and you need to validate it before composing or writing to it.
+
+<Callout title="Roblox refs hold Instances">
+Refs in `@rbxts/react` resolve to Roblox `Instance` objects (a `Frame`, `TextButton`, and so on), not DOM nodes. A freshly created `useRef()` may start with `current` absent rather than explicitly `nil`, which is why `toRef` treats any table as a valid mutable ref object.
+</Callout>
+
+## Related
+
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Focus management](/lattice-ui/guides/focus-management/)

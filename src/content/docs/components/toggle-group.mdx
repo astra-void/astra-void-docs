@@ -1,0 +1,163 @@
+---
+title: Toggle Group
+description: Selection primitive that coordinates a set of toggle items in single- or multiple-select mode, owning pressed state and motion while you own the item visuals.
+section: components
+sidebar:
+  order: 180
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/toggle-group"
+  status="stable-direction"
+  importName="ToggleGroup"
+  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+/>
+
+Toggle Group is the primitive for a related set of toggles that share selection state: view switches, filter chips, text-alignment pickers, and difficulty selectors. `Root` owns the selected value and tells each `Item` whether it is pressed, so your items only render their two visual states.
+
+Reach for Toggle Group when several toggles belong together and should behave as **one control** — either a **single-select** group where picking one clears the others, or a **multiple-select** group where each item toggles independently.
+
+## Import
+
+```ts
+import { ToggleGroup } from "@lattice-ui/toggle-group";
+```
+
+## Anatomy
+
+A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the whole group as single- or multiple-select.
+
+```tsx title="ToggleGroup anatomy"
+<ToggleGroup.Root type="single">
+  <ToggleGroup.Item value="..." />
+  <ToggleGroup.Item value="..." />
+</ToggleGroup.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `ToggleGroup.Root` | yes | Owns the selected value(s), the select mode, and group-wide disabled state. |
+| `ToggleGroup.Item` | yes | One toggle; reports pressed state to `Root` and animates between states. |
+
+## Example
+
+A single-select group that switches the active inventory tab, driven as controlled state.
+
+```tsx title="InventoryTabs.tsx"
+import { useState } from "@rbxts/react";
+import { ToggleGroup } from "@lattice-ui/toggle-group";
+
+export function InventoryTabs() {
+  const [tab, setTab] = useState<string | undefined>("gear");
+
+  return (
+    <ToggleGroup.Root
+      type="single"
+      value={tab}
+      onValueChange={(next) => setTab(next)}
+    >
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 6)}
+      />
+      <ToggleGroup.Item value="gear" />
+      <ToggleGroup.Item value="pets" />
+      <ToggleGroup.Item value="emotes" />
+    </ToggleGroup.Root>
+  );
+}
+```
+
+For a multiple-select group, switch `type` to `"multiple"` and track an array. The `onValueChange` signature changes with the mode (see below).
+
+```tsx title="ActiveFilters.tsx"
+import { useState } from "@rbxts/react";
+import { ToggleGroup } from "@lattice-ui/toggle-group";
+
+export function ActiveFilters() {
+  const [filters, setFilters] = useState<string[]>(["new"]);
+
+  return (
+    <ToggleGroup.Root
+      type="multiple"
+      value={filters}
+      onValueChange={(next) => setFilters(next)}
+    >
+      <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+      <ToggleGroup.Item value="new" />
+      <ToggleGroup.Item value="owned" />
+      <ToggleGroup.Item value="tradable" />
+    </ToggleGroup.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `value`/`onValueChange` and pass `defaultValue` to let the group own its selection. In single mode `defaultValue` is a `string`; in multiple mode it is a `string[]` (defaulting to an empty array). Use controlled state only when something outside the group reads or sets the selection.
+</Callout>
+
+## How it behaves
+
+### Value state
+
+`ToggleGroup.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled. Each `Item` reads its own pressed state from the group through context, so controlled and uncontrolled usage behave identically. Activating an item routes through `Root`, which updates the shared value.
+
+### Single vs multiple
+
+The required `type` prop fixes the group's behavior and the shape of its value:
+
+- **`type="single"`** — `value`/`defaultValue` are `string`, and `onValueChange` receives `string | undefined`. Selecting an item replaces the current value; selecting the already-selected item clears it (so the value becomes `undefined`).
+- **`type="multiple"`** — `value`/`defaultValue` are `string[]`, and `onValueChange` receives `string[]`. Each item toggles independently and order of selection is preserved. Duplicate and non-string entries are stripped from incoming values.
+
+Because the value type and the `onValueChange` signature are a discriminated union over `type`, set `type` as a literal so TypeScript can narrow to the right props.
+
+### Activation and selection
+
+`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` while it has Roblox selection, so mouse, keyboard, and gamepad all work. The default item renders as a `textbutton` whose `Text` is its `value`. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
+
+### Disabled state
+
+`disabled` on `Root` disables the entire group; `disabled` on an `Item` disables just that one. A disabled item ignores activation and keyboard toggles and is marked inactive (`Active={false}`). Group-level disabled also short-circuits `Root`'s toggle logic, so nothing changes the value while it is set.
+
+### Motion
+
+Each `Item` animates between an active (pressed) and inactive palette using a default selection response recipe, driven by its pressed state. Override the recipe per item with `transition`.
+
+## API reference
+
+### ToggleGroup.Root
+
+`Root` takes the common props below plus the single- or multiple-mode props selected by `type`.
+
+<PropTable
+  rows={[
+    { name: "type", type: '"single" | "multiple"', description: "Required. Fixes the group as single- or multiple-select and determines the value shape." },
+    { name: "value", type: "string | string[]", description: "Controlled selection. string in single mode, string[] in multiple mode. Pair with onValueChange." },
+    { name: "defaultValue", type: "string | string[]", description: "Initial selection for uncontrolled usage. string in single mode; string[] (default []) in multiple mode." },
+    { name: "onValueChange", type: "(value: string | undefined) => void | (value: string[]) => void", description: "Called when the selection changes. Receives string | undefined in single mode and string[] in multiple mode." },
+    { name: "disabled", type: "boolean", description: "Disables every item in the group and blocks all value changes. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Render the single child element instead of the default container frame." },
+    { name: "children", type: "React.ReactNode", description: "The toggle items (and any layout)." },
+  ]}
+/>
+
+### ToggleGroup.Item
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Required. Identifies this item within the group; also the default button text." },
+    { name: "disabled", type: "boolean", description: "Disables just this item, ignoring activation and keyboard toggles. Defaults to false." },
+    { name: "transition", type: "MotionConfig", description: "Overrides the default selection response recipe used for the pressed/unpressed animation." },
+    { name: "asChild", type: "boolean", description: "Merge the toggle behavior and motion ref onto the single child element instead of the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

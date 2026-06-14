@@ -1,0 +1,183 @@
+---
+title: Positioning with Popper
+description: Anchor floating surfaces to a trigger with a shared placement model, collision-aware flipping, and offset props instead of hand-written screen math.
+section: guides
+sidebar:
+  order: 60
+draft: false
+---
+
+import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
+
+Anchored surfaces — popovers, menus, selects, tooltips, comboboxes — all face the same problem: given an anchor somewhere on screen, place a floating panel next to it so it stays on the requested side, lines up the way you asked, and never spills off the viewport. Hand-writing that math per surface means re-deriving `AnchorPoint`, screen-edge clamping, and flip logic every time.
+
+`@lattice-ui/popper` solves it once. It is the positioning engine shared by every anchored primitive in Lattice. You give it an anchor ref, a content ref, and a desired placement; it measures both `GuiObject`s, picks the best side that fits, and hands back a `Position`, an `AnchorPoint`, and the resolved `placement` to apply to your floating frame.
+
+Most of the time you do not touch this package directly — you set `placement`, `sideOffset`, `alignOffset`, and `collisionPadding` on a component like `Popover.Content` and the primitive forwards them. This guide explains what those props mean so you can position surfaces with intent.
+
+## Install
+
+You only install Popper directly if you are building a custom anchored primitive. The shipped components already depend on it.
+
+<PackageInstall packageName="@lattice-ui/popper" />
+
+## The positioning model
+
+Popper describes a position with four inputs:
+
+- **`placement`** — which side of the anchor the content prefers: `"top"`, `"bottom"`, `"left"`, or `"right"`. Defaults to `"bottom"`.
+- **`sideOffset`** — distance in pixels pushing the content *away from* the anchor along the placement axis. This is the visible gap between anchor and panel.
+- **`alignOffset`** — distance in pixels shifting the content *along* the anchor's edge, for nudging the panel left/right (or up/down) relative to centered.
+- **`collisionPadding`** — minimum gap in pixels to keep between the content and the viewport edges. Defaults to `8`.
+
+```ts title="Positioning options"
+type PopperPositioningOptions = {
+  placement?: "top" | "bottom" | "left" | "right";
+  sideOffset?: number;
+  alignOffset?: number;
+  collisionPadding?: number;
+};
+```
+
+Popper centers the content against the anchor on the cross axis by default, then applies your offsets. The result is reported as a `UDim2` offset position plus the `Vector2` `AnchorPoint` that makes that position visually correct — for a `"bottom"` placement the anchor point is `(0.5, 0)`, for `"right"` it is `(0, 0.5)`, and so on.
+
+### Collision-aware flipping
+
+Popper does not blindly honor your requested side. It evaluates the requested placement first, then its opposite, then the two orthogonal sides, scoring each by how far it would overflow the viewport (`collisionPadding` included). The candidate with the least overflow wins; a perfect fit short-circuits the search. The side it actually chose comes back as `placement` in the result.
+
+Because the chosen side can differ from the side you asked for, drive your entrance motion and any visual arrow from the *resolved* placement, not the requested one:
+
+```tsx title="Reading the resolved placement"
+const popper = usePopper({ anchorRef, contentRef, placement: "bottom" });
+
+// popper.placement may be "top" if "bottom" would overflow the screen.
+const resolvedPlacement = popper.isPositioned ? popper.placement : "bottom";
+```
+
+If nothing fits, Popper clamps the least-bad candidate inside the viewport (respecting `collisionPadding`) rather than letting the panel run off-screen.
+
+## Using it through a component
+
+In practice you set these props on the component's content part. Popover is representative; menu, select, tooltip, and combobox expose the same names.
+
+```tsx title="GuildBadgePopover.tsx"
+import { Popover } from "@lattice-ui/popover";
+
+export function GuildBadgePopover() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <imagebutton Image="rbxassetid://0" Size={UDim2.fromOffset(48, 48)} />
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content
+          placement="top"
+          sideOffset={10}
+          alignOffset={0}
+          collisionPadding={12}
+        >
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Size={UDim2.fromOffset(220, 120)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Member since 2021"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+            />
+          </frame>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
+
+The component owns the anchor and content refs internally — `Popover.Trigger` registers as the anchor unless you override it with `Popover.Anchor`. You only choose the geometry.
+
+## Using `usePopper` directly
+
+When you build your own anchored surface, call the `usePopper` hook. Give it stable refs for the anchor and the content and apply the result to your floating frame.
+
+```tsx title="usePopper in a custom surface"
+import React from "@rbxts/react";
+import { usePopper } from "@lattice-ui/popper";
+
+function FloatingCard(props: { anchorRef: React.RefObject<GuiObject>; open: boolean }) {
+  const contentRef = React.useRef<GuiObject>();
+
+  const popper = usePopper({
+    anchorRef: props.anchorRef,
+    contentRef,
+    placement: "bottom",
+    sideOffset: 8,
+    collisionPadding: 12,
+    enabled: props.open,
+  });
+
+  if (!props.open) {
+    return undefined;
+  }
+
+  return (
+    <frame
+      AnchorPoint={popper.anchorPoint}
+      Position={popper.position}
+      Size={UDim2.fromOffset(240, 160)}
+      Visible={popper.isPositioned}
+      ref={contentRef}
+    />
+  );
+}
+```
+
+`usePopper` measures both nodes, recomputes on layout or viewport changes, and exposes:
+
+<PropTable
+  rows={[
+    { name: "position", type: "UDim2", description: "Offset position to apply to the content frame." },
+    { name: "anchorPoint", type: "Vector2", description: "AnchorPoint that makes position render on the resolved side." },
+    { name: "placement", type: "PopperPlacement", description: "The side actually chosen after collision handling." },
+    { name: "contentSize", type: "Vector2", description: "Measured AbsoluteSize of the content node." },
+    { name: "isPositioned", type: "boolean", description: "True once the content has been measured and placed. Use it to gate visibility." },
+    { name: "update", type: "() => void", description: "Forces an immediate recompute." },
+  ]}
+/>
+
+<Callout title="Keep the content hidden until positioned">
+On the first frame the content has not been measured, so `isPositioned` is `false` and the position is a default. Gate the surface with `Visible={popper.isPositioned}` (or render it off-screen) to avoid a one-frame flash at the wrong spot. Lattice's own components hide the panel at `(-9999, -9999)` until positioning settles.
+</Callout>
+
+## How measurement works
+
+Popper reads `AbsolutePosition` and `AbsoluteSize` from the anchor and content, then derives placement against the viewport. Two Roblox specifics matter:
+
+- **Viewport bounds come from the nearest `ScreenGui`,** not the camera. Popper walks up from the content to find its `ScreenGui` ancestor and uses that `AbsoluteSize` (adjusted for `GetGuiInset` when the gui respects the inset). This keeps positioning correct for portaled surfaces and Studio plugin guis, not just full-screen `ScreenGui`s. If no `ScreenGui` is found it falls back to the current camera's `ViewportSize`.
+- **It re-measures reactively.** Popper subscribes to the anchor's `AbsolutePosition`/`AbsoluteSize`, the content's `AbsoluteSize`, and the viewport's size, recomputing whenever any of them change — so it tracks layout shifts, automatic sizing, and resolution changes without polling.
+
+<Callout title="Refs must point at GuiObjects">
+`anchorRef` and `contentRef` must resolve to real `GuiObject`s before Popper can measure anything. If either ref is empty Popper reports `isPositioned: false` and waits. When the anchor lives behind `asChild`, make sure the host element actually forwards its ref to the trigger.
+</Callout>
+
+## When to use it
+
+- You are building a **custom anchored surface** that should track a trigger and stay on screen.
+- You need **collision-aware flipping** without writing edge-detection math yourself.
+
+## When not to use it
+
+- The surface is **full-screen or centered** (a modal dialog, a toast region). Position it directly with `AnchorPoint` and scale — there is no anchor to track.
+- You want the panel **pinned to a fixed screen corner** regardless of any trigger. Use a plain `UDim2` position.
+- The content is **inline** in the normal layout flow. Popper is for floating surfaces that escape their parent.
+
+## Related
+
+- [Popover](/lattice-ui/components/popover/)
+- [Menu](/lattice-ui/components/menu/)
+- [Select](/lattice-ui/components/select/)
+- [Tooltip](/lattice-ui/components/tooltip/)
+- [Combobox](/lattice-ui/components/combobox/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Popper reference](/lattice-ui/reference/popper/)

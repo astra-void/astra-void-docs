@@ -1,0 +1,186 @@
+---
+title: Text Field
+description: Single-line text input primitive that owns the value, separates live changes from commit, exposes disabled/readOnly/invalid state, and wires label, description, and message parts together.
+section: components
+sidebar:
+  order: 150
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/text-field"
+  status="stable-direction"
+  importName="TextField"
+  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+/>
+
+Text Field is the primitive for any single-line input: a username box, a search bar, a price entry, a private-server name. It wraps a Roblox `TextBox`, owns the current value, and distinguishes a live change (every keystroke) from a commit (when editing ends), so your component decides when to validate or persist.
+
+Reach for Text Field when an input needs **controlled or uncontrolled value state**, a clear split between **change and commit**, and shared **disabled / readOnly / required / invalid** state that flows to a label, helper description, and validation message.
+
+## Import
+
+```ts
+import { TextField } from "@lattice-ui/text-field";
+```
+
+## Anatomy
+
+Compose `Root` around an `Input`, plus any of the optional text parts. Only `Root` and `Input` are required; `Label`, `Description`, and `Message` read shared state from context.
+
+```tsx title="TextField anatomy"
+<TextField.Root>
+  <TextField.Label />
+  <TextField.Input />
+  <TextField.Description />
+  <TextField.Message />
+</TextField.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `TextField.Root` | yes | Owns the value, the commit callback, and shared disabled/readOnly/required/invalid state. |
+| `TextField.Input` | yes | The `TextBox` that renders the value and reports changes, focus, and commit. |
+| `TextField.Label` | no | A `textbutton` that focuses the input when activated. |
+| `TextField.Description` | no | A static `textlabel` for helper text. |
+| `TextField.Message` | no | A `textlabel` for validation text that recolors when `invalid` is set. |
+
+## Example
+
+A controlled field with commit-time validation that flips `invalid` and shows a message.
+
+```tsx title="UsernameField.tsx"
+import { useState } from "@rbxts/react";
+import { TextField } from "@lattice-ui/text-field";
+
+export function UsernameField() {
+  const [name, setName] = useState("");
+  const [error, setError] = useState(false);
+
+  return (
+    <TextField.Root
+      value={name}
+      onValueChange={setName}
+      onValueCommit={(committed) => setError(committed.size() < 3)}
+      invalid={error}
+      required
+      name="username"
+    >
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(240, 96)}>
+        <uilistlayout Padding={new UDim(0, 4)} />
+
+        <TextField.Label>
+          <textbutton BackgroundTransparency={1} Text="Username" Size={UDim2.fromOffset(240, 22)} />
+        </TextField.Label>
+
+        <TextField.Input>
+          <textbox PlaceholderText="Enter a name" Size={UDim2.fromOffset(240, 36)} />
+        </TextField.Input>
+
+        {error ? (
+          <TextField.Message>
+            <textlabel BackgroundTransparency={1} Text="At least 3 characters." Size={UDim2.fromOffset(240, 20)} />
+          </TextField.Message>
+        ) : (
+          <TextField.Description>
+            <textlabel BackgroundTransparency={1} Text="Visible to other players." Size={UDim2.fromOffset(240, 20)} />
+          </TextField.Description>
+        )}
+      </frame>
+    </TextField.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `value`/`onValueChange` and pass `defaultValue` to let Text Field own the value internally (it defaults to an empty string). Use controlled state when something outside the field needs to read or set the value.
+</Callout>
+
+## How it behaves
+
+### Value state
+
+`TextField.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled; when neither is set the value starts empty. The value is mirrored onto the `TextBox` every render, so the displayed text always reflects the owned state rather than whatever Roblox last typed.
+
+### Change and commit
+
+A keystroke fires the `TextBox` text change, which calls `onValueChange` with the new text. A commit happens on `FocusLost` — when the player clicks away, presses Enter, or otherwise ends editing — which calls `onValueCommit` with the final text. Use `onValueChange` for live updates (counters, filtering) and `onValueCommit` for validation or persistence you only want once editing settles.
+
+### Disabled, readOnly, and validation
+
+`disabled` and `readOnly` both stop edits from updating the value: while either is set, `Root.setValue` ignores incoming text and the `Input` rewrites the `TextBox` back to the owned value. They differ in interaction — `disabled` also clears `Active`/`Selectable` and dims the input text, while `readOnly` keeps the field selectable but not editable. A disabled field additionally suppresses the commit callback on focus loss. `Input` can also set `disabled`/`readOnly` locally, which combine with `Root`'s state via OR.
+
+`required` and `invalid` are shared flags that carry no enforcement on their own — `required` is exposed for your own validation, and `invalid` is a visual/semantic marker. When `invalid` is set, `TextField.Message` recolors its text to the error color. The `name` prop is passed through context for form identification.
+
+### Label and focus
+
+`TextField.Label` renders a `textbutton`; activating it calls `CaptureFocus()` on the input, so clicking the label focuses the field. When the field is disabled the label drops its `Active`/`Selectable` state and does nothing on activation. `Description` and `Message` are non-interactive labels that read shared state for their text color.
+
+<Callout title="Default text and visuals">
+Each part renders sensible defaults when used without `asChild`: the `Input` shows a `"Type..."` placeholder, and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the example) to supply real copy and styling while keeping the wired-up behavior.
+</Callout>
+
+## API reference
+
+### TextField.Root
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled value. Pair with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage. Defaults to an empty string." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called on every text change while the field is editable." },
+    { name: "onValueCommit", type: "(value: string) => void", description: "Called with the final text when editing ends (focus lost). Suppressed when disabled." },
+    { name: "disabled", type: "boolean", description: "Blocks edits, clears Active/Selectable, dims the input, and suppresses commit. Defaults to false." },
+    { name: "readOnly", type: "boolean", description: "Blocks edits while keeping the field selectable. Defaults to false." },
+    { name: "required", type: "boolean", description: "Shared flag exposed for your own validation; not enforced. Defaults to false." },
+    { name: "invalid", type: "boolean", description: "Marks the field invalid and recolors the Message part. Defaults to false." },
+    { name: "name", type: "string", description: "Identifier passed through context for form usage." },
+    { name: "children", type: "React.ReactNode", description: "The field parts." },
+  ]}
+/>
+
+### TextField.Input
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default textbox." },
+    { name: "disabled", type: "boolean", description: "Local disabled state, combined with Root's via OR. Defaults to false." },
+    { name: "readOnly", type: "boolean", description: "Local readOnly state, combined with Root's via OR. Defaults to false." },
+    { name: "children", type: "React.ReactElement", description: "The textbox element to render. Required when asChild is set." },
+  ]}
+/>
+
+### TextField.Label
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge label behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### TextField.Description
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the description onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### TextField.Message
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the message onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

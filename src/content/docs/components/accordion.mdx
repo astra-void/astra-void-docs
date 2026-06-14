@@ -1,0 +1,208 @@
+---
+title: Accordion
+description: A collapsible disclosure primitive that owns open-value state, single/multiple expansion modes, and per-item presence motion while you own the visuals.
+section: components
+sidebar:
+  order: 10
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/accordion"
+  status="stable-direction"
+  importName="Accordion"
+  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion"]}
+/>
+
+Accordion is the primitive for a stack of disclosure sections where each section can expand to reveal content: FAQ lists, settings groups, inventory categories, and quest logs. It owns which items are open, keyed by a string `value`, and handles the reveal/exit motion of each section's content so your component only renders the header, trigger, and body.
+
+Reach for Accordion when you have **multiple labelled sections** that share an expansion policy — only one open at a time (`single`) or any number open at once (`multiple`) — and you want that policy, plus per-section motion, handled for you.
+
+## Import
+
+```ts
+import { Accordion } from "@lattice-ui/accordion";
+```
+
+## Anatomy
+
+Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wraps a `Header`/`Trigger` pair, and a `Content` body that mounts only while the item is open.
+
+```tsx title="Accordion anatomy"
+<Accordion.Root>
+  <Accordion.Item value="...">
+    <Accordion.Header>
+      <Accordion.Trigger />
+    </Accordion.Header>
+    <Accordion.Content />
+  </Accordion.Item>
+</Accordion.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Accordion.Root` | yes | Owns the open-value state and the expansion policy, sharing both through context. |
+| `Accordion.Item` | yes | Declares one section by `value`; derives its own open state from the root. |
+| `Accordion.Header` | no | A transparent layout frame for the trigger; purely structural. |
+| `Accordion.Trigger` | yes | A button that toggles its item open or closed. |
+| `Accordion.Content` | yes | The body that mounts and animates in while the item is open. |
+
+## Example
+
+A `single`, collapsible settings panel where one section is open at a time and the open section can be collapsed back to none.
+
+```tsx title="SettingsAccordion.tsx"
+import { useState } from "@rbxts/react";
+import { Accordion } from "@lattice-ui/accordion";
+
+export function SettingsAccordion() {
+  const [value, setValue] = useState<string | Array<string>>("audio");
+
+  return (
+    <Accordion.Root
+      type="single"
+      collapsible
+      value={value}
+      onValueChange={setValue}
+    >
+      <Accordion.Item value="audio">
+        <Accordion.Header>
+          <Accordion.Trigger>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Audio"
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+            />
+          </Accordion.Trigger>
+        </Accordion.Header>
+        <Accordion.Content Size={UDim2.fromOffset(260, 60)}>
+          <textlabel
+            BackgroundTransparency={1}
+            Size={UDim2.fromScale(1, 1)}
+            Text="Master volume, music, and SFX sliders."
+            TextColor3={Color3.fromRGB(205, 211, 224)}
+          />
+        </Accordion.Content>
+      </Accordion.Item>
+
+      <Accordion.Item value="controls">
+        <Accordion.Header>
+          <Accordion.Trigger>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Controls"
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+            />
+          </Accordion.Trigger>
+        </Accordion.Header>
+        <Accordion.Content Size={UDim2.fromOffset(260, 60)}>
+          <textlabel
+            BackgroundTransparency={1}
+            Size={UDim2.fromScale(1, 1)}
+            Text="Rebind movement and action keys."
+            TextColor3={Color3.fromRGB(205, 211, 224)}
+          />
+        </Accordion.Content>
+      </Accordion.Item>
+    </Accordion.Root>
+  );
+}
+```
+
+## How it behaves
+
+### Open-value state
+
+`Accordion.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage. State is stored as the item value(s) that are open, not booleans. The `type` prop selects the policy:
+
+- `type="single"` (the default) keeps at most one item open. The value is treated as a single string; opening a new item replaces the previously open one.
+- `type="multiple"` lets any number of items be open at once. The value is an array of open item values, de-duplicated.
+
+`Accordion.Item` reads the root's open values and considers itself open when its `value` is in that set. Each `Accordion.Trigger` toggles its own item through the shared toggle, so controlled and uncontrolled accordions behave identically.
+
+### Collapsible
+
+`collapsible` only affects `type="single"`. When `true`, activating the currently open trigger collapses it, leaving nothing open. When `false` (the default), the open item cannot be collapsed by clicking its own trigger — one item always stays open. In `type="multiple"`, items can always be toggled closed regardless of `collapsible`.
+
+### Focus and selection
+
+`Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and also on the `Return` and `Space` keys via `InputBegan`, so gamepad and keyboard activation both work without extra wiring. A disabled item's trigger ignores activation and key input alike. The default trigger sets `Selectable={false}` on itself; if you need it reachable by gamepad selection, render your own selectable element through `asChild`.
+
+### Motion and presence
+
+`Accordion.Content` is presence-driven: it mounts when its item opens and runs a default surface-reveal recipe, then plays the exit animation and unmounts when the item closes. The default trigger also animates its background between an active and inactive color as the item toggles. Override the content animation with `transition`, or pass `forceMount` to keep the body mounted through its exit (and while closed) so you can drive motion or measurement yourself.
+
+<Callout title="Controlled vs uncontrolled values">
+Match the shape of `value`/`defaultValue` to `type`. With `type="single"` pass a string; with `type="multiple"` pass an array of strings. The root normalizes mismatches, but keeping the shape consistent makes your `onValueChange` handler predictable.
+</Callout>
+
+<Callout title="Header is layout-only">
+`Accordion.Header` renders a transparent frame purely to position the trigger — it carries no state and no behavior. Skip it if your layout does not need it, or replace it via `asChild`.
+</Callout>
+
+## API reference
+
+### Accordion.Root
+
+<PropTable
+  rows={[
+    { name: "type", type: '"single" | "multiple"', description: "Expansion policy. \"single\" keeps at most one item open; \"multiple\" allows many. Defaults to \"single\"." },
+    { name: "value", type: "string | Array<string>", description: "Controlled open value(s). Use a string for single mode and an array for multiple mode. Pair with onValueChange." },
+    { name: "defaultValue", type: "string | Array<string>", description: "Initial open value(s) for uncontrolled usage. Defaults to \"\" in single mode and [] in multiple mode." },
+    { name: "onValueChange", type: "(value: string | Array<string>) => void", description: "Called whenever the open value(s) change." },
+    { name: "collapsible", type: "boolean", description: "In single mode, allows the open item to be collapsed back to none by re-activating its trigger. Defaults to false. No effect in multiple mode." },
+    { name: "children", type: "React.ReactNode", description: "The accordion items." },
+  ]}
+/>
+
+### Accordion.Item
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Unique key identifying this item. Determines whether the item is open based on the root's open value(s)." },
+    { name: "disabled", type: "boolean", description: "Prevents the item's trigger from toggling. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Merge item layout onto the single child element instead of rendering the default frame." },
+    { name: "children", type: "React.ReactNode", description: "The header/trigger and content for this item." },
+  ]}
+/>
+
+### Accordion.Header
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the header onto the single child element instead of rendering the default transparent frame." },
+    { name: "children", type: "React.ReactElement", description: "The header contents, typically an Accordion.Trigger." },
+  ]}
+/>
+
+### Accordion.Trigger
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set; otherwise rendered inside the default button." },
+  ]}
+/>
+
+### Accordion.Content
+
+In addition to the props below, `Accordion.Content` forwards any extra GUI props (such as `Size`, `Position`, and `BackgroundColor3`) onto the rendered `frame`.
+
+<PropTable
+  rows={[
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while closed and through its exit motion, instead of unmounting when the item closes." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default surface-reveal/exit recipe." },
+    { name: "asChild", type: "boolean", description: "Merge content behavior onto the single child element instead of rendering the default frame." },
+    { name: "children", type: "React.ReactNode", description: "The body contents shown while the item is open." },
+  ]}
+/>
+
+## Related
+
+- [Controlled state](/lattice-ui/guides/controlled-state/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

@@ -1,0 +1,119 @@
+---
+title: Composition model
+description: The shared compound-component, asChild, and controllable-state model every Lattice UI primitive follows.
+section: getting-started
+sidebar:
+  order: 30
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Every Lattice UI primitive is built from the same three ideas: a compound component with a `Root` and named parts, an `asChild` escape hatch for merging behavior onto your own elements, and controllable state that works either controlled or uncontrolled. Learn them once with Dialog and they carry over to Popover, Menu, Tabs, Combobox, and the rest unchanged.
+
+This page explains the model itself. The component pages assume you already know it.
+
+## Compound components
+
+A primitive is a namespace object. `Root` owns the state and shares it through React context; the parts read from that context instead of holding their own copies. You compose them like nested elements.
+
+```tsx title="The compound shape"
+import { Dialog } from "@lattice-ui/dialog";
+
+<Dialog.Root>
+  <Dialog.Trigger />
+  <Dialog.Portal>
+    <Dialog.Overlay />
+    <Dialog.Content />
+  </Dialog.Portal>
+</Dialog.Root>;
+```
+
+The same shape repeats everywhere — only the part names change to fit the primitive:
+
+```tsx title="Same model, different primitive"
+import { Tabs } from "@lattice-ui/tabs";
+
+<Tabs.Root defaultValue="general">
+  <Tabs.List>
+    <Tabs.Trigger value="general" />
+    <Tabs.Trigger value="audio" />
+  </Tabs.List>
+  <Tabs.Content value="general" />
+  <Tabs.Content value="audio" />
+</Tabs.Root>;
+```
+
+Because the parts share one context, a `Tabs.Trigger` knows which panel is active and a `Dialog.Close` knows how to close its `Root` — without you threading any props between them.
+
+## Controllable state
+
+State-bearing roots are built on the `useControllableState` helper from `@lattice-ui/core`. The result is a consistent contract: pass a controlled value, or pass a default and let the primitive own it.
+
+Overlay primitives expose **open** state:
+
+- `open` — the controlled value
+- `defaultOpen` — the initial value when uncontrolled
+- `onOpenChange` — called on every change, in both modes
+
+```tsx title="Controlled vs uncontrolled open state"
+// Uncontrolled — Dialog owns the state.
+<Dialog.Root defaultOpen={false}>{/* ... */}</Dialog.Root>
+
+// Controlled — your screen owns the state.
+const [open, setOpen] = useState(false);
+<Dialog.Root open={open} onOpenChange={setOpen}>{/* ... */}</Dialog.Root>
+```
+
+Value-bearing primitives follow the identical pattern with **value** instead of open — for example `Tabs.Root` accepts `value`, `defaultValue`, and `onValueChange`:
+
+```tsx title="The same contract for a selected value"
+<Tabs.Root defaultValue="general">{/* ... */}</Tabs.Root>
+
+const [tab, setTab] = useState("general");
+<Tabs.Root value={tab} onValueChange={setTab}>{/* ... */}</Tabs.Root>
+```
+
+The mechanics are the same in both cases: when you pass the controlled prop, the primitive defers to you and only reports changes through the `on*Change` callback; when you omit it, the primitive holds the state internally and still reports changes.
+
+<Callout title="Keep one owner">
+Pass either the controlled prop or the default, not both for the same state. `onOpenChange` / `onValueChange` fire either way, so you never lose the change event by going uncontrolled.
+</Callout>
+
+## asChild
+
+By default, behavior-carrying parts render their own host element (a `textbutton`, for triggers). `asChild` tells the part to merge its behavior onto the single child you provide instead, using the `Slot` utility from `@lattice-ui/core`. Use it when your app already owns the right element and you do not want an extra wrapper.
+
+```tsx title="Render the part as your own element"
+<Dialog.Trigger asChild>
+  <textbutton Text="Open settings" Size={UDim2.fromOffset(140, 38)} />
+</Dialog.Trigger>
+```
+
+`Slot` does a real merge, not a replacement. It composes refs across the part and your element, and chains event handlers (`Event` and `Change`) so both the part's handler and yours run. That is why the trigger above still opens the dialog while keeping any `Event.Activated` you set on the `textbutton`.
+
+`asChild` requires exactly one child element. The parts that support it — triggers, close buttons, overlays, and similar — say so in their reference tables; do not assume every part takes it.
+
+## App-owned visuals
+
+The split is deliberate: the primitive owns interaction, your app owns presentation. Frames, sizing, color, typography, and layout live in your code. This is what makes the same primitive fit a settings panel, a store window, and a confirmation prompt without forking it.
+
+```tsx title="Behavior from the part, visuals from you"
+<Dialog.Content>
+  <frame
+    BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+    Size={UDim2.fromOffset(320, 180)}
+  >
+    {/* your layout, your tokens */}
+  </frame>
+</Dialog.Content>
+```
+
+`Dialog.Content` still traps focus, handles dismissal, and runs its exit motion — none of which the frame inside it has to know about.
+
+## Why it is the same everywhere
+
+Once you can read one primitive, you can read them all: find the `Root`, check whether it is open- or value-controlled, scan the parts, and drop `asChild` where you want your own element. The behavior contract stays stable across packages while your app keeps full control of how things look.
+
+## Next step
+
+Apply the model end to end in [Your first dialog](/lattice-ui/getting-started/first-dialog/), then browse the [Dialog reference](/lattice-ui/components/dialog/) to see the per-part props in context.

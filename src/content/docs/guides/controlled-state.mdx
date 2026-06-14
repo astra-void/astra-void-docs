@@ -1,0 +1,141 @@
+---
+title: Controlled and uncontrolled state
+description: Understand the controlled/uncontrolled pattern that every stateful Lattice primitive shares, and when to own the state yourself versus letting the primitive own it.
+section: guides
+sidebar:
+  order: 20
+draft: false
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+A `Dialog` has open state. `Tabs` has a selected value. A `Checkbox` has a checked flag. Every stateful primitive in Lattice has to answer one question: *who owns this state — the primitive, or the app?* Rather than forcing one answer, each primitive supports both modes through the same prop shape, so you can start simple and reach for control only when you need it.
+
+This pattern is implemented once, in `useControllableState` from `@lattice-ui/core`, and every primitive root uses it. Learn the shape once and it applies everywhere.
+
+## The two modes
+
+Every controllable prop comes as a trio: a controlled value, a default for uncontrolled use, and a change callback.
+
+- **Uncontrolled** — pass only the `default*` prop. The primitive owns the state internally; you read changes through the callback if you care.
+- **Controlled** — pass the value prop *and* the change callback. Now the app owns the state; the primitive renders whatever you give it and asks you to update via the callback.
+
+The naming is consistent across the library:
+
+| Concept | Controlled | Uncontrolled default | Change callback |
+| --- | --- | --- | --- |
+| Open state (overlays) | `open` | `defaultOpen` | `onOpenChange` |
+| Selection value | `value` | `defaultValue` | `onValueChange` |
+| Boolean state | `checked` | `defaultChecked` | `onCheckedChange` |
+
+Some field primitives also expose a commit callback (for example `onValueCommit`) that fires only when the value is finalized, separate from the per-change callback.
+
+## Uncontrolled: let the primitive own it
+
+This is the default, and it is the right choice most of the time. You give an initial value and forget about it.
+
+```tsx title="Uncontrolled dialog"
+import { Dialog } from "@lattice-ui/dialog";
+
+export function HelpDialog() {
+  return (
+    <Dialog.Root defaultOpen={false}>
+      <Dialog.Trigger asChild>
+        <textbutton Text="Help" Size={UDim2.fromOffset(80, 36)} />
+      </Dialog.Trigger>
+      {/* The dialog opens and closes itself. */}
+    </Dialog.Root>
+  );
+}
+```
+
+The trigger opens it, the close button (or an outside press) closes it, and you never touched the state. `defaultOpen` defaults to `false`, so you can usually omit it entirely.
+
+## Controlled: let the app own it
+
+Pass `open` and `onOpenChange` together when something *outside* the primitive needs to read or drive the state.
+
+```tsx title="Controlled dialog"
+import { useState } from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function ConfirmPurchaseDialog(props: { productId: string }) {
+  const [open, setOpen] = useState(false);
+
+  // Open it in response to something elsewhere in the app.
+  // The dialog never opens or closes unless `open` says so.
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <textbutton Text="Buy" Size={UDim2.fromOffset(80, 36)} />
+      </Dialog.Trigger>
+      {/* ... */}
+    </Dialog.Root>
+  );
+}
+```
+
+In controlled mode the primitive does **not** update its own state. When the user clicks the trigger it calls `onOpenChange(true)` and waits for you to feed `open={true}` back in. If you ignore the callback, nothing happens — which is exactly the leverage controlled mode gives you (you can veto, gate, or defer the change).
+
+The same shape applies to selection primitives:
+
+```tsx title="Controlled tabs"
+import { useState } from "@rbxts/react";
+import { Tabs } from "@lattice-ui/tabs";
+
+export function ProfilePanels() {
+  const [tab, setTab] = useState("overview");
+
+  return (
+    <Tabs.Root value={tab} onValueChange={setTab}>
+      {/* ...triggers and panels... */}
+    </Tabs.Root>
+  );
+}
+```
+
+## How it behaves under the hood
+
+`useControllableState` decides which mode it is in by a single rule: **if the value prop is defined, it is controlled; otherwise it is uncontrolled.** That has a few consequences worth knowing:
+
+- The change callback fires in **both** modes, so you can observe an uncontrolled primitive without taking it over.
+- In controlled mode internal state is never written — your prop is the only source of truth, so the rendered state can never drift from app state.
+- The callback only fires when the value **actually changes**. Setting it to the same value is a no-op and will not call your handler.
+
+<PropTable
+  rows={[
+    { name: "value (open/checked)", type: "T | undefined", description: "When defined, the primitive is controlled and renders exactly this value." },
+    { name: "defaultValue (defaultOpen/...)", type: "T", description: "Initial value for uncontrolled mode. Ignored once a controlled value is supplied." },
+    { name: "onChange (onOpenChange/...)", type: "(next: T) => void", description: "Called with the next value whenever it changes, in both modes." },
+  ]}
+/>
+
+<Callout title="Don't switch modes mid-life">
+Pick controlled or uncontrolled and stay there for the life of the component. Flipping `open` between `undefined` and a real boolean across renders makes the primitive switch ownership models and produces confusing state. If you need control conditionally, always pass a defined value and a callback.
+</Callout>
+
+<Callout title="Controlled means you must apply the change">
+A common mistake is passing `open` without `onOpenChange`, or passing the callback but never updating the state. The primitive will appear frozen — the trigger fires the callback but `open` never changes, so nothing opens. In controlled mode, wiring the callback back into the value is mandatory.
+</Callout>
+
+## When to control state
+
+- Multiple surfaces or systems need to **coordinate** — opening one panel closes another, or app logic decides what is selected.
+- You need to **gate or veto** a change (only open if the player has permission; confirm before switching tabs).
+- The state must be **persisted, restored, or synced** from outside the component tree.
+
+## When to leave it uncontrolled
+
+- The interaction is **self-contained** — a help dialog, a local accordion, a standalone toggle.
+- Nothing outside the primitive needs to know or influence the value.
+
+Uncontrolled is less code and harder to get wrong. Reach for controlled only when the app genuinely needs the leverage.
+
+## Related
+
+- [Composition model](/lattice-ui/getting-started/composition-model/)
+- [Dialog](/lattice-ui/components/dialog/)
+- [Tabs](/lattice-ui/components/tabs/)
+- [Checkbox](/lattice-ui/components/checkbox/)
+- [Core reference](/lattice-ui/reference/core/)

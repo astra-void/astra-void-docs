@@ -1,0 +1,234 @@
+---
+title: Menu
+description: Anchored action-menu primitive that owns open state, ordered selection movement, popper positioning, and layered dismissal while you own the visuals.
+section: components
+sidebar:
+  order: 30
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/menu"
+  status="stable-direction"
+  importName="Menu"
+  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+/>
+
+Menu is the primitive for a list of actions that opens from a trigger: context menus, dropdown actions, overflow menus, and command lists. It coordinates open state, ordered item movement, positioning, dismissal, and exit motion so your component only has to render the items and their contents.
+
+Reach for Menu when you need a surface of **selectable actions** that **moves selection in order** (gamepad up/down and arrow keys), **anchors** to its trigger through the popper foundation, and **dismisses on selection or outside interaction**. Menu is **modal by default** — selection is trapped inside the open menu and restored to the trigger on close.
+
+## Import
+
+```ts
+import { Menu } from "@lattice-ui/menu";
+```
+
+## Anatomy
+
+Compose the parts you need. `Root`, `Trigger`, `Portal`, and `Content` form the working menu; `Item` makes it useful, and `Group`, `Label`, and `Separator` structure longer lists.
+
+```tsx title="Menu anatomy"
+<Menu.Root>
+  <Menu.Trigger />
+  <Menu.Portal>
+    <Menu.Content>
+      <Menu.Label />
+      <Menu.Group>
+        <Menu.Item />
+      </Menu.Group>
+      <Menu.Separator />
+      <Menu.Item />
+    </Menu.Content>
+  </Menu.Portal>
+</Menu.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `Menu.Root` | yes | Owns open state, the item registry, and selection movement. |
+| `Menu.Trigger` | yes | A button that toggles the menu and acts as the positioning anchor and focus-restore target. |
+| `Menu.Portal` | yes | Renders the surface into a `ScreenGui` outside the local tree. |
+| `Menu.Content` | yes | The positioned, focus-trapped, dismissable, motion-driven surface. |
+| `Menu.Item` | yes | A selectable action that registers for ordered movement and emits `onSelect`. |
+| `Menu.Group` | no | A vertical layout container that visually groups related items. |
+| `Menu.Label` | no | A non-interactive heading for a group or section. |
+| `Menu.Separator` | no | A thin divider between items or groups. |
+
+## Example
+
+A controlled menu with a grouped action list, a separator, and a destructive item that closes on selection.
+
+```tsx title="RowActionsMenu.tsx"
+import { useState } from "@rbxts/react";
+import { Menu } from "@lattice-ui/menu";
+
+export function RowActionsMenu() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <textbutton Text="Actions" Size={UDim2.fromOffset(120, 36)} />
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Content placement="bottom" sideOffset={6}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} />
+            <Menu.Label asChild>
+              <textlabel Text="Manage" />
+            </Menu.Label>
+            <Menu.Group>
+              <Menu.Item onSelect={() => print("rename")}>
+                <textbutton Text="Rename" />
+              </Menu.Item>
+              <Menu.Item onSelect={() => print("duplicate")}>
+                <textbutton Text="Duplicate" />
+              </Menu.Item>
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Item onSelect={() => print("delete")}>
+              <textbutton Text="Delete" TextColor3={Color3.fromRGB(244, 120, 120)} />
+            </Menu.Item>
+          </frame>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled usage">
+Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Menu own its state. Use controlled state only when something outside the menu needs to open or close it.
+</Callout>
+
+## How it behaves
+
+### Open state
+
+`Menu.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to closed). `Menu.Trigger` toggles the open state on activation (and on the `Return`/`Space` keys). Selecting an item closes the menu unless the item's `onSelect` calls `preventDefault`.
+
+### Positioning
+
+`Menu.Content` is positioned by the popper foundation, anchored to the trigger. It measures the trigger and the content, resolves a final placement, and flips to the opposite side when the requested side would collide with the screen edge. Tune it with `placement` (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` (gap from the trigger, default `0`), `alignOffset` (shift along the cross axis, default `0`), and `collisionPadding` (minimum distance from the screen edge, default `8`).
+
+### Focus and selection
+
+When the menu opens, the first item is focused automatically and selection is **trapped** inside the content (Menu is modal by default). `Menu.Item` registers itself with the root in render order, and the registry drives ordered movement: pressing `Up`/`Down` on a focused item moves selection to the previous or next enabled item, wrapping through the list. Disabled items are skipped. When the menu closes, focus is restored to the trigger.
+
+`Menu.Item` activates on click or on the `Return`/`Space` keys, calling `onSelect` with an event whose `preventDefault()` keeps the menu open. The default item renders a left-aligned `textbutton` that highlights on pointer enter and on gamepad selection.
+
+### Dismissal
+
+`Menu.Content` participates in dismissable-layer behavior. Because Menu is modal, interaction behind the surface is blocked and an outside press dismisses it. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the menu closes.
+
+### Motion and presence
+
+`Menu.Content` runs a default popper-aware canvas-group reveal/exit recipe that animates from the resolved placement, so it animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+
+<Callout title="Menu is modal">
+Menu defaults to `modal={true}`: it traps selection inside the open content and blocks interaction behind it. Set `modal={false}` on `Menu.Root` for a lightweight, non-blocking menu that leaves the rest of the UI interactive — closer to Popover's default behavior.
+</Callout>
+
+## API reference
+
+### Menu.Root
+
+<PropTable
+  rows={[
+    { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
+    { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
+    { name: "modal", type: "boolean", description: "When true, traps selection inside the menu and blocks interaction behind it. Defaults to true." },
+    { name: "children", type: "React.ReactNode", description: "The menu parts." },
+  ]}
+/>
+
+### Menu.Trigger
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Prevents the trigger from toggling the menu and removes it from selection." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Menu.Portal
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the surface into. Defaults to the surrounding portal context's container." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers. Defaults to the surrounding portal context's value." },
+    { name: "children", type: "React.ReactNode", description: "The content part." },
+  ]}
+/>
+
+### Menu.Content
+
+<PropTable
+  rows={[
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the content on. Flips on collision. Defaults to \"bottom\"." },
+    { name: "sideOffset", type: "number", description: "Gap in pixels between the trigger and the content. Defaults to 0." },
+    { name: "alignOffset", type: "number", description: "Shift in pixels along the trigger's cross axis. Defaults to 0." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the default canvasgroup contents." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper-aware canvas-group reveal/exit recipe." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
+    { name: "children", type: "React.ReactNode", description: "The menu contents." },
+  ]}
+/>
+
+### Menu.Item
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Prevents selection and skips the item during ordered movement." },
+    { name: "onSelect", type: "(event: MenuSelectEvent) => void", description: "Called on activation. Call event.preventDefault() to keep the menu open." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Menu.Group
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the group onto the single child element instead of rendering the default vertical-layout frame." },
+    { name: "children", type: "React.ReactElement", description: "The grouped items to render. Required when asChild is set." },
+  ]}
+/>
+
+### Menu.Label
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the label onto the single child element instead of rendering the default textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The label element to render. Required when asChild is set." },
+  ]}
+/>
+
+### Menu.Separator
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the separator onto the single child element instead of rendering the default 1px divider frame." },
+    { name: "children", type: "React.ReactElement", description: "The divider element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Positioning with popper](/lattice-ui/guides/positioning-with-popper/)
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

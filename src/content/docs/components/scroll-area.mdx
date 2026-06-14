@@ -1,0 +1,179 @@
+---
+title: Scroll Area
+description: Scroll-container primitive that wraps a Roblox ScrollingFrame, tracks its canvas metrics, and drives custom scrollbars and thumbs with overflow-aware visibility.
+section: components
+sidebar:
+  order: 100
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/scroll-area"
+  status="stable-direction"
+  importName="ScrollArea"
+  dependencies={["@lattice-ui/core"]}
+/>
+
+Scroll Area is the primitive for building a scroll container with custom-styled scrollbars on top of Roblox's native `ScrollingFrame`. `Viewport` is the scrolling surface; `Root` reads its canvas metrics and decides when scrollbars should show; and `Scrollbar`/`Thumb` render a draggable indicator wired to the viewport's `CanvasPosition`. `Corner` fills the gap where both axes overlap.
+
+Reach for Scroll Area when you want the **native scroll feel** of a `ScrollingFrame` — wheel, touch drag, momentum — but with **scrollbars you style yourself** and **overflow-aware visibility** that hides them when there is nothing to scroll.
+
+## Import
+
+```ts
+import { ScrollArea } from "@lattice-ui/scroll-area";
+```
+
+## Anatomy
+
+`Root` provides the metrics context. `Viewport` holds your content. Add a `Scrollbar` (with a `Thumb` inside) per axis, and a `Corner` when you show both.
+
+```tsx title="ScrollArea anatomy"
+<ScrollArea.Root>
+  <ScrollArea.Viewport>{/* content */}</ScrollArea.Viewport>
+  <ScrollArea.Scrollbar orientation="vertical">
+    <ScrollArea.Thumb orientation="vertical" />
+  </ScrollArea.Scrollbar>
+  <ScrollArea.Corner />
+</ScrollArea.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `ScrollArea.Root` | yes | Holds the viewport ref, tracks per-axis metrics, and computes scrollbar visibility from overflow and type. |
+| `ScrollArea.Viewport` | yes | The `ScrollingFrame` that scrolls content and reports its canvas/window sizes back to `Root`. |
+| `ScrollArea.Scrollbar` | no | A track for one axis; a press on empty track jumps the canvas toward that position. |
+| `ScrollArea.Thumb` | no | The draggable handle inside a scrollbar; sized and positioned to the scroll ratio. |
+| `ScrollArea.Corner` | no | Fills the intersection square, shown only when both scrollbars are visible. |
+
+## Example
+
+A vertically scrolling list with a custom-styled scrollbar and thumb.
+
+```tsx title="PatchNotes.tsx"
+import { ScrollArea } from "@lattice-ui/scroll-area";
+
+export function PatchNotes(props: { lines: string[] }) {
+  return (
+    <ScrollArea.Root type="scroll">
+      <frame BackgroundColor3={Color3.fromRGB(18, 20, 26)} Size={UDim2.fromOffset(280, 200)}>
+        <ScrollArea.Viewport asChild>
+          <scrollingframe BackgroundTransparency={1} Size={UDim2.fromScale(1, 1)}>
+            <uilistlayout Padding={new UDim(0, 6)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            {props.lines.map((line, index) => (
+              <textlabel
+                key={index}
+                AutomaticSize={Enum.AutomaticSize.Y}
+                BackgroundTransparency={1}
+                Size={UDim2.new(1, 0, 0, 0)}
+                Text={line}
+                TextColor3={Color3.fromRGB(224, 230, 240)}
+                TextWrapped
+              />
+            ))}
+          </scrollingframe>
+        </ScrollArea.Viewport>
+
+        <ScrollArea.Scrollbar orientation="vertical">
+          <frame BackgroundColor3={Color3.fromRGB(40, 46, 60)} Size={UDim2.new(0, 6, 1, 0)}>
+            <ScrollArea.Thumb orientation="vertical">
+              <frame BackgroundColor3={Color3.fromRGB(120, 132, 156)}>
+                <uicorner CornerRadius={new UDim(1, 0)} />
+              </frame>
+            </ScrollArea.Thumb>
+          </frame>
+        </ScrollArea.Scrollbar>
+      </frame>
+    </ScrollArea.Root>
+  );
+}
+```
+
+## How it behaves
+
+### Scrolling and metrics
+
+`ScrollArea.Viewport` renders a `ScrollingFrame` with `AutomaticCanvasSize` on both axes and the native scrollbars hidden (`ScrollBarThickness = 0`). It registers the frame with `Root` and listens to `CanvasPosition`, `AbsoluteCanvasSize`, and `AbsoluteWindowSize` changes, pushing the per-axis `viewportSize`, `contentSize`, and `scrollPosition` into context on every change. Because the underlying control is a real `ScrollingFrame`, mouse-wheel, touch-drag, and gamepad scrolling all work natively — the primitive layers custom scrollbars on top of that. Use `asChild` to supply your own `scrollingframe` if you need to set its size or styling.
+
+### Scrollbar visibility
+
+`Root` derives overflow per axis (content larger than the viewport) and resolves visibility from `type`:
+
+- `"auto"` (default) — show a scrollbar only when that axis overflows.
+- `"always"` — show whenever the axis overflows; never auto-hide.
+- `"scroll"` — show on scroll activity, then auto-hide after `scrollHideDelayMs` (default `600`ms) of inactivity, only while overflowing.
+
+`Scrollbar` and `Corner` read these flags and toggle their own `Visible`. `Corner` shows only when both the vertical and horizontal scrollbars are visible.
+
+### Thumb sizing and dragging
+
+`ScrollArea.Thumb` computes its size and offset from the axis metrics: its scale along the axis is the viewport-to-content ratio, and its position tracks the current scroll. Pressing the thumb starts a drag tracked through `UserInputService` (mouse or touch); pointer movement maps to a new `CanvasPosition`, clamped to the scroll range. Pressing the empty `Scrollbar` track (outside the thumb) jumps the canvas toward the pressed position. All scroll changes flow through `Root.setScrollPosition`, which clamps to `[0, contentSize - viewportSize]` and writes the viewport's `CanvasPosition`.
+
+### Orientation
+
+`Scrollbar` and `Thumb` each require an `orientation` of `"vertical"` or `"horizontal"`. The default rendered scrollbar pins to the right edge (vertical) or bottom edge (horizontal); the thumb sizes itself along that axis. Provide one scrollbar/thumb pair per axis you want to expose, and add a `Corner` when both are present.
+
+<Callout title="Roblox scrolling">
+The viewport is a native `ScrollingFrame` and remains the source of truth for `CanvasPosition`. Lattice-UI only hides the built-in scrollbars and reflects the canvas metrics into your custom parts — it never replaces native scroll input, so wheel and touch scrolling keep working even without a `Scrollbar`.
+</Callout>
+
+<Callout title="Sizing the viewport">
+Give the viewport (or its container) a concrete size. The default `Viewport` falls back to a fixed offset size; in practice you will pass `asChild` with a `scrollingframe` sized to fill its parent, as in the example, so overflow and thumb ratios compute against the real layout.
+</Callout>
+
+## API reference
+
+### ScrollArea.Root
+
+<PropTable
+  rows={[
+    { name: "type", type: '"auto" | "always" | "scroll"', description: "Scrollbar visibility strategy. Defaults to \"auto\"." },
+    { name: "scrollHideDelayMs", type: "number", description: "For type=\"scroll\", how long after activity before scrollbars auto-hide. Defaults to 600; floored at 0." },
+    { name: "children", type: "React.ReactNode", description: "Viewport, scrollbars, thumbs, and corner." },
+  ]}
+/>
+
+### ScrollArea.Viewport
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Render your own scrollingframe instead of the default; the scroll props and metrics ref are projected onto it." },
+    { name: "children", type: "React.ReactElement", description: "With asChild, the scrollingframe element; otherwise the content placed inside the default viewport." },
+  ]}
+/>
+
+### ScrollArea.Scrollbar
+
+<PropTable
+  rows={[
+    { name: "orientation", type: '"vertical" | "horizontal"', description: "Which axis this scrollbar controls. Required." },
+    { name: "asChild", type: "boolean", description: "Render your own track element via Slot; visibility and track-press handling are projected onto it." },
+    { name: "children", type: "React.ReactElement", description: "With asChild, the track element; otherwise content placed inside the default track, typically a Thumb." },
+  ]}
+/>
+
+### ScrollArea.Thumb
+
+<PropTable
+  rows={[
+    { name: "orientation", type: '"vertical" | "horizontal"', description: "Which axis this thumb belongs to. Required; should match its scrollbar." },
+    { name: "asChild", type: "boolean", description: "Render your own thumb element via Slot; size, position, and drag handling are projected onto it." },
+    { name: "children", type: "React.ReactElement", description: "With asChild, the thumb element; otherwise content placed inside the default thumb." },
+  ]}
+/>
+
+### ScrollArea.Corner
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Render your own corner element via Slot; its visibility is bound to both scrollbars being shown." },
+    { name: "children", type: "React.ReactElement", description: "With asChild, the corner element; otherwise content placed inside the default corner." },
+  ]}
+/>
+
+## Related
+
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
+- [Controllable state](/lattice-ui/guides/controlled-state/)
+- [Focus management](/lattice-ui/guides/focus-management/)

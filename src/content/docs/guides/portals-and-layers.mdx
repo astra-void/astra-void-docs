@@ -1,0 +1,191 @@
+---
+title: Portals and layers
+description: Render overlays into the right ScreenGui, order them predictably with DisplayOrder, and coordinate outside-press dismissal — without hard-coding layout math.
+section: guides
+sidebar:
+  order: 20
+draft: false
+---
+
+import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
+
+An overlay has a layout problem the moment it is born inside another component. A tooltip rendered inside a scrolling list gets clipped by the list. A dialog rendered deep in a panel inherits that panel's `ZIndex` band and ends up fighting siblings for stacking order. The content needs to *escape* its parent and render at the top of the screen tree — while its trigger stays where it logically belongs.
+
+`@lattice-ui/layer` provides the three pieces that make this work: **Portal** moves content into the right `BasePlayerGui`, **DismissableLayer** gives each surface its own ordered `ScreenGui` and coordinates outside-press dismissal, and **Presence** keeps a node mounted long enough to animate out. Every overlay primitive — Dialog, Popover, Menu, Select, Tooltip — is built on these.
+
+## Install
+
+The shipped components depend on this package already. Install it directly only when building a custom layered surface.
+
+<PackageInstall packageName="@lattice-ui/layer" />
+
+## Portals: escaping the local tree
+
+`createPortal` (re-exported through `Portal`) renders children into a target `Instance` instead of the position where the element appears in the tree. The trigger stays in your component; the content renders elsewhere.
+
+```tsx title="Portal escapes clipping and stacking"
+import { Popover } from "@lattice-ui/popover";
+
+export function HelpPopover() {
+  return (
+    <Popover.Root>
+      {/* This trigger can live inside a clipped, scrolling list... */}
+      <Popover.Trigger asChild>
+        <textbutton Text="?" Size={UDim2.fromOffset(28, 28)} />
+      </Popover.Trigger>
+
+      {/* ...but the content portals out to the top of the screen tree. */}
+      <Popover.Portal>
+        <Popover.Content>
+          <frame Size={UDim2.fromOffset(220, 120)} />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
+
+The portal target resolves from the nearest `PortalProvider`, or from an explicit `container` prop on the portal part. Portaling is a **behavior** decision, not a styling one: you portal because the content must escape clipping or stacking, not to change how it looks.
+
+### Setting the portal target with `PortalProvider`
+
+`PortalProvider` supplies the default `container` and `displayOrderBase` for every layer beneath it through context. Mount it once near the root of your UI with the player's `PlayerGui`.
+
+```tsx title="App root"
+import { Players } from "@rbxts/services";
+import { PortalProvider } from "@lattice-ui/layer";
+
+const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui") as PlayerGui;
+
+export function App() {
+  return (
+    <PortalProvider container={playerGui} displayOrderBase={1000}>
+      {/* All overlays below portal into playerGui and order from 1000 up. */}
+    </PortalProvider>
+  );
+}
+```
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "The PlayerGui (or PluginGui) every layer below portals into by default." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for generated ScreenGuis. Defaults to 1000." },
+    { name: "children", type: "React.ReactNode", description: "Your app tree." },
+  ]}
+/>
+
+<Callout title="Keep the container stable">
+Resolve the `PlayerGui` once and pass the same `container` for the life of the surface. Swapping the portal target mid-life tears down and re-mounts the surface — losing focus, motion, and any in-progress interaction. Treat the container as fixed infrastructure.
+</Callout>
+
+## Layers: ordering and outside dismissal
+
+`DismissableLayer` is what each overlay's content actually mounts inside. Every layer creates its own `ScreenGui` and:
+
+- **Assigns a `DisplayOrder`** of `displayOrderBase + mountOrder`, so layers stack in the order they opened — the most recently opened surface sits on top.
+- **Tracks a layer stack** so dismissal is ordered: an outside press dismisses the *topmost* layer, not all of them at once. Nested overlays close from the inside out.
+- **Optionally blocks interaction behind it** when `modal` (or `disableOutsidePointerEvents`) is set, by rendering a full-screen `Modal` `textbutton` behind the content.
+- **Reports outside interactions** so you can observe — or veto — them before the surface dismisses.
+
+```tsx title="A custom dismissable surface"
+import React from "@rbxts/react";
+import { DismissableLayer } from "@lattice-ui/layer";
+
+function QuickPanel(props: { open: boolean; onClose: () => void }) {
+  const boundaryRef = React.useRef<GuiObject>();
+
+  if (!props.open) {
+    return undefined;
+  }
+
+  return (
+    <DismissableLayer
+      modal={true}
+      contentBoundaryRef={boundaryRef}
+      onDismiss={props.onClose}
+      onPointerDownOutside={(event) => {
+        // Veto dismissal for a specific region if needed.
+        // event.preventDefault();
+        print("pressed outside", event.originalEvent.UserInputType);
+      }}
+    >
+      <frame
+        AnchorPoint={new Vector2(0.5, 0.5)}
+        Position={UDim2.fromScale(0.5, 0.5)}
+        Size={UDim2.fromOffset(320, 200)}
+        ref={boundaryRef}
+      />
+    </DismissableLayer>
+  );
+}
+```
+
+<PropTable
+  rows={[
+    { name: "enabled", type: "boolean", description: "Whether the layer participates in the stack and dismissal. Defaults to true." },
+    { name: "modal", type: "boolean", description: "Blocks pointer interaction behind the layer and enables outside-press dismissal." },
+    { name: "disableOutsidePointerEvents", type: "boolean", description: "Blocks outside pointer events without the full modal semantics." },
+    { name: "contentBoundaryRef", type: "React.MutableRefObject<GuiObject | undefined>", description: "Marks the node whose bounds define 'inside'. Presses inside it are not outside presses." },
+    { name: "insideRefs", type: "Array<MutableRefObject<GuiObject | TextBox | undefined>>", description: "Extra nodes (e.g. the trigger) that also count as inside." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Pointer press outside the boundary, before dismissal. Call event.preventDefault() to veto." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Any other outside interaction, before dismissal." },
+    { name: "onDismiss", type: "() => void", description: "Called when the layer should dismiss." },
+  ]}
+/>
+
+<Callout title="DisplayOrder, not ZIndex, decides who wins">
+Because each layer is its own `ScreenGui`, stacking between surfaces is governed by `DisplayOrder`, not by `ZIndex`. `ZIndex` only orders siblings inside a single gui. Give your app's non-Lattice screens a `DisplayOrder` band below `displayOrderBase` (default `1000`) so overlays reliably render above them.
+</Callout>
+
+## Nested overlays
+
+When overlays stack — a menu opened from inside a dialog, a select inside a popover — the layer stack keeps them honest:
+
+- Each new layer mounts with a higher `DisplayOrder`, so the innermost surface is always on top.
+- An outside press dismisses only the topmost active layer, so closing a menu does not also close the dialog behind it.
+- The `contentBoundaryRef` and `insideRefs` of an inner layer keep presses on its own content (and trigger) from being treated as "outside".
+
+You generally get this for free by composing Lattice primitives. When building custom layers, register the trigger as an inside ref so clicking the trigger to toggle the surface is not misread as an outside dismiss.
+
+## Presence: surviving exit animation
+
+When an overlay closes, unmounting it immediately would cut off any exit animation. `Presence` bridges the gap: it keeps the node mounted after `present` flips to `false`, exposes an `isPresent` flag to drive the exit, and only unmounts once the exit completes (or a fallback timeout elapses).
+
+```tsx title="Presence keeps the node mounted to animate out"
+import { Presence } from "@lattice-ui/layer";
+
+<Presence
+  present={open}
+  render={(state) => (
+    <Panel
+      visible={state.isPresent}
+      onExitComplete={state.onExitComplete}
+    />
+  )}
+/>;
+```
+
+`render` receives `{ isPresent, onExitComplete }`. Animate based on `isPresent`, then call `onExitComplete()` when the exit finishes so `Presence` can drop the node. If you never call it, a fallback timer unmounts the node anyway so it can never get stuck mounted. Most components also accept `forceMount` to keep content mounted regardless, which is useful when you drive motion yourself.
+
+## When to portal and layer
+
+- The content must **escape clipping or local stacking** — anything floating above the regular layout.
+- Several surfaces can be **open at once** and need predictable stacking and dismissal.
+- The surface needs **outside-press dismissal** or modal blocking behind it.
+
+## When not to
+
+- The content is **inline** and belongs in the normal layout flow — do not portal it just to reorder it.
+- A single fixed-position element with no dismissal needs none of this; a plain `ScreenGui` with a set `DisplayOrder` is enough.
+
+## Related
+
+- [Dialog](/lattice-ui/components/dialog/)
+- [Popover](/lattice-ui/components/popover/)
+- [Menu](/lattice-ui/components/menu/)
+- [Select](/lattice-ui/components/select/)
+- [Tooltip](/lattice-ui/components/tooltip/)
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [Positioning with Popper](/lattice-ui/guides/positioning-with-popper/)
+- [Layer reference](/lattice-ui/reference/layer/)

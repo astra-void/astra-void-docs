@@ -1,0 +1,233 @@
+---
+title: Style
+description: Theme tokens, recipe and host-prop helpers, and the Box/Text primitives that every styled Lattice UI surface builds on.
+section: reference
+sidebar:
+  order: 60
+---
+
+import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/style"
+  status="stable-direction"
+  dependencies={["@lattice-ui/core"]}
+/>
+
+Style is the visual foundation: a theme of design tokens, helpers for merging Roblox host props, a recipe system for variant-driven styling, and the `Box`/`Text` primitives that render those props onto host instances. Higher-level packages like `@lattice-ui/system` and the styled components build directly on it.
+
+The core idea is the **sx** value — a partial set of host props, or a function from the current `Theme` to host props. Everything in this package either produces, resolves, or merges sx values, then hands the result to a host instance.
+
+## Import
+
+```ts
+import { Box, Text } from "@lattice-ui/style";
+import { ThemeProvider, useTheme, useThemeValue } from "@lattice-ui/style";
+import { createTheme, defaultLightTheme, defaultDarkTheme } from "@lattice-ui/style";
+import { createRecipe, mergeSx, resolveSx, mergeGuiProps } from "@lattice-ui/style";
+```
+
+## API reference
+
+### Box
+
+A styled host primitive that renders a `frame` and applies an sx value resolved against the current theme. Supports `asChild` to merge its props onto a single child element instead.
+
+```tsx
+function Box(props: BoxProps): React.Element;
+
+<Box sx={(theme) => ({ BackgroundColor3: theme.colors.surface })} Size={UDim2.fromOffset(200, 80)}>
+  {children}
+</Box>
+```
+
+Any host prop passed directly is merged on top of the resolved `sx`, with direct props winning. When `asChild` is set, `Box` requires exactly one valid child element and clones its props onto it (via `Slot`) instead of rendering a `frame`.
+
+<PropTable
+  rows={[
+    { name: "sx", type: "Sx<StyleProps>", description: "Host props, or a function of the theme returning host props, applied to the frame." },
+    { name: "asChild", type: "boolean", description: "Merge resolved props onto the single child element instead of rendering a frame." },
+    { name: "children", type: "React.ReactNode", description: "Frame children, or the single element to clone when asChild is set." },
+    { name: "...rest", type: "GuiObject props", description: "Any host props, merged on top of sx (direct props win)." },
+  ]}
+/>
+
+### Text
+
+Identical to `Box`, but renders a `textlabel` instead of a `frame`. Same `sx`, `asChild`, and host-prop merging behavior.
+
+```tsx
+function Text(props: TextProps): React.Element;
+
+<Text
+  Text="Hello"
+  sx={(theme) => ({ TextColor3: theme.colors.textPrimary, TextSize: theme.typography.bodyMd.textSize })}
+/>
+```
+
+<PropTable
+  rows={[
+    { name: "sx", type: "Sx<StyleProps>", description: "Host props, or a function of the theme returning host props, applied to the textlabel." },
+    { name: "asChild", type: "boolean", description: "Merge resolved props onto the single child element instead of rendering a textlabel." },
+    { name: "children", type: "React.ReactNode", description: "Children, or the single element to clone when asChild is set." },
+    { name: "...rest", type: "GuiObject props", description: "Any host props, merged on top of sx (direct props win)." },
+  ]}
+/>
+
+### ThemeProvider
+
+Provides the active theme to the tree and exposes a setter. Supports controlled (`theme`) and uncontrolled (`defaultTheme`) usage, with `onThemeChange` notified on every change.
+
+```tsx
+function ThemeProvider(props: ThemeProviderProps): React.Element;
+
+<ThemeProvider defaultTheme={defaultDarkTheme} onThemeChange={handleChange}>
+  {app}
+</ThemeProvider>
+```
+
+When `theme` is supplied the provider is controlled and `setTheme` only calls `onThemeChange`; otherwise it owns the theme internally. Defaults to `defaultLightTheme` when neither prop is given.
+
+<PropTable
+  rows={[
+    { name: "theme", type: "Theme", description: "Controlled theme. When set, ThemeProvider does not own the value." },
+    { name: "defaultTheme", type: "Theme", description: "Initial theme for uncontrolled usage. Defaults to defaultLightTheme." },
+    { name: "onThemeChange", type: "(nextTheme: Theme) => void", description: "Called whenever the theme changes via setTheme." },
+    { name: "children", type: "React.ReactNode", description: "The subtree that should read this theme." },
+  ]}
+/>
+
+### useTheme
+
+```ts
+function useTheme(): ThemeContextValue;
+
+const { theme, setTheme } = useTheme();
+```
+
+Returns the current `ThemeContextValue` — the active `theme` and a `setTheme` function. Must be called under a `ThemeProvider` (it uses a strict context and throws otherwise).
+
+### useThemeValue
+
+```ts
+function useThemeValue<T>(selector: (theme: Theme) => T): T;
+
+const accent = useThemeValue((theme) => theme.colors.accent);
+```
+
+Selects and memoizes a derived value from the current theme, recomputing only when the theme or selector changes. Useful for reading a single token without re-running on unrelated context updates.
+
+### createTheme
+
+```ts
+function createTheme(partialTheme?: PartialTheme): Theme;
+
+const brand = createTheme({ colors: { accent: Color3.fromRGB(120, 80, 255) } });
+```
+
+Builds a complete `Theme` by deep-merging a `PartialTheme` over `defaultLightTheme`, group by group (`colors`, `space`, `radius`, `typography`). Omitted fields fall back to the light defaults.
+
+### defaultLightTheme / defaultDarkTheme
+
+```ts
+const defaultLightTheme: Theme;
+const defaultDarkTheme: Theme;
+```
+
+The two built-in themes. Both share the same `space`, `radius`, and `typography` scales and differ only in `colors`. Use them directly or as the base for `createTheme` overrides.
+
+### createRecipe
+
+A variant-driven styling helper. Given a config of base styles, named variants, default selections, and compound variants, it returns a resolver that turns a variant selection plus a theme into a single merged props object.
+
+```ts
+function createRecipe<Props, Variants>(
+  config: RecipeConfig<Props, Variants>,
+): (selection: RecipeSelection<Variants> | undefined, theme: Theme) => Partial<Props>;
+
+const button = createRecipe({
+  base: (theme) => ({ BackgroundColor3: theme.colors.surface }),
+  variants: {
+    tone: {
+      accent: (theme) => ({ BackgroundColor3: theme.colors.accent }),
+      danger: (theme) => ({ BackgroundColor3: theme.colors.danger }),
+    },
+  },
+  defaultVariants: { tone: "accent" },
+});
+
+const props = button({ tone: "danger" }, theme);
+```
+
+Resolution order is `base`, then each selected variant's sx (selection merged over `defaultVariants`), then any matching `compoundVariants`. Each layer is merged with `mergeGuiProps`, so later layers win and `Event`/`Change` handler tables are composed rather than replaced.
+
+`RecipeConfig` fields:
+
+<PropTable
+  rows={[
+    { name: "base", type: "Sx<Props>", description: "Styles applied before any variant." },
+    { name: "variants", type: "Record<string, Record<string, Sx<Props>>>", description: "Named variant groups mapping each value to an sx." },
+    { name: "defaultVariants", type: "RecipeSelection<Variants>", description: "Selection used when the caller omits a variant." },
+    { name: "compoundVariants", type: "Array<{ variants; sx }>", description: "Extra sx applied when a combination of variant values matches." },
+  ]}
+/>
+
+### mergeSx
+
+```ts
+function mergeSx<Props>(...sxList: Array<Sx<Props>>): Sx<Props>;
+
+const combined = mergeSx(baseSx, (theme) => ({ TextColor3: theme.colors.textPrimary }), overrideSx);
+```
+
+Combines several sx values into a single theme-resolving function. At resolve time each entry is resolved against the theme and folded together with `mergeGuiProps`, left to right, so later entries override earlier ones.
+
+### resolveSx
+
+```ts
+function resolveSx<Props>(sx: Sx<Props>, theme: Theme): Partial<Props>;
+```
+
+Resolves a single sx value against a theme: returns it directly if it is a props object, calls it if it is a function, and returns an empty object if it is `undefined`.
+
+### mergeGuiProps
+
+```ts
+function mergeGuiProps<Props>(
+  base?: Partial<Props>,
+  variant?: Partial<Props>,
+  user?: Partial<Props>,
+): Partial<Props>;
+```
+
+The low-level merge used everywhere in this package. It shallow-merges up to three prop objects (`base`, then `variant`, then `user`, last wins) and, crucially, **composes** the `Event` and `Change` handler tables rather than overwriting them — when two layers bind the same event, both handlers run in order.
+
+<Callout title="Roblox event tables">
+`mergeGuiProps` treats `Event` and `Change` specially because react-lua passes Roblox event connections through those tables. Plain shallow-spreading would drop a base layer's handlers when a later layer also binds the same signal; this helper chains them so every connection fires.
+</Callout>
+
+### Types
+
+<PropTable
+  rows={[
+    { name: "Sx<Props>", type: "Partial<Props> | ((theme: Theme) => Partial<Props>) | undefined", description: "A static or theme-derived set of host props." },
+    { name: "Theme", type: "object", description: "The full token set: colors, space, radius, typography." },
+    { name: "PartialTheme", type: "object", description: "A deep-partial Theme accepted by createTheme." },
+    { name: "ThemeColors", type: "object", description: "Color tokens: background, surface, surfaceElevated, border, textPrimary, textSecondary, accent, accentContrast, danger, dangerContrast, overlay." },
+    { name: "ThemeSpace", type: "object", description: "Spacing scale keyed by pixel step (0, 2, 4, 6, 8, 10, 12, 14, 16, 20, 24, 32)." },
+    { name: "ThemeRadius", type: "object", description: "Corner radius tokens: none, sm, md, lg, xl, full." },
+    { name: "ThemeTypography", type: "object", description: "Typography styles: labelSm, bodyMd, titleMd." },
+    { name: "ThemeTypographyStyle", type: "{ font: Enum.Font; textSize: number }", description: "A single typography entry." },
+    { name: "ThemeContextValue", type: "{ theme: Theme; setTheme: (next: Theme) => void }", description: "The value returned by useTheme." },
+    { name: "ThemeProviderProps", type: "object", description: "Props for ThemeProvider." },
+    { name: "RecipeConfig", type: "object", description: "Configuration object passed to createRecipe." },
+    { name: "RecipeVariants", type: "Record<string, Record<string, Sx<Props>>>", description: "The shape of a recipe's variant groups." },
+    { name: "RecipeSelection", type: "Partial<Record<keyof Variants, string>>", description: "A chosen value per variant group." },
+  ]}
+/>
+
+## Related links
+
+- [System](/lattice-ui/reference/system/)
+- [Core](/lattice-ui/reference/core/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)
