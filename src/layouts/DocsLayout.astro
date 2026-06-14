@@ -1,0 +1,117 @@
+---
+import DocsHeader from "@/components/docs/DocsHeader.astro"
+import DocsMobileNav from "@/components/docs/DocsMobileNav.astro"
+import DocsPager from "@/components/docs/DocsPager.astro"
+import DocsSidebar from "@/components/docs/DocsSidebar.astro"
+import ThemeScript from "@/components/docs/ThemeScript.astro"
+import { codeBlockIconVars } from "@/lib/codeblock-icons"
+import {
+  DEFAULT_DOCS_PRODUCT,
+  getDocsShellData,
+  type DocsProductId,
+} from "@/lib/docs"
+import "@/styles/global.css"
+import "@/styles/expressive-code.css"
+
+interface Props {
+  title: string
+  description: string
+  currentPath: string
+  productId?: DocsProductId
+}
+
+const {
+  title,
+  description,
+  currentPath,
+  productId = DEFAULT_DOCS_PRODUCT.id,
+} = Astro.props as Props
+
+const shell = await getDocsShellData(currentPath, productId)
+const sectionLabel = shell.current?.section?.replace(/-/g, " ")
+
+const componentsHref =
+  shell.sections.find((section) => section.key === "components")?.items[0]?.url ??
+  shell.product.href
+
+const guidesHref =
+  shell.sections.find((section) => section.key === "guides")?.items[0]?.url ??
+  shell.product.href
+
+const pageTitle =
+  title === shell.product.title
+    ? `${shell.product.title} · Docs`
+    : `${title} · ${shell.product.title}`
+
+const codeBlockIconStyle = Object.entries(codeBlockIconVars)
+  .map(([key, value]) => `--ec-icon-${key}: ${value};`)
+  .join("\n      ")
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{pageTitle}</title>
+    <ThemeScript />
+  </head>
+  <body
+    class="min-h-screen bg-background font-sans text-foreground antialiased"
+    style={codeBlockIconStyle}
+  >
+    <DocsHeader
+      componentsHref={componentsHref}
+      docsHref={shell.product.href}
+      guidesHref={guidesHref}
+      product={shell.product}
+    />
+
+    <DocsMobileNav
+      currentPath={currentPath}
+      product={shell.product}
+      sections={shell.sections}
+    />
+
+    <div class="mx-auto flex w-full max-w-screen-2xl gap-10 px-4 sm:px-6 lg:px-8">
+      <DocsSidebar
+        currentPath={currentPath}
+        product={shell.product}
+        sections={shell.sections}
+      />
+
+      <main class="min-w-0 flex-1 py-10">
+        <div class="w-full max-w-3xl">
+          <header class="mb-10">
+            <div class="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <a class="transition-colors hover:text-foreground" href={shell.product.href}>
+                {shell.product.shortTitle}
+              </a>
+              {sectionLabel ? (
+                <>
+                  <span aria-hidden="true">/</span>
+                  <span class="capitalize">{sectionLabel}</span>
+                </>
+              ) : null}
+            </div>
+
+            <h1 class="scroll-m-20 text-4xl font-semibold tracking-tight lg:text-[2.5rem]">
+              {title}
+            </h1>
+
+            <p class="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+              {description}
+            </p>
+          </header>
+
+          <article class="docs-prose">
+            <slot />
+          </article>
+
+          <DocsPager next={shell.next} previous={shell.previous} />
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+---
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
+
+interface Props {
+  title?: string
+}
+
+const { title = "Note" } = Astro.props as Props
+---
+
+<Alert className="not-prose my-5 border-border/70 bg-muted/20">
+  <AlertTitle>{title}</AlertTitle>
+  <AlertDescription>
+    <slot />
+  </AlertDescription>
+</Alert>

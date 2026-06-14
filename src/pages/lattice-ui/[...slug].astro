@@ -1,0 +1,44 @@
+---
+import { getCollection, render } from "astro:content"
+import DocsLayout from "@/layouts/DocsLayout.astro"
+import { DEFAULT_DOCS_PRODUCT, getDocPathFromId } from "@/lib/docs"
+
+export async function getStaticPaths() {
+  const docs = await getCollection("docs")
+
+  return docs
+    .filter((doc) => doc.id !== "index" && !doc.data.draft)
+    .map((doc) => ({
+      params: {
+        slug: doc.id,
+      },
+      props: {
+        id: doc.id,
+        currentPath: getDocPathFromId(doc.id, DEFAULT_DOCS_PRODUCT.id),
+      },
+    }))
+}
+
+interface Props {
+  id: string
+  currentPath: string
+}
+
+const { id, currentPath } = Astro.props as Props
+const docs = await getCollection("docs")
+const entry = docs.find((doc) => doc.id === id)
+
+if (!entry) {
+  throw new Error(`Missing docs entry for ${id}.`)
+}
+
+const { Content } = await render(entry)
+---
+
+<DocsLayout
+  currentPath={currentPath}
+  description={entry.data.description}
+  productId={DEFAULT_DOCS_PRODUCT.id}
+  title={entry.data.title}>
+  <Content />
+</DocsLayout>

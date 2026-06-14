@@ -1,0 +1,71 @@
+---
+import { getCollection, render } from "astro:content"
+import DocsCard from "@/components/docs/DocsCard.astro"
+import { Button } from "@/components/ui/button"
+import DocsLayout from "@/layouts/DocsLayout.astro"
+import { DEFAULT_DOCS_PRODUCT, getDocPathFromId } from "@/lib/docs"
+
+const docs = await getCollection("docs")
+const entry = docs.find((doc) => doc.id === "index")
+
+if (!entry) {
+  throw new Error("Missing docs home entry.")
+}
+
+const { Content } = await render(entry)
+const currentPath = getDocPathFromId(entry.id, DEFAULT_DOCS_PRODUCT.id)
+
+const cards = [
+  {
+    title: "Headless primitives",
+    description:
+      "Keep rendering and styling in the app while Lattice owns the interaction contract.",
+  },
+  {
+    title: "Focus and layers",
+    description:
+      "Restore focus, manage stacked overlays, and keep dismissal behavior predictable.",
+  },
+  {
+    title: "App-owned visuals",
+    description:
+      "Build dialogs, selects, menus, and guided surfaces without moving visual ownership into the primitive layer.",
+  },
+] as const
+
+const installationHref = getDocPathFromId(
+  "getting-started/installation",
+  DEFAULT_DOCS_PRODUCT.id,
+)
+
+const componentsHref = getDocPathFromId(
+  "components/dialog",
+  DEFAULT_DOCS_PRODUCT.id,
+)
+---
+
+<DocsLayout
+  currentPath={currentPath}
+  description={entry.data.description}
+  productId={DEFAULT_DOCS_PRODUCT.id}
+  title={entry.data.title}
+>
+  <div class="mt-6 flex flex-wrap gap-3">
+    <Button asChild>
+      <a href={installationHref}>Get started</a>
+    </Button>
+    <Button asChild variant="outline">
+      <a href={componentsHref}>Browse components</a>
+    </Button>
+  </div>
+
+  <div class="mt-6 grid gap-3 sm:grid-cols-3">
+    {cards.map((card) => (
+      <DocsCard title={card.title} description={card.description} />
+    ))}
+  </div>
+
+  <div class="mt-10">
+    <Content />
+  </div>
+</DocsLayout>

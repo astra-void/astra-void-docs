@@ -1,0 +1,42 @@
+---
+export type PropRow = {
+  name: string;
+  type: string;
+  description: string;
+  required?: boolean;
+};
+
+interface Props {
+  rows: PropRow[];
+}
+
+const { rows } = Astro.props as Props;
+---
+
+<div class="not-prose my-5 overflow-x-auto rounded-lg border border-border/80">
+  <table class="w-full text-sm">
+    <thead class="bg-muted/30 text-left">
+      <tr>
+        <th class="px-3 py-2 font-medium">Prop</th>
+        <th class="px-3 py-2 font-medium">Type</th>
+        <th class="px-3 py-2 font-medium">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((row) => (
+        <tr class="border-t border-border/70">
+          <td class="px-3 py-2 font-mono text-xs">
+            {row.name}
+            {row.required ? <span class="text-muted-foreground"> *</span> : null}
+          </td>
+          <td class="px-3 py-2 font-mono text-xs text-muted-foreground">
+            {row.type}
+          </td>
+          <td class="px-3 py-2 text-foreground/80">
+            {row.description}
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>

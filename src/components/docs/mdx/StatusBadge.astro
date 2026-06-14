@@ -1,0 +1,29 @@
+---
+import { Badge } from "@/components/ui/badge"
+
+type Status =
+  | "stable-direction"
+  | "experimental"
+  | "feature-limited"
+  | "internal-foundation"
+
+interface Props {
+  status: Status
+}
+
+const { status } = Astro.props as Props
+
+const labels: Record<Status, string> = {
+  "stable-direction": "Stable direction",
+  experimental: "Experimental",
+  "feature-limited": "Feature limited",
+  "internal-foundation": "Foundation",
+}
+---
+
+<Badge
+  variant="outline"
+  className="h-5 rounded-md border-border/70 px-1.5 text-[11px] font-normal text-muted-foreground"
+>
+  {labels[status]}
+</Badge>

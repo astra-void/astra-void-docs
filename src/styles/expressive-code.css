@@ -1,0 +1,225 @@
+/* Scoped polish for astro-expressive-code only.
+   Do not define or override shadcn theme tokens here. */
+
+.docs-prose .expressive-code {
+  margin-block: 1.5rem;
+}
+
+.docs-prose .expressive-code .frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  box-shadow: none;
+}
+
+/* Do not create a full-width title/header bar.
+   The generated header is only used as a positioning container. */
+.docs-prose .expressive-code .frame.has-title:not(.is-terminal) .header {
+  position: absolute;
+  inset-block-start: 0.625rem;
+  inset-inline-start: 0.75rem;
+  inset-inline-end: 3rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.docs-prose .expressive-code .frame.has-title:not(.is-terminal) .header::before,
+.docs-prose .expressive-code .frame.has-title:not(.is-terminal) .header::after {
+  content: none;
+}
+
+/* Title is a small metadata chip, not a bar/tab. */
+.docs-prose .expressive-code .frame.has-title:not(.is-terminal) .title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-inline-size: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: color-mix(in srgb, var(--background) 86%, transparent);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.docs-prose .expressive-code .frame.has-title:not(.is-terminal) .title::after {
+  content: none;
+}
+
+/* Leave room for title chip and copy button without adding a full title bar. */
+.docs-prose .expressive-code .frame.has-title:not(.is-terminal) pre {
+  padding-block-start: 2.75rem !important;
+}
+
+/* Copy button: compact top-right ghost control.
+   Keep Expressive Code's generated copy behavior. */
+.docs-prose .expressive-code .copy {
+  position: absolute;
+  inset-block-start: 0.625rem;
+  inset-inline-end: 0.75rem;
+  z-index: 3;
+  display: inline-flex;
+  margin: 0;
+}
+
+.docs-prose .expressive-code .copy button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  min-inline-size: 1.5rem;
+  min-block-size: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: color-mix(in srgb, var(--background) 86%, transparent);
+  color: var(--muted-foreground);
+  opacity: 0.86;
+  box-shadow: none;
+  backdrop-filter: blur(8px);
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+
+.docs-prose .expressive-code .copy button:hover,
+.docs-prose .expressive-code .copy button:focus-visible {
+  color: var(--foreground);
+  background: var(--background);
+  border-color: color-mix(in srgb, var(--foreground) 18%, var(--border));
+  opacity: 1;
+}
+
+.docs-prose .expressive-code .copy button svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+/* Do not hide copy/success internals. Expressive Code owns state. */
+
+/* Monochrome language icons from the existing react-icons CSS vars.
+   These selectors assume Expressive Code emits pre[data-language].
+   If the generated HTML uses code.language-tsx instead, adjust only these selectors. */
+
+.docs-prose .expressive-code:has(pre[data-language="ts"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="mts"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="cts"]) .frame.has-title:not(.is-terminal) .title::before {
+  content: "";
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  opacity: 0.82;
+  -webkit-mask: var(--ec-icon-typescript) center / contain no-repeat;
+  mask: var(--ec-icon-typescript) center / contain no-repeat;
+}
+
+.docs-prose .expressive-code:has(pre[data-language="tsx"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="jsx"]) .frame.has-title:not(.is-terminal) .title::before {
+  content: "";
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  opacity: 0.82;
+  -webkit-mask: var(--ec-icon-react) center / contain no-repeat;
+  mask: var(--ec-icon-react) center / contain no-repeat;
+}
+
+.docs-prose .expressive-code:has(pre[data-language="js"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="mjs"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="cjs"]) .frame.has-title:not(.is-terminal) .title::before {
+  content: "";
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  opacity: 0.82;
+  -webkit-mask: var(--ec-icon-javascript) center / contain no-repeat;
+  mask: var(--ec-icon-javascript) center / contain no-repeat;
+}
+
+.docs-prose .expressive-code:has(pre[data-language="json"]) .frame.has-title:not(.is-terminal) .title::before {
+  content: "";
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  opacity: 0.82;
+  -webkit-mask: var(--ec-icon-json) center / contain no-repeat;
+  mask: var(--ec-icon-json) center / contain no-repeat;
+}
+
+.docs-prose .expressive-code:has(pre[data-language="bash"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="sh"]) .frame.has-title:not(.is-terminal) .title::before,
+.docs-prose .expressive-code:has(pre[data-language="shell"]) .frame.has-title:not(.is-terminal) .title::before {
+  content: "";
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  opacity: 0.82;
+  -webkit-mask: var(--ec-icon-terminal) center / contain no-repeat;
+  mask: var(--ec-icon-terminal) center / contain no-repeat;
+}
+
+/* If the generated HTML uses code.language-* instead of pre[data-language],
+   duplicate only the icon selectors with code.language-* after verifying the output. */
+
+/* Quiet scrollbars only inside code blocks. */
+.docs-prose .expressive-code .frame pre {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground) 18%, transparent)
+    transparent;
+}
+
+.docs-prose .expressive-code .frame pre::-webkit-scrollbar {
+  block-size: 0.7rem;
+  inline-size: 0.7rem;
+}
+
+.docs-prose .expressive-code .frame pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.docs-prose .expressive-code .frame pre::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  background-clip: padding-box;
+}
+
+.docs-prose .expressive-code .frame pre::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+  background-clip: padding-box;
+}
+
+@media (max-width: 640px) {
+  .docs-prose .expressive-code .frame.has-title:not(.is-terminal) .header {
+    inset-inline-end: 2.75rem;
+  }
+}

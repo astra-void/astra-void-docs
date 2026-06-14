@@ -1,0 +1,40 @@
+---
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+
+interface Props {
+  title: string
+  description?: string
+  href?: string
+}
+
+const { title, description, href } = Astro.props as Props
+---
+
+{href ? (
+  <a class="block h-full" href={href}>
+    <Card size="sm" className="h-full transition-colors hover:bg-muted/50">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description ? (
+          <CardDescription className="leading-6">
+            {description}
+          </CardDescription>
+        ) : null}
+      </CardHeader>
+    </Card>
+  </a>
+) : (
+  <Card size="sm" className="h-full transition-colors hover:bg-muted/50">
+    <CardHeader>
+      <CardTitle>{title}</CardTitle>
+      {description ? (
+        <CardDescription className="leading-6">{description}</CardDescription>
+      ) : null}
+    </CardHeader>
+  </Card>
+)}

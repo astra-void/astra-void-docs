@@ -1,0 +1,48 @@
+---
+import StatusBadge from "./StatusBadge.astro"
+
+type Status =
+  | "stable-direction"
+  | "experimental"
+  | "feature-limited"
+  | "internal-foundation"
+
+interface Props {
+  packageName: string
+  status: Status
+  importName?: string
+  dependencies?: string[]
+}
+
+const { packageName, status, importName, dependencies = [] } = Astro.props as Props
+---
+
+<div class="not-prose my-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+  <code class="font-mono text-xs text-foreground">{packageName}</code>
+  <span aria-hidden="true">·</span>
+  <StatusBadge status={status} />
+  {importName ? (
+    <>
+      <span aria-hidden="true">·</span>
+      <span>
+        import <code class="font-mono text-xs text-foreground">{importName}</code>
+      </span>
+    </>
+  ) : null}
+  {dependencies.length > 0 ? (
+    <>
+      <span aria-hidden="true">·</span>
+      <span>
+        depends on{" "}
+        {dependencies.map((dependency, index) => (
+          <span>
+            {index > 0 ? ", " : ""}
+            <code class="font-mono text-xs text-foreground">
+              {dependency.replace("@lattice-ui/", "")}
+            </code>
+          </span>
+        ))}
+      </span>
+    </>
+  ) : null}
+</div>

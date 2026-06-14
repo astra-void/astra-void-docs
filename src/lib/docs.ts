@@ -1,0 +1,230 @@
+import { getCollection, type CollectionEntry } from "astro:content"
+
+export type DocsProductId = "lattice-ui"
+
+export type DocsProduct = {
+  id: DocsProductId
+  title: string
+  shortTitle: string
+  description: string
+  href: string
+  githubUrl: string
+}
+
+export const DOCS_PRODUCTS = {
+  "lattice-ui": {
+    id: "lattice-ui",
+    title: "Lattice UI",
+    shortTitle: "Lattice",
+    description: "Headless Roblox UI primitives for rbxts/react interfaces.",
+    href: "/lattice-ui/",
+    githubUrl: "https://github.com/astra-void/lattice-ui",
+  },
+} as const satisfies Record<DocsProductId, DocsProduct>
+
+export const DEFAULT_DOCS_PRODUCT = DOCS_PRODUCTS["lattice-ui"]
+
+const SECTION_ORDER = [
+  "home",
+  "getting-started",
+  "components",
+  "guides",
+  "reference",
+] as const
+
+export type DocsSection = (typeof SECTION_ORDER)[number]
+
+export type DocNavItem = {
+  id: string
+  title: string
+  description: string
+  section: DocsSection
+  path: string
+  url: string
+  sidebarOrder?: number
+}
+
+export type DocsSectionGroup = {
+  key: DocsSection
+  label: string
+  items: DocNavItem[]
+}
+
+export type DocsShellData = {
+  product: DocsProduct
+  docs: DocNavItem[]
+  sections: DocsSectionGroup[]
+  current?: DocNavItem
+  previous?: DocNavItem
+  next?: DocNavItem
+}
+
+const SECTION_LABELS: Record<DocsSection, string> = {
+  home: "Overview",
+  "getting-started": "Getting started",
+  components: "Components",
+  guides: "Guides",
+  reference: "Reference",
+}
+
+function getProduct(productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id) {
+  return DOCS_PRODUCTS[productId]
+}
+
+function normalizePath(path: string, product: DocsProduct) {
+  if (/^https?:\/\//.test(path)) {
+    return path
+  }
+
+  if (!path || path === "/") {
+    return product.href
+  }
+
+  const withLeadingSlash = path.startsWith("/") ? path : `/${path}`
+
+  if (
+    withLeadingSlash === product.href ||
+    withLeadingSlash === `${product.href}/`
+  ) {
+    return product.href
+  }
+
+  return withLeadingSlash.endsWith("/")
+    ? withLeadingSlash
+    : `${withLeadingSlash}/`
+}
+
+function getSectionRootPath(product: DocsProduct, section: DocsSection) {
+  return section === "home" ? product.href : `${product.href}${section}/`
+}
+
+function getSidebarOrder(doc: DocNavItem) {
+  return doc.sidebarOrder ?? Number.MAX_SAFE_INTEGER
+}
+
+function compareDocs(product: DocsProduct, a: DocNavItem, b: DocNavItem) {
+  const sectionDelta =
+    SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section)
+
+  if (sectionDelta !== 0) {
+    return sectionDelta
+  }
+
+  const aIsSectionIndex =
+    normalizePath(a.path, product) === getSectionRootPath(product, a.section)
+  const bIsSectionIndex =
+    normalizePath(b.path, product) === getSectionRootPath(product, b.section)
+
+  if (aIsSectionIndex !== bIsSectionIndex) {
+    return aIsSectionIndex ? -1 : 1
+  }
+
+  const sidebarDelta = getSidebarOrder(a) - getSidebarOrder(b)
+
+  if (sidebarDelta !== 0) {
+    return sidebarDelta
+  }
+
+  const titleDelta = a.title.localeCompare(b.title, "en", {
+    sensitivity: "base",
+  })
+
+  if (titleDelta !== 0) {
+    return titleDelta
+  }
+
+  return a.path.localeCompare(b.path, "en", { sensitivity: "base" })
+}
+
+export function getDocPathFromId(
+  id: string,
+  productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
+) {
+  const product = getProduct(productId)
+  const normalizedId = id === "index" ? "" : id.replace(/\/index$/, "")
+
+  return normalizedId ? `${product.href}${normalizedId}/` : product.href
+}
+
+export function getDocUrl(
+  path: string,
+  productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
+) {
+  if (/^https?:\/\//.test(path)) {
+    return path
+  }
+
+  const product = getProduct(productId)
+  const normalized = normalizePath(path, product)
+
+  if (normalized.startsWith(product.href)) {
+    return normalized
+  }
+
+  return normalizePath(`${product.href}${normalized}`, product)
+}
+
+export async function getDocs(
+  productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
+) {
+  const product = getProduct(productId)
+  const entries = await getCollection("docs")
+
+  return entries
+    .filter((entry) => !entry.data.draft)
+    .map<DocNavItem>((entry: CollectionEntry<"docs">) => {
+      const path = getDocPathFromId(entry.id, productId)
+
+      return {
+        id: entry.id,
+        title: entry.data.title,
+        description: entry.data.description,
+        section: entry.data.section,
+        path,
+        url: getDocUrl(path, productId),
+        sidebarOrder: entry.data.sidebar?.order,
+      }
+    })
+    .sort((a, b) => compareDocs(product, a, b))
+}
+
+export async function getDocByPath(
+  path: string,
+  productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
+) {
+  const product = getProduct(productId)
+  const docs = await getDocs(productId)
+  const normalizedPath = normalizePath(path, product)
+
+  return docs.find((doc) => normalizePath(doc.path, product) === normalizedPath)
+}
+
+export async function getDocsShellData(
+  currentPath: string,
+  productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
+): Promise<DocsShellData> {
+  const product = getProduct(productId)
+  const docs = await getDocs(productId)
+  const normalizedPath = normalizePath(currentPath, product)
+  const currentIndex = docs.findIndex(
+    (doc) => normalizePath(doc.path, product) === normalizedPath,
+  )
+
+  const sections = SECTION_ORDER.map((section) => ({
+    key: section,
+    label: SECTION_LABELS[section],
+    items: docs.filter((doc) => doc.section === section),
+  })).filter((section) => section.items.length > 0)
+
+  return {
+    product,
+    docs,
+    sections,
+    current: currentIndex >= 0 ? docs[currentIndex] : undefined,
+    previous: currentIndex > 0 ? docs[currentIndex - 1] : undefined,
+    next:
+      currentIndex >= 0 && currentIndex < docs.length - 1
+        ? docs[currentIndex + 1]
+        : undefined,
+  }
+}

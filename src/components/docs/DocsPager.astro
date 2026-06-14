@@ -1,0 +1,38 @@
+---
+import type { DocNavItem } from "@/lib/docs"
+
+interface Props {
+  previous?: DocNavItem
+  next?: DocNavItem
+}
+
+const { previous, next } = Astro.props as Props
+---
+
+{previous || next ? (
+  <div class="mt-16 grid gap-4 border-t border-border pt-6 sm:grid-cols-2">
+    <div>
+      {previous ? (
+        <a
+          class="inline-flex flex-col gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          href={previous.url}
+        >
+          <span class="text-xs font-medium">Previous</span>
+          <span class="font-medium text-foreground">{previous.title}</span>
+        </a>
+      ) : null}
+    </div>
+
+    <div class="sm:text-right">
+      {next ? (
+        <a
+          class="inline-flex flex-col gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground sm:items-end"
+          href={next.url}
+        >
+          <span class="text-xs font-medium">Next</span>
+          <span class="font-medium text-foreground">{next.title}</span>
+        </a>
+      ) : null}
+    </div>
+  </div>
+) : null}

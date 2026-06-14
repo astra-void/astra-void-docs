@@ -1,0 +1,24 @@
+---
+interface Props {
+  packageName: string;
+  manager?: "pnpm" | "npm" | "yarn" | "bun";
+}
+
+const { packageName, manager = "pnpm" } = Astro.props as Props;
+
+const commands = {
+  pnpm: `pnpm add ${packageName}`,
+  npm: `npm install ${packageName}`,
+  yarn: `yarn add ${packageName}`,
+  bun: `bun add ${packageName}`,
+};
+
+const command = commands[manager];
+---
+
+<figure class="not-prose my-6">
+  <figcaption class="mb-2 text-sm font-medium text-muted-foreground">
+    Install with {manager}
+  </figcaption>
+  <pre class="overflow-x-auto rounded-lg bg-muted p-4 text-sm"><code>{command}</code></pre>
+</figure>
