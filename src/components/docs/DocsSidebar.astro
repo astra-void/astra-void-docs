@@ -13,6 +13,7 @@ const { sections, currentPath, product } = Astro.props as Props
 <aside class="hidden w-64 shrink-0 lg:block">
   <div
     class="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-8 pr-6"
+    data-docs-sidebar-scroll
   >
     <nav class="space-y-7" aria-label={`${product.title} documentation`}>
       {sections.map((section) => (
@@ -72,3 +73,20 @@ const { sections, currentPath, product } = Astro.props as Props
   </div>
 </aside>
 
+<script>
+  // Client-side navigation swaps the sidebar DOM; carry the scroll position
+  // over so the nav doesn't jump back to the top on every page change.
+  let sidebarScrollTop = 0
+
+  document.addEventListener("astro:before-swap", () => {
+    sidebarScrollTop =
+      document.querySelector("[data-docs-sidebar-scroll]")?.scrollTop ?? 0
+  })
+
+  document.addEventListener("astro:after-swap", () => {
+    const sidebar = document.querySelector("[data-docs-sidebar-scroll]")
+    if (sidebar) {
+      sidebar.scrollTop = sidebarScrollTop
+    }
+  })
+</script>

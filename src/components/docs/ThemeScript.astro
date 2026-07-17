@@ -1,27 +1,35 @@
 <script is:inline>
   (() => {
-    const getThemePreference = () => {
-      if (typeof localStorage !== "undefined") {
-        const storedTheme = localStorage.getItem("theme");
+    const applyTheme = () => {
+      const getThemePreference = () => {
+        if (typeof localStorage !== "undefined") {
+          const storedTheme = localStorage.getItem("theme");
 
-        if (
-          storedTheme === "dark" ||
-          storedTheme === "theme-light" ||
-          storedTheme === "system"
-        ) {
-          return storedTheme;
+          if (
+            storedTheme === "dark" ||
+            storedTheme === "theme-light" ||
+            storedTheme === "system"
+          ) {
+            return storedTheme;
+          }
         }
-      }
 
-      return "system";
+        return "system";
+      };
+
+      const theme = getThemePreference();
+      const isDark =
+        theme === "dark" ||
+        (theme === "system" &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+      document.documentElement.classList.toggle("dark", isDark);
     };
 
-    const theme = getThemePreference();
-    const isDark =
-      theme === "dark" ||
-      (theme === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    applyTheme();
 
-    document.documentElement.classList.toggle("dark", isDark);
+    // View transitions swap <html> attributes, dropping the runtime-applied
+    // class — re-apply before the new page paints.
+    document.addEventListener("astro:after-swap", applyTheme);
   })();
 </script>

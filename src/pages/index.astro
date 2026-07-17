@@ -2,6 +2,7 @@
 import DocsCard from "@/components/docs/DocsCard.astro"
 import ThemeScript from "@/components/docs/ThemeScript.astro"
 import { DOCS_PRODUCTS } from "@/lib/docs"
+import { ClientRouter } from "astro:transitions"
 import "@/styles/global.css"
 
 const lattice = DOCS_PRODUCTS["lattice-ui"]
@@ -17,6 +18,7 @@ const lattice = DOCS_PRODUCTS["lattice-ui"]
       content="Documentation for Astra Void projects."
     />
     <title>Astra Void Docs</title>
+    <ClientRouter />
     <ThemeScript />
   </head>
   <body class="min-h-screen bg-background font-sans text-foreground antialiased">
