@@ -1,0 +1,167 @@
+---
+title: Motion recipes
+description: A practical catalog of lattice-ui's ready-made motion configs and how to override the transition prop on any animatable component part.
+section: guides
+sidebar:
+  order: 35
+draft: false
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Every animatable Lattice part takes a typed `transition` prop — `Dialog.Content`, `Popover.Content`, `Checkbox.Indicator`, `Progress.Indicator`, and friends all expose one. You almost never hand-author the config that goes into it: `@lattice-ui/motion` ships **recipes**, small factory functions that return a tuned config with the correct timing and target contract baked in. This page is the practical catalog — which recipes exist, which parts consume them, and how to override a component's default.
+
+For the concepts behind all of this — presence vs response vs feedback, target contracts, the hooks themselves — read [Presence and motion](/lattice-ui/guides/presence-and-motion/) first. Full signatures live in the [Motion reference](/lattice-ui/reference/motion/).
+
+## Which config does a part take?
+
+The `transition` prop's type tells you what kind of motion the part runs:
+
+- **`PresenceMotionConfig`** — reveal/exit motion for parts that mount and unmount. It has `initial`, `reveal`, and `exit` steps. `Dialog.Content`, `Popover.Content`, `Tooltip.Content`, `Menu.Content`, `Tabs.Content`, `Accordion.Content`, `Checkbox.Indicator`, and `RadioGroup.Indicator` all take one.
+- **`ResponseMotionConfig`** — settling motion for parts that stay mounted and ease between states. It has a single `settle` intent. `Progress.Indicator` and `Toast.Root` take one.
+
+The rule of thumb: if the part appears and disappears, it wants a presence config; if it slides or recolors between values while staying on screen, it wants a response config. Passing the wrong kind is a type error, so you cannot mix them up silently.
+
+<Callout title="Not every animated part is overridable">
+Some parts animate internally without exposing a `transition` prop — `Dialog.Overlay` always runs its backdrop fade, for example. If a part's props do not list `transition`, its motion is considered part of the component's contract.
+</Callout>
+
+## Recipe catalog
+
+Presence recipes return a `PresenceMotionConfig`; response recipes return a `ResponseMotionConfig`; feedback recipes return a `FeedbackEffectConfig` for [`useFeedbackEffect`](/lattice-ui/reference/motion/) in custom components.
+
+| Recipe | Animates | Typical consumer |
+| --- | --- | --- |
+| `createSurfaceRevealRecipe(offsetY?, duration?)` | Upward slide + `BackgroundTransparency` fade | `Tabs.Content`, `Accordion.Content` |
+| `createCanvasGroupRevealRecipe(offsetY?, duration?)` | Upward slide + `GroupTransparency` fade | `Dialog.Content` |
+| `createOverlayFadeRecipe(duration?)` | Backdrop fade to half transparency | `Dialog.Overlay` (internal) |
+| `createPopperEntranceRecipe(placement?, distance?, duration?)` | Directional slide-in from the anchor side + fade | `Popover.Content` |
+| `createCanvasGroupPopperEntranceRecipe(placement?, distance?, duration?)` | Same, via `GroupTransparency` | `Tooltip.Content`, `Menu.Content` |
+| `createIndicatorRevealRecipe(size, duration?)` | Grow from zero to `size` + fade | `Checkbox.Indicator`, `RadioGroup.Indicator` |
+| `createIndicatorSettleRecipe(duration?)` | Size settling on an indicator wrapper | Custom selection indicators |
+| `createSliderThumbResponseRecipe(isDragging, duration?)` | Thumb position — instant while dragging, eased on release | Slider thumb |
+| `createToggleResponseRecipe(duration?)` | Layout settling for on/off thumbs | Switch-style toggles |
+| `createSelectionResponseRecipe(duration?)` | Color/appearance settling on selection | Checkbox, Radio visuals |
+| `createFieldResponseRecipe(duration?)` | Calm appearance settling for form fields | Text fields |
+| `createProgressResponseRecipe(duration?)` | Fill size settling | `Progress.Indicator` |
+| `createToastResponseRecipe(duration?)` | Appearance settling between toast states | `Toast.Root` |
+| `createPressFeedbackEffect(duration?)` | Expressive accent on press, calm recover | Buttons, pressables |
+| `createFocusAccentEffect(duration?)` | Slower accent on focus, quick recover | Focus rings |
+
+Every recipe also sets the right **target contract** — `createOverlayFadeRecipe` uses an `appearance` target, the reveal and popper recipes use an `offset-wrapper`, `createIndicatorRevealRecipe` a `size-wrapper`. That is a large part of why you should prefer a recipe over a hand-written config: the ownership boundary comes for free.
+
+## Overriding a component transition
+
+Pass a recipe's result straight to `transition`. `Dialog.Content` defaults to `createCanvasGroupRevealRecipe(8, 0.3)`; give it a longer, larger reveal by calling the same factory with different arguments:
+
+```tsx title="HeroDialog.tsx"
+import { Dialog } from "@lattice-ui/dialog";
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/motion";
+
+export function HeroDialog(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay />
+        <Dialog.Content transition={createCanvasGroupRevealRecipe(16, 0.45)}>
+          <textlabel Text="Welcome" Size={UDim2.fromOffset(320, 40)} />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+`Dialog.Content` merges your config field-by-field over its default — `target`, `initial`, `reveal`, and `exit` each fall back to the default when your override omits them — so a partial config that only replaces `exit` is valid there. Most other parts replace the default wholesale (`props.transition ?? defaultTransition`), so pass a complete config unless the component's docs say otherwise.
+
+The same pattern works for indicators. `Checkbox.Indicator` defaults to `createIndicatorRevealRecipe(UDim2.fromOffset(12, 12))`; a bigger checkbox wants a matching reveal size:
+
+```tsx title="LargeCheckbox.tsx"
+import { Checkbox } from "@lattice-ui/checkbox";
+import { createIndicatorRevealRecipe } from "@lattice-ui/motion";
+
+export function LargeCheckbox(props: { checked: boolean; onCheckedChange: (checked: boolean) => void }) {
+  return (
+    <Checkbox.Root checked={props.checked} onCheckedChange={props.onCheckedChange}>
+      <Checkbox.Indicator
+        transition={createIndicatorRevealRecipe(UDim2.fromOffset(18, 18), 0.14)}
+      />
+    </Checkbox.Root>
+  );
+}
+```
+
+Response-driven parts work the same way, just with a response recipe:
+
+```tsx title="SlowProgress.tsx"
+import { Progress } from "@lattice-ui/progress";
+import { createProgressResponseRecipe } from "@lattice-ui/motion";
+
+export function SlowProgress(props: { value: number }) {
+  return (
+    <Progress.Root value={props.value}>
+      <Progress.Indicator transition={createProgressResponseRecipe(0.25)} />
+    </Progress.Root>
+  );
+}
+```
+
+## Tuning beyond the factory arguments
+
+Recipe factories expose the knobs that are safe to turn — an offset or placement distance in pixels, a `duration` in seconds, a reveal `size`. The **tempo** (`"instant" | "swift" | "steady" | "gentle"`) and **tone** (`"calm" | "responsive" | "expressive"`) of each step are baked in; they are the house style.
+
+When a recipe is almost right, spread its result and override just the step you care about instead of authoring a config from scratch. The recipe's target contract and remaining steps carry over:
+
+```tsx title="Snappy exit, default entrance"
+import { createCanvasGroupRevealRecipe, type PresenceMotionConfig } from "@lattice-ui/motion";
+
+const base = createCanvasGroupRevealRecipe(8, 0.3);
+
+const snappyExit: PresenceMotionConfig = {
+  ...base,
+  exit: {
+    values: base.exit!.values,
+    intent: { duration: 0.08, tempo: "swift", tone: "calm" },
+  },
+};
+
+<Dialog.Content transition={snappyExit} />;
+```
+
+Two constraints to keep in mind when editing steps:
+
+- **Match the transparency property to the instance.** Canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup`; surface recipes animate `BackgroundTransparency`. Swapping a recipe also swaps which instance class it expects.
+- **Stay inside the target contract.** If you add `Position` values to a recipe whose target is `appearance`, the write is rejected and reported as a diagnostic. Keep the recipe's `target` when you keep its properties; see [target contracts](/lattice-ui/guides/presence-and-motion/#target-contracts-who-owns-the-property).
+
+## Reduced motion is automatic
+
+You do not opt recipes into reduced motion — every hook that consumes them reads the ambient `MotionPolicy`. When motion is disabled, configs collapse to instant property writes: the final values still land, exits still fire `onExitComplete`, and response settling still reaches its target. Your overridden transitions inherit this for free.
+
+The policy disables motion in two cases: you set it explicitly, or the player has Roblox's system reduced-motion setting enabled. `MotionProvider` respects the system setting by default (`respectSystemReducedMotion` defaults to `true`), and `useSystemReducedMotion` / `useMotionPolicy` let you read the resolved state yourself:
+
+```tsx title="App.tsx"
+import { MotionProvider, useMotionPolicy } from "@lattice-ui/motion";
+
+export function App(props: { forceReducedMotion: boolean; children: React.ReactNode }) {
+  return (
+    <MotionProvider disableAllMotion={props.forceReducedMotion}>
+      {props.children}
+    </MotionProvider>
+  );
+}
+
+function DebugMotionState() {
+  const policy = useMotionPolicy();
+  return <textlabel Text={policy.disableAllMotion ? "motion off" : "motion on"} Size={UDim2.fromOffset(120, 20)} />;
+}
+```
+
+`useMotionPolicy` folds the system setting into its result — `disableAllMotion` is `true` whenever the provider disables motion *or* `respectSystemReducedMotion` is on and the player's system setting is enabled. There is no reduced-motion branch to write in your components: build the animated path, and the instant path falls out of the policy.
+
+## Related
+
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/) — the concepts: hooks, phases, target contracts
+- [Motion reference](/lattice-ui/reference/motion/) — full signatures for every recipe, hook, and type
+- [Dialog](/lattice-ui/components/dialog/)
+- [Checkbox](/lattice-ui/components/checkbox/)
+- [Progress](/lattice-ui/components/progress/)

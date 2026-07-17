@@ -1,0 +1,165 @@
+---
+title: Gamepad and input
+description: How lattice-ui serves pointer, touch, keyboard, and gamepad players with one input model — ordered selection, engine-driven gamepad navigation, and per-item key handling.
+section: guides
+sidebar:
+  order: 15
+draft: false
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+A Roblox experience is played with whatever is in the player's hands: a mouse, a touchscreen, a keyboard, a gamepad — often several in the same session. lattice-ui primitives are built so one composition serves all of them. Pointer and touch activate controls directly; keyboard arrows move through items in a deterministic order; gamepad navigation rides Roblox's selection engine, with the [focus manager](/lattice-ui/guides/focus-management/) keeping it inside the right surface. This guide covers the input side of that story — how movement and activation actually reach your components. For scopes, trapping, and restore, see [Focus management](/lattice-ui/guides/focus-management/).
+
+## One item, three input classes
+
+Every interactive lattice item — a tab trigger, a radio item, a menu item — wires the same three Roblox event surfaces:
+
+- **`Activated`** — fires on mouse click, touch tap, and gamepad <kbd>A</kbd>. This is the "press" path for pointers and gamepads.
+- **`InputBegan`** — receives keyboard input while the item holds selection. This is where arrow-key movement and <kbd>Enter</kbd>/<kbd>Space</kbd> activation are handled.
+- **`SelectionGained` / `SelectionLost`** — fire when `GuiService.SelectedObject` lands on or leaves the item, whether the engine moved it (gamepad) or lattice did (keyboard, imperative focus). This is where selection visuals and selection-follows-focus behavior live.
+
+```tsx title="The event wiring every lattice item uses"
+const eventHandlers = React.useMemo(
+  () => ({
+    Activated: handleActivated, // click, tap, gamepad A
+    InputBegan: handleInputBegan, // arrows, Enter, Space while selected
+    SelectionGained: handleSelectionGained, // selection arrived here
+  }),
+  [handleActivated, handleInputBegan, handleSelectionGained],
+);
+
+return <textbutton Active={!disabled} Selectable={!disabled} Event={eventHandlers} ref={setItemRef} />;
+```
+
+## The ordered-selection model
+
+Composite widgets need "next item" and "previous item" to mean something stable, not "whatever is geometrically nearby". Each item registers an **ordered-selection entry** with its root — `{ id, order, ref, getDisabled?, getVisible? }` — and the root resolves movement with the helpers from `@lattice-ui/focus`:
+
+- `getOrderedSelectionEntries` sorts entries by their `order` field, so movement order is declaration order, not render or array order.
+- An entry is **available** only if its `GuiObject` exists, is not disabled, is `Visible` (and `getVisible()` does not veto), and has `Selectable` set. Unavailable entries are skipped entirely.
+- `getRelativeOrderedSelectionEntry(entries, currentId, direction)` steps `-1` or `+1` through the available entries and **clamps at the ends** — it does not wrap. With no current entry, `+1` resolves the first available item and `-1` the last.
+- `focusOrderedSelectionEntry(entry)` hands the result to the focus manager, which selects the underlying `GuiObject`.
+
+This is exactly what Tabs, RadioGroup, and Menu do internally. Their roots keep a registry; each item reports movement, and the root focuses the resolved neighbor:
+
+```tsx title="How Menu resolves Up/Down (from MenuRoot)"
+const moveSelection = React.useCallback((direction: -1 | 1) => {
+  const currentItem = getCurrentOrderedSelectionEntry(itemEntriesRef.current);
+  const nextItem = getRelativeOrderedSelectionEntry(itemEntriesRef.current, currentItem?.id, direction);
+  focusOrderedSelectionEntry(nextItem);
+}, []);
+```
+
+<Callout title="Movement never lands on a dead item">
+Because availability is checked at move time — live refs, live `getDisabled`, live `Visible` — a disabled or hidden item is skipped without any re-registration. You never have to rebuild the registry when an item's state changes.
+</Callout>
+
+## Gamepad selection
+
+On gamepad, lattice does **not** intercept the thumbstick or d-pad. Movement between selectable objects is Roblox's own directional navigation: the engine walks `GuiService.SelectedObject` between `GuiObject`s whose `Selectable` property is `true`, using on-screen geometry, and draws its default selection ring around the result. lattice-ui does not set `SelectionGroup` or replace `SelectionImageObject` — what it does instead:
+
+- **Primitives keep `Selectable` truthful.** Every item renders with `Selectable={!disabled}` (and `Active={!disabled}`), so the engine can only land on things your logic considers interactive.
+- **The focus bridge reads movement back.** While any `FocusScope` is active, the manager listens to `GuiService.SelectedObject` changes. When the engine moves selection, the model updates to match — and if a trapped scope is active and selection escaped it, the manager pulls selection back to a focusable node inside. See [Focus management](/lattice-ui/guides/focus-management/) for the trap rules.
+- **`SelectionGained` drives your visuals and state.** Tabs and RadioGroup select their value the moment selection lands on an item ("selection follows focus"), and Menu highlights the selected item with the same handler it uses for `MouseEnter`.
+
+```tsx title="Selection visuals ride SelectionGained (MenuItem pattern)"
+const handlePointerEnter = React.useCallback(() => setActive(true), []);
+const handlePointerLeave = React.useCallback(() => setActive(false), []);
+
+const eventHandlers = React.useMemo(
+  () => ({
+    Activated: handleActivated,
+    MouseEnter: handlePointerEnter,
+    MouseLeave: handlePointerLeave,
+    SelectionGained: handlePointerEnter, // gamepad focus looks like hover
+    SelectionLost: handlePointerLeave,
+  }),
+  [handleActivated, handlePointerEnter, handlePointerLeave],
+);
+```
+
+Activation on gamepad is the engine's job too: pressing <kbd>A</kbd> on the selected object fires `Activated`, the same handler a click or tap runs. You do not write gamepad-specific activation code.
+
+## Keyboard
+
+Keyboard input reaches the item that currently holds selection through `InputBegan`. Each composite maps arrow `KeyCode`s to an ordered-selection move, and <kbd>Enter</kbd> (`Return`) or <kbd>Space</kbd> to activation:
+
+| Component | Movement keys | Activation |
+| --- | --- | --- |
+| `Tabs.Trigger` | <kbd>←</kbd>/<kbd>→</kbd> when `orientation="horizontal"`, <kbd>↑</kbd>/<kbd>↓</kbd> when vertical | <kbd>Enter</kbd>, <kbd>Space</kbd> — and selecting a trigger activates it |
+| `RadioGroup.Item` | <kbd>←</kbd>/<kbd>→</kbd> or <kbd>↑</kbd>/<kbd>↓</kbd> per `orientation` (default vertical) | <kbd>Enter</kbd>, <kbd>Space</kbd> — moving also selects the landed item |
+| `Menu.Item` | <kbd>↑</kbd>/<kbd>↓</kbd> | <kbd>Enter</kbd>, <kbd>Space</kbd> |
+
+Unlike gamepad movement, keyboard movement goes through the ordered-selection helpers — it follows declaration order, skips disabled and hidden items, and clamps at the ends rather than wrapping. `Menu.Trigger` also opens on <kbd>Enter</kbd>/<kbd>Space</kbd>, after which the menu focuses its first available item so arrows work immediately.
+
+## Pointer and touch
+
+Pointers need the one thing selection does not: **dismissal by pressing elsewhere**. `@lattice-ui/layer`'s dismissable stack listens to `UserInputService.InputBegan` and treats exactly two input types as pointers — `MouseButton1` and `Touch`. A press that is outside the topmost enabled layer's content (hit-tested with `GetGuiObjectsAtPosition`, with inset-compensated sample points) fires `onPointerDownOutside` and `onInteractOutside`, then dismisses the layer unless a handler calls `preventDefault()`. Input the engine already consumed (`gameProcessedEvent`) is ignored, and only the topmost layer reacts — nested surfaces dismiss one at a time.
+
+```tsx title="Keeping a surface open on outside press"
+<Popover.Content
+  onPointerDownOutside={(event) => {
+    // e.g. presses on the anchor toolbar should not dismiss
+    event.preventDefault();
+  }}
+/>
+```
+
+Touch has no hover, so do not gate anything important behind `MouseEnter` alone — the `SelectionGained`-as-hover pattern above means gamepad players get the highlight, and touch players see state change on tap. For how layers stack and where portalled surfaces live, see [Portals and layers](/lattice-ui/guides/portals-and-layers/).
+
+## What `disabled` actually does
+
+Disabling an item does not unregister anything — it flips live getters that every path checks at use time:
+
+- The rendered `textbutton` gets `Selectable={false}` and `Active={false}`, so the **engine's** gamepad navigation skips it and it stops firing `Activated`.
+- The item's focus node reports `getDisabled() === true`, so the **focus manager** refuses to resolve it — it cannot be focused imperatively, used as a trap fallback, or restored to.
+- Its ordered-selection entry becomes unavailable, so **keyboard movement** steps over it as if it were not there.
+- The item's own handlers early-return, so stray input while it disables mid-frame does nothing.
+
+Keep these in agreement in your own composites: `Selectable` is what Roblox enforces, `getDisabled` is what the model enforces. The [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/) guide covers what goes wrong when they diverge.
+
+## Example: a gamepad-friendly radio group
+
+Everything above composes for free — this settings group is fully drivable by click, tap, arrows, and gamepad. The only input-specific work left to you is **sizing**: give each row enough height to be a comfortable touch target and a legible selection-ring stop (36–44 px works well).
+
+```tsx title="QualityPicker.tsx"
+import { React } from "@rbxts/react";
+import { RadioGroup } from "@lattice-ui/radio-group";
+
+const OPTIONS = ["low", "medium", "high", "ultra"];
+
+export function QualityPicker(props: { value: string; onChange: (value: string) => void }) {
+  return (
+    <RadioGroup.Root value={props.value} onValueChange={props.onChange} orientation="vertical">
+      <frame AutomaticSize={Enum.AutomaticSize.Y} BackgroundTransparency={1} Size={UDim2.fromOffset(240, 0)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+        {OPTIONS.map((option, index) => (
+          <RadioGroup.Item key={option} value={option} asChild>
+            {/* 40px rows: easy touch target, clear gamepad ring stop */}
+            <textbutton
+              AutoButtonColor={false}
+              LayoutOrder={index}
+              Size={new UDim2(1, 0, 0, 40)}
+              Text={option}
+              TextSize={15}
+            />
+          </RadioGroup.Item>
+        ))}
+      </frame>
+    </RadioGroup.Root>
+  );
+}
+```
+
+Pressing <kbd>↓</kbd> on "medium" focuses and selects "high"; flicking the gamepad stick does the same through the engine; tapping any row selects it directly. Disable an option and every input mode skips it.
+
+## Related
+
+- [Focus management](/lattice-ui/guides/focus-management/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Tabs](/lattice-ui/components/tabs/)
+- [Radio group](/lattice-ui/components/radio-group/)
+- [Menu](/lattice-ui/components/menu/)
+- [Focus reference](/lattice-ui/reference/focus/)

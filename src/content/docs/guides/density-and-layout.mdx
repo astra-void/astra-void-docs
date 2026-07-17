@@ -1,0 +1,203 @@
+---
+title: Density and layout
+description: Wire up SystemProvider, scale spacing with density tokens, tone panels with surfaces, and lay out HUDs with Stack, Row, and Grid — all from the same theme scale.
+section: guides
+sidebar:
+  order: 50
+draft: false
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+`@lattice-ui/style` gives you tokens; `@lattice-ui/system` gives those tokens somewhere to live. It layers the app-level structure on top of the style foundation: one provider that owns theme *and* density, a density system that rescales every spacing, radius, and type token globally, **surface tones** for elevation-consistent panels, and layout primitives (`Stack`, `Row`, `Grid`) that turn Roblox layout instances into token-driven components. This guide walks through how the pieces fit; the [System reference](/lattice-ui/reference/system/) has the full prop tables.
+
+## One provider for theme and density
+
+`SystemProvider` sits at the root. It owns the **base theme** (the raw token values), wraps a `DensityProvider`, and republishes a *density-resolved* theme through `@lattice-ui/style`'s `ThemeProvider`. Every `useTheme` consumer below — shipped components, your `sx` styles, the layout primitives — sees the scaled theme without doing anything.
+
+```tsx title="App root"
+import React from "@rbxts/react";
+import { defaultDarkTheme } from "@lattice-ui/style";
+import { SystemProvider } from "@lattice-ui/system";
+
+export function App() {
+  return (
+    <SystemProvider defaultTheme={defaultDarkTheme} defaultDensity="comfortable">
+      {/* Everything below reads the density-resolved theme. */}
+    </SystemProvider>
+  );
+}
+```
+
+Theme and density are each independently controllable in the [standard trio shape](/lattice-ui/guides/controlled-state/): `theme`/`defaultTheme`/`onThemeChange` and `density`/`defaultDensity`/`onDensityChange`. Read and write the pair from anywhere below with `useSystemTheme`:
+
+```tsx title="A density setting backed by useSystemTheme"
+import React from "@rbxts/react";
+import { useSystemTheme } from "@lattice-ui/system";
+
+export function DensitySetting() {
+  const { density, setDensity } = useSystemTheme();
+
+  return (
+    <textbutton
+      Text={`Density: ${density}`}
+      Size={UDim2.fromOffset(180, 32)}
+      Event={{
+        Activated: () => {
+          setDensity(density === "comfortable" ? "compact" : "comfortable");
+        },
+      }}
+    />
+  );
+}
+```
+
+`useSystemTheme` also returns the resolved `theme`, the pre-density `baseTheme`, and `setBaseTheme`. Writes always target the base theme — the resolved theme is derived, never written.
+
+## Density
+
+Density is a single token — `"compact"`, `"comfortable"`, or `"spacious"` — that answers "how tight should this UI be?" once, instead of per-component. `applyDensity` scales the whole token scale:
+
+| Token | Space | Radius | Text size |
+| --- | --- | --- | --- |
+| `compact` | ×0.85 | ×0.9 | ×0.92 |
+| `comfortable` | ×1 | ×1 | ×1 |
+| `spacious` | ×1.15 | ×1.1 | ×1.08 |
+
+Results are rounded and clamped: spacing and radius never go negative, and text sizes never drop below 10 so labels stay legible at compact density. Colors pass through untouched. Because layout primitives resolve their gaps and padding through the theme's `space` scale, one density change reflows everything built on tokens — no per-component knobs.
+
+`DensityProvider` is the layer `SystemProvider` uses internally, and you can nest one to re-density a subtree. That makes side-by-side comparisons trivial — the same settings panel, two densities:
+
+```tsx title="One panel, two densities"
+import React from "@rbxts/react";
+import { DensityProvider, Row } from "@lattice-ui/system";
+import { SettingsPanel } from "./settings-panel";
+
+export function DensityPreview() {
+  return (
+    <Row gap={16} autoSize={true}>
+      <DensityProvider density="compact">
+        <SettingsPanel />
+      </DensityProvider>
+      <DensityProvider density="spacious">
+        <SettingsPanel />
+      </DensityProvider>
+    </Row>
+  );
+}
+```
+
+Both panels render from identical code; only the resolved token values differ. This is also the honest way to preview a density setting before the player commits to it.
+
+<Callout title="Density reshapes tokens, not instances">
+`applyDensity` (and its curried form `density(token)`) is a pure `Theme → Theme` transform. It never creates or resizes Roblox instances. Anything you hard-code in raw pixels — a `UDim2.fromOffset` size, a numeric gap that is not on the space scale — is invisible to density. Prefer tokens wherever a value should breathe with the setting.
+</Callout>
+
+## Surfaces
+
+Panels need consistent backgrounds and borders, and eyeballing colors per-panel drifts fast. System ships four **surface tones** — `"surface"` (default), `"elevated"`, `"sunken"`, and `"overlay"` — and two ways to apply them.
+
+The `Surface` primitive renders a decorated `frame`: the tone's background, a `uicorner` from the theme radius, and a themed `uistroke` border (the `overlay` tone skips decoration and renders a translucent fill instead).
+
+```tsx title="An elevation-consistent panel"
+import React from "@rbxts/react";
+import { Stack, Surface } from "@lattice-ui/system";
+
+export function QuestPanel() {
+  return (
+    <Surface tone="elevated" Size={UDim2.fromOffset(280, 0)} AutomaticSize={Enum.AutomaticSize.Y}>
+      <Stack gap={8} padding={16} autoSize={true}>
+        <textlabel Text="Daily quests" Size={new UDim2(1, 0, 0, 20)} BackgroundTransparency={1} />
+        {/* quest rows */}
+      </Stack>
+    </Surface>
+  );
+}
+```
+
+When you only want the tone's *props* on an element you already have — no extra frame, no `uicorner`/`uistroke` children — use the `surface()` helper. It returns an `sx` value resolving to background, border color, and border size for the token:
+
+```tsx title="surface() applies a tone as sx props"
+import { surface, Stack } from "@lattice-ui/system";
+
+<Stack gap={8} padding={12} sx={surface("sunken")} Size={new UDim2(1, 0, 0, 160)} />;
+```
+
+Rule of thumb: reach for `Surface` when you want the fully decorated panel look, and `surface()` when styling an existing host. Either way the tone names carry the elevation story — `sunken` recedes, `surface` is the resting plane, `elevated` floats, `overlay` dims what is behind it.
+
+## Layout primitives
+
+`Stack`, `Row`, and `Grid` wrap `uilistlayout`/`uigridlayout` in components whose spacing props accept **space tokens or raw pixels**. A `gap={8}` means "the theme's `8` space token" — which compact density might resolve to 7 — while off-scale numbers pass through as raw pixels. All three render a transparent `frame`, sort children by `LayoutOrder`, and accept the same padding shorthands (`padding`, `paddingX`/`paddingY`, `paddingTop`/`Right`/`Bottom`/`Left`).
+
+`Stack` is vertical by default; `align` sets the cross axis and `justify` the main axis (they swap when `direction` flips). A HUD column:
+
+```tsx title="HUD column with Stack"
+import React from "@rbxts/react";
+import { Stack } from "@lattice-ui/system";
+
+export function HudColumn() {
+  return (
+    <Stack
+      gap={12}
+      align="end"
+      padding={16}
+      autoSize={true}
+      AnchorPoint={new Vector2(1, 0)}
+      Position={new UDim2(1, 0, 0, 0)}
+    >
+      <HealthBar />
+      <ManaBar />
+      <BuffList />
+    </Stack>
+  );
+}
+```
+
+`Row` is `Stack` with `direction` fixed to horizontal — the obvious fit for a button row:
+
+```tsx title="Dialog button row"
+import React from "@rbxts/react";
+import { Row } from "@lattice-ui/system";
+
+export function ConfirmButtons(props: { onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <Row gap={8} justify="end" Size={new UDim2(1, 0, 0, 36)}>
+      <textbutton Text="Cancel" Size={UDim2.fromOffset(88, 32)} Event={{ Activated: props.onCancel }} />
+      <textbutton Text="Confirm" Size={UDim2.fromOffset(88, 32)} Event={{ Activated: props.onConfirm }} />
+    </Row>
+  );
+}
+```
+
+`Grid` is responsive: give it `minColumnWidth` and it measures its own `AbsoluteSize`, fits as many columns as the container allows, and stretches cell width to fill — or pass a fixed `columns` count to opt out. `cellHeight` (default 32) sets row height; `gap` covers both axes with `rowGap`/`columnGap` overrides.
+
+```tsx title="Inventory grid"
+import React from "@rbxts/react";
+import { Grid } from "@lattice-ui/system";
+
+export function InventoryGrid(props: { items: Array<Item> }) {
+  return (
+    <Grid minColumnWidth={64} cellHeight={64} gap={6} autoSize={true} Size={new UDim2(1, 0, 0, 0)}>
+      {props.items.map((item) => (
+        <ItemSlot key={item.id} item={item} />
+      ))}
+    </Grid>
+  );
+}
+```
+
+Shrink the container and the grid drops columns; widen it and columns come back — no breakpoint code on your side.
+
+<Callout title="No asChild on layout primitives">
+Unlike the interaction primitives, `Stack`, `Row`, `Grid`, and `Surface` do not support `asChild` — passing it throws. They must own their host `frame` because the layout and decoration instances live inside it. Use `sx` and direct host props to customize the frame instead.
+</Callout>
+
+The stack composes top-down: `SystemProvider` resolves theme × density once, surface tones give panels one elevation language, and the layout primitives space children from the same resolved scale. Build with tokens end-to-end and a single `setDensity` call re-fits the entire UI — which is exactly the point.
+
+## Related
+
+- [System reference](/lattice-ui/reference/system/)
+- [Theming](/lattice-ui/guides/theming/)
+- [Controlled and uncontrolled state](/lattice-ui/guides/controlled-state/)
+- [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)
+- [Style reference](/lattice-ui/reference/style/)

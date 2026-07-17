@@ -1,0 +1,205 @@
+---
+title: Theming
+description: How Lattice UI themes work — plain token objects of Color3s and numbers that your components read explicitly through ThemeProvider, useTheme, and useThemeValue.
+section: guides
+sidebar:
+  order: 40
+draft: false
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+There is no CSS on Roblox, so a Lattice theme is not a stylesheet — it is a **plain token object**: a `Theme` with four groups of named values (`colors`, `space`, `radius`, `typography`), where colors are `Color3`s and everything else is numbers and `Enum.Font`s. Nothing consumes it implicitly. A `Dialog.Content` or `Checkbox.Root` does not repaint itself when the theme changes, because headless primitives render no visuals to paint. *Your* components read tokens — through `useTheme`, `useThemeValue`, or an `sx` function — and write them onto host properties like `BackgroundColor3` and `TextSize`.
+
+That explicitness is the whole model: the theme is a shared vocabulary, and every visual decision that uses it is visible in your code.
+
+## Import
+
+```ts
+import {
+  ThemeProvider,
+  useTheme,
+  useThemeValue,
+  createTheme,
+  defaultLightTheme,
+  defaultDarkTheme,
+  type Theme,
+  type PartialTheme,
+} from "@lattice-ui/style";
+```
+
+## The token groups
+
+A `Theme` has exactly four groups. The two built-in themes share the same `space`, `radius`, and `typography` scales and differ only in `colors`.
+
+| Group | Tokens | Values |
+| --- | --- | --- |
+| `colors` | `background`, `surface`, `surfaceElevated`, `border`, `textPrimary`, `textSecondary`, `accent`, `accentContrast`, `danger`, `dangerContrast`, `overlay` | `Color3` |
+| `space` | `0`, `2`, `4`, `6`, `8`, `10`, `12`, `14`, `16`, `20`, `24`, `32` | pixel `number` |
+| `radius` | `none`, `sm`, `md`, `lg`, `xl`, `full` | pixel `number` |
+| `typography` | `labelSm`, `bodyMd`, `titleMd` | `{ font: Enum.Font; textSize: number }` |
+
+The color roles pair up deliberately: `accent` is a fill and `accentContrast` is the text color that reads on top of it, same for `danger`/`dangerContrast`. `space` tokens are keyed by their pixel value, so `theme.space[8]` is `8` — the scale exists to limit you to a consistent set of steps, not to hide the numbers.
+
+## Creating a theme
+
+`createTheme(partialTheme)` builds a complete `Theme` by merging your `PartialTheme` over `defaultLightTheme`, group by group. Override only what you need; everything else falls back to the light defaults.
+
+```ts title="themes.ts"
+import { createTheme, defaultDarkTheme } from "@lattice-ui/style";
+
+export const brandLightTheme = createTheme({
+  colors: {
+    accent: Color3.fromRGB(118, 74, 226),
+    accentContrast: Color3.fromRGB(244, 240, 253),
+  },
+  radius: { md: 10 },
+});
+
+// createTheme always merges over the LIGHT defaults, so a dark brand
+// theme starts from defaultDarkTheme's colors explicitly:
+export const brandDarkTheme = createTheme({
+  colors: {
+    ...defaultDarkTheme.colors,
+    accent: Color3.fromRGB(139, 99, 235),
+    accentContrast: Color3.fromRGB(243, 239, 252),
+  },
+  radius: { md: 10 },
+});
+```
+
+<Callout title="The merge is per-group, one level deep">
+Each group is spread over the defaults, so `colors: { accent }` keeps the other ten color tokens. But a `typography` entry is replaced whole — if you override `bodyMd` you must supply both `font` and `textSize`, not just one.
+</Callout>
+
+## Providing and reading the theme
+
+`ThemeProvider` puts a theme in context. Like every stateful Lattice primitive it supports both ownership modes (see [Controlled and uncontrolled state](/lattice-ui/guides/controlled-state/)): pass `defaultTheme` to let the provider own the theme, or pass `theme` plus `onThemeChange` to own it yourself. With neither prop it defaults to `defaultLightTheme`.
+
+```tsx title="App.tsx"
+import { ThemeProvider } from "@lattice-ui/style";
+import { brandLightTheme } from "./themes";
+
+export function App(props: { children: React.ReactNode }) {
+  return <ThemeProvider defaultTheme={brandLightTheme}>{props.children}</ThemeProvider>;
+}
+```
+
+Inside the tree, `useTheme()` returns `{ theme, setTheme }`, and `useThemeValue(selector)` memoizes a derived value. Both use a strict context and throw without a `ThemeProvider` above them — a missing provider fails loudly instead of silently rendering fallback colors.
+
+Here is a complete themed panel. Note that every visual property is an explicit read — this is what "your components paint" looks like in practice:
+
+```tsx title="QuestPanel.tsx"
+import { useTheme } from "@lattice-ui/style";
+
+export function QuestPanel(props: { title: string; body: string }) {
+  const { theme } = useTheme();
+
+  return (
+    <frame
+      BackgroundColor3={theme.colors.surfaceElevated}
+      BorderSizePixel={0}
+      Size={UDim2.fromOffset(320, 140)}
+    >
+      <uicorner CornerRadius={new UDim(0, theme.radius.md)} />
+      <uistroke Color={theme.colors.border} Thickness={1} />
+      <uipadding
+        PaddingTop={new UDim(0, theme.space[16])}
+        PaddingBottom={new UDim(0, theme.space[16])}
+        PaddingLeft={new UDim(0, theme.space[16])}
+        PaddingRight={new UDim(0, theme.space[16])}
+      />
+      <textlabel
+        BackgroundTransparency={1}
+        Font={theme.typography.titleMd.font}
+        TextSize={theme.typography.titleMd.textSize}
+        TextColor3={theme.colors.textPrimary}
+        TextXAlignment={Enum.TextXAlignment.Left}
+        Text={props.title}
+        Size={new UDim2(1, 0, 0, 28)}
+      />
+      <textlabel
+        BackgroundTransparency={1}
+        Font={theme.typography.bodyMd.font}
+        TextSize={theme.typography.bodyMd.textSize}
+        TextColor3={theme.colors.textSecondary}
+        TextXAlignment={Enum.TextXAlignment.Left}
+        TextWrapped={true}
+        Text={props.body}
+        Position={UDim2.fromOffset(0, theme.space[32])}
+        Size={new UDim2(1, 0, 1, -theme.space[32])}
+      />
+    </frame>
+  );
+}
+```
+
+When a component only needs one or two tokens, `useThemeValue` selects them without pulling the whole context value into your render:
+
+```tsx title="AccentBadge.tsx"
+import { useThemeValue } from "@lattice-ui/style";
+
+export function AccentBadge(props: { count: number }) {
+  const accent = useThemeValue((theme) => theme.colors.accent);
+  const accentContrast = useThemeValue((theme) => theme.colors.accentContrast);
+
+  return (
+    <textlabel
+      BackgroundColor3={accent}
+      TextColor3={accentContrast}
+      Text={tostring(props.count)}
+      Size={UDim2.fromOffset(24, 24)}
+    >
+      <uicorner CornerRadius={new UDim(1, 0)} />
+    </textlabel>
+  );
+}
+```
+
+<Callout title="Give useThemeValue a stable selector">
+The selector's identity is part of the memoization. An inline lambda is recreated every render, which defeats the memo (the value is still correct, just recomputed). Hoist the selector to module scope or wrap it in `useCallback` when the derivation is more than a field read.
+</Callout>
+
+## Runtime theme switching
+
+Because the theme is ordinary React state, switching it is just `setTheme` with a different token object — every component that reads the theme re-renders with the new values. A dark-mode toggle is the canonical case:
+
+```tsx title="DarkModeToggle.tsx"
+import { useState } from "@rbxts/react";
+import { useTheme, defaultLightTheme, defaultDarkTheme } from "@lattice-ui/style";
+
+export function DarkModeToggle() {
+  const { setTheme } = useTheme();
+  const [dark, setDark] = useState(false);
+
+  return (
+    <textbutton
+      Text={dark ? "Switch to light" : "Switch to dark"}
+      Size={UDim2.fromOffset(160, 36)}
+      Event={{
+        Activated: () => {
+          const next = !dark;
+          setDark(next);
+          setTheme(next ? defaultDarkTheme : defaultLightTheme);
+        },
+      }}
+    />
+  );
+}
+```
+
+In uncontrolled mode `setTheme` updates the provider's internal state directly. In controlled mode (`theme` prop supplied) it only calls `onThemeChange` — the provider renders whatever theme you feed back in, so app logic like "follow the player's saved preference" owns the final say. Either way, `onThemeChange` fires on every change, so you can persist the choice from a single place.
+
+<Callout title="Themes swap by reference, not mutation">
+Always pass a new `Theme` object to `setTheme` — the built-ins, or the result of `createTheme`. Mutating token values on the current theme object changes nothing on screen, because no component is notified; context consumers update when the theme reference changes.
+</Callout>
+
+## Themes and recipes
+
+Reading `useTheme` in every component works, but it scales poorly once variants appear. The `sx` and recipe layer in `@lattice-ui/style` exists exactly for this — an `sx` value can be a function of the theme, and `createRecipe` resolves variant-driven styles against the current theme for you. See [Styling with recipes](/lattice-ui/guides/styling-with-recipes/) for that workflow.
+
+## Related
+
+- [Style reference](/lattice-ui/reference/style/)
+- [Styling with recipes](/lattice-ui/guides/styling-with-recipes/)
+- [Controlled and uncontrolled state](/lattice-ui/guides/controlled-state/)
