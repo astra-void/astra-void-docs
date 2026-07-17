@@ -20,7 +20,7 @@ export default defineConfig({
         {
           behavior: "wrap",
           properties: {
-            classNam: ["docs-heading-anchor"],
+            className: ["docs-heading-anchor"],
           },
         },
       ],
