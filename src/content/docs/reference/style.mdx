@@ -41,14 +41,14 @@ function Box(props: BoxProps): React.Element;
 </Box>
 ```
 
-Any host prop passed directly is merged on top of the resolved `sx`, with direct props winning. When `asChild` is set, `Box` requires exactly one valid child element and clones its props onto it (via `Slot`) instead of rendering a `frame`.
+Direct host props and the resolved `sx` are merged with `mergeGuiProps(rest, sx)`, so when both set the same property the `sx` value wins; `Event`/`Change` handler tables are composed instead of replaced. When `asChild` is set, `Box` requires exactly one valid child element and clones its props onto it (via `Slot`) instead of rendering a `frame`.
 
 <PropTable
   rows={[
     { name: "sx", type: "Sx<StyleProps>", description: "Host props, or a function of the theme returning host props, applied to the frame." },
     { name: "asChild", type: "boolean", description: "Merge resolved props onto the single child element instead of rendering a frame." },
     { name: "children", type: "React.ReactNode", description: "Frame children, or the single element to clone when asChild is set." },
-    { name: "...rest", type: "GuiObject props", description: "Any host props, merged on top of sx (direct props win)." },
+    { name: "...rest", type: "GuiObject props", description: "Any host props, merged with sx via mergeGuiProps (sx wins on conflicts; event handlers compose)." },
   ]}
 />
 
@@ -70,7 +70,7 @@ function Text(props: TextProps): React.Element;
     { name: "sx", type: "Sx<StyleProps>", description: "Host props, or a function of the theme returning host props, applied to the textlabel." },
     { name: "asChild", type: "boolean", description: "Merge resolved props onto the single child element instead of rendering a textlabel." },
     { name: "children", type: "React.ReactNode", description: "Children, or the single element to clone when asChild is set." },
-    { name: "...rest", type: "GuiObject props", description: "Any host props, merged on top of sx (direct props win)." },
+    { name: "...rest", type: "GuiObject props", description: "Any host props, merged with sx via mergeGuiProps (sx wins on conflicts; event handlers compose)." },
   ]}
 />
 

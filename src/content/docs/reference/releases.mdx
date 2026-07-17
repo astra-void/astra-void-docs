@@ -1,0 +1,64 @@
+---
+title: Releases
+description: Release notes and migration guidance for the lockstep-versioned @lattice-ui packages, summarized from the library changelog.
+section: reference
+sidebar:
+  order: 90
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+All `@lattice-ui/*` packages version in lockstep, so a single release number describes the whole library. This page summarizes each release and its migration steps; the full entry-by-entry history lives in the repository's [CHANGELOG.md](https://github.com/astra-void/lattice-ui/blob/main/CHANGELOG.md).
+
+<Callout title="Pre-1.0 versioning">
+  Lattice UI is pre-1.0: minor releases (`0.x`) may include breaking changes,
+  and each release ships migration notes when they do. Read
+  [Package stability](/lattice-ui/getting-started/package-stability/) for the
+  per-package stability tiers before upgrading.
+</Callout>
+
+## Unreleased
+
+In-progress work on the `next` prerelease line:
+
+- Placement-relative Popper positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) adopted across positioned overlays.
+- `usePopper` now exposes resolved placement/position metadata (`position`, `anchorPoint`, `placement`, `contentSize`, `isPositioned`, `update`).
+- Improved Popper flip/clamp behavior near viewport edges, and overlay content stays mounted while motion is active so exit animations finish cleanly.
+- Normalized slider and switch thumb anchors so wrapped layouts keep animated thumbs aligned.
+
+## 0.5.0
+
+Extracted shared focus and motion helpers into dedicated packages, expanded CLI project scaffolding, and standardized motion behavior across layered primitives.
+
+**Migration**
+
+- Update imports that used focus or motion helpers from `@lattice-ui/core` to `@lattice-ui/focus` and `@lattice-ui/motion`.
+- If you regenerate projects with the CLI, review the updated pnpm hoisting and theme provider setup before shipping the scaffold.
+
+**Highlights**
+
+- New `@lattice-ui/motion` package for tween and presence helpers, and `@lattice-ui/focus` for focus management.
+- Interactive `init` CLI command for existing projects with safe template merging; `create` and `init` scaffold from maintained package templates.
+- Layered components share the same motion recipes and focus infrastructure, so exit animations complete instead of flashing or unmounting early.
+
+## 0.4.x
+
+The 0.4 line narrowed the workspace to the maintained UI surface and introduced the shared focus manager.
+
+**Migration**
+
+- Replace `@lattice-ui/cli` with `lattice-ui` in install commands, scripts, and automation (0.4.3–0.4.4 renamed the published CLI package).
+- The preview, compiler, preview-runtime, preview-engine, and layout-engine workspace packages were dropped in 0.4.0 — depend on the maintained component packages and CLI entrypoints only.
+- The deprecated `SwitchThumb` `forceMount` behavior and legacy roving-focus example flows were removed in 0.4.0.
+
+**Highlights**
+
+- Core focus manager primitives coordinating focus registration, ordering, and restoration across accordion, dialog, menu, popover, radio group, select, and tabs (0.4.0).
+- `create` CLI command for scaffolding workspace packages, with automatic npm/pnpm/yarn detection (0.4.0–0.4.2).
+- Direct `ScrollArea` track-click and thumb-drag interactions (0.4.0).
+
+## Related
+
+- [Package stability](/lattice-ui/getting-started/package-stability/)
+- [CLI](/lattice-ui/reference/cli/)
+- [Installation](/lattice-ui/getting-started/installation/)
