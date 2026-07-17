@@ -3,10 +3,11 @@ title: Combobox
 description: Single-value selection primitive that owns value state, input filtering, item registration, and popper positioning while you own the visuals.
 section: components
 sidebar:
-  order: 40
+  order: 70
+  group: Form
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/combobox"
@@ -17,7 +18,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 Combobox is the primitive for a filterable, single-value picker: searchable selects, command palettes, and autocomplete fields. It coordinates value state, input text, query filtering, item registration, positioning, and dismissal so your component only has to render the field, the listbox, and the items.
 
-Reach for Combobox when a select needs **type-to-filter** behavior: an input narrows a registered list of items by text, the user picks one, and the chosen value drives the field. Combobox owns three pieces of state at once — the selected **value**, the **input text**, and the **open** state — and keeps them in sync, falling back to a forced selection so the field is never left in an invalid state.
+Reach for Combobox when a select needs **type-to-filter** behavior: an input narrows a registered list of items by text, the user picks one, and the chosen value drives the field. Combobox owns three pieces of state at once — the selected **value**, the **input text**, and the **open** state — and keeps them in sync, repairing a selection that no longer resolves to an enabled item so the field does not point at a value that no longer exists.
 
 ## Import
 
@@ -28,6 +29,8 @@ import { Combobox } from "@lattice-ui/combobox";
 ## Anatomy
 
 Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the working picker. Use either `Input` (type-to-filter) or `Trigger` + `Value` (toggle and display) as the anchor, and `Group`, `Label`, and `Separator` to structure longer lists.
+
+<PrimitiveAnatomy title="Combobox anatomy">
 
 ```tsx title="Combobox anatomy"
 <Combobox.Root>
@@ -56,27 +59,28 @@ Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the wor
 | `Combobox.Value` | no | A label that displays the selected item's text (or a placeholder). |
 | `Combobox.Portal` | yes | Renders the listbox into a `ScreenGui` outside the local tree. |
 | `Combobox.Content` | yes | The positioned, dismissable, motion-driven listbox. |
-| `Combobox.Item` | yes | A selectable option that registers its value and text, and hides when filtered out. |
+| `Combobox.Item` | yes | A selectable option that registers its value and text, and hides itself when filtered out. |
 | `Combobox.Group` | no | A container that visually groups related items. |
 | `Combobox.Label` | no | A non-interactive heading for a group or section. |
 | `Combobox.Separator` | no | A thin divider between items or groups. |
 
-## Example
+</PrimitiveAnatomy>
 
-A controlled combobox with a filtering input. Typing narrows the list; selecting an item sets the value and syncs the input.
+## Examples
 
-```tsx title="WorldPicker.tsx"
-import { useState } from "@rbxts/react";
+### Basic filtered list
+
+The smallest useful composition: an uncontrolled root, the default input textbox as the anchor, and bare items on a plain list surface. The default `Combobox.Item` renders a labeled `textbutton` from its `value` (via `textValue`, which defaults to `value`), so display-ready values need no children at all. Typing narrows the list in place — each item hides itself when it stops matching — and selecting an item sets the value, fills the field, and closes the list.
+
+```tsx title="BiomePicker.tsx"
 import { Combobox } from "@lattice-ui/combobox";
 
-const WORLDS = ["Aurora", "Basalt", "Cinder", "Driftwood", "Ember"];
+const BIOMES = ["Ashlands", "Frostpeak", "Gladewood", "Mirelow", "Sunspire"];
 
-export function WorldPicker() {
-  const [value, setValue] = useState<string>();
-
+export function BiomePicker() {
   return (
-    <Combobox.Root value={value} onValueChange={setValue}>
-      <Combobox.Input placeholder="Search worlds" />
+    <Combobox.Root defaultValue="Gladewood" onValueChange={(value) => print(`picked: ${value}`)}>
+      <Combobox.Input placeholder="Search biomes" />
 
       <Combobox.Portal>
         <Combobox.Content sideOffset={4}>
@@ -85,14 +89,9 @@ export function WorldPicker() {
             BackgroundColor3={Color3.fromRGB(28, 32, 42)}
             Size={UDim2.fromOffset(240, 0)}
           >
-            <uilistlayout Padding={new UDim(0, 2)} />
-            <Combobox.Label asChild>
-              <textlabel Text="Worlds" />
-            </Combobox.Label>
-            {WORLDS.map((world) => (
-              <Combobox.Item key={world} value={world}>
-                <textbutton Text={world} />
-              </Combobox.Item>
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            {BIOMES.map((biome) => (
+              <Combobox.Item key={biome} value={biome} />
             ))}
           </frame>
         </Combobox.Content>
@@ -102,25 +101,295 @@ export function WorldPicker() {
 }
 ```
 
+### Controlled value and input
+
+Control both trios when something outside the combobox needs to read or drive them — persisting the selection, reporting the live query to a search service, or resetting the field from elsewhere. The two pieces are independent: `value`/`onValueChange` tracks the committed selection, while `inputValue`/`onInputValueChange` tracks the field text. Expect `onInputValueChange` to fire for programmatic syncs too — selecting an item sets the input to that item's text, and closing the list re-syncs it from the value.
+
+```tsx title="QuestSearch.tsx"
+import { useState } from "@rbxts/react";
+import { Combobox } from "@lattice-ui/combobox";
+
+const QUESTS = ["Cinder Trial", "Echo Vault", "Gale Run", "Hollow March"];
+
+export function QuestSearch() {
+  const [value, setValue] = useState<string>();
+  const [inputValue, setInputValue] = useState("");
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(260, 80)}>
+      <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <Combobox.Root
+        value={value}
+        onValueChange={setValue}
+        inputValue={inputValue}
+        onInputValueChange={setInputValue}
+      >
+        <Combobox.Input placeholder="Search quests" />
+
+        <Combobox.Portal>
+          <Combobox.Content sideOffset={4}>
+            <frame
+              AutomaticSize={Enum.AutomaticSize.Y}
+              BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+              Size={UDim2.fromOffset(240, 0)}
+            >
+              <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+              {QUESTS.map((quest) => (
+                <Combobox.Item key={quest} value={quest} />
+              ))}
+            </frame>
+          </Combobox.Content>
+        </Combobox.Portal>
+      </Combobox.Root>
+
+      <textlabel
+        BackgroundTransparency={1}
+        Size={UDim2.fromOffset(260, 18)}
+        Text={value !== undefined ? `Tracking: ${value}` : "No quest tracked"}
+        TextColor3={Color3.fromRGB(168, 176, 191)}
+        TextXAlignment={Enum.TextXAlignment.Left}
+      />
+    </frame>
+  );
+}
+```
+
 <Callout title="Uncontrolled usage">
 Omit `value`/`onValueChange` (and `inputValue`/`open`) and pass `defaultValue`, `defaultInputValue`, or `defaultOpen` instead to let Combobox own its state. Each of value, input text, and open state can be controlled independently — control only the pieces something outside the combobox needs to drive.
 </Callout>
+
+### Custom filter function
+
+The root's `filterFn` decides whether each item matches the current query. The default is a case-insensitive substring match; swap it for prefix matching, token search, or locale-aware comparison. Define the function at module scope (or memoize it) so its identity stays stable — it is shared through context, and a new function every render churns every item.
+
+```tsx title="CommandPalette.tsx"
+import { Combobox } from "@lattice-ui/combobox";
+import type { ComboboxFilterFn } from "@lattice-ui/combobox";
+
+const COMMANDS = ["Teleport", "Trade", "Track quest", "Toggle HUD"];
+
+const prefixFilter: ComboboxFilterFn = (itemText, query) => {
+  return string.sub(string.lower(itemText), 1, query.size()) === string.lower(query);
+};
+
+export function CommandPalette() {
+  return (
+    <Combobox.Root filterFn={prefixFilter} onValueChange={(command) => print(`run: ${command}`)}>
+      <Combobox.Input placeholder="Type a command" />
+
+      <Combobox.Portal>
+        <Combobox.Content sideOffset={4}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(240, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            {COMMANDS.map((command) => (
+              <Combobox.Item key={command} value={command} />
+            ))}
+          </frame>
+        </Combobox.Content>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+```
+
+### Groups and labels
+
+`Group`, `Label`, and `Separator` structure longer lists. They are purely visual: they do not affect filtering or selection, and a label is not query-aware — it stays visible even when every item under it is filtered out. The default `Group` is a fixed-size frame, so for a growing list give it your own auto-sizing frame with `asChild`.
+
+```tsx title="ServerRegionPicker.tsx"
+import { Combobox } from "@lattice-ui/combobox";
+
+const AMERICAS = ["Chicago", "Dallas", "Sao Paulo"];
+const EUROPE = ["Frankfurt", "London", "Warsaw"];
+
+export function ServerRegionPicker() {
+  return (
+    <Combobox.Root>
+      <Combobox.Input placeholder="Search regions" />
+
+      <Combobox.Portal>
+        <Combobox.Content sideOffset={4}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(240, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            <Combobox.Group asChild>
+              <frame
+                AutomaticSize={Enum.AutomaticSize.Y}
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(240, 0)}
+              >
+                <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+                <Combobox.Label asChild>
+                  <textlabel
+                    BackgroundTransparency={1}
+                    Size={UDim2.fromOffset(240, 18)}
+                    Text="Americas"
+                    TextColor3={Color3.fromRGB(168, 176, 191)}
+                    TextSize={13}
+                    TextXAlignment={Enum.TextXAlignment.Left}
+                  />
+                </Combobox.Label>
+                {AMERICAS.map((region) => (
+                  <Combobox.Item key={region} value={region} />
+                ))}
+              </frame>
+            </Combobox.Group>
+
+            <Combobox.Separator />
+
+            <Combobox.Group asChild>
+              <frame
+                AutomaticSize={Enum.AutomaticSize.Y}
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(240, 0)}
+              >
+                <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+                <Combobox.Label asChild>
+                  <textlabel
+                    BackgroundTransparency={1}
+                    Size={UDim2.fromOffset(240, 18)}
+                    Text="Europe"
+                    TextColor3={Color3.fromRGB(168, 176, 191)}
+                    TextSize={13}
+                    TextXAlignment={Enum.TextXAlignment.Left}
+                  />
+                </Combobox.Label>
+                {EUROPE.map((region) => (
+                  <Combobox.Item key={region} value={region} />
+                ))}
+              </frame>
+            </Combobox.Group>
+          </frame>
+        </Combobox.Content>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+```
+
+### Empty state when nothing matches
+
+Filtering hides items one by one — the listbox itself stays open and mounted even when every item is filtered out, and there is no built-in empty-state part. To show a "no matches" message, control `inputValue` and mirror the primitive's filtering with the exported `filterComboboxOptions` helper (it applies `defaultComboboxFilter` unless you pass the same custom `filterFn` you gave the root). When the match count hits zero, render your own label inside the content.
+
+```tsx title="SpellSearch.tsx"
+import { useState } from "@rbxts/react";
+import { Combobox, filterComboboxOptions } from "@lattice-ui/combobox";
+
+const SPELLS = ["Arc Nova", "Ember Coil", "Frost Lattice", "Stone Ward"];
+const SPELL_OPTIONS = SPELLS.map((spell) => ({ value: spell, disabled: false, textValue: spell }));
+
+export function SpellSearch() {
+  const [inputValue, setInputValue] = useState("");
+  const matchCount = filterComboboxOptions(SPELL_OPTIONS, inputValue).size();
+
+  return (
+    <Combobox.Root inputValue={inputValue} onInputValueChange={setInputValue}>
+      <Combobox.Input placeholder="Search spells" />
+
+      <Combobox.Portal>
+        <Combobox.Content sideOffset={4}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(240, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            {SPELLS.map((spell) => (
+              <Combobox.Item key={spell} value={spell} />
+            ))}
+            {matchCount === 0 && (
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(240, 32)}
+                Text="No spells match"
+                TextColor3={Color3.fromRGB(153, 161, 177)}
+              />
+            )}
+          </frame>
+        </Combobox.Content>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+```
+
+### Custom input styling with asChild
+
+Use `asChild` on `Combobox.Input` to project the input behavior onto your own `textbox`. The primitive drives `Text`, `TextEditable`, `PlaceholderText`, `ClearTextOnFocus`, the text-change handler, and the anchor ref onto your element, so keep the `placeholder` prop on the `Combobox.Input` part (the slot's value wins) and put your styling in colors, strokes, corners, and padding.
+
+```tsx title="StyledCosmeticSearch.tsx"
+import { Combobox } from "@lattice-ui/combobox";
+
+const COSMETICS = ["Aurora Cape", "Drift Visor", "Ember Trail", "Void Crown"];
+
+export function StyledCosmeticSearch() {
+  return (
+    <Combobox.Root>
+      <Combobox.Input placeholder="Search cosmetics" asChild>
+        <textbox
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(260, 40)}
+          TextColor3={Color3.fromRGB(236, 241, 249)}
+          TextSize={15}
+          TextXAlignment={Enum.TextXAlignment.Left}
+        >
+          <uicorner CornerRadius={new UDim(0, 8)} />
+          <uistroke Color={Color3.fromRGB(88, 142, 255)} Thickness={1} />
+          <uipadding PaddingLeft={new UDim(0, 12)} PaddingRight={new UDim(0, 12)} />
+        </textbox>
+      </Combobox.Input>
+
+      <Combobox.Portal>
+        <Combobox.Content sideOffset={6}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(260, 0)}
+          >
+            <uicorner CornerRadius={new UDim(0, 8)} />
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            {COSMETICS.map((cosmetic) => (
+              <Combobox.Item key={cosmetic} value={cosmetic} />
+            ))}
+          </frame>
+        </Combobox.Content>
+      </Combobox.Portal>
+    </Combobox.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Open state
 
-`Combobox.Root` is controllable. Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled (defaults to closed). `Combobox.Trigger` toggles the list on activation (and on `Return`/`Space`), and typing in `Combobox.Input` opens it automatically. Selecting an item closes the list.
+`Combobox.Root` is controllable. Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled (defaults to closed). `Combobox.Trigger` toggles the list on activation (and on `Return`/`Space`), and typing in `Combobox.Input` opens it automatically. Selecting an item closes the list. A disabled root refuses to open, but can still close.
 
 ### Value and input state
 
-The selected **value** and the **input text** are separate, independently controllable pieces of state. Selecting an item sets the value and syncs the input to that item's display text. Typing in the input updates the query (and opens the list) without changing the value until a selection is made; when the list closes, the input is re-synced from the current value so the field always shows the selected item. Set `required` to force a selection: while the list is open, Combobox keeps a valid enabled item selected, falling back to the first enabled item rather than leaving the value empty.
+The selected **value** and the **input text** are separate, independently controllable pieces of state. Selecting an item sets the value and syncs the input to that item's display text; selecting a disabled item is ignored. Typing in the input updates the query (and opens the list) without changing the value until a selection is made; when the list closes, the input is re-synced from the current value so the field always shows the selected item.
+
+While the list is open, Combobox reconciles the value against the item registry: a selected value that no longer resolves to an enabled registered item is replaced with the first enabled item. This repair only replaces an invalid selection — it never fills an empty one, so an untouched combobox stays empty until the user picks something. `onValueChange` fires only for defined values.
 
 `Combobox.Value` displays the selected item's text, resolved from the item registry, or its `placeholder` when nothing is selected. `disabled` blocks all state changes; `readOnly` blocks input edits but still allows selection through items.
 
 ### Filtering
 
-`Combobox.Item` declares a `value` and an optional `textValue` (the text matched and displayed; defaults to `value`). The root's `filterFn` decides whether each item matches the current query — the default does a case-insensitive substring match. Items that do not match are hidden and made non-interactive, so the list shows only what fits the query. Provide your own `filterFn` for fuzzy matching, token search, or locale-aware comparison.
+Filtering is per-item, not per-list. `Combobox.Item` declares a `value` and an optional `textValue` (the text matched and displayed; defaults to `value`), and each item evaluates the root's `filterFn(textValue, query)` itself: a non-matching item sets its own `Visible` to false and becomes non-interactive, both for the default button and for your element under `asChild`. The content never removes or reorders nodes, so your layout simply collapses around hidden items.
+
+The active query is the text the user typed. Selecting an item syncs the field text without changing the open list's query, so the list does not collapse to the selected item at the moment of selection; when the list closes, the query is re-synced from the field text, so reopening from the trigger shows the list filtered by the selected item's text.
+
+The default filter is a case-insensitive plain substring match. The package also exports the pieces as plain functions — `defaultComboboxFilter`, `filterComboboxOptions`, and `resolveComboboxInputValue` — so you can mirror the primitive's filtering in your own logic, such as an empty-state check or an external result count.
 
 ### Positioning
 
@@ -135,7 +404,15 @@ The selected **value** and the **input text** are separate, independently contro
 `Combobox.Content` runs a default popper-aware canvas-group reveal/exit recipe that animates from the resolved placement, so the list animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
 
 <Callout title="Three states, kept in sync">
-Combobox tracks value, input text, and open state separately and reconciles them automatically: selecting syncs the input, closing re-syncs the input from the value, and `required` forces a valid selection while open. Control each piece only when you need to — mixing controlled value with uncontrolled input is fully supported.
+Combobox tracks value, input text, and open state separately and reconciles them automatically: selecting syncs the input, closing re-syncs the input from the value, and an invalid selection is repaired against the registry while the list is open. Control each piece only when you need to — mixing controlled value with uncontrolled input is fully supported.
+</Callout>
+
+<Callout title="Items hide themselves — there is no built-in empty state">
+Filtering works by each item toggling its own visibility, so the listbox stays open and mounted even when nothing matches. Detect zero matches yourself with `filterComboboxOptions` over your own option data (passing your custom `filterFn` if you use one) and render your own empty label, as in the [empty state example](#empty-state-when-nothing-matches).
+</Callout>
+
+<Callout title="required is wiring-only">
+`required` is exposed on context for your own form/validation wiring and does not change interaction on its own. The open-list value repair runs regardless of `required`, and it never fills an empty value — if you need a selection before submit, validate `value !== undefined` in your form logic.
 </Callout>
 
 ## API reference
@@ -146,17 +423,17 @@ Combobox tracks value, input text, and open state separately and reconciles them
   rows={[
     { name: "value", type: "string", description: "Controlled selected value. Pair with onValueChange." },
     { name: "defaultValue", type: "string", description: "Initial selected value for uncontrolled usage." },
-    { name: "onValueChange", type: "(value: string) => void", description: "Called whenever the selected value changes." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called whenever the selected value changes. Fires only for defined values." },
     { name: "inputValue", type: "string", description: "Controlled input text. Pair with onInputValueChange." },
     { name: "defaultInputValue", type: "string", description: "Initial input text for uncontrolled usage. Defaults to an empty string." },
-    { name: "onInputValueChange", type: "(inputValue: string) => void", description: "Called whenever the input text changes." },
+    { name: "onInputValueChange", type: "(inputValue: string) => void", description: "Called whenever the input text changes, including programmatic syncs from selection and close." },
     { name: "open", type: "boolean", description: "Controlled open state of the listbox. Pair with onOpenChange." },
     { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
     { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
     { name: "disabled", type: "boolean", description: "Disables the whole combobox, blocking opening, input edits, and selection. Defaults to false." },
     { name: "readOnly", type: "boolean", description: "Blocks input edits while still allowing selection through items. Defaults to false." },
-    { name: "required", type: "boolean", description: "Forces a valid enabled item to stay selected while the list is open. Defaults to false." },
-    { name: "filterFn", type: "(itemText: string, query: string) => boolean", description: "Decides whether an item matches the query. Defaults to a case-insensitive substring match." },
+    { name: "required", type: "boolean", description: "Marks the combobox as required for your own form/validation wiring. Exposed on context; does not change interaction on its own. Defaults to false." },
+    { name: "filterFn", type: "(itemText: string, query: string) => boolean", description: "Decides whether an item matches the query. Defaults to a case-insensitive substring match. Keep its identity stable." },
     { name: "children", type: "React.ReactNode", description: "The combobox parts." },
   ]}
 />
@@ -165,7 +442,7 @@ Combobox tracks value, input text, and open state separately and reconciles them
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default textbox." },
+    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default textbox. The child must be a textbox." },
     { name: "disabled", type: "boolean", description: "Disables the input. Combined with the root's disabled state." },
     { name: "readOnly", type: "boolean", description: "Blocks edits to the input text. Combined with the root's readOnly state." },
     { name: "placeholder", type: "string", description: "Placeholder text shown when the input is empty. Defaults to \"Type to filter\"." },
@@ -226,8 +503,8 @@ Combobox tracks value, input text, and open state separately and reconciles them
   rows={[
     { name: "value", type: "string", description: "Required. The value selected when this item is chosen." },
     { name: "textValue", type: "string", description: "Text used for filtering and display. Defaults to value." },
-    { name: "disabled", type: "boolean", description: "Prevents selection and excludes the item from forced selection." },
-    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "disabled", type: "boolean", description: "Prevents selection and excludes the item from open-list value repair." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton. The child's Visible property is bound to the filter match." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

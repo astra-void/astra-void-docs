@@ -3,7 +3,8 @@ title: Tabs
 description: Tablist primitive that owns the active value, registers triggers in order, moves selection with the arrow keys, and reveals panels with presence motion.
 section: components
 sidebar:
-  order: 50
+  order: 10
+  group: Display
 ---
 
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
@@ -45,57 +46,342 @@ Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every 
 | `Tabs.Trigger` | yes | A `textbutton` that selects its `value` on activation, selection, or Enter/Space. |
 | `Tabs.Content` | yes | A panel that mounts and animates while its `value` is active. |
 
-## Example
+## Examples
 
-A controlled tab group with three panels, driven by `value`/`onValueChange`, with a disabled trigger.
+### Basic tabs
+
+An uncontrolled tab group. `defaultValue` picks the starting panel, and the default `Trigger` renders a `textbutton` whose label is its `value`. The `List` and `Content` defaults are zero-size transparent frames, so pass `asChild` with your own sized elements to lay them out.
+
+```tsx title="ShopTabs.tsx"
+import { Tabs } from "@lattice-ui/tabs";
+
+export function ShopTabs() {
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 280)}>
+      <Tabs.Root defaultValue="weapons">
+        <Tabs.List asChild>
+          <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 34)}>
+            <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+            <Tabs.Trigger value="weapons" />
+            <Tabs.Trigger value="armor" />
+            <Tabs.Trigger value="potions" />
+          </frame>
+        </Tabs.List>
+
+        <Tabs.Content value="weapons" asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromOffset(0, 40)}
+            Size={UDim2.fromOffset(420, 220)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Weapons for sale"
+              TextColor3={Color3.fromRGB(235, 240, 248)}
+            />
+          </frame>
+        </Tabs.Content>
+
+        <Tabs.Content value="armor" asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromOffset(0, 40)}
+            Size={UDim2.fromOffset(420, 220)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Armor for sale"
+              TextColor3={Color3.fromRGB(235, 240, 248)}
+            />
+          </frame>
+        </Tabs.Content>
+
+        <Tabs.Content value="potions" asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromOffset(0, 40)}
+            Size={UDim2.fromOffset(420, 220)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Potions for sale"
+              TextColor3={Color3.fromRGB(235, 240, 248)}
+            />
+          </frame>
+        </Tabs.Content>
+      </Tabs.Root>
+    </frame>
+  );
+}
+```
+
+### Controlled tabs
+
+Drive the active value from your own state with `value`/`onValueChange`. Anything outside the tab group — a hotkey, a tutorial step, a deep link — can now switch panels by setting state.
 
 ```tsx title="SettingsTabs.tsx"
 import { useState } from "@rbxts/react";
 import { Tabs } from "@lattice-ui/tabs";
 
+const CATEGORIES = ["general", "audio", "graphics"];
+
 export function SettingsTabs() {
   const [tab, setTab] = useState("general");
 
   return (
-    <Tabs.Root value={tab} onValueChange={setTab} orientation="horizontal">
-      <Tabs.List>
-        <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
-        <Tabs.Trigger value="general">
-          <textlabel BackgroundTransparency={1} Text="General" Size={UDim2.fromOffset(120, 34)} />
-        </Tabs.Trigger>
-        <Tabs.Trigger value="audio">
-          <textlabel BackgroundTransparency={1} Text="Audio" Size={UDim2.fromOffset(120, 34)} />
-        </Tabs.Trigger>
-        <Tabs.Trigger value="advanced" disabled>
-          <textlabel BackgroundTransparency={1} Text="Advanced" Size={UDim2.fromOffset(120, 34)} />
-        </Tabs.Trigger>
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 280)}>
+      <Tabs.Root value={tab} onValueChange={setTab}>
+        <Tabs.List asChild>
+          <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 34)}>
+            <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+            {CATEGORIES.map((category) => (
+              <Tabs.Trigger key={category} value={category} />
+            ))}
+          </frame>
+        </Tabs.List>
+
+        {CATEGORIES.map((category) => (
+          <Tabs.Content key={category} value={category} asChild>
+            <frame
+              BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+              Position={UDim2.fromOffset(0, 40)}
+              Size={UDim2.fromOffset(420, 200)}
+            >
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromScale(1, 1)}
+                Text={`${category} settings`}
+                TextColor3={Color3.fromRGB(235, 240, 248)}
+              />
+            </frame>
+          </Tabs.Content>
+        ))}
+      </Tabs.Root>
+    </frame>
+  );
+}
+```
+
+### Vertical tabs
+
+Set `orientation="vertical"` to move selection with Up/Down instead of Left/Right. Orientation is behavioral only — lay the list out yourself with a vertical `uilistlayout`.
+
+```tsx title="QuestCategories.tsx"
+import { Tabs } from "@lattice-ui/tabs";
+
+export function QuestCategories() {
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(460, 240)}>
+      <Tabs.Root defaultValue="active" orientation="vertical">
+        <Tabs.List asChild>
+          <frame BackgroundTransparency={1} Size={UDim2.fromOffset(140, 240)}>
+            <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 4)} />
+            <Tabs.Trigger value="active" />
+            <Tabs.Trigger value="completed" />
+            <Tabs.Trigger value="daily" />
+          </frame>
+        </Tabs.List>
+
+        <Tabs.Content value="active" asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromOffset(150, 0)}
+            Size={UDim2.fromOffset(310, 240)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="3 active quests"
+              TextColor3={Color3.fromRGB(235, 240, 248)}
+            />
+          </frame>
+        </Tabs.Content>
+
+        <Tabs.Content value="completed" asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromOffset(150, 0)}
+            Size={UDim2.fromOffset(310, 240)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="12 completed quests"
+              TextColor3={Color3.fromRGB(235, 240, 248)}
+            />
+          </frame>
+        </Tabs.Content>
+
+        <Tabs.Content value="daily" asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromOffset(150, 0)}
+            Size={UDim2.fromOffset(310, 240)}
+          >
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              Text="Daily quests reset in 4 hours"
+              TextColor3={Color3.fromRGB(235, 240, 248)}
+            />
+          </frame>
+        </Tabs.Content>
+      </Tabs.Root>
+    </frame>
+  );
+}
+```
+
+### Custom triggers with asChild
+
+Pass `asChild` on `Trigger` to supply your own button while keeping registration, activation, and movement wiring. The trigger's response motion still animates the child's `BackgroundColor3` and `TextColor3` between the built-in active/inactive palette on selection.
+
+```tsx title="StyledTabs.tsx"
+import { Tabs } from "@lattice-ui/tabs";
+
+function StyledTrigger(props: { value: string; label: string }) {
+  return (
+    <Tabs.Trigger value={props.value} asChild>
+      <textbutton
+        AutoButtonColor={false}
+        BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+        BorderSizePixel={0}
+        Size={UDim2.fromOffset(110, 36)}
+        Text={props.label}
+        TextColor3={Color3.fromRGB(235, 240, 248)}
+        TextSize={14}
+      >
+        <uicorner CornerRadius={new UDim(0, 8)} />
+      </textbutton>
+    </Tabs.Trigger>
+  );
+}
+
+export function StyledTabs() {
+  return (
+    <Tabs.Root defaultValue="stats">
+      <Tabs.List asChild>
+        <frame BackgroundTransparency={1} Size={UDim2.fromOffset(360, 36)}>
+          <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 8)} />
+          <StyledTrigger value="stats" label="Stats" />
+          <StyledTrigger value="gear" label="Gear" />
+          <StyledTrigger value="pets" label="Pets" />
+        </frame>
       </Tabs.List>
 
-      <Tabs.Content value="general">
-        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(320, 200)}>
-          <textlabel BackgroundTransparency={1} Text="General settings" Size={UDim2.fromScale(1, 1)} />
-        </frame>
+      <Tabs.Content value="stats" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 44)}
+          Size={UDim2.fromOffset(360, 180)}
+        />
       </Tabs.Content>
-
-      <Tabs.Content value="audio">
-        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(320, 200)}>
-          <textlabel BackgroundTransparency={1} Text="Audio settings" Size={UDim2.fromScale(1, 1)} />
-        </frame>
+      <Tabs.Content value="gear" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 44)}
+          Size={UDim2.fromOffset(360, 180)}
+        />
       </Tabs.Content>
-
-      <Tabs.Content value="advanced">
-        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(320, 200)}>
-          <textlabel BackgroundTransparency={1} Text="Advanced settings" Size={UDim2.fromScale(1, 1)} />
-        </frame>
+      <Tabs.Content value="pets" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 44)}
+          Size={UDim2.fromOffset(360, 180)}
+        />
       </Tabs.Content>
     </Tabs.Root>
   );
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `value`/`onValueChange` and pass `defaultValue` to let Tabs own the active value. When neither is set, `Root` selects the first enabled trigger automatically once the registry settles.
-</Callout>
+### Disabled triggers
+
+A disabled trigger cannot be activated, is skipped by arrow-key movement, and never becomes the active value. If the active value becomes disabled, `Root` moves the selection to the next enabled trigger automatically.
+
+```tsx title="PrestigeTabs.tsx"
+import { Tabs } from "@lattice-ui/tabs";
+
+export function PrestigeTabs(props: { prestigeUnlocked: boolean }) {
+  return (
+    <Tabs.Root defaultValue="skills">
+      <Tabs.List asChild>
+        <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 34)}>
+          <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+          <Tabs.Trigger value="skills" />
+          <Tabs.Trigger value="talents" />
+          <Tabs.Trigger value="prestige" disabled={!props.prestigeUnlocked} />
+        </frame>
+      </Tabs.List>
+
+      <Tabs.Content value="skills" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 40)}
+          Size={UDim2.fromOffset(420, 200)}
+        />
+      </Tabs.Content>
+      <Tabs.Content value="talents" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 40)}
+          Size={UDim2.fromOffset(420, 200)}
+        />
+      </Tabs.Content>
+      <Tabs.Content value="prestige" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 40)}
+          Size={UDim2.fromOffset(420, 200)}
+        />
+      </Tabs.Content>
+    </Tabs.Root>
+  );
+}
+```
+
+### Keeping panels mounted
+
+By default a panel unmounts after its exit animation. Pass `forceMount` to keep it in the tree at all times — Tabs then only toggles its `Visible` property. Use this when a panel is expensive to rebuild, like a `viewportframe` world map.
+
+```tsx title="MapTabs.tsx"
+import { Tabs } from "@lattice-ui/tabs";
+
+export function MapTabs() {
+  return (
+    <Tabs.Root defaultValue="inventory">
+      <Tabs.List asChild>
+        <frame BackgroundTransparency={1} Size={UDim2.fromOffset(420, 34)}>
+          <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+          <Tabs.Trigger value="inventory" />
+          <Tabs.Trigger value="map" />
+        </frame>
+      </Tabs.List>
+
+      <Tabs.Content value="inventory" asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 40)}
+          Size={UDim2.fromOffset(420, 240)}
+        />
+      </Tabs.Content>
+
+      <Tabs.Content value="map" forceMount asChild>
+        <frame
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.fromOffset(0, 40)}
+          Size={UDim2.fromOffset(420, 240)}
+        >
+          <viewportframe BackgroundTransparency={1} Size={UDim2.fromScale(1, 1)} />
+        </frame>
+      </Tabs.Content>
+    </Tabs.Root>
+  );
+}
+```
 
 ## How it behaves
 
@@ -105,22 +391,26 @@ Omit `value`/`onValueChange` and pass `defaultValue` to let Tabs own the active 
 
 When the active value points at no enabled trigger — on first mount with no default, or after the selected trigger is removed or disabled — `Root` resolves a replacement: it falls back to the first enabled trigger, or to the next enabled trigger after the one that was last selected. This keeps a valid panel visible as triggers mount, unmount, or toggle their `disabled` state.
 
-### Selection
+### Trigger registration and selection
 
-Each `Tabs.Trigger` registers itself with `Root` in mount order, exposing a stable `order` used to resolve fallbacks and arrow-key movement. A trigger becomes active in three ways: pointer activation, Roblox `SelectionGained` (so moving a gamepad cursor onto a trigger selects it), and pressing Enter or Space while focused. Disabled triggers set `Active` and `Selectable` to `false`, are skipped during movement, and never become the active value.
+Each `Tabs.Trigger` registers itself with `Root` in mount order, exposing a stable `order` used to resolve fallbacks and arrow-key movement. A trigger becomes active in three ways: pointer activation, Roblox `SelectionGained` (so moving a gamepad cursor onto a trigger selects it immediately), and pressing Enter or Space while focused. Disabled triggers set `Active` and `Selectable` to `false`, are skipped during movement, and never become the active value.
 
 `Tabs.Trigger` registers with the focus system through `useFocusNode`, so it participates in gamepad selection alongside other focusable nodes.
 
-### Orientation
+### Orientation and arrow keys
 
-`orientation` defaults to `"horizontal"`. It controls which arrow keys move the selection: Left/Right when horizontal, Up/Down when vertical. Pressing a movement key focuses the next enabled trigger in that direction and selects it in one step. Orientation is purely behavioral — it does not lay out the `List`, so add your own `uilistlayout` (as in the example) to position the triggers.
+`orientation` defaults to `"horizontal"`. It controls which arrow keys move the selection: Left/Right when horizontal, Up/Down when vertical. Pressing a movement key focuses the next enabled trigger in that direction and selects it in one step. Orientation is purely behavioral — it does not lay out the `List`, so add your own `uilistlayout` (as in the examples) to position the triggers.
 
 ### Panels and presence
 
-`Tabs.Content` is tied to a `value` and is present only while that value is active. By default it mounts through a `Presence` boundary running a surface-reveal recipe, so the panel animates in when selected and animates out when another value takes over, unmounting after the exit completes. Override the recipe with `transition`. Pass `forceMount` to keep the panel mounted at all times and drive visibility yourself — the content stays in the tree and toggles its `Visible` property based on the active value and motion phase.
+`Tabs.Content` is tied to a `value` and is present only while that value is active. By default it mounts through a `Presence` boundary running a surface-reveal recipe, so the panel animates in when selected and animates out when another value takes over, unmounting after the exit completes. Override the recipe with `transition`. Pass `forceMount` to keep the panel mounted at all times — the content stays in the tree and toggles its `Visible` property based on the active value and motion phase.
+
+<Callout title="Bring your own layout">
+The default `Tabs.List` and `Tabs.Content` render transparent frames sized `UDim2.fromOffset(0, 0)`. They group and reveal children but do not lay anything out. In practice, pass `asChild` with your own sized `frame`, as every example above does, so panels and lists occupy real space.
+</Callout>
 
 <Callout title="Default trigger visuals">
-The built-in `Tabs.Trigger` renders a `textbutton` whose `Text` is its `value`, with response motion between an active and inactive color. Use `asChild` on `Trigger`, `List`, and `Content` to supply your own elements while keeping all selection, registration, and presence behavior.
+The built-in `Tabs.Trigger` renders a 132x34 `textbutton` whose `Text` is its `value`, with response motion between an active and inactive color. With `asChild`, the same motion still drives your child's `BackgroundColor3` and `TextColor3` between the built-in palette values whenever the selected state changes — plan your custom styling around that.
 </Callout>
 
 ## API reference
@@ -141,7 +431,7 @@ The built-in `Tabs.Trigger` renders a `textbutton` whose `Text` is its `value`, 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the list onto the single child element instead of rendering the default frame." },
+    { name: "asChild", type: "boolean", description: "Merge the list onto the single child element instead of rendering the default zero-size frame." },
     { name: "children", type: "React.ReactNode", description: "The trigger elements. Required as a single element when asChild is set." },
   ]}
 />
@@ -150,7 +440,7 @@ The built-in `Tabs.Trigger` renders a `textbutton` whose `Text` is its `value`, 
 
 <PropTable
   rows={[
-    { name: "value", type: "string", description: "The value this trigger selects when activated. Required." },
+    { name: "value", type: "string", required: true, description: "The value this trigger selects when activated." },
     { name: "asChild", type: "boolean", description: "Merge selection behavior onto the single child element instead of rendering the default textbutton." },
     { name: "disabled", type: "boolean", description: "Removes the trigger from selection and movement and prevents it from becoming active. Defaults to false." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
@@ -161,8 +451,8 @@ The built-in `Tabs.Trigger` renders a `textbutton` whose `Text` is its `value`, 
 
 <PropTable
   rows={[
-    { name: "value", type: "string", description: "The value this panel is shown for. Required." },
-    { name: "asChild", type: "boolean", description: "Merge the panel onto the single child element instead of rendering the default frame." },
+    { name: "value", type: "string", required: true, description: "The value this panel is shown for." },
+    { name: "asChild", type: "boolean", description: "Merge the panel onto the single child element instead of rendering the default zero-size frame." },
     { name: "forceMount", type: "boolean", description: "Keeps the panel mounted at all times and toggles visibility instead of unmounting on exit." },
     { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default surface-reveal recipe." },
     { name: "children", type: "React.ReactNode", description: "The panel contents." },

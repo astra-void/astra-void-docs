@@ -3,7 +3,8 @@ title: Select
 description: Single-value selection primitive that owns open and value state, registers items in order, and anchors popper-positioned content in a portal while you own the visuals.
 section: components
 sidebar:
-  order: 40
+  order: 60
+  group: Form
 ---
 
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
@@ -63,25 +64,113 @@ import { Select } from "@lattice-ui/select";
 
 </PrimitiveAnatomy>
 
-## Example
+## Examples
 
-A controlled select for a match difficulty, with a placeholder, a labelled group, and a disabled option.
+### Basic select
 
-```tsx title="DifficultySelect.tsx"
+The smallest useful composition: a controlled root, the default trigger button with a `Value` label inside, and a handful of items on a plain list surface. `textValue` defaults to `value`, so items whose values are already display-ready need nothing else — and because the trigger label resolves through the item registry (see [How it behaves](#the-value-label)), display-ready values also keep the closed trigger label clean.
+
+```tsx title="RegionSelect.tsx"
 import { useState } from "@rbxts/react";
 import { Select } from "@lattice-ui/select";
 
-export function DifficultySelect() {
-  const [value, setValue] = useState<string>();
+export function RegionSelect() {
+  const [region, setRegion] = useState<string>();
 
   return (
-    <Select.Root value={value} onValueChange={setValue}>
+    <Select.Root value={region} onValueChange={setRegion}>
       <Select.Trigger>
-        <Select.Value placeholder="Choose difficulty" />
+        <Select.Value placeholder="Select a region" />
       </Select.Trigger>
 
       <Select.Portal>
-        <Select.Content placement="bottom" sideOffset={6}>
+        <Select.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+            <Select.Item value="NA East" />
+            <Select.Item value="NA West" />
+            <Select.Item value="Europe" />
+            <Select.Item value="Asia" />
+          </frame>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+```
+
+### Saving a setting on change
+
+Wire `value`/`onValueChange` to persist a selection the moment it happens — a graphics quality setting written back to your settings store on every change. `onValueChange` fires once per accepted selection: presses on disabled items never reach it, and it only ever reports a `string`, so the handler is a safe place to save.
+
+```tsx title="GraphicsQualitySelect.tsx"
+import { useState } from "@rbxts/react";
+import { Select } from "@lattice-ui/select";
+
+const QUALITY_LEVELS = ["Low", "Medium", "High", "Ultra"];
+
+export function GraphicsQualitySelect(props: {
+  savedQuality: string;
+  onSave: (quality: string) => void;
+}) {
+  const [quality, setQuality] = useState(props.savedQuality);
+
+  return (
+    <Select.Root
+      value={quality}
+      onValueChange={(value) => {
+        setQuality(value);
+        props.onSave(value);
+      }}
+    >
+      <Select.Trigger>
+        <Select.Value placeholder="Graphics quality" />
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+            {QUALITY_LEVELS.map((level) => (
+              <Select.Item key={level} value={level} />
+            ))}
+          </frame>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+```
+
+### Grouped options
+
+`Group`, `Label`, and `Separator` structure a longer list. Groups are purely visual — item registration order and value resolution ignore them. The default `Group` container is a fixed 220x108 frame with no layout, so under a `uilistlayout` project it onto your own auto-sized frame with `asChild`; the same goes for `Label`, whose default renders the literal text `"Label"`.
+
+```tsx title="SortSelect.tsx"
+import { useState } from "@rbxts/react";
+import { Select } from "@lattice-ui/select";
+
+export function SortSelect() {
+  const [sort, setSort] = useState<string>("Newest");
+
+  return (
+    <Select.Root value={sort} onValueChange={setSort}>
+      <Select.Trigger>
+        <Select.Value />
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content>
           <frame
             AutomaticSize={Enum.AutomaticSize.Y}
             BackgroundColor3={Color3.fromRGB(47, 53, 68)}
@@ -90,23 +179,186 @@ export function DifficultySelect() {
           >
             <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
 
-            <Select.Group>
-              <Select.Label>
-                <textlabel
-                  BackgroundTransparency={1}
-                  Size={UDim2.fromOffset(220, 20)}
-                  Text="Standard"
-                  TextColor3={Color3.fromRGB(168, 176, 191)}
-                  TextSize={13}
-                />
-              </Select.Label>
-
-              <Select.Item value="easy" textValue="Easy" />
-              <Select.Item value="normal" textValue="Normal" />
-              <Select.Separator />
-              <Select.Item value="hard" textValue="Hard" />
-              <Select.Item value="nightmare" textValue="Nightmare" disabled />
+            <Select.Group asChild>
+              <frame
+                AutomaticSize={Enum.AutomaticSize.Y}
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(220, 0)}
+              >
+                <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+                <Select.Label asChild>
+                  <textlabel
+                    BackgroundTransparency={1}
+                    Size={UDim2.fromOffset(220, 20)}
+                    Text="Date"
+                    TextColor3={Color3.fromRGB(168, 176, 191)}
+                    TextSize={13}
+                    TextXAlignment={Enum.TextXAlignment.Left}
+                  />
+                </Select.Label>
+                <Select.Item value="Newest" />
+                <Select.Item value="Oldest" />
+              </frame>
             </Select.Group>
+
+            <Select.Separator />
+
+            <Select.Group asChild>
+              <frame
+                AutomaticSize={Enum.AutomaticSize.Y}
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(220, 0)}
+              >
+                <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+                <Select.Label asChild>
+                  <textlabel
+                    BackgroundTransparency={1}
+                    Size={UDim2.fromOffset(220, 20)}
+                    Text="Rarity"
+                    TextColor3={Color3.fromRGB(168, 176, 191)}
+                    TextSize={13}
+                    TextXAlignment={Enum.TextXAlignment.Left}
+                  />
+                </Select.Label>
+                <Select.Item value="Rarest first" />
+                <Select.Item value="Common first" />
+              </frame>
+            </Select.Group>
+          </frame>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+```
+
+### Disabled options
+
+A disabled item stays visible but inert: pressing it does nothing — the value is unchanged and the content stays open — and it skips its hover motion. Disabled items are also excluded from value resolution, so if the current value points at one (here, a premium tier after the pass expires), the root re-selects the first enabled item the next time the items mount and reports it through `onValueChange`.
+
+```tsx title="ServerTierSelect.tsx"
+import { useState } from "@rbxts/react";
+import { Select } from "@lattice-ui/select";
+
+export function ServerTierSelect(props: { hasPremium: boolean }) {
+  const [tier, setTier] = useState<string>("Standard");
+
+  return (
+    <Select.Root value={tier} onValueChange={setTier}>
+      <Select.Trigger>
+        <Select.Value />
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+            <Select.Item value="Standard" />
+            <Select.Item value="Large" />
+            <Select.Item
+              value="Premium"
+              textValue="Premium (pass required)"
+              disabled={!props.hasPremium}
+            />
+          </frame>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+```
+
+### Custom trigger and value with asChild
+
+Use `asChild` to project the trigger behavior onto your own button and the resolved text onto your own label. The trigger slot merges its `Active` state, its `Activated`/`InputBegan` handlers, and its ref onto your child, so pass an activatable `textbutton` or `imagebutton`. The `Value` slot drives the child's `Text` property with the resolved label — `placeholder` while nothing is selected, the matching item's `textValue` otherwise — so its child must be a text-bearing element; everything else about the label (color, alignment, size) is yours.
+
+```tsx title="LoadoutSelect.tsx"
+import { useState } from "@rbxts/react";
+import { Select } from "@lattice-ui/select";
+
+export function LoadoutSelect() {
+  const [loadout, setLoadout] = useState<string>();
+
+  return (
+    <Select.Root value={loadout} onValueChange={setLoadout}>
+      <Select.Trigger asChild>
+        <textbutton
+          AutoButtonColor={false}
+          BackgroundColor3={Color3.fromRGB(32, 36, 47)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(240, 40)}
+          Text=""
+        >
+          <uicorner CornerRadius={new UDim(0, 8)} />
+          <uistroke Color={Color3.fromRGB(88, 142, 255)} Thickness={1} />
+          <uipadding PaddingLeft={new UDim(0, 12)} PaddingRight={new UDim(0, 12)} />
+
+          <Select.Value placeholder="Pick a loadout" asChild>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(216, 40)}
+              TextColor3={Color3.fromRGB(235, 241, 248)}
+              TextSize={15}
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
+          </Select.Value>
+        </textbutton>
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(240, 0)}
+          >
+            <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+            <Select.Item value="Assault" />
+            <Select.Item value="Recon" />
+            <Select.Item value="Support" />
+          </frame>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+```
+
+### Tuning placement and offsets
+
+`Content` anchors to the trigger with popper defaults of `placement="bottom"`, `sideOffset={0}`, `alignOffset={0}`, and `collisionPadding={8}`. A select sitting in a bottom HUD bar should open upward instead — and if there is not enough room on the preferred side, the content flips to the opposite side automatically, staying at least `collisionPadding` pixels from the viewport edges.
+
+```tsx title="HudSortSelect.tsx"
+import { useState } from "@rbxts/react";
+import { Select } from "@lattice-ui/select";
+
+export function HudSortSelect() {
+  const [sort, setSort] = useState<string>("Rarity");
+
+  return (
+    <Select.Root value={sort} onValueChange={setSort}>
+      <Select.Trigger>
+        <Select.Value />
+      </Select.Trigger>
+
+      <Select.Portal>
+        <Select.Content placement="top" sideOffset={8} collisionPadding={16}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
+            <Select.Item value="Rarity" />
+            <Select.Item value="Power" />
+            <Select.Item value="Newest" />
           </frame>
         </Select.Content>
       </Select.Portal>
@@ -123,30 +375,43 @@ This release of Select is **single-value only**. There is no multi-select mode, 
 
 ### Open state
 
-`Select.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to `false`). `Select.Trigger` toggles open on activation and on `Return`/`Space`, and selecting an item closes it. When the root is `disabled`, the trigger cannot open the content.
+`Select.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to `false`). `Select.Trigger` toggles open on activation and on `Return`/`Space`, and selecting an item closes it. A disabled root blocks *opening* only — an already-open content can still close, so dismissal keeps working if you disable the select while it is open. `Select.Trigger` also takes its own `disabled` prop, which combines with the root's.
+
+The default trigger is a 220x36 `textbutton`; with `asChild`, the slot merges `Active`, the `Activated` and `InputBegan` handlers, and its ref onto your single child element, so use an activatable button class.
 
 ### Value and selection
 
-The selected value is a single `string`. `Select.Root` is controllable via `value`/`onValueChange`, or uncontrolled via `defaultValue`. Each `Select.Item` registers itself with the root on mount — recording its `value`, `textValue`, disabled state, and document order — so the root always knows the full ordered set of options. Activating an item (click, `Return`, or `Space`) sets the value and closes the content. Selecting a disabled item is ignored, and if the current value ever points at a disabled or missing item, the root falls back to the first enabled item.
+The selected value is a single `string`. `Select.Root` is controllable via `value`/`onValueChange`, or uncontrolled via `defaultValue`. Each `Select.Item` registers itself with the root on mount — recording its `value`, `textValue`, disabled state, and document order — so while the content is open the root knows the full ordered set of options. Activating an item (click, `Return`, or `Space`) sets the value and closes the content.
+
+Selection is guarded twice: a disabled item ignores activation outright (no value change, content stays open), and `setValue` refuses any value that resolves to a disabled registered item. On top of that, the root continuously reconciles the current value against the registry: if the value has no matching *enabled* registered item, it re-selects the first enabled item — or clears the value when no enabled item is registered. The fallback re-selection is reported through `onValueChange`; the clear is not, so `onValueChange` only ever receives a `string`.
+
+### Items register only while mounted
+
+Item registration is tied to component lifetime, and items live inside `Select.Content`, which unmounts while the select is closed (unless `forceMount` is set). Two practical consequences:
+
+- **Run the value controlled.** With the content closed the registry is empty, so the reconciliation described above clears *uncontrolled* value state — including `defaultValue`, which is dropped before the content ever opens. Controlled `value` is unaffected: the clear never overrides your prop and never calls `onValueChange`.
+- **`textValue` only resolves while items are mounted.** With the content closed, `Select.Value` cannot look up the selected item's `textValue` and falls back to the raw value string. Either keep value strings display-ready (as in the examples above) or pass `forceMount` on `Content` to keep items registered while closed.
 
 ### The value label
 
-`Select.Value` reads the current value from context and renders the matching item's `textValue` (falling back to the raw value, then to `placeholder` when nothing is selected). Because the label resolves through the item registry, it stays correct without you wiring text manually.
+`Select.Value` resolves its text through a chain: the registered item's `textValue`, then the raw value string, then `placeholder` (default `""`) when no value is selected. The default `textlabel` dims its color while showing the placeholder. With `asChild`, the slot drives your child's `Text` property with the resolved string, so pass a text-bearing element and style it however you like.
 
 ### Positioning
 
-`Select.Content` is positioned with popper, anchored to the trigger. Control the side with `placement` (`"top" | "bottom" | "left" | "right"`, defaulting to `"bottom"`), nudge it with `sideOffset` and `alignOffset`, and keep it inside the viewport with `collisionPadding`. The content is measured and flipped automatically when it would collide with an edge.
+`Select.Content` is positioned with popper, anchored to the trigger. Control the side with `placement` (`"top" | "bottom" | "left" | "right"`, defaulting to `"bottom"`), push it away from the trigger with `sideOffset` (default `0`), slide it along the cross axis with `alignOffset` (default `0`), and keep it inside the viewport with `collisionPadding` (default `8`). The content is measured after mount and flipped to the opposite side automatically when it would collide with a viewport edge; until the first measurement completes it is parked offscreen, so you never see an unpositioned frame.
 
 ### Dismissal
 
-`Select.Content` participates in dismissable-layer behavior in non-modal mode: interaction behind it is not blocked, but an outside press closes it. Use `onPointerDownOutside` and `onInteractOutside` to observe those interactions before the content dismisses.
+`Select.Content` participates in dismissable-layer behavior in non-modal mode: interaction behind it is not blocked, but an outside press closes it. Use `onPointerDownOutside` and `onInteractOutside` to observe those interactions before the content dismisses. While open, a focus scope wraps the content and restores focus to the previously focused element on close; it does not trap focus.
 
 ### Motion and presence
 
-`Select.Content` runs a default popper entrance/exit recipe — a canvas-group reveal by default, or a transform-based reveal when `asChild` is set. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation.
+`Select.Content` runs a default popper entrance/exit recipe that travels 10 pixels from the placement side: a canvas-group reveal by default, or a transform-based reveal (0.16s) when `asChild` is set, since your own element replaces the default `canvasgroup`. Override either with `transition`, and pass `forceMount` to keep the content mounted while closed and through its exit animation.
+
+Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `SelectionGained`/`SelectionLost` drive a background-color settle using the selection response recipe, skipped while the item is disabled. With `asChild` on an item, the slot merges `Active`, the activation and hover handlers, and its ref onto your child element.
 
 <Callout title="Roblox gotchas">
-`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state, but Select does **not** install Roblox native directional selection or keyboard navigation between items — wire `GuiObject.Selectable` and selection order yourself if you need gamepad list traversal.
+`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state, but Select does **not** install Roblox native directional selection or keyboard navigation between items — the default trigger and items render with `Selectable` set to `false` (the `asChild` slot pins it too), so build gamepad list traversal with your own selectable elements around the primitive if you need it.
 </Callout>
 
 ## API reference
@@ -155,14 +420,14 @@ The selected value is a single `string`. `Select.Root` is controllable via `valu
 
 <PropTable
   rows={[
-    { name: "value", type: "string", description: "Controlled selected value. Pair with onValueChange." },
-    { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage." },
-    { name: "onValueChange", type: "(value: string) => void", description: "Called when the selected value changes." },
+    { name: "value", type: "string", description: "Controlled selected value. Pair with onValueChange. Values resolving to disabled items re-select the first enabled item once items mount." },
+    { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage. Only honored while a matching enabled item is mounted — prefer controlled value, or forceMount the content." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called once per accepted selection, including fallback re-selection away from a disabled value. Never called with undefined." },
     { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
     { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
     { name: "onOpenChange", type: "(open: boolean) => void", description: "Called when the open state changes." },
-    { name: "disabled", type: "boolean", description: "Disables the whole select: the trigger cannot open and values cannot change. Defaults to false." },
-    { name: "required", type: "boolean", description: "Marks the select as required; surfaced through context for consumer use. Defaults to false." },
+    { name: "disabled", type: "boolean", description: "Disables the whole select: the trigger cannot open and values cannot change. An already-open content can still close. Defaults to false." },
+    { name: "required", type: "boolean", description: "Marks the select as required; surfaced through context for consumer use. Does not change interaction on its own. Defaults to false." },
     { name: "children", type: "React.ReactNode", description: "The select parts." },
   ]}
 />
@@ -171,7 +436,7 @@ The selected value is a single `string`. `Select.Root` is controllable via `valu
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior (Active, Activated/InputBegan handlers, ref) onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
     { name: "disabled", type: "boolean", description: "Prevents this trigger from opening the select, in addition to the root's disabled state. Defaults to false." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set; otherwise rendered inside the default button (e.g. a Select.Value)." },
   ]}
@@ -181,7 +446,7 @@ The selected value is a single `string`. `Select.Root` is controllable via `valu
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the resolved text onto the single child element instead of rendering the default textlabel." },
+    { name: "asChild", type: "boolean", description: "Drive the single child element's Text property with the resolved label instead of rendering the default textlabel. The child must be a text-bearing element." },
     { name: "placeholder", type: "string", description: "Text shown when no value is selected. Defaults to an empty string." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -201,12 +466,12 @@ The selected value is a single `string`. `Select.Root` is controllable via `valu
 
 <PropTable
   rows={[
-    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Preferred side to anchor the content against the trigger. Defaults to \"bottom\"." },
-    { name: "sideOffset", type: "number", description: "Gap between the trigger and the content along the placement axis." },
-    { name: "alignOffset", type: "number", description: "Offset along the cross axis from the aligned edge." },
-    { name: "collisionPadding", type: "number", description: "Minimum distance to keep from the viewport edges when repositioning." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper reveal/exit recipe." },
-    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Preferred side to anchor the content against the trigger; flips automatically on collision. Defaults to \"bottom\"." },
+    { name: "sideOffset", type: "number", description: "Gap in pixels between the trigger and the content along the placement axis. Defaults to 0." },
+    { name: "alignOffset", type: "number", description: "Offset in pixels along the cross axis from the aligned edge. Defaults to 0." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the viewport edges when repositioning. Defaults to 8." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper reveal/exit recipe (10px travel from the placement side)." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content — and therefore the item registry — mounted while closed and through exit motion." },
     { name: "asChild", type: "boolean", description: "Render onto the single child element instead of the default canvasgroup; also switches the default recipe to a transform-based reveal." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
@@ -219,9 +484,9 @@ The selected value is a single `string`. `Select.Root` is controllable via `valu
 <PropTable
   rows={[
     { name: "value", type: "string", required: true, description: "The value this item selects when activated." },
-    { name: "textValue", type: "string", description: "Text used for the value label and the default item button. Defaults to value." },
-    { name: "disabled", type: "boolean", description: "Prevents selection and removes the item from value resolution. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "textValue", type: "string", description: "Text used for the value label and the default item button. Defaults to value. Resolves only while the item is mounted." },
+    { name: "disabled", type: "boolean", description: "Prevents selection and removes the item from value resolution; a value pointing at a disabled item re-resolves to the first enabled item. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior (Active, activation and hover handlers, ref) onto the single child element instead of rendering the default textbutton." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -230,7 +495,7 @@ The selected value is a single `string`. `Select.Root` is controllable via `valu
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default frame container." },
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default fixed-size 220x108 frame container." },
     { name: "children", type: "React.ReactElement", description: "The grouped items (and optional label)." },
   ]}
 />

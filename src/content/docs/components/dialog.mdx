@@ -4,9 +4,10 @@ description: Modal surface primitive that owns open state, focus trapping, layer
 section: components
 sidebar:
   order: 10
+  group: Overlays
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/dialog"
@@ -29,6 +30,8 @@ import { Dialog } from "@lattice-ui/dialog";
 
 Compose the full set of parts. `Trigger`, `Overlay`, and `Close` are optional depending on how you drive the dialog, but `Root`, `Portal`, and `Content` form the minimum useful surface.
 
+<PrimitiveAnatomy title="Dialog anatomy">
+
 ```tsx title="Dialog anatomy"
 <Dialog.Root>
   <Dialog.Trigger />
@@ -44,51 +47,55 @@ Compose the full set of parts. `Trigger`, `Overlay`, and `Close` are optional de
 | `Dialog.Root` | yes | Owns open state and shares it with every part through context. |
 | `Dialog.Trigger` | no | A button that opens the dialog and is the default focus-restore target. |
 | `Dialog.Portal` | yes | Renders the surface into a `ScreenGui` outside the local tree. |
-| `Dialog.Overlay` | no | A full-screen backdrop behind the content. |
+| `Dialog.Overlay` | no | A full-screen backdrop behind the content that closes the dialog on press. |
 | `Dialog.Content` | yes | The focus-trapped, dismissable, motion-driven surface. |
 | `Dialog.Close` | no | A button that closes the dialog from inside the content. |
 
-## Example
+</PrimitiveAnatomy>
 
-A controlled dialog driven by a trigger, with an app-owned frame inside the content.
+## Examples
 
-```tsx title="InvitePlayerDialog.tsx"
-import { useState } from "@rbxts/react";
+### Basic usage
+
+The smallest useful dialog: uncontrolled state seeded with `defaultOpen`, a trigger that opens it, the default overlay, and a close button inside the content. The default `Dialog.Overlay` renders its own full-screen dark backdrop and dismisses the dialog on press, so a self-closing `<Dialog.Overlay />` is all you need to start.
+
+```tsx title="QuestDialog.tsx"
 import { Dialog } from "@lattice-ui/dialog";
 
-export function InvitePlayerDialog() {
-  const [open, setOpen] = useState(false);
-
+export function QuestDialog() {
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root defaultOpen={false}>
       <Dialog.Trigger asChild>
-        <textbutton Text="Invite player" Size={UDim2.fromOffset(140, 38)} />
+        <textbutton Size={UDim2.fromOffset(140, 38)} Text="View quest" />
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay>
-          <frame
-            BackgroundColor3={Color3.fromRGB(0, 0, 0)}
-            BackgroundTransparency={0.5}
-            Size={UDim2.fromScale(1, 1)}
-          />
-        </Dialog.Overlay>
-
-        <Dialog.Content trapFocus restoreFocus>
+        <Dialog.Overlay />
+        <Dialog.Content>
           <frame
             AnchorPoint={new Vector2(0.5, 0.5)}
             BackgroundColor3={Color3.fromRGB(24, 26, 32)}
             Position={UDim2.fromScale(0.5, 0.5)}
             Size={UDim2.fromOffset(320, 180)}
           >
+            <uilistlayout Padding={new UDim(0, 12)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uipadding PaddingLeft={new UDim(0, 16)} PaddingTop={new UDim(0, 16)} />
+
             <textlabel
               BackgroundTransparency={1}
-              Size={UDim2.fromOffset(280, 40)}
-              Text="Invite a player"
+              Size={UDim2.fromOffset(288, 40)}
+              Text="Retrieve the lost relic from the sunken vault"
               TextColor3={Color3.fromRGB(240, 244, 250)}
+              TextWrapped={true}
+              TextXAlignment={Enum.TextXAlignment.Left}
             />
             <Dialog.Close asChild>
-              <textbutton Text="Close" Size={UDim2.fromOffset(100, 34)} />
+              <textbutton
+                BackgroundColor3={Color3.fromRGB(88, 142, 255)}
+                Size={UDim2.fromOffset(100, 34)}
+                Text="Done"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
             </Dialog.Close>
           </frame>
         </Dialog.Content>
@@ -98,30 +105,376 @@ export function InvitePlayerDialog() {
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its state. Use controlled state only when something outside the dialog needs to open or close it.
-</Callout>
+### Controlled confirmation from a game event
+
+Pass `open` and `onOpenChange` when something other than a trigger drives the dialog — a server event, a touched part, a timer. There is no `Dialog.Trigger` here, which changes focus restoration: a trigger focuses itself the moment it opens the dialog, so the focus scope has a reliable snapshot to restore. Opened from a game event, there is usually nothing meaningful focused at open time, so opt out with `restoreFocus={false}` (or focus a specific element yourself when the dialog closes).
+
+Note that an outside press still closes the dialog through `onOpenChange`, so treat `open` becoming `false` — not just the buttons — as the "dismissed" signal.
+
+```tsx title="TradeRequestDialog.tsx"
+import { useEffect, useState } from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function TradeRequestDialog(props: {
+  requestFrom?: string;
+  onRespond: (accepted: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (props.requestFrom !== undefined) {
+      setOpen(true);
+    }
+  }, [props.requestFrom]);
+
+  const respond = (accepted: boolean) => {
+    props.onRespond(accepted);
+    setOpen(false);
+  };
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Portal>
+        <Dialog.Overlay />
+        <Dialog.Content restoreFocus={false}>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(300, 150)}
+          >
+            <uilistlayout Padding={new UDim(0, 12)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uipadding PaddingLeft={new UDim(0, 16)} PaddingTop={new UDim(0, 16)} />
+
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(268, 24)}
+              Text={`${props.requestFrom} wants to trade`}
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
+            <textbutton
+              BackgroundColor3={Color3.fromRGB(88, 142, 255)}
+              Event={{ Activated: () => respond(true) }}
+              Size={UDim2.fromOffset(120, 32)}
+              Text="Accept"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+            />
+            <textbutton
+              BackgroundColor3={Color3.fromRGB(59, 66, 84)}
+              Event={{ Activated: () => respond(false) }}
+              Size={UDim2.fromOffset(120, 32)}
+              Text="Decline"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+            />
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+### Custom overlay and content transition
+
+Use `asChild` on `Dialog.Overlay` to supply your own backdrop element, and pass `transition` on `Dialog.Content` to change the entrance. Two things to design around: the overlay always runs the fixed overlay-fade recipe, which animates **your element's** `BackgroundTransparency` from 1 to 0.5 — so set the color and let the primitive own the transparency — and the overlay closes the dialog on press, so keep the child an activatable button class. The content's `transition` is deep-merged over the default recipe (see [Motion and presence](#motion-and-presence)); here `createCanvasGroupRevealRecipe` builds a full replacement with a taller 24px rise.
+
+```tsx title="StoreDialog.tsx"
+import { Dialog } from "@lattice-ui/dialog";
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/motion";
+
+const STORE_REVEAL = createCanvasGroupRevealRecipe(24, 0.2);
+
+export function StoreDialog() {
+  return (
+    <Dialog.Root defaultOpen={false}>
+      <Dialog.Trigger asChild>
+        <textbutton Size={UDim2.fromOffset(140, 38)} Text="Open store" />
+      </Dialog.Trigger>
+
+      <Dialog.Portal>
+        <Dialog.Overlay asChild>
+          <textbutton
+            AutoButtonColor={false}
+            BackgroundColor3={Color3.fromRGB(16, 10, 32)}
+            BorderSizePixel={0}
+            Size={UDim2.fromScale(1, 1)}
+            Text=""
+          />
+        </Dialog.Overlay>
+
+        <Dialog.Content transition={STORE_REVEAL}>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(420, 280)}
+          >
+            <uicorner CornerRadius={new UDim(0, 10)} />
+            <textlabel
+              BackgroundTransparency={1}
+              Position={UDim2.fromOffset(16, 12)}
+              Size={UDim2.fromOffset(388, 28)}
+              Text="Item shop"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
+            <Dialog.Close asChild>
+              <textbutton
+                AnchorPoint={new Vector2(1, 0)}
+                Position={new UDim2(1, -12, 0, 12)}
+                Size={UDim2.fromOffset(28, 28)}
+                Text="X"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
+            </Dialog.Close>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+### Non-modal panel that vetoes dismissal
+
+`modal={false}` removes the full-screen input sink, so the game world and other UI behind the panel stay interactive. Outside presses still route to the dialog and would dismiss it — modality controls blocking, not dismissal — so a persistent panel also has to veto the close by calling `event.preventDefault()` in `onInteractOutside`. Dropping `trapFocus` lets gamepad selection leave the panel too. The result closes only through its own button.
+
+```tsx title="CraftingPanel.tsx"
+import { useState } from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function CraftingPanel() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen} modal={false}>
+      <Dialog.Trigger asChild>
+        <textbutton Size={UDim2.fromOffset(140, 38)} Text="Crafting" />
+      </Dialog.Trigger>
+
+      <Dialog.Portal>
+        <Dialog.Content
+          trapFocus={false}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
+          <frame
+            AnchorPoint={new Vector2(1, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={new UDim2(1, -16, 0.5, 0)}
+            Size={UDim2.fromOffset(260, 340)}
+          >
+            <uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uipadding PaddingLeft={new UDim(0, 12)} PaddingTop={new UDim(0, 12)} />
+
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(236, 24)}
+              Text="Crafting"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
+            <Dialog.Close asChild>
+              <textbutton
+                BackgroundColor3={Color3.fromRGB(59, 66, 84)}
+                Size={UDim2.fromOffset(100, 32)}
+                Text="Close"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
+            </Dialog.Close>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+There is no overlay here on purpose: a backdrop would read as modal, and the default overlay would dismiss on press anyway.
+
+### Stacked dialogs with display order
+
+Each `Dialog.Content` mounts its own layered `ScreenGui` whose `DisplayOrder` is `displayOrderBase` plus a global mount counter, so a later-opened dialog already lands above an earlier one at the same base. Explicit `displayOrderBase` bands make the ordering deterministic against your other layered UI — here the settings dialog sits in the 1000 band and its destructive confirmation in the 2000 band. Outside presses always go to the top-most open layer, so pressing the settings surface while the confirmation is up dismisses only the confirmation.
+
+```tsx title="ResetSettingsDialog.tsx"
+import { useState } from "@rbxts/react";
+import { Dialog } from "@lattice-ui/dialog";
+
+export function ResetSettingsDialog() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  return (
+    <Dialog.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
+      <Dialog.Trigger asChild>
+        <textbutton Size={UDim2.fromOffset(140, 38)} Text="Settings" />
+      </Dialog.Trigger>
+
+      <Dialog.Portal displayOrderBase={1000}>
+        <Dialog.Overlay />
+        <Dialog.Content>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(360, 220)}
+          >
+            <uilistlayout Padding={new UDim(0, 12)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uipadding PaddingLeft={new UDim(0, 16)} PaddingTop={new UDim(0, 16)} />
+
+            <textbutton
+              BackgroundColor3={Color3.fromRGB(120, 52, 52)}
+              Event={{ Activated: () => setConfirmOpen(true) }}
+              Size={UDim2.fromOffset(160, 34)}
+              Text="Reset progress"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+            />
+            <Dialog.Close asChild>
+              <textbutton
+                BackgroundColor3={Color3.fromRGB(59, 66, 84)}
+                Size={UDim2.fromOffset(100, 34)}
+                Text="Close"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
+            </Dialog.Close>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+
+      <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <Dialog.Portal displayOrderBase={2000}>
+          <Dialog.Overlay />
+          <Dialog.Content>
+            <frame
+              AnchorPoint={new Vector2(0.5, 0.5)}
+              BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+              Position={UDim2.fromScale(0.5, 0.5)}
+              Size={UDim2.fromOffset(280, 140)}
+            >
+              <uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
+              <uipadding PaddingLeft={new UDim(0, 14)} PaddingTop={new UDim(0, 14)} />
+
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(252, 24)}
+                Text="Reset all progress? This cannot be undone."
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+                TextWrapped={true}
+                TextXAlignment={Enum.TextXAlignment.Left}
+              />
+              <textbutton
+                BackgroundColor3={Color3.fromRGB(120, 52, 52)}
+                Event={{
+                  Activated: () => {
+                    setConfirmOpen(false);
+                    setSettingsOpen(false);
+                  },
+                }}
+                Size={UDim2.fromOffset(100, 32)}
+                Text="Reset"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
+            </frame>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </Dialog.Root>
+  );
+}
+```
+
+The confirmation is a controlled sibling dialog rather than a nested `Dialog.Trigger`, so it survives its own open/close cycle without being tied to the settings content tree.
+
+### Exit animation with forceMount
+
+Without `forceMount`, `Dialog.Content` sits inside a presence wrapper that unmounts it after the exit motion reports completion, with a short fallback window as a safety net — long, expressive exits risk being cut off by that fallback. `forceMount` bypasses the presence wrapper entirely: the content stays mounted while closed (hidden once the exit finishes), the full exit intent always plays, and child state such as scroll position or `TextBox` contents survives between opens.
+
+```tsx title="MatchResultsDialog.tsx"
+import { Dialog } from "@lattice-ui/dialog";
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/motion";
+
+const RESULTS_TRANSITION = createCanvasGroupRevealRecipe(16, 0.35);
+
+export function MatchResultsDialog(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay />
+        <Dialog.Content forceMount transition={RESULTS_TRANSITION} restoreFocus={false}>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(340, 200)}
+          >
+            <uilistlayout Padding={new UDim(0, 12)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uipadding PaddingLeft={new UDim(0, 16)} PaddingTop={new UDim(0, 16)} />
+
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(308, 32)}
+              Text="Victory!"
+              TextColor3={Color3.fromRGB(240, 244, 250)}
+              TextSize={24}
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
+            <Dialog.Close asChild>
+              <textbutton
+                BackgroundColor3={Color3.fromRGB(88, 142, 255)}
+                Size={UDim2.fromOffset(120, 34)}
+                Text="Continue"
+                TextColor3={Color3.fromRGB(240, 244, 250)}
+              />
+            </Dialog.Close>
+          </frame>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+A force-mounted dialog that has never opened renders with its exit values pre-applied, so it stays invisible until the first reveal.
 
 ## How it behaves
 
 ### Open state
 
-`Dialog.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled. `Dialog.Trigger` opens it on activation and `Dialog.Close` closes it; both go through the same state, so controlled and uncontrolled usage behave identically.
+`Dialog.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaulting to closed). Every path to a state change — trigger activation, close button, overlay press, outside-press dismissal — goes through the same `setOpen`, so `onOpenChange` sees all of them and controlled and uncontrolled usage behave identically.
 
 ### Focus and selection
 
-`Dialog.Content` wraps its children in a focus scope. By default it **traps focus** (`trapFocus` defaults to `true`) so gamepad and selection movement stay inside the surface while it is open, and **restores focus** (`restoreFocus` defaults to `true`) to the element that was selected before it opened — usually the trigger. The trigger registers itself as the restore target, so wiring focus back is automatic.
+`Dialog.Content` wraps its children in a focus scope. By default it **traps focus** (`trapFocus` defaults to `true`) so gamepad and selection movement stay inside the surface while it is open, and **restores focus** (`restoreFocus` defaults to `true`) to whatever was focused just before it opened.
 
-### Dismissal
+`Dialog.Trigger` is what makes restoration reliable: it registers itself as a focus node and focuses itself in the same activation that opens the dialog, so the scope's restore snapshot points at the trigger. When you open a dialog without a trigger — controlled state driven by a game event — there may be nothing focused at open time; either pass `restoreFocus={false}` or move focus yourself after closing.
 
-`Dialog.Content` participates in dismissable-layer behavior. When `modal` is `true` (the default), interaction behind the surface is blocked and an outside press dismisses it. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the dialog closes.
+### Dismissal and layering
+
+`Dialog.Content` registers on a global dismissable-layer stack. An outside pointer press (mouse button or touch, ignoring input the engine already processed) is routed to the **top-most open layer only**: `onPointerDownOutside` fires first, then `onInteractOutside` for the same press, and then the dialog closes unless either handler called `event.preventDefault()`. This is how stacked dialogs behave sanely — a press on a lower dialog dismisses only the top one.
+
+"Outside" is measured against the first direct host element you render inside `Dialog.Content` (your panel frame); additional top-level host children also count as inside. Presses within those bounds never trigger dismissal.
+
+`modal` (default `true`) controls blocking, not dismissal: when modal, a full-screen input sink behind the content swallows interaction with everything underneath. With `modal={false}` the world stays interactive, but outside presses still dismiss unless you veto them.
 
 ### Motion and presence
 
-`Dialog.Content` runs a default canvas-group reveal/exit recipe, so it animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+`Dialog.Content` renders your children inside a full-screen `CanvasGroup` and runs a default canvas-group reveal/exit recipe — an 8px rise with a `GroupTransparency` fade over 0.3s — so it animates in and out without setup. A `transition` you pass is **deep-merged over that default**: `target`, `initial`, `reveal`, and `exit` are combined field by field, so a config that only sets `exit` keeps the default reveal. Pass a complete recipe (for example from `createCanvasGroupRevealRecipe`) to replace it wholesale.
+
+`Dialog.Overlay` runs a fixed overlay-fade recipe — `BackgroundTransparency` from 1 to 0.5 on reveal and back to 1 on exit — and exposes no `transition` prop. `forceMount` on either part keeps it mounted while closed and lets exit motion run outside the presence wrapper's bounded unmount window.
+
+<Callout title="The default overlay ignores children">
+Without `asChild`, `Dialog.Overlay` renders its own full-screen dark `textbutton` and does not render anything you nest inside it. To style the backdrop, pass `asChild` with a single activatable element — the primitive binds visibility, the press-to-close handler, and the transparency fade onto it. Set the color; the recipe owns `BackgroundTransparency`.
+</Callout>
+
+<Callout title="Make your panel the first child of Content">
+Outside-press detection hit-tests against the first direct host element inside `Dialog.Content`. Render your panel frame as that first child and keep everything interactive inside it, or presses on your own surface will be treated as outside and dismiss the dialog.
+</Callout>
 
 <Callout title="Roblox layering">
-`Dialog.Portal` renders into a `ScreenGui` on `BasePlayerGui`, not the local component tree. Use `container` to target a specific `PlayerGui` and `displayOrderBase` to control its `DisplayOrder` relative to other layered surfaces.
+The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, ignoring GUI inset) rendered into `BasePlayerGui`, not the local component tree. Use `container` on `Dialog.Portal` to target a specific `PlayerGui` and `displayOrderBase` to place the layer's `DisplayOrder` band; within a band, later-opened layers stack above earlier ones automatically.
 </Callout>
 
 ## API reference
@@ -132,8 +485,8 @@ Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its 
   rows={[
     { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
     { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
-    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
-    { name: "modal", type: "boolean", description: "When true, blocks interaction behind the dialog and enables outside-press dismissal. Defaults to true." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes, including outside-press and overlay dismissal." },
+    { name: "modal", type: "boolean", description: "When true, mounts a full-screen input sink that blocks interaction behind the dialog. Outside presses dismiss in both modes; veto them with the outside-interaction callbacks. Defaults to true." },
     { name: "children", type: "React.ReactNode", description: "The dialog parts." },
   ]}
 />
@@ -142,8 +495,8 @@ Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge behavior onto the single child element instead of rendering the default textbutton." },
-    { name: "disabled", type: "boolean", description: "Prevents the trigger from opening the dialog and removes it from selection." },
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "disabled", type: "boolean", description: "Prevents the trigger from opening the dialog and removes it from focus registration." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -152,8 +505,8 @@ Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its 
 
 <PropTable
   rows={[
-    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the surface into. Defaults to the player's PlayerGui." },
-    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers." },
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the surface into. Defaults to the app-level portal provider's container." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder band for the generated ScreenGui; the layer renders at this base plus a global mount counter. Defaults to 1000." },
     { name: "children", type: "React.ReactNode", description: "Overlay and content parts." },
   ]}
 />
@@ -162,9 +515,9 @@ Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the overlay behavior onto the single child element." },
-    { name: "forceMount", type: "boolean", description: "Keeps the overlay mounted while exit motion runs." },
-    { name: "children", type: "React.ReactElement", description: "The backdrop element to render." },
+    { name: "asChild", type: "boolean", description: "Merge overlay behavior onto the single child element instead of the default full-screen dark textbutton. Use an activatable button class so press-to-close keeps working; the fade recipe drives the child's BackgroundTransparency." },
+    { name: "forceMount", type: "boolean", description: "Keeps the overlay mounted while closed and through its exit fade, bypassing the presence wrapper." },
+    { name: "children", type: "React.ReactElement", description: "The backdrop element to render. Only used with asChild; the default overlay renders its own backdrop." },
   ]}
 />
 
@@ -173,12 +526,12 @@ Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its 
 <PropTable
   rows={[
     { name: "trapFocus", type: "boolean", description: "Traps focus and selection inside the content while open. Defaults to true." },
-    { name: "restoreFocus", type: "boolean", description: "Restores focus to the previously focused element on close. Defaults to true." },
-    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default canvas-group reveal/exit recipe." },
-    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
-    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
-    { name: "children", type: "React.ReactNode", description: "The surface contents." },
+    { name: "restoreFocus", type: "boolean", description: "Restores focus to the previously focused element on close — the trigger, when one opened the dialog. Defaults to true." },
+    { name: "forceMount", type: "boolean", description: "Bypasses the presence wrapper: the content stays mounted while closed, long exits run to completion, and child state persists between opens." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Deep-merged over the default canvas-group reveal recipe (8px rise, 0.3s), so partial configs override only the fields they set." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press lands outside the content, before dismissal. Call event.preventDefault() to keep the dialog open." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called after onPointerDownOutside for the same outside interaction, before dismissal. Call event.preventDefault() to keep the dialog open." },
+    { name: "children", type: "React.ReactNode", description: "The surface contents. The first direct host element is the outside-press hit-test boundary." },
   ]}
 />
 
@@ -186,7 +539,7 @@ Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Dialog own its 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

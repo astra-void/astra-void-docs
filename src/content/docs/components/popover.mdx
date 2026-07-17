@@ -4,9 +4,10 @@ description: Anchored surface primitive that owns open state, popper positioning
 section: components
 sidebar:
   order: 20
+  group: Overlays
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/popover"
@@ -29,6 +30,8 @@ import { Popover } from "@lattice-ui/popover";
 
 Compose the parts you need. `Root`, `Portal`, and `Content` form the minimum useful surface; `Trigger`, `Anchor`, and `Close` are optional depending on how you drive and position the popover.
 
+<PrimitiveAnatomy title="Popover anatomy">
+
 ```tsx title="Popover anatomy"
 <Popover.Root>
   <Popover.Trigger />
@@ -50,44 +53,200 @@ Compose the parts you need. `Root`, `Portal`, and `Content` form the minimum use
 | `Popover.Content` | yes | The positioned, dismissable, motion-driven surface. |
 | `Popover.Close` | no | A button that closes the popover from inside the content. |
 
-## Example
+</PrimitiveAnatomy>
 
-A controlled popover anchored to its trigger, positioned to the right, with an app-owned frame inside the content.
+## Examples
 
-```tsx title="ProfileCardPopover.tsx"
-import { useState } from "@rbxts/react";
+### Basic popover
+
+The smallest useful popover: an uncontrolled root, a trigger projected onto your own button with `asChild`, and a content surface in a portal. The trigger toggles on activation and doubles as the positioning anchor, an outside press dismisses, and the default content wrapper is an auto-sized `canvasgroup` — so your frame inside it just needs a size.
+
+```tsx title="EmoteInfoPopover.tsx"
 import { Popover } from "@lattice-ui/popover";
 
-export function ProfileCardPopover() {
-  const [open, setOpen] = useState(false);
-
+export function EmoteInfoPopover() {
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root>
       <Popover.Trigger asChild>
-        <textbutton Text="View profile" Size={UDim2.fromOffset(140, 38)} />
+        <textbutton Text="Emote details" Size={UDim2.fromOffset(140, 38)} />
       </Popover.Trigger>
 
       <Popover.Portal>
-        <Popover.Content placement="right" sideOffset={8} collisionPadding={12}>
-          <frame
-            BackgroundColor3={Color3.fromRGB(24, 26, 32)}
-            Size={UDim2.fromOffset(260, 140)}
-          >
-            <uilistlayout Padding={new UDim(0, 8)} />
+        <Popover.Content>
+          <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(220, 96)}>
             <textlabel
               BackgroundTransparency={1}
-              Size={UDim2.fromOffset(240, 28)}
-              Text="Astra"
-              TextColor3={Color3.fromRGB(240, 244, 250)}
+              Size={UDim2.fromOffset(200, 80)}
+              Text="Wave — unlocked at level 5"
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+              TextWrapped={true}
             />
+          </frame>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
+
+### Detached anchor
+
+Add a `Popover.Anchor` when the surface should point at something other than the button that opens it. Here a help button in a toolbar opens a callout that annotates the quest tracker HUD frame instead of the button itself. A mounted anchor always wins over the trigger as the positioning reference, and with `asChild` it tracks your element directly instead of rendering its default zero-size frame.
+
+```tsx title="QuestTrackerCallout.tsx"
+import { Popover } from "@lattice-ui/popover";
+
+export function QuestTrackerCallout() {
+  return (
+    <Popover.Root>
+      <Popover.Anchor asChild>
+        <frame
+          AnchorPoint={new Vector2(1, 0)}
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          Position={UDim2.new(1, -16, 0, 16)}
+          Size={UDim2.fromOffset(240, 110)}
+        >
+          <textlabel
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(220, 24)}
+            Text="Active quest: Ember Vault"
+            TextColor3={Color3.fromRGB(236, 241, 249)}
+          />
+        </frame>
+      </Popover.Anchor>
+
+      <Popover.Trigger asChild>
+        <textbutton Text="What is this?" Size={UDim2.fromOffset(110, 30)} />
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content placement="left" sideOffset={12}>
+          <frame BackgroundColor3={Color3.fromRGB(30, 33, 41)} Size={UDim2.fromOffset(200, 90)}>
             <textlabel
               BackgroundTransparency={1}
-              Size={UDim2.fromOffset(240, 24)}
-              Text="Level 42 builder"
-              TextColor3={Color3.fromRGB(176, 184, 198)}
+              Size={UDim2.fromOffset(180, 74)}
+              Text="The quest tracker shows your current objective and reward."
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+              TextWrapped={true}
+            />
+          </frame>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
+
+### Controlled by game state
+
+Pass `open` and `onOpenChange` when something outside the popover decides visibility. This onboarding hint opens the moment the player receives their first item and closes through the same channel a trigger would use — an outside press or `Popover.Close` still calls `onOpenChange(false)`, so your state stays the source of truth. No trigger is needed; the anchor alone positions the surface.
+
+```tsx title="InventoryHint.tsx"
+import { Popover } from "@lattice-ui/popover";
+
+export function InventoryHint(props: { hasNewItem: boolean; onDismiss: () => void }) {
+  return (
+    <Popover.Root
+      open={props.hasNewItem}
+      onOpenChange={(open) => {
+        if (!open) {
+          props.onDismiss();
+        }
+      }}
+    >
+      <Popover.Anchor asChild>
+        <imagebutton
+          BackgroundColor3={Color3.fromRGB(30, 33, 41)}
+          Image="rbxassetid://1234567890"
+          Size={UDim2.fromOffset(48, 48)}
+        />
+      </Popover.Anchor>
+
+      <Popover.Portal>
+        <Popover.Content placement="top" sideOffset={10}>
+          <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(200, 72)}>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(180, 56)}
+              Text="New item! Open your inventory to equip it."
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+              TextWrapped={true}
+            />
+          </frame>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
+
+### Placement and offsets
+
+Positioning is tuned entirely on `Popover.Content`. `placement` requests a side (default `"bottom"`), `sideOffset` adds a gap between the anchor and the surface, `alignOffset` shifts the surface along the anchor's cross axis, and `collisionPadding` sets the minimum distance kept from the screen edge (default `8`). When the requested side does not fit, the content flips to the opposite side — and its entrance motion animates from whichever side actually resolved.
+
+```tsx title="StatTooltipPopover.tsx"
+import { Popover } from "@lattice-ui/popover";
+
+export function StatTooltipPopover() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <textbutton Text="Attack: 42" Size={UDim2.fromOffset(120, 32)} />
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content placement="right" sideOffset={8} alignOffset={-4} collisionPadding={16}>
+          <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(180, 64)}>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(160, 48)}
+              Text="Base 30 + weapon 12. Scales with strength."
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+              TextWrapped={true}
+            />
+          </frame>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
+
+### Closing from inside
+
+`Popover.Close` closes the popover from anywhere inside the content; with `asChild` it merges the close behavior onto your own button. On close, the focus scope restores gamepad selection to whatever was selected before the popover opened — the trigger focuses itself as it opens, so selection lands back on the trigger without any wiring on your side.
+
+```tsx title="LoadoutSavePopover.tsx"
+import { Popover } from "@lattice-ui/popover";
+
+export function LoadoutSavePopover(props: { onSave: () => void }) {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <textbutton Text="Save loadout" Size={UDim2.fromOffset(140, 38)} />
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content placement="bottom" sideOffset={6}>
+          <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(220, 110)}>
+            <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(200, 28)}
+              Text="Overwrite slot 1?"
+              TextColor3={Color3.fromRGB(236, 241, 249)}
             />
             <Popover.Close asChild>
-              <textbutton Text="Close" Size={UDim2.fromOffset(100, 34)} />
+              <textbutton
+                BackgroundColor3={Color3.fromRGB(88, 142, 255)}
+                Event={{ Activated: props.onSave }}
+                Size={UDim2.fromOffset(100, 32)}
+                Text="Save"
+                TextColor3={Color3.fromRGB(240, 244, 252)}
+              />
+            </Popover.Close>
+            <Popover.Close asChild>
+              <textbutton Size={UDim2.fromOffset(100, 32)} Text="Cancel" />
             </Popover.Close>
           </frame>
         </Popover.Content>
@@ -97,36 +256,80 @@ export function ProfileCardPopover() {
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Popover own its state. Use controlled state only when something outside the popover needs to open or close it.
-</Callout>
+### Custom exit motion
+
+`Popover.Content` runs a placement-aware reveal/exit recipe by default. Override it with `transition`, and pass `forceMount` when the node should stay mounted instead of unmounting after the exit finishes — useful when you drive motion yourself or need the instance to persist. The default (non-`asChild`) wrapper is a `canvasgroup`, so build custom recipes with `createCanvasGroupPopperEntranceRecipe` to keep the `GroupTransparency` fade.
+
+```tsx title="SlowRevealPopover.tsx"
+import { Popover } from "@lattice-ui/popover";
+import { createCanvasGroupPopperEntranceRecipe } from "@lattice-ui/motion";
+
+const SLOW_REVEAL = createCanvasGroupPopperEntranceRecipe("top", 16, 0.25);
+
+export function SlowRevealPopover() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <textbutton Text="Match summary" Size={UDim2.fromOffset(140, 38)} />
+      </Popover.Trigger>
+
+      <Popover.Portal>
+        <Popover.Content placement="top" sideOffset={10} transition={SLOW_REVEAL} forceMount>
+          <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(240, 120)}>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(220, 100)}
+              Text="Victory — 12 eliminations"
+              TextColor3={Color3.fromRGB(236, 241, 249)}
+            />
+          </frame>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Open state
 
-`Popover.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to closed). `Popover.Trigger` toggles the open state on activation and `Popover.Close` closes it; both go through the same state, so controlled and uncontrolled usage behave identically.
+`Popover.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to closed). `Popover.Trigger` toggles the open state on activation and `Popover.Close` closes it; outside-press dismissal goes through the same `setOpen` path. Everything funnels into one state, so controlled and uncontrolled usage behave identically.
+
+### Trigger and anchor resolution
+
+The trigger registers itself as the positioning anchor, but only while no `Popover.Anchor` has claimed the slot — a mounted anchor always takes precedence, whether it mounts before or after the trigger. The default trigger is a 150x38 `textbutton` labeled "Toggle Popover"; with `asChild` its `Active`, `Activated` handler, `Selectable={false}`, and ref are merged onto your single child element. `disabled` blocks toggling and removes the trigger from focus tracking. `Popover.Anchor` renders a zero-size transparent frame by default; with `asChild` it tracks your element's geometry directly and renders nothing extra.
 
 ### Positioning
 
-`Popover.Content` is positioned by the popper foundation. It measures the anchor and the content, then resolves a final placement and flips to the opposite side when the requested side would collide with the screen edge. Tune it with `placement` (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` (gap from the anchor, default `0`), `alignOffset` (shift along the anchor's cross axis, default `0`), and `collisionPadding` (minimum distance from the screen edge, default `8`).
+`Popover.Content` is positioned by the popper foundation. It measures the anchor and the content, then resolves a final placement, flipping to the opposite side when the requested side would collide with the screen edge. Tune it with `placement` (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` (gap from the anchor, default `0`), `alignOffset` (shift along the anchor's cross axis, default `0`), and `collisionPadding` (minimum distance from the screen edge, default `8`).
 
-By default the content anchors to the trigger. Add a `Popover.Anchor` to position against a different element — for example, anchoring a popover to a row while the trigger sits elsewhere. The anchor takes precedence over the trigger when both are present.
+Until the first measurement resolves, the surface is parked far offscreen and the reveal motion is held back — the content never flashes at an unpositioned location, and the entrance always animates from the placement that actually resolved, not the one you requested.
 
 ### Focus and selection
 
-`Popover.Content` mounts a focus scope tied to the open state. Because Popover is non-modal by default, the scope is **not trapped** — gamepad and `GuiObject` selection can move freely between the popover and the rest of the screen. Focus is restored to the previously selected object when the popover closes, and the trigger is the natural restore target. Setting `modal` on the `Root` switches the scope to trapped so selection stays inside the surface while it is open.
+`Popover.Content` mounts a focus scope tied to the open state. Because Popover is non-modal by default, the scope is **not trapped** — gamepad and `GuiObject` selection can move freely between the popover and the rest of the screen. The trigger focuses itself just before opening, and the scope restores focus to the previously selected object on close, so selection returns to the trigger without extra wiring. Setting `modal` on the `Root` switches the scope to trapped, keeping selection inside the surface while it is open.
 
 ### Dismissal
 
-`Popover.Content` participates in dismissable-layer behavior. An outside press dismisses it, and when `modal` is `true`, interaction behind the surface is also blocked. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the popover closes.
+`Popover.Content` participates in dismissable-layer behavior while open. An outside press dismisses it, and when `modal` is `true`, interaction behind the surface is also blocked. Use `onPointerDownOutside` (pointer presses) and `onInteractOutside` (any other outside interaction) to observe or veto those interactions before the popover closes.
 
 ### Motion and presence
 
-`Popover.Content` runs a default popper-aware reveal/exit recipe that animates from the resolved placement, so it animates in and out without extra setup. The default surface uses a canvas-group recipe; with `asChild` it uses a transform recipe applied to your element. Override either with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+`Popover.Content` runs a placement-aware reveal/exit recipe with no setup: the surface slides in 10 pixels from the resolved placement side while fading in, then plays the reverse on exit at 0.8x the reveal duration. The default wrapper is a `canvasgroup` animated through `GroupTransparency` (0.12s reveal); with `asChild` the recipe is applied to your element directly, animating `BackgroundTransparency` and position (0.16s reveal). Override either with `transition` — `createCanvasGroupPopperEntranceRecipe` and `createPopperEntranceRecipe` from `@lattice-ui/motion` build placement-aware variants with your own distance and duration.
+
+Without `forceMount`, the content mounts when the popover opens and unmounts after the exit motion completes. Pass `forceMount` to skip the presence wrapper entirely: the node stays mounted while closed with its `Visible` driven by the motion controller, which is useful when you drive motion yourself or need the instance to persist across open cycles.
 
 <Callout title="Modal is opt-in">
 Popover defaults to `modal={false}`: the surface floats over the UI without blocking it and without trapping selection. Set `modal` on `Popover.Root` only when the popover should behave like a focused, blocking surface — at which point it traps focus and blocks interaction behind it, much like Dialog.
+</Callout>
+
+<Callout title="The anchor wins over the trigger">
+When both a `Popover.Trigger` and a `Popover.Anchor` are mounted, the content always positions against the anchor. There is no prop to flip this — remove the anchor if the trigger should be the reference again.
+</Callout>
+
+<Callout title="Match the recipe to the wrapper">
+The default content wrapper is a `canvasgroup`, which fades via `GroupTransparency`; a plain frame under `asChild` fades via `BackgroundTransparency`. When passing a custom `transition`, use `createCanvasGroupPopperEntranceRecipe` for the default wrapper and `createPopperEntranceRecipe` for `asChild`, or the fade will target a property your element does not animate.
 </Callout>
 
 ## API reference
@@ -137,7 +340,7 @@ Popover defaults to `modal={false}`: the surface floats over the UI without bloc
   rows={[
     { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
     { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
-    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes — from the trigger, a close button, outside dismissal, or a controlled update." },
     { name: "modal", type: "boolean", description: "When true, blocks interaction behind the popover and traps focus inside it. Defaults to false." },
     { name: "children", type: "React.ReactNode", description: "The popover parts." },
   ]}
@@ -147,7 +350,7 @@ Popover defaults to `modal={false}`: the surface floats over the UI without bloc
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge toggle behavior, focus tracking, and the anchor ref onto the single child element instead of rendering the default textbutton." },
     { name: "disabled", type: "boolean", description: "Prevents the trigger from toggling the popover and removes it from focus tracking." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -157,7 +360,7 @@ Popover defaults to `modal={false}`: the surface floats over the UI without bloc
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge anchor tracking onto the single child element instead of rendering the default zero-size frame." },
+    { name: "asChild", type: "boolean", description: "Track the single child element's geometry instead of rendering the default zero-size frame. A mounted anchor takes positioning precedence over the trigger." },
     { name: "children", type: "React.ReactElement", description: "The element to anchor against. Required when asChild is set." },
   ]}
 />
@@ -176,16 +379,16 @@ Popover defaults to `modal={false}`: the surface floats over the UI without bloc
 
 <PropTable
   rows={[
-    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the content on. Flips on collision. Defaults to \"bottom\"." },
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the content on. Flips to the opposite side on collision. Defaults to \"bottom\"." },
     { name: "sideOffset", type: "number", description: "Gap in pixels between the anchor and the content. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the anchor's cross axis. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
-    { name: "asChild", type: "boolean", description: "Position and animate the single child element instead of rendering the default canvasgroup wrapper." },
-    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper-aware reveal/exit recipe." },
+    { name: "asChild", type: "boolean", description: "Position and animate the single child element instead of rendering the default auto-sized canvasgroup wrapper. Switches the default recipe to the transform variant." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while closed and through exit motion, with Visible driven by the motion controller, instead of unmounting after exit." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default placement-aware reveal/exit recipe. Build variants with createCanvasGroupPopperEntranceRecipe or createPopperEntranceRecipe from @lattice-ui/motion." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
-    { name: "children", type: "React.ReactNode", description: "The surface contents." },
+    { name: "children", type: "React.ReactNode", description: "The surface contents. Must be a single valid element when asChild is set." },
   ]}
 />
 
@@ -193,7 +396,7 @@ Popover defaults to `modal={false}`: the surface floats over the UI without bloc
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton. Event handlers compose, so the child's own Activated handler still runs." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

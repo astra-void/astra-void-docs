@@ -3,10 +3,11 @@ title: Toggle Group
 description: Selection primitive that coordinates a set of toggle items in single- or multiple-select mode, owning pressed state and motion while you own the item visuals.
 section: components
 sidebar:
-  order: 180
+  order: 40
+  group: Form
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/toggle-group"
@@ -17,7 +18,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 Toggle Group is the primitive for a related set of toggles that share selection state: view switches, filter chips, text-alignment pickers, and difficulty selectors. `Root` owns the selected value and tells each `Item` whether it is pressed, so your items only render their two visual states.
 
-Reach for Toggle Group when several toggles belong together and should behave as **one control** — either a **single-select** group where picking one clears the others, or a **multiple-select** group where each item toggles independently.
+Reach for Toggle Group when several toggles belong together and should behave as **one control** — either a **single-select** group where picking one clears the others, or a **multiple-select** group where each item toggles independently. For a lone on/off control, [Checkbox](/lattice-ui/components/checkbox/) or [Switch](/lattice-ui/components/switch/) is the better fit.
 
 ## Import
 
@@ -29,6 +30,8 @@ import { ToggleGroup } from "@lattice-ui/toggle-group";
 
 A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the whole group as single- or multiple-select.
 
+<PrimitiveAnatomy title="ToggleGroup anatomy">
+
 ```tsx title="ToggleGroup anatomy"
 <ToggleGroup.Root type="single">
   <ToggleGroup.Item value="..." />
@@ -39,53 +42,56 @@ A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the
 | Part | Required | Responsibility |
 | --- | --- | --- |
 | `ToggleGroup.Root` | yes | Owns the selected value(s), the select mode, and group-wide disabled state. |
-| `ToggleGroup.Item` | yes | One toggle; reports pressed state to `Root` and animates between states. |
+| `ToggleGroup.Item` | yes | One toggle; reads its pressed state from `Root` and animates between states. |
 
-## Example
+</PrimitiveAnatomy>
 
-A single-select group that switches the active inventory tab, driven as controlled state.
+## Examples
 
-```tsx title="InventoryTabs.tsx"
-import { useState } from "@rbxts/react";
+### Single-select toolbar
+
+The smallest useful group: an uncontrolled single-select mode picker seeded with `defaultValue`. Each default item renders as a `textbutton` labeled with its `value`, which makes it easy to wire the group up before styling anything. In single mode, activating the already-pressed item clears the selection — `onValueChange` then fires with `undefined` — so a toolbar like this can also be fully deselected.
+
+```tsx title="HotbarModePicker.tsx"
 import { ToggleGroup } from "@lattice-ui/toggle-group";
 
-export function InventoryTabs() {
-  const [tab, setTab] = useState<string | undefined>("gear");
-
+export function HotbarModePicker() {
   return (
     <ToggleGroup.Root
       type="single"
-      value={tab}
-      onValueChange={(next) => setTab(next)}
+      defaultValue="build"
+      onValueChange={(mode) => print(`active mode: ${mode}`)}
     >
       <uilistlayout
         FillDirection={Enum.FillDirection.Horizontal}
         Padding={new UDim(0, 6)}
       />
-      <ToggleGroup.Item value="gear" />
-      <ToggleGroup.Item value="pets" />
-      <ToggleGroup.Item value="emotes" />
+      <ToggleGroup.Item value="build" />
+      <ToggleGroup.Item value="terrain" />
+      <ToggleGroup.Item value="wire" />
     </ToggleGroup.Root>
   );
 }
 ```
 
-For a multiple-select group, switch `type` to `"multiple"` and track an array. The `onValueChange` signature changes with the mode (see below).
+### Multiple-select filters
 
-```tsx title="ActiveFilters.tsx"
-import { useState } from "@rbxts/react";
+Switch `type` to `"multiple"` and the value becomes a `string[]`: each item toggles independently, and the array preserves the order in which items were selected. `defaultValue` seeds the initial set for uncontrolled usage (it defaults to an empty array), and `onValueChange` receives the full next array on every toggle.
+
+```tsx title="ItemFilters.tsx"
 import { ToggleGroup } from "@lattice-ui/toggle-group";
 
-export function ActiveFilters() {
-  const [filters, setFilters] = useState<string[]>(["new"]);
-
+export function ItemFilters() {
   return (
     <ToggleGroup.Root
       type="multiple"
-      value={filters}
-      onValueChange={(next) => setFilters(next)}
+      defaultValue={["new"]}
+      onValueChange={(filters) => print(`active filters: ${filters.join(", ")}`)}
     >
-      <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 6)} />
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 6)}
+      />
       <ToggleGroup.Item value="new" />
       <ToggleGroup.Item value="owned" />
       <ToggleGroup.Item value="tradable" />
@@ -94,36 +100,168 @@ export function ActiveFilters() {
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `value`/`onValueChange` and pass `defaultValue` to let the group own its selection. In single mode `defaultValue` is a `string`; in multiple mode it is a `string[]` (defaulting to an empty array). Use controlled state only when something outside the group reads or sets the selection.
-</Callout>
+### Controlled group
+
+Pass `value` and `onValueChange` when something outside the group reads or sets the selection. Here a start button reads the picked difficulty and stays inert while the selection is cleared — in single mode the controlled value is `string | undefined`, so design the surrounding UI around the `undefined` case.
+
+```tsx title="DifficultyPicker.tsx"
+import { useState } from "@rbxts/react";
+import { ToggleGroup } from "@lattice-ui/toggle-group";
+
+export function DifficultyPicker(props: { onStart: (difficulty: string) => void }) {
+  const [difficulty, setDifficulty] = useState<string | undefined>("normal");
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(320, 90)}>
+      <uilistlayout Padding={new UDim(0, 10)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <ToggleGroup.Root type="single" value={difficulty} onValueChange={setDifficulty}>
+        <uilistlayout
+          FillDirection={Enum.FillDirection.Horizontal}
+          Padding={new UDim(0, 6)}
+        />
+        <ToggleGroup.Item value="casual" />
+        <ToggleGroup.Item value="normal" />
+        <ToggleGroup.Item value="hardcore" />
+      </ToggleGroup.Root>
+
+      <textbutton
+        Active={difficulty !== undefined}
+        AutoButtonColor={difficulty !== undefined}
+        BackgroundColor3={
+          difficulty !== undefined ? Color3.fromRGB(88, 142, 255) : Color3.fromRGB(59, 66, 84)
+        }
+        Event={{
+          Activated: () => {
+            if (difficulty !== undefined) {
+              props.onStart(difficulty);
+            }
+          },
+        }}
+        Size={UDim2.fromOffset(160, 32)}
+        Text={difficulty !== undefined ? `Start (${difficulty})` : "Pick a difficulty"}
+        TextColor3={Color3.fromRGB(240, 244, 252)}
+      />
+    </frame>
+  );
+}
+```
+
+### Disabled group and disabled items
+
+`disabled` works at two levels. On `Root` it freezes the whole control: every item ignores activation, and `Root`'s toggle logic is short-circuited so nothing can change the value while it is set. On an `Item` it disables just that option while the rest of the group keeps working. Here the loadout is locked during a match, and one class is additionally locked behind premium.
+
+```tsx title="LoadoutModes.tsx"
+import { ToggleGroup } from "@lattice-ui/toggle-group";
+
+export function LoadoutModes(props: { inMatch: boolean; hasPremium: boolean }) {
+  return (
+    <ToggleGroup.Root type="single" defaultValue="assault" disabled={props.inMatch}>
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 6)}
+      />
+      <ToggleGroup.Item value="assault" />
+      <ToggleGroup.Item value="recon" />
+      <ToggleGroup.Item value="specialist" disabled={!props.hasPremium} />
+    </ToggleGroup.Root>
+  );
+}
+```
+
+A disabled item is marked inactive (`Active={false}`) but still renders its pressed state, so a locked-in selection stays visibly selected.
+
+### Custom pressed visuals with asChild
+
+Use `asChild` on `Root` to replace the default zero-size container with your own sized frame, and on each `Item` to project the toggle behavior onto your own button. The primitive still drives each item's `BackgroundColor3` and `TextColor3` between its fixed active and inactive palettes (see [How it behaves](#motion-and-item-colors)), so express your own styling through corners, strokes, and children rather than hand-set colors.
+
+```tsx title="StyledViewSwitch.tsx"
+import { useState } from "@rbxts/react";
+import { ToggleGroup } from "@lattice-ui/toggle-group";
+
+const VIEWS = ["grid", "list", "detail"];
+
+export function StyledViewSwitch() {
+  const [view, setView] = useState<string | undefined>("grid");
+
+  return (
+    <ToggleGroup.Root type="single" value={view} onValueChange={setView} asChild>
+      <frame
+        BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+        BorderSizePixel={0}
+        Size={UDim2.fromOffset(248, 44)}
+      >
+        <uicorner CornerRadius={new UDim(0, 8)} />
+        <uilistlayout
+          FillDirection={Enum.FillDirection.Horizontal}
+          HorizontalAlignment={Enum.HorizontalAlignment.Center}
+          Padding={new UDim(0, 6)}
+          VerticalAlignment={Enum.VerticalAlignment.Center}
+        />
+
+        {VIEWS.map((viewName) => (
+          <ToggleGroup.Item value={viewName} key={viewName} asChild>
+            <textbutton AutoButtonColor={false} Size={UDim2.fromOffset(76, 32)} Text={viewName} TextSize={14}>
+              <uicorner CornerRadius={new UDim(0, 6)} />
+              <uistroke
+                Color={Color3.fromRGB(88, 142, 255)}
+                Thickness={view === viewName ? 1 : 0}
+              />
+            </textbutton>
+          </ToggleGroup.Item>
+        ))}
+      </frame>
+    </ToggleGroup.Root>
+  );
+}
+```
+
+`Item` also takes a `transition` prop (a `ResponseMotionConfig`) that swaps the pressed/unpressed response recipe per item — omit it and the item animates with the default selection response recipe (a 0.1s settle). It shapes the motion only; the pressed/unpressed palettes stay primitive-owned (see the callout below).
 
 ## How it behaves
 
 ### Value state
 
-`ToggleGroup.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled. Each `Item` reads its own pressed state from the group through context, so controlled and uncontrolled usage behave identically. Activating an item routes through `Root`, which updates the shared value.
+`ToggleGroup.Root` is controllable. Pass `value` and `onValueChange` to control the selection, or omit them and pass `defaultValue` to let the group own it — `onValueChange` still fires on every change in uncontrolled usage. Each `Item` reads its own pressed state from the group through context, so controlled and uncontrolled usage behave identically. Activating an item routes through `Root`, which updates the shared value.
 
 ### Single vs multiple
 
 The required `type` prop fixes the group's behavior and the shape of its value:
 
-- **`type="single"`** — `value`/`defaultValue` are `string`, and `onValueChange` receives `string | undefined`. Selecting an item replaces the current value; selecting the already-selected item clears it (so the value becomes `undefined`).
-- **`type="multiple"`** — `value`/`defaultValue` are `string[]`, and `onValueChange` receives `string[]`. Each item toggles independently and order of selection is preserved. Duplicate and non-string entries are stripped from incoming values.
+- **`type="single"`** — `value`/`defaultValue` are `string`, and `onValueChange` receives `string | undefined`. Selecting an item replaces the current value; selecting the already-selected item clears it, so the value becomes `undefined`.
+- **`type="multiple"`** — `value`/`defaultValue` are `string[]`, and `onValueChange` receives `string[]`. Each item toggles independently: a newly selected value is appended to the end, so the array preserves selection order. Incoming values (controlled `value`, `defaultValue`, and the array handed to `onValueChange`) are normalized — duplicate and non-string entries are stripped.
 
 Because the value type and the `onValueChange` signature are a discriminated union over `type`, set `type` as a literal so TypeScript can narrow to the right props.
 
 ### Activation and selection
 
-`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` while it has Roblox selection, so mouse, keyboard, and gamepad all work. The default item renders as a `textbutton` whose `Text` is its `value`. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
+`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` via `InputBegan`, so mouse, touch, keyboard, and gamepad activation all work. The default item renders as a 170x34 `textbutton` whose `Text` is its `value`, with `AutoButtonColor` off so the primitive's own color motion is the only feedback. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
+
+With `asChild`, the toggle behavior is merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and motion ref win over the child's own props, and event handlers compose (both the primitive's `Activated`/`InputBegan` handlers and any you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
+
+### Group container
+
+The default `Root` renders a transparent, borderless frame with a **zero offset size** — it is purely a context boundary, not a laid-out surface. Put a `uilistlayout` (or your own positioning) inside it to arrange the items, and when the group participates in a flow layout, use `asChild` to substitute your own sized container, as in the [asChild example](#custom-pressed-visuals-with-aschild).
 
 ### Disabled state
 
-`disabled` on `Root` disables the entire group; `disabled` on an `Item` disables just that one. A disabled item ignores activation and keyboard toggles and is marked inactive (`Active={false}`). Group-level disabled also short-circuits `Root`'s toggle logic, so nothing changes the value while it is set.
+`disabled` on `Root` disables the entire group; `disabled` on an `Item` disables just that one. A disabled item ignores both activation and keyboard toggles and is marked inactive (`Active={false}`), but keeps rendering its pressed visuals. Group-level disabled additionally short-circuits `Root`'s toggle logic, so no value change can get through while it is set — including from an item that missed the flag.
 
-### Motion
+### Motion and item colors
 
-Each `Item` animates between an active (pressed) and inactive palette using a default selection response recipe, driven by its pressed state. Override the recipe per item with `transition`.
+Each `Item` animates between a fixed active palette (`BackgroundColor3` `RGB(88, 142, 255)`, `TextColor3` `RGB(236, 241, 249)`) and inactive palette (`RGB(47, 53, 68)` / `RGB(139, 146, 160)`) using the selection response recipe (a 0.1s settle) — or the recipe you pass as `transition` — driven by its pressed state. The motion ref applies to your own element under `asChild` too, so the primitive owns both colors either way — style custom items with strokes, corners, and children instead.
+
+<Callout title="Single mode can clear to undefined">
+Activating the pressed item in a single-select group deselects it; there is no built-in "always keep one selected" mode. If your UI requires a selection, run controlled and ignore the clear: `onValueChange={(next) => next !== undefined && setValue(next)}`.
+</Callout>
+
+<Callout title="The default container has no size">
+The default `Root` frame is transparent and zero-sized, so it reserves no space in a `uilistlayout` or `uigridlayout` parent. Give the group real dimensions by passing `asChild` with your own sized frame whenever it sits in a flow layout.
+</Callout>
+
+<Callout title="Item transition shapes motion, not colors">
+`ToggleGroup.Item` applies the `transition` (`ResponseMotionConfig`) you pass to its pressed/unpressed response motion (as of 0.5.0; earlier releases ignored it). It changes the timing and feel only — the fixed active/inactive palettes still cannot be overridden, so design custom items around the primitive-driven colors.
+</Callout>
 
 ## API reference
 
@@ -133,13 +271,13 @@ Each `Item` animates between an active (pressed) and inactive palette using a de
 
 <PropTable
   rows={[
-    { name: "type", type: '"single" | "multiple"', description: "Required. Fixes the group as single- or multiple-select and determines the value shape." },
-    { name: "value", type: "string | string[]", description: "Controlled selection. string in single mode, string[] in multiple mode. Pair with onValueChange." },
+    { name: "type", type: '"single" | "multiple"', description: "Required. Fixes the group as single- or multiple-select and determines the value shape. Pass a literal so TypeScript narrows the union." },
+    { name: "value", type: "string | string[]", description: "Controlled selection. string in single mode, string[] (normalized: duplicates and non-strings stripped) in multiple mode. Pair with onValueChange." },
     { name: "defaultValue", type: "string | string[]", description: "Initial selection for uncontrolled usage. string in single mode; string[] (default []) in multiple mode." },
-    { name: "onValueChange", type: "(value: string | undefined) => void | (value: string[]) => void", description: "Called when the selection changes. Receives string | undefined in single mode and string[] in multiple mode." },
-    { name: "disabled", type: "boolean", description: "Disables every item in the group and blocks all value changes. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Render the single child element instead of the default container frame." },
-    { name: "children", type: "React.ReactNode", description: "The toggle items (and any layout)." },
+    { name: "onValueChange", type: "(value: string | undefined) => void | (value: string[]) => void", description: "Called on every selection change, controlled or not. Receives string | undefined in single mode and the full next string[] in multiple mode." },
+    { name: "disabled", type: "boolean", description: "Disables every item and short-circuits the group's toggle logic so no value change gets through. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Render the single child element as the group container instead of the default zero-size transparent frame." },
+    { name: "children", type: "React.ReactNode", description: "The toggle items and any layout. Must be a single valid element when asChild is set." },
   ]}
 />
 
@@ -148,10 +286,10 @@ Each `Item` animates between an active (pressed) and inactive palette using a de
 <PropTable
   rows={[
     { name: "value", type: "string", description: "Required. Identifies this item within the group; also the default button text." },
-    { name: "disabled", type: "boolean", description: "Disables just this item, ignoring activation and keyboard toggles. Defaults to false." },
-    { name: "transition", type: "MotionConfig", description: "Overrides the default selection response recipe used for the pressed/unpressed animation." },
-    { name: "asChild", type: "boolean", description: "Merge the toggle behavior and motion ref onto the single child element instead of the default textbutton." },
-    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+    { name: "disabled", type: "boolean", description: "Disables just this item — activation and keyboard toggles are ignored and the button is marked inactive. Defaults to false." },
+    { name: "transition", type: "ResponseMotionConfig", description: "Overrides the pressed/unpressed response recipe for this item. Defaults to the selection response recipe (0.1s settle). Motion only — the fixed active/inactive palettes still apply." },
+    { name: "asChild", type: "boolean", description: "Merge the toggle behavior and motion ref onto the single child element instead of the default textbutton. The primitive still drives the child's BackgroundColor3 and TextColor3." },
+    { name: "children", type: "React.ReactElement", description: "Rendered inside the default textbutton, or the element to project onto. Required when asChild is set." },
   ]}
 />
 

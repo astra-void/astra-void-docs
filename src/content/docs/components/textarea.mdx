@@ -3,10 +3,11 @@ title: Textarea
 description: Multi-line text input primitive that owns the value, separates change from commit, auto-resizes to its content within row bounds, and wires label, description, and message parts together.
 section: components
 sidebar:
-  order: 160
+  order: 90
+  group: Form
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/textarea"
@@ -17,7 +18,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 Textarea is the primitive for multi-line input: a report description, a tribe message, feedback, or any field where text spans several lines. It wraps a multi-line Roblox `TextBox`, owns the value, splits live changes from commit, and grows its height to fit the content between configurable row bounds.
 
-Reach for Textarea when an input needs **controlled or uncontrolled value state**, a clean **change-versus-commit** split, **auto-resizing** that clamps between a minimum and maximum number of rows, and shared **disabled / readOnly / required / invalid** state across a label, description, and message.
+Reach for Textarea when an input needs **controlled or uncontrolled value state**, a clean **change-versus-commit** split, **auto-resizing** that clamps between a minimum and maximum number of rows, and shared **disabled / readOnly / required / invalid** state across a label, description, and message. For single-line input without the height machinery, [Text Field](/lattice-ui/components/text-field/) is the sibling primitive.
 
 ## Import
 
@@ -34,6 +35,8 @@ import { resolveTextareaHeight } from "@lattice-ui/textarea";
 ## Anatomy
 
 Compose `Root` around an `Input`, plus any of the optional text parts. Only `Root` and `Input` are required; `Label`, `Description`, and `Message` read shared state from context.
+
+<PrimitiveAnatomy title="Textarea anatomy">
 
 ```tsx title="Textarea anatomy"
 <Textarea.Root>
@@ -52,9 +55,138 @@ Compose `Root` around an `Input`, plus any of the optional text parts. Only `Roo
 | `Textarea.Description` | no | A static `textlabel` for helper text. |
 | `Textarea.Message` | no | A `textlabel` for validation text that recolors when `invalid` is set. |
 
-## Example
+</PrimitiveAnatomy>
 
-A controlled, auto-resizing description field bounded between 3 and 8 rows, with commit-time validation.
+## Examples
+
+### Basic labeled textarea
+
+An uncontrolled field seeded with `defaultValue`: the Root keeps the value internally and you only hear about it through the callbacks. `Label`, `Input`, and `Description` each take `asChild` to project their behavior onto your own elements — clicking the label captures focus on the input, and the description dims alongside a disabled field. Auto-resize is on by default, so the input's height is driven for you; the `Size` you pass supplies the width and an initial height.
+
+```tsx title="FeedbackField.tsx"
+import { Textarea } from "@lattice-ui/textarea";
+
+export function FeedbackField() {
+  return (
+    <Textarea.Root defaultValue="" onValueCommit={(value) => print(`feedback: ${value}`)}>
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(280, 160)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+        <Textarea.Label asChild>
+          <textbutton
+            AutoButtonColor={false}
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(280, 22)}
+            Text="Feedback"
+            TextXAlignment={Enum.TextXAlignment.Left}
+          />
+        </Textarea.Label>
+
+        <Textarea.Input asChild>
+          <textbox PlaceholderText="Tell us what you think" Size={UDim2.fromOffset(280, 68)} TextSize={15}>
+            <uipadding
+              PaddingBottom={new UDim(0, 7)}
+              PaddingLeft={new UDim(0, 10)}
+              PaddingRight={new UDim(0, 10)}
+              PaddingTop={new UDim(0, 7)}
+            />
+          </textbox>
+        </Textarea.Input>
+
+        <Textarea.Description asChild>
+          <textlabel
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(280, 20)}
+            Text="Sent to the developers with your session info."
+            TextXAlignment={Enum.TextXAlignment.Left}
+          />
+        </Textarea.Description>
+      </frame>
+    </Textarea.Root>
+  );
+}
+```
+
+### Auto-resize with row bounds
+
+`autoResize` is on by default; `minRows` and `maxRows` set the bounds. Here a note composer starts at two rows and grows as the player types — from wrapped lines as well as explicit newlines — until it hits six rows, after which the height stops growing. The primitive only rewrites the height, keeping your width, so give the input a fixed pixel width and let the field own the rest.
+
+```tsx title="NoteComposer.tsx"
+import { Textarea } from "@lattice-ui/textarea";
+
+export function NoteComposer() {
+  return (
+    <Textarea.Root autoResize minRows={2} maxRows={6}>
+      <Textarea.Input asChild>
+        <textbox PlaceholderText="Write a note" Size={UDim2.fromOffset(260, 50)} TextSize={15}>
+          <uipadding
+            PaddingBottom={new UDim(0, 7)}
+            PaddingLeft={new UDim(0, 10)}
+            PaddingRight={new UDim(0, 10)}
+            PaddingTop={new UDim(0, 7)}
+          />
+        </textbox>
+      </Textarea.Input>
+    </Textarea.Root>
+  );
+}
+```
+
+Put the input in a layout that tolerates height changes — a `uilistlayout` column reflows siblings automatically. If you need the numbers without mounting anything (reserving space in a fixed layout, sizing a sibling), call `resolveTextareaHeight` with the same options.
+
+### Change vs commit
+
+`onValueChange` fires on every text change; `onValueCommit` fires once when editing ends and the `TextBox` loses focus. Use change for live UI — previews, counters, dirty indicators — and commit for the expensive or one-shot work: saving to the server, running validation, recording history. Here the draft updates live while the save only happens on commit.
+
+```tsx title="ClanDescriptionField.tsx"
+import { useState } from "@rbxts/react";
+import { Textarea } from "@lattice-ui/textarea";
+
+export function ClanDescriptionField(props: { onSave: (description: string) => void }) {
+  const [draft, setDraft] = useState("A clan for casual raids.");
+  const [saved, setSaved] = useState("A clan for casual raids.");
+
+  return (
+    <Textarea.Root
+      value={draft}
+      onValueChange={setDraft}
+      onValueCommit={(committed) => {
+        setSaved(committed);
+        props.onSave(committed);
+      }}
+      minRows={2}
+      maxRows={5}
+    >
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(260, 120)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+        <Textarea.Input asChild>
+          <textbox Size={UDim2.fromOffset(260, 50)} TextSize={15}>
+            <uipadding
+              PaddingBottom={new UDim(0, 7)}
+              PaddingLeft={new UDim(0, 10)}
+              PaddingRight={new UDim(0, 10)}
+              PaddingTop={new UDim(0, 7)}
+            />
+          </textbox>
+        </Textarea.Input>
+
+        <textlabel
+          BackgroundTransparency={1}
+          Size={UDim2.fromOffset(260, 20)}
+          Text={draft === saved ? "Saved" : "Unsaved changes"}
+          TextColor3={Color3.fromRGB(170, 179, 195)}
+          TextXAlignment={Enum.TextXAlignment.Left}
+        />
+      </frame>
+    </Textarea.Root>
+  );
+}
+```
+
+### Validation with invalid and Message
+
+Validate on commit rather than every keystroke, then flip `invalid` on the Root. `invalid` is a shared flag: the `Message` part reads it from context and recolors its text to the error tone, and your own elements can branch on the same state. Swapping `Message` for `Description` keeps the layout height stable while switching between helper and error copy.
 
 ```tsx title="ReportField.tsx"
 import { useState } from "@rbxts/react";
@@ -70,29 +202,52 @@ export function ReportField() {
       onValueChange={setText}
       onValueCommit={(committed) => setError(committed.size() === 0)}
       invalid={error}
-      autoResize
+      required
       minRows={3}
       maxRows={8}
       name="report"
     >
       <frame BackgroundTransparency={1} Size={UDim2.fromOffset(280, 160)}>
-        <uilistlayout Padding={new UDim(0, 4)} />
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
 
-        <Textarea.Label>
-          <textbutton BackgroundTransparency={1} Text="What happened?" Size={UDim2.fromOffset(280, 22)} />
+        <Textarea.Label asChild>
+          <textbutton
+            AutoButtonColor={false}
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(280, 22)}
+            Text="What happened?"
+            TextXAlignment={Enum.TextXAlignment.Left}
+          />
         </Textarea.Label>
 
-        <Textarea.Input>
-          <textbox PlaceholderText="Describe the issue" Size={UDim2.fromOffset(280, 68)} />
+        <Textarea.Input asChild>
+          <textbox PlaceholderText="Describe the issue" Size={UDim2.fromOffset(280, 68)} TextSize={15}>
+            <uipadding
+              PaddingBottom={new UDim(0, 7)}
+              PaddingLeft={new UDim(0, 10)}
+              PaddingRight={new UDim(0, 10)}
+              PaddingTop={new UDim(0, 7)}
+            />
+          </textbox>
         </Textarea.Input>
 
         {error ? (
-          <Textarea.Message>
-            <textlabel BackgroundTransparency={1} Text="A description is required." Size={UDim2.fromOffset(280, 20)} />
+          <Textarea.Message asChild>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(280, 20)}
+              Text="A description is required."
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
           </Textarea.Message>
         ) : (
-          <Textarea.Description>
-            <textlabel BackgroundTransparency={1} Text="Include as much detail as you can." Size={UDim2.fromOffset(280, 20)} />
+          <Textarea.Description asChild>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(280, 20)}
+              Text="Include as much detail as you can."
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
           </Textarea.Description>
         )}
       </frame>
@@ -101,36 +256,107 @@ export function ReportField() {
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `value`/`onValueChange` and pass `defaultValue` to let Textarea own the value internally (it defaults to an empty string). Use controlled state when something outside the field needs to read or set the value.
-</Callout>
+### Character counter
+
+For a length-limited field, control the value and truncate in `onValueChange` before the text reaches state. The `TextBox` text is bound to the owned value, so anything past the limit never shows up in the box, and the counter derives straight from the same state — no second source of truth. The counter recolors as the player approaches the cap.
+
+```tsx title="BioField.tsx"
+import { useState } from "@rbxts/react";
+import { Textarea } from "@lattice-ui/textarea";
+
+const MAX_BIO = 200;
+
+export function BioField() {
+  const [bio, setBio] = useState("");
+
+  return (
+    <Textarea.Root
+      value={bio}
+      onValueChange={(text) => setBio(text.sub(1, MAX_BIO))}
+      onValueCommit={(committed) => print(`bio saved: ${committed}`)}
+      minRows={3}
+      maxRows={6}
+      name="bio"
+    >
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(260, 130)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+        <Textarea.Input asChild>
+          <textbox PlaceholderText="Tell other players about yourself" Size={UDim2.fromOffset(260, 68)} TextSize={15}>
+            <uipadding
+              PaddingBottom={new UDim(0, 7)}
+              PaddingLeft={new UDim(0, 10)}
+              PaddingRight={new UDim(0, 10)}
+              PaddingTop={new UDim(0, 7)}
+            />
+          </textbox>
+        </Textarea.Input>
+
+        <textlabel
+          BackgroundTransparency={1}
+          Size={UDim2.fromOffset(260, 18)}
+          Text={`${bio.size()}/${MAX_BIO}`}
+          TextColor3={bio.size() >= MAX_BIO ? Color3.fromRGB(255, 128, 128) : Color3.fromRGB(170, 179, 195)}
+          TextXAlignment={Enum.TextXAlignment.Right}
+        />
+      </frame>
+    </Textarea.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Value state
 
-`Textarea.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled; when neither is set the value starts empty. The value is mirrored onto the `TextBox` every render, so the displayed text always reflects the owned state. The underlying `TextBox` renders with `MultiLine` and `TextWrapped` enabled and top-aligned text.
+`Textarea.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled; when neither is set the value starts empty. The owned value is bound to the `TextBox`'s `Text`, so the displayed text tracks the state rather than whatever Roblox last typed. Setting the same value again is a no-op — `onValueChange` only fires when the text actually differs from the current value. The underlying `TextBox` renders with `MultiLine` and `TextWrapped` enabled, top-aligned text, and `ClearTextOnFocus` off.
 
 ### Change and commit
 
-A keystroke fires the text change, calling `onValueChange` with the new text; editing ends on `FocusLost`, calling `onValueCommit` with the final text. Use `onValueChange` for live updates and `onValueCommit` for validation or persistence after editing settles. As with Text Field, a disabled field suppresses the commit callback.
+A keystroke fires the `TextBox` text change, which calls `onValueChange` with the new text. A commit happens on `FocusLost` — when the player ends editing by clicking away or moving focus — and calls `onValueCommit` with the text as it stands in the box at that moment. Commit is not a diff: it fires on every focus loss, including when the text is unchanged, and it is suppressed only while `disabled` (a `readOnly` field still commits its unchanged text). Use `onValueChange` for live updates and `onValueCommit` for validation or persistence you only want once editing settles.
 
 ### Auto-resize
 
-`autoResize` defaults to `true`. After each change — and whenever the value changes externally — the `Input` measures the content and sets its height to `rows × lineHeight + verticalPadding`. The row count is the larger of the newline count and the measured text bounds, then clamped: `minRows` defaults to `3` (floored at 1), and `maxRows`, if set, is raised to at least `minRows`. Line height defaults to `ceil(TextSize × 1.2)` unless you pass an explicit `lineHeight` on `Input`; vertical padding is summed from the input's `UIPadding` children (falling back to 14 when none are present). With `maxRows` set, the field stops growing past that bound and the `TextBox` scrolls internally. Set `autoResize={false}` to keep a fixed height and size the input yourself.
+`autoResize` defaults to `true`. After each text change — and whenever the value changes externally — the `Input` measures its content and sets its height to `rows × lineHeight + verticalPadding`:
 
-The height math is exposed as the pure function `resolveTextareaHeight(text, options)` if you need to compute a layout without mounting the component.
+- **Rows** is the larger of the newline count and the wrapped-text measurement (`TextBounds.Y` divided by the line height, rounded up), floored at 1, then clamped between the bounds: `minRows` defaults to `3` (floored at 1), and `maxRows`, when set, is raised to at least `minRows`. Past `maxRows` the field stops growing and keeps that fixed height.
+- **Line height** defaults to `ceil(TextSize × 1.2)` unless you pass an explicit `lineHeight` on `Input`.
+- **Vertical padding** is summed from the input's `UIPadding` children (offsets plus scale resolved against the box's absolute height), falling back to `14` when none contribute.
 
-### Disabled, readOnly, and validation
+Each measurement also re-runs on a deferred frame so wrapped `TextBounds` that settle after the change are picked up. The resize writes `UDim2.fromOffset(currentWidth, height)` — it preserves your X offset but replaces any scale-based sizing, so size the input with pixel offsets when auto-resize is on. Disabled and read-only inputs still re-measure, so an externally updated value keeps the height correct. Set `autoResize={false}` to keep a fixed height and size the input yourself.
 
-`disabled` and `readOnly` both stop edits from updating the value: while either is set, the `Input` rewrites the `TextBox` back to the owned value (still re-running auto-resize). `disabled` also clears `Active`/`Selectable`, dims the text, and suppresses commit; `readOnly` keeps the field selectable but not editable. `Input` can set `disabled`/`readOnly` locally, combined with `Root`'s via OR. `required` is exposed for your own validation and is not enforced, and `invalid` is a visual/semantic marker that recolors `Textarea.Message`. The `name` prop is passed through context for form identification.
+The height math is exposed as the pure function `resolveTextareaHeight(text, options)` — the same clamping given `minRows`, `maxRows`, `lineHeight`, and optional `verticalPadding`/`measuredRows` — if you need to compute a layout without mounting the component.
+
+### Disabled and readOnly
+
+`disabled` and `readOnly` both stop edits from updating the value: while either is set, `Root.setValue` ignores incoming text and the `Input` rewrites the `TextBox` back to the owned value (still re-running auto-resize), so stray platform input cannot desync the field. They differ in interaction — `disabled` also clears `Active`/`Selectable`, makes the text non-editable, dims the input text, and suppresses the commit callback on focus loss, while `readOnly` only drops `TextEditable`, keeping the field selectable and focusable. `Input` can also set `disabled`/`readOnly` locally, which combine with `Root`'s state via OR.
+
+### Required, invalid, and name
+
+`required` and `invalid` are shared flags that carry no enforcement on their own — `required` is exposed on context for your own validation and submission logic, and `invalid` is a visual/semantic marker. When `invalid` is set, `Textarea.Message` recolors its text to the error tone (`RGB(255, 128, 128)`); `Description` never recolors for validity. The `name` prop is passed through context for form identification and is otherwise inert.
 
 ### Label and focus
 
-`Textarea.Label` renders a `textbutton`; activating it calls `CaptureFocus()` on the input, so clicking the label focuses the field. When disabled, the label drops its `Active`/`Selectable` state and does nothing. `Description` and `Message` are non-interactive labels that read shared state for their text color.
+`Textarea.Label` renders a `textbutton`; activating it calls `CaptureFocus()` on the input's `TextBox`, so clicking the label focuses the field. While the field is disabled the label drops its `Active`/`Selectable` state, dims, and does nothing on activation. `Description` and `Message` are non-interactive labels that read shared state for their text color and dim alongside a disabled field.
+
+### Input focus motion
+
+The `Input` tracks focus and animates its `BackgroundColor3` with the field response recipe — settling on the focused accent while the field is focused and editable, and back to the resting tone otherwise. Focus while `disabled` or `readOnly` does not count as active, so a read-only field never lights up as editable. This motion is driven through the input's ref, so it applies to your own `textbox` under `asChild` too: design around a primitive-driven background color and put your styling in strokes, corners, padding, and text properties.
 
 <Callout title="Default text and visuals">
-Used without `asChild`, each part renders defaults: the `Input` shows a `"Type..."` placeholder with built-in vertical padding, and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the example) to supply real copy and styling while keeping the auto-resize and state wiring intact.
+Each part renders sensible defaults when used without `asChild`: the `Input` is a 240x68 multi-line `textbox` with a `"Type..."` placeholder and built-in padding (10 horizontal, 7 vertical), and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the examples) to supply real copy and styling while keeping the auto-resize and state wiring intact — under `asChild` the parts leave your element's `Text` alone (as of 0.5.0; earlier releases overwrote it with the placeholder text).
+</Callout>
+
+<Callout title="Auto-resize owns the height">
+With `autoResize` on (the default), the primitive rewrites the input's `Size` to an offset height on mount and after every change, keeping only your X offset. Size the input's width in pixels, treat the height you pass as an initial value, and put the field in a layout that reflows — or set `autoResize={false}` and own the height yourself.
+</Callout>
+
+<Callout title="Commit fires on every focus loss">
+`onValueCommit` is not change detection — it fires whenever editing ends, even if the text is identical to the last commit, and `readOnly` does not suppress it (only `disabled` does). If you persist on commit, dedupe against the last saved value yourself, as in the change-vs-commit example.
+</Callout>
+
+<Callout title="Input children must be a TextBox">
+With `asChild`, the `Input` merges its `Text` binding, `MultiLine`/`TextWrapped` flags, editability, and `Focused`/`FocusLost`/text-change handlers onto your single child, and its ref wiring only accepts instances that are a `TextBox`. Use a `textbox` element; a `textlabel` or `frame` will not report changes, focus, or auto-resize.
 </Callout>
 
 ## API reference
@@ -141,16 +367,16 @@ Used without `asChild`, each part renders defaults: the `Input` shows a `"Type..
   rows={[
     { name: "value", type: "string", description: "Controlled value. Pair with onValueChange." },
     { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage. Defaults to an empty string." },
-    { name: "onValueChange", type: "(value: string) => void", description: "Called on every text change while the field is editable." },
-    { name: "onValueCommit", type: "(value: string) => void", description: "Called with the final text when editing ends (focus lost). Suppressed when disabled." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called on every text change while the field is editable. Not called when the new text equals the current value." },
+    { name: "onValueCommit", type: "(value: string) => void", description: "Called with the box's final text when editing ends (focus lost). Fires even when the text is unchanged; suppressed while disabled." },
     { name: "disabled", type: "boolean", description: "Blocks edits, clears Active/Selectable, dims the input, and suppresses commit. Defaults to false." },
-    { name: "readOnly", type: "boolean", description: "Blocks edits while keeping the field selectable. Defaults to false." },
-    { name: "required", type: "boolean", description: "Shared flag exposed for your own validation; not enforced. Defaults to false." },
-    { name: "invalid", type: "boolean", description: "Marks the field invalid and recolors the Message part. Defaults to false." },
-    { name: "name", type: "string", description: "Identifier passed through context for form usage." },
+    { name: "readOnly", type: "boolean", description: "Blocks edits while keeping the field selectable and focusable; commit still fires. Defaults to false." },
+    { name: "required", type: "boolean", description: "Shared flag exposed on context for your own validation wiring; not enforced. Defaults to false." },
+    { name: "invalid", type: "boolean", description: "Marks the field invalid and recolors the Message part to the error tone. Defaults to false." },
+    { name: "name", type: "string", description: "Identifier passed through context for form usage. No behavior of its own." },
     { name: "autoResize", type: "boolean", description: "Grows the input height to fit its content within the row bounds. Defaults to true." },
     { name: "minRows", type: "number", description: "Minimum visible rows. Floored at 1. Defaults to 3." },
-    { name: "maxRows", type: "number", description: "Maximum visible rows before the content scrolls. Raised to at least minRows when set. Unbounded by default." },
+    { name: "maxRows", type: "number", description: "Maximum visible rows before the height stops growing. Raised to at least minRows when set. Unbounded by default." },
     { name: "children", type: "React.ReactNode", description: "The field parts." },
   ]}
 />
@@ -159,7 +385,7 @@ Used without `asChild`, each part renders defaults: the `Input` shows a `"Type..
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default multi-line textbox." },
+    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default multi-line textbox. The child must be a textbox." },
     { name: "disabled", type: "boolean", description: "Local disabled state, combined with Root's via OR. Defaults to false." },
     { name: "readOnly", type: "boolean", description: "Local readOnly state, combined with Root's via OR. Defaults to false." },
     { name: "lineHeight", type: "number", description: "Explicit per-row pixel height used by auto-resize. Defaults to ceil(TextSize × 1.2)." },
@@ -171,7 +397,7 @@ Used without `asChild`, each part renders defaults: the `Input` shows a `"Type..
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge label behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge label behavior (focus-on-activate, disabled state) onto the single child element instead of rendering the default textbutton." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

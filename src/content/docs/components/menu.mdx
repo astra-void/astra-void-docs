@@ -3,10 +3,11 @@ title: Menu
 description: Anchored action-menu primitive that owns open state, ordered selection movement, popper positioning, and layered dismissal while you own the visuals.
 section: components
 sidebar:
-  order: 30
+  order: 40
+  group: Overlays
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/menu"
@@ -28,6 +29,8 @@ import { Menu } from "@lattice-ui/menu";
 ## Anatomy
 
 Compose the parts you need. `Root`, `Trigger`, `Portal`, and `Content` form the working menu; `Item` makes it useful, and `Group`, `Label`, and `Separator` structure longer lists.
+
+<PrimitiveAnatomy title="Menu anatomy">
 
 ```tsx title="Menu anatomy"
 <Menu.Root>
@@ -56,45 +59,83 @@ Compose the parts you need. `Root`, `Trigger`, `Portal`, and `Content` form the 
 | `Menu.Label` | no | A non-interactive heading for a group or section. |
 | `Menu.Separator` | no | A thin divider between items or groups. |
 
-## Example
+</PrimitiveAnatomy>
 
-A controlled menu with a grouped action list, a separator, and a destructive item that closes on selection.
+## Examples
 
-```tsx title="RowActionsMenu.tsx"
-import { useState } from "@rbxts/react";
+### Basic actions menu
+
+The smallest useful menu: an uncontrolled root, a trigger, and a few items. Every part here renders its default element — the trigger is a `textbutton` labeled `"Toggle Menu"`, and each item is a left-aligned 220x34 `textbutton` that highlights on hover and gamepad selection — so you can wire up actions before styling anything. Selecting an item runs its `onSelect` and closes the menu.
+
+```tsx title="BasicActionsMenu.tsx"
 import { Menu } from "@lattice-ui/menu";
 
-export function RowActionsMenu() {
-  const [open, setOpen] = useState(false);
-
+export function BasicActionsMenu() {
   return (
-    <Menu.Root open={open} onOpenChange={setOpen}>
+    <Menu.Root>
+      <Menu.Trigger />
+
+      <Menu.Portal>
+        <Menu.Content>
+          <Menu.Item onSelect={() => print("rename")} />
+          <Menu.Item onSelect={() => print("duplicate")} />
+          <Menu.Item onSelect={() => print("delete")} />
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled by default">
+Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen` (closed by default). Reach for controlled state only when something outside the menu needs to open or close it — see [Controlled context menu](#controlled-context-menu).
+</Callout>
+
+### Groups, labels, and separators
+
+`Group` wraps related items in a vertical-layout frame, `Label` puts a muted, non-interactive heading above them, and `Separator` draws a 1px divider. None of them register with selection movement — Up/Down skips straight from the last item of one group to the first enabled item of the next.
+
+```tsx title="InventoryItemMenu.tsx"
+import { Menu } from "@lattice-ui/menu";
+
+export function InventoryItemMenu(props: { itemName: string }) {
+  return (
+    <Menu.Root>
       <Menu.Trigger asChild>
-        <textbutton Text="Actions" Size={UDim2.fromOffset(120, 36)} />
+        <textbutton Text={props.itemName} Size={UDim2.fromOffset(160, 36)} />
       </Menu.Trigger>
 
       <Menu.Portal>
-        <Menu.Content placement="bottom" sideOffset={6}>
+        <Menu.Content>
           <frame
             AutomaticSize={Enum.AutomaticSize.Y}
             BackgroundColor3={Color3.fromRGB(28, 32, 42)}
             Size={UDim2.fromOffset(220, 0)}
           >
-            <uilistlayout Padding={new UDim(0, 2)} />
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uicorner CornerRadius={new UDim(0, 8)} />
+
             <Menu.Label asChild>
-              <textlabel Text="Manage" />
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(220, 24)}
+                Text="Equipment"
+                TextColor3={Color3.fromRGB(162, 173, 191)}
+              />
             </Menu.Label>
             <Menu.Group>
-              <Menu.Item onSelect={() => print("rename")}>
-                <textbutton Text="Rename" />
+              <Menu.Item onSelect={() => print("equip")}>
+                <textbutton Text="Equip" />
               </Menu.Item>
-              <Menu.Item onSelect={() => print("duplicate")}>
-                <textbutton Text="Duplicate" />
+              <Menu.Item onSelect={() => print("inspect")}>
+                <textbutton Text="Inspect" />
               </Menu.Item>
             </Menu.Group>
+
             <Menu.Separator />
-            <Menu.Item onSelect={() => print("delete")}>
-              <textbutton Text="Delete" TextColor3={Color3.fromRGB(244, 120, 120)} />
+
+            <Menu.Item onSelect={() => print("drop")}>
+              <textbutton Text="Drop" TextColor3={Color3.fromRGB(244, 120, 120)} />
             </Menu.Item>
           </frame>
         </Menu.Content>
@@ -104,36 +145,246 @@ export function RowActionsMenu() {
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `open`/`onOpenChange` and pass `defaultOpen` instead to let Menu own its state. Use controlled state only when something outside the menu needs to open or close it.
-</Callout>
+### Icon items with asChild
+
+`asChild` on `Item` merges the selection behavior — activation, Up/Down movement, hover and gamepad highlight — onto your own single element through the core `Slot`. The slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires; the primitive still animates your element's `BackgroundColor3` for the hover highlight (see [How it behaves](#items-and-activation)), so put your styling in strokes, corners, and children.
+
+```tsx title="IconActionsMenu.tsx"
+import { Menu } from "@lattice-ui/menu";
+
+const ACTIONS = [
+  { id: "trade", label: "Trade", icon: "rbxassetid://1234567890" },
+  { id: "invite", label: "Invite to party", icon: "rbxassetid://1234567891" },
+  { id: "block", label: "Block", icon: "rbxassetid://1234567892" },
+];
+
+export function IconActionsMenu(props: { onAction: (id: string) => void }) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <imagebutton Image="rbxassetid://1234567893" Size={UDim2.fromOffset(32, 32)} />
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(200, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            {ACTIONS.map((action) => (
+              <Menu.Item key={action.id} onSelect={() => props.onAction(action.id)} asChild>
+                <textbutton AutoButtonColor={false} Size={UDim2.fromOffset(200, 34)} Text="">
+                  <uipadding PaddingLeft={new UDim(0, 10)} />
+                  <uilistlayout
+                    FillDirection={Enum.FillDirection.Horizontal}
+                    Padding={new UDim(0, 8)}
+                    VerticalAlignment={Enum.VerticalAlignment.Center}
+                  />
+                  <imagelabel
+                    BackgroundTransparency={1}
+                    Image={action.icon}
+                    Size={UDim2.fromOffset(16, 16)}
+                  />
+                  <textlabel
+                    BackgroundTransparency={1}
+                    Size={UDim2.fromOffset(160, 34)}
+                    Text={action.label}
+                    TextColor3={Color3.fromRGB(234, 239, 247)}
+                    TextXAlignment={Enum.TextXAlignment.Left}
+                  />
+                </textbutton>
+              </Menu.Item>
+            ))}
+          </frame>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+```
+
+### Controlled context menu
+
+Pass `open` and `onOpenChange` when something other than the trigger's own activation should open the menu — here a right-click (or long-press-style secondary input) on an inventory slot. The trigger still has to exist because it is the positioning anchor and the focus-restore target; with `asChild` its toggle behavior composes with your slot's own handlers, so a left-click `Activated` also toggles as usual.
+
+```tsx title="SlotContextMenu.tsx"
+import { useState } from "@rbxts/react";
+import { Menu } from "@lattice-ui/menu";
+
+export function SlotContextMenu(props: { slotIcon: string; onAction: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Menu.Root open={open} onOpenChange={setOpen}>
+      <Menu.Trigger asChild>
+        <imagebutton
+          Image={props.slotIcon}
+          Size={UDim2.fromOffset(64, 64)}
+          Event={{
+            MouseButton2Click: () => setOpen(true),
+          }}
+        />
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Content placement="right" sideOffset={4}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(180, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            <Menu.Item onSelect={() => props.onAction("use")}>
+              <textbutton Text="Use" />
+            </Menu.Item>
+            <Menu.Item onSelect={() => props.onAction("split")}>
+              <textbutton Text="Split stack" />
+            </Menu.Item>
+            <Menu.Item onSelect={() => props.onAction("drop")}>
+              <textbutton Text="Drop" />
+            </Menu.Item>
+          </frame>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+```
+
+### Placement tuning
+
+`Menu.Content` accepts the popper positioning options. `placement` requests a side (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` adds a pixel gap between the trigger and the content, `alignOffset` shifts the content along the trigger's cross axis, and `collisionPadding` sets the minimum distance kept from the screen edge (default `8`). The requested side is a preference, not a guarantee — when it would overflow, the popper tries the opposite side, then the two orthogonal sides, and finally clamps the best candidate inside the viewport.
+
+```tsx title="SidebarOverflowMenu.tsx"
+import { Menu } from "@lattice-ui/menu";
+
+export function SidebarOverflowMenu() {
+  return (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <textbutton Text="More" Size={UDim2.fromOffset(96, 32)} />
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Content placement="right" sideOffset={8} alignOffset={-4} collisionPadding={16}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(200, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            <Menu.Item onSelect={() => print("settings")}>
+              <textbutton Text="Settings" />
+            </Menu.Item>
+            <Menu.Item onSelect={() => print("help")}>
+              <textbutton Text="Help" />
+            </Menu.Item>
+          </frame>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+```
+
+### Disabled items and staying open
+
+`disabled` on an item blocks activation, removes it from gamepad selection, and skips it during Up/Down movement. `onSelect` receives a `MenuSelectEvent`; calling `event.preventDefault()` marks it default-prevented, and the item then skips the automatic close — the one thing the default behavior does — so the menu stays open. That makes toggle-style items possible, like a filter list you can flip several times in one visit.
+
+```tsx title="LootFilterMenu.tsx"
+import { useState } from "@rbxts/react";
+import { Menu } from "@lattice-ui/menu";
+
+const RARITIES = ["Common", "Rare", "Epic"];
+
+export function LootFilterMenu(props: { hasLoot: boolean }) {
+  const [enabled, setEnabled] = useState<Record<string, boolean>>({ Common: true, Rare: true, Epic: true });
+
+  return (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <textbutton Text="Filters" Size={UDim2.fromOffset(120, 36)} />
+      </Menu.Trigger>
+
+      <Menu.Portal>
+        <Menu.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            {RARITIES.map((rarity) => (
+              <Menu.Item
+                key={rarity}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setEnabled({ ...enabled, [rarity]: !enabled[rarity] });
+                }}
+              >
+                <textbutton Text={`${enabled[rarity] ? "[x]" : "[ ]"} ${rarity}`} />
+              </Menu.Item>
+            ))}
+
+            <Menu.Separator />
+
+            <Menu.Item disabled={!props.hasLoot} onSelect={() => print("collect all")}>
+              <textbutton Text="Collect all" />
+            </Menu.Item>
+          </frame>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Open state
 
-`Menu.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to closed). `Menu.Trigger` toggles the open state on activation (and on the `Return`/`Space` keys). Selecting an item closes the menu unless the item's `onSelect` calls `preventDefault`.
+`Menu.Root` is controllable on `open`/`onOpenChange`, with `defaultOpen` for uncontrolled usage (defaulting to closed). `Menu.Trigger` toggles the open state on `Activated` and on the `Return`/`Space` keys, focusing itself first when it is about to open the menu so focus restoration has a stable target. Selecting an item closes the menu unless the item's `onSelect` calls `preventDefault`.
 
 ### Positioning
 
-`Menu.Content` is positioned by the popper foundation, anchored to the trigger. It measures the trigger and the content, resolves a final placement, and flips to the opposite side when the requested side would collide with the screen edge. Tune it with `placement` (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` (gap from the trigger, default `0`), `alignOffset` (shift along the cross axis, default `0`), and `collisionPadding` (minimum distance from the screen edge, default `8`).
+`Menu.Content` is positioned by the popper foundation, anchored to the trigger. It measures the trigger and the content, then evaluates candidate placements in order — the requested side, its opposite, then the two orthogonal sides (which carry a small penalty so they are only chosen when both primary sides overflow) — and picks the first perfect fit or the least-overflowing candidate, clamped inside the viewport with `collisionPadding` kept from every edge. Until the first measurement completes the content is parked off-screen, so it never flashes at the wrong position.
 
-### Focus and selection
+Tune the result with `placement` (default `"bottom"`), `sideOffset` (gap from the trigger, default `0`), `alignOffset` (shift along the cross axis, default `0`), and `collisionPadding` (default `8`).
 
-When the menu opens, the first item is focused automatically and selection is **trapped** inside the content (Menu is modal by default). `Menu.Item` registers itself with the root in render order, and the registry drives ordered movement: pressing `Up`/`Down` on a focused item moves selection to the previous or next enabled item, wrapping through the list. Disabled items are skipped. When the menu closes, focus is restored to the trigger.
+### Focus and ordered movement
 
-`Menu.Item` activates on click or on the `Return`/`Space` keys, calling `onSelect` with an event whose `preventDefault()` keeps the menu open. The default item renders a left-aligned `textbutton` that highlights on pointer enter and on gamepad selection.
+When the menu opens, the first enabled item is focused automatically and selection is **trapped** inside the content (Menu is modal by default). `Menu.Item` registers itself with the root in render order, and that registry drives ordered movement: pressing `Up`/`Down` on a focused item moves selection to the previous or next available item. Disabled, invisible, and non-selectable items are skipped. Movement stops at the ends of the list — it does not wrap around. When the menu closes, focus is restored to the trigger.
+
+### Items and activation
+
+`Menu.Item` activates on click/tap (`Activated`) and on the `Return`/`Space` keys. Activation builds a `MenuSelectEvent` (`{ defaultPrevented, preventDefault() }`) and passes it to `onSelect`; if the event is not default-prevented, the item closes the menu. A disabled item ignores activation and movement keys entirely.
+
+The default item renders a left-aligned `textbutton` (220x34) that highlights while hovered or gamepad-selected. The highlight is a motion-driven `BackgroundColor3` animation using the selection response recipe, and it applies to your own element under `asChild` too — the item drives your element's background between its fixed active and inactive colors.
 
 ### Dismissal
 
-`Menu.Content` participates in dismissable-layer behavior. Because Menu is modal, interaction behind the surface is blocked and an outside press dismisses it. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the menu closes.
+`Menu.Content` participates in dismissable-layer behavior: only the top-most enabled layer receives outside interactions, so nested overlays dismiss one at a time. Because Menu is modal, a full-screen blocker stops interaction behind the surface, and an outside press dismisses the menu. Before dismissal, `onPointerDownOutside` fires for outside pointer presses and `onInteractOutside` fires for the interaction in general; both receive a `LayerInteractEvent` (`{ originalEvent, defaultPrevented, preventDefault() }`), and calling `preventDefault()` in either handler vetoes the dismissal while still letting you observe the interaction.
 
 ### Motion and presence
 
-`Menu.Content` runs a default popper-aware canvas-group reveal/exit recipe that animates from the resolved placement, so it animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist).
+`Menu.Content` runs a default popper-aware canvas-group reveal/exit recipe built from the **resolved** placement — if the popper flipped the menu above the trigger, the motion originates from above — so it animates in and out without extra setup. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation (useful when you drive motion yourself or need the node to persist). The content wrapper is an automatically-sized `canvasgroup`, so your surface defines the measured size.
 
 <Callout title="Menu is modal">
 Menu defaults to `modal={true}`: it traps selection inside the open content and blocks interaction behind it. Set `modal={false}` on `Menu.Root` for a lightweight, non-blocking menu that leaves the rest of the UI interactive — closer to Popover's default behavior.
+</Callout>
+
+<Callout title="The primitive drives the item highlight">
+Even with `asChild`, `Menu.Item` animates your element's `BackgroundColor3` between its fixed hover/selection colors; there is no opt-out prop. Style your item with strokes, corners, and child elements rather than a hand-set background color, or the highlight animation will fight it.
+</Callout>
+
+<Callout title="Selection movement does not wrap">
+`Up` on the first item and `Down` on the last item keep selection where it is instead of cycling to the other end. Order items so the most common actions sit at the top, where selection starts.
 </Callout>
 
 ## API reference
@@ -145,7 +396,7 @@ Menu defaults to `modal={true}`: it traps selection inside the open content and 
     { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
     { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
     { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
-    { name: "modal", type: "boolean", description: "When true, traps selection inside the menu and blocks interaction behind it. Defaults to true." },
+    { name: "modal", type: "boolean", description: "When true, traps selection inside the menu and blocks interaction behind it with a full-screen blocker. Defaults to true." },
     { name: "children", type: "React.ReactNode", description: "The menu parts." },
   ]}
 />
@@ -154,8 +405,8 @@ Menu defaults to `modal={true}`: it traps selection inside the open content and 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge behavior onto the single child element instead of rendering the default textbutton." },
-    { name: "disabled", type: "boolean", description: "Prevents the trigger from toggling the menu and removes it from selection." },
+    { name: "asChild", type: "boolean", description: "Merge the toggle behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "disabled", type: "boolean", description: "Prevents the trigger from toggling the menu and removes it from gamepad selection." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -174,15 +425,15 @@ Menu defaults to `modal={true}`: it traps selection inside the open content and 
 
 <PropTable
   rows={[
-    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the content on. Flips on collision. Defaults to \"bottom\"." },
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the content on. Falls back to the opposite side, then the orthogonal sides, on collision. Defaults to \"bottom\"." },
     { name: "sideOffset", type: "number", description: "Gap in pixels between the trigger and the content. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the trigger's cross axis. Defaults to 0." },
-    { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from every screen edge when resolving and clamping placement. Defaults to 8." },
     { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the default canvasgroup contents." },
-    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper-aware canvas-group reveal/exit recipe." },
-    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
-    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs, instead of unmounting on close." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper-aware canvas-group reveal/exit recipe, which animates from the resolved placement." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal. Call event.preventDefault() to veto the dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any outside interaction, before dismissal. Call event.preventDefault() to veto the dismissal." },
     { name: "children", type: "React.ReactNode", description: "The menu contents." },
   ]}
 />
@@ -191,8 +442,8 @@ Menu defaults to `modal={true}`: it traps selection inside the open content and 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton." },
-    { name: "disabled", type: "boolean", description: "Prevents selection and skips the item during ordered movement." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button; its BackgroundColor3 is driven by the hover highlight." },
+    { name: "disabled", type: "boolean", description: "Prevents selection, removes the item from gamepad selection, and skips it during ordered movement." },
     { name: "onSelect", type: "(event: MenuSelectEvent) => void", description: "Called on activation. Call event.preventDefault() to keep the menu open." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -211,7 +462,7 @@ Menu defaults to `modal={true}`: it traps selection inside the open content and 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the label onto the single child element instead of rendering the default textlabel." },
+    { name: "asChild", type: "boolean", description: "Merge the label onto the single child element instead of rendering the default muted textlabel." },
     { name: "children", type: "React.ReactElement", description: "The label element to render. Required when asChild is set." },
   ]}
 />

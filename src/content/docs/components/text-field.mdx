@@ -3,10 +3,11 @@ title: Text Field
 description: Single-line text input primitive that owns the value, separates live changes from commit, exposes disabled/readOnly/invalid state, and wires label, description, and message parts together.
 section: components
 sidebar:
-  order: 150
+  order: 80
+  group: Form
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/text-field"
@@ -17,7 +18,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 Text Field is the primitive for any single-line input: a username box, a search bar, a price entry, a private-server name. It wraps a Roblox `TextBox`, owns the current value, and distinguishes a live change (every keystroke) from a commit (when editing ends), so your component decides when to validate or persist.
 
-Reach for Text Field when an input needs **controlled or uncontrolled value state**, a clear split between **change and commit**, and shared **disabled / readOnly / required / invalid** state that flows to a label, helper description, and validation message.
+Reach for Text Field when an input needs **controlled or uncontrolled value state**, a clear split between **change and commit**, and shared **disabled / readOnly / required / invalid** state that flows to a label, helper description, and validation message. For multi-line input with auto-resize, [Textarea](/lattice-ui/components/textarea/) is the sibling primitive.
 
 ## Import
 
@@ -28,6 +29,8 @@ import { TextField } from "@lattice-ui/text-field";
 ## Anatomy
 
 Compose `Root` around an `Input`, plus any of the optional text parts. Only `Root` and `Input` are required; `Label`, `Description`, and `Message` read shared state from context.
+
+<PrimitiveAnatomy title="TextField anatomy">
 
 ```tsx title="TextField anatomy"
 <TextField.Root>
@@ -46,9 +49,139 @@ Compose `Root` around an `Input`, plus any of the optional text parts. Only `Roo
 | `TextField.Description` | no | A static `textlabel` for helper text. |
 | `TextField.Message` | no | A `textlabel` for validation text that recolors when `invalid` is set. |
 
-## Example
+</PrimitiveAnatomy>
 
-A controlled field with commit-time validation that flips `invalid` and shows a message.
+## Examples
+
+### Basic labeled field
+
+An uncontrolled field seeded with `defaultValue`: the Root keeps the value internally and you only hear about it through the callbacks. `Label`, `Input`, and `Description` each take `asChild` to project their behavior onto your own elements — clicking the label captures focus on the input, and the description is plain helper text that dims with the field.
+
+```tsx title="DisplayNameField.tsx"
+import { TextField } from "@lattice-ui/text-field";
+
+export function DisplayNameField() {
+  return (
+    <TextField.Root defaultValue="" onValueCommit={(value) => print(`display name: ${value}`)}>
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(240, 88)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+        <TextField.Label asChild>
+          <textbutton
+            AutoButtonColor={false}
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(240, 22)}
+            Text="Display name"
+            TextXAlignment={Enum.TextXAlignment.Left}
+          />
+        </TextField.Label>
+
+        <TextField.Input asChild>
+          <textbox PlaceholderText="Enter a name" Size={UDim2.fromOffset(240, 36)} TextXAlignment={Enum.TextXAlignment.Left}>
+            <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+          </textbox>
+        </TextField.Input>
+
+        <TextField.Description asChild>
+          <textlabel
+            BackgroundTransparency={1}
+            Size={UDim2.fromOffset(240, 20)}
+            Text="Shown to other players."
+            TextXAlignment={Enum.TextXAlignment.Left}
+          />
+        </TextField.Description>
+      </frame>
+    </TextField.Root>
+  );
+}
+```
+
+### Controlled value
+
+Pass `value` and `onValueChange` when something outside the field needs to read or set the text — filtering a list as the player types, or resetting the field from a button. Because the owned value is mirrored onto the `TextBox`, setting state from outside (like the clear button here) updates the visible text too.
+
+```tsx title="ItemSearchField.tsx"
+import { useState } from "@rbxts/react";
+import { TextField } from "@lattice-ui/text-field";
+
+export function ItemSearchField(props: { onQueryChange: (query: string) => void }) {
+  const [query, setQuery] = useState("");
+
+  const updateQuery = (nextQuery: string) => {
+    setQuery(nextQuery);
+    props.onQueryChange(nextQuery);
+  };
+
+  return (
+    <TextField.Root value={query} onValueChange={updateQuery}>
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(300, 36)}>
+        <uilistlayout FillDirection={Enum.FillDirection.Horizontal} Padding={new UDim(0, 8)} />
+
+        <TextField.Input asChild>
+          <textbox PlaceholderText="Search items" Size={UDim2.fromOffset(240, 36)} TextXAlignment={Enum.TextXAlignment.Left}>
+            <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+          </textbox>
+        </TextField.Input>
+
+        <textbutton
+          BackgroundColor3={Color3.fromRGB(59, 66, 84)}
+          Event={{ Activated: () => updateQuery("") }}
+          Size={UDim2.fromOffset(52, 36)}
+          Text="Clear"
+          TextColor3={Color3.fromRGB(236, 241, 249)}
+        />
+      </frame>
+    </TextField.Root>
+  );
+}
+```
+
+### Change vs commit
+
+`onValueChange` fires on every text change; `onValueCommit` fires once when editing ends — the `TextBox` loses focus because the player pressed Enter or clicked away. Use change for live UI (previews, counters, filtering) and commit for the expensive or one-shot work: saving to the server, running validation, recording history. Here the draft updates live while the save only happens on commit.
+
+```tsx title="ServerNameField.tsx"
+import { useState } from "@rbxts/react";
+import { TextField } from "@lattice-ui/text-field";
+
+export function ServerNameField(props: { onSave: (name: string) => void }) {
+  const [draft, setDraft] = useState("My Server");
+  const [saved, setSaved] = useState("My Server");
+
+  return (
+    <TextField.Root
+      value={draft}
+      onValueChange={setDraft}
+      onValueCommit={(committed) => {
+        setSaved(committed);
+        props.onSave(committed);
+      }}
+    >
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(240, 64)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+        <TextField.Input asChild>
+          <textbox Size={UDim2.fromOffset(240, 36)} TextXAlignment={Enum.TextXAlignment.Left}>
+            <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+          </textbox>
+        </TextField.Input>
+
+        <textlabel
+          BackgroundTransparency={1}
+          Size={UDim2.fromOffset(240, 20)}
+          Text={draft === saved ? "Saved" : "Unsaved changes"}
+          TextColor3={Color3.fromRGB(170, 179, 195)}
+          TextXAlignment={Enum.TextXAlignment.Left}
+        />
+      </frame>
+    </TextField.Root>
+  );
+}
+```
+
+### Validation with invalid and Message
+
+Validate on commit rather than every keystroke, then flip `invalid` on the Root. `invalid` is a shared flag: the `Message` part reads it from context and recolors its text to the error tone, and your own elements can branch on the same state. Swapping `Message` for `Description` keeps the layout height stable while switching between helper and error copy.
 
 ```tsx title="UsernameField.tsx"
 import { useState } from "@rbxts/react";
@@ -67,24 +200,32 @@ export function UsernameField() {
       required
       name="username"
     >
-      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(240, 96)}>
-        <uilistlayout Padding={new UDim(0, 4)} />
+      <frame BackgroundTransparency={1} Size={UDim2.fromOffset(240, 88)}>
+        <uilistlayout Padding={new UDim(0, 4)} SortOrder={Enum.SortOrder.LayoutOrder} />
 
-        <TextField.Label>
-          <textbutton BackgroundTransparency={1} Text="Username" Size={UDim2.fromOffset(240, 22)} />
-        </TextField.Label>
-
-        <TextField.Input>
-          <textbox PlaceholderText="Enter a name" Size={UDim2.fromOffset(240, 36)} />
+        <TextField.Input asChild>
+          <textbox PlaceholderText="Enter a name" Size={UDim2.fromOffset(240, 36)} TextXAlignment={Enum.TextXAlignment.Left}>
+            <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+          </textbox>
         </TextField.Input>
 
         {error ? (
-          <TextField.Message>
-            <textlabel BackgroundTransparency={1} Text="At least 3 characters." Size={UDim2.fromOffset(240, 20)} />
+          <TextField.Message asChild>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(240, 20)}
+              Text="At least 3 characters."
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
           </TextField.Message>
         ) : (
-          <TextField.Description>
-            <textlabel BackgroundTransparency={1} Text="Visible to other players." Size={UDim2.fromOffset(240, 20)} />
+          <TextField.Description asChild>
+            <textlabel
+              BackgroundTransparency={1}
+              Size={UDim2.fromOffset(240, 20)}
+              Text="Visible to other players."
+              TextXAlignment={Enum.TextXAlignment.Left}
+            />
           </TextField.Description>
         )}
       </frame>
@@ -93,32 +234,103 @@ export function UsernameField() {
 }
 ```
 
-<Callout title="Uncontrolled usage">
-Omit `value`/`onValueChange` and pass `defaultValue` to let Text Field own the value internally (it defaults to an empty string). Use controlled state when something outside the field needs to read or set the value.
-</Callout>
+### Disabled and readOnly
+
+Both flags freeze the value, but they differ in interaction. `disabled` takes the input out of play entirely — it clears `Active`/`Selectable`, dims the text, ignores edits, and suppresses the commit callback. `readOnly` keeps the field focusable and selectable (players can still click into it and copy the text) but rejects edits; a focus loss still fires `onValueCommit` with the unchanged text. Here the join code is copyable but locked, while the region field is fully inert until unlocked.
+
+```tsx title="ServerInfoFields.tsx"
+import { TextField } from "@lattice-ui/text-field";
+
+export function ServerInfoFields(props: { joinCode: string; canEditRegion: boolean }) {
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(240, 80)}>
+      <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <TextField.Root value={props.joinCode} readOnly>
+        <TextField.Input />
+      </TextField.Root>
+
+      <TextField.Root defaultValue="EU-West" disabled={!props.canEditRegion}>
+        <TextField.Input />
+      </TextField.Root>
+    </frame>
+  );
+}
+```
+
+### Filtered input
+
+For numeric-only entry, control the value and strip rejected characters in `onValueChange` before they reach state. The `TextBox` text is bound to the owned value, so the field tracks the filtered result. Run the same normalization at commit — `onValueCommit` receives the box's final text, so it is the place to parse and clamp the settled value.
+
+```tsx title="BetAmountField.tsx"
+import { useState } from "@rbxts/react";
+import { TextField } from "@lattice-ui/text-field";
+
+const MAX_BET = 500;
+
+export function BetAmountField(props: { onBetChange: (amount: number) => void }) {
+  const [amount, setAmount] = useState("0");
+
+  return (
+    <TextField.Root
+      value={amount}
+      onValueChange={(text) => {
+        const [digits] = text.gsub("%D", "");
+        setAmount(digits);
+      }}
+      onValueCommit={(text) => {
+        const [digits] = text.gsub("%D", "");
+        const clamped = math.clamp(tonumber(digits) ?? 0, 0, MAX_BET);
+        setAmount(tostring(clamped));
+        props.onBetChange(clamped);
+      }}
+    >
+      <TextField.Input asChild>
+        <textbox PlaceholderText="0" Size={UDim2.fromOffset(120, 36)} TextXAlignment={Enum.TextXAlignment.Left}>
+          <uipadding PaddingLeft={new UDim(0, 10)} PaddingRight={new UDim(0, 10)} />
+        </textbox>
+      </TextField.Input>
+    </TextField.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Value state
 
-`TextField.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled; when neither is set the value starts empty. The value is mirrored onto the `TextBox` every render, so the displayed text always reflects the owned state rather than whatever Roblox last typed.
+`TextField.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled; when neither is set the value starts empty. The owned value is bound to the `TextBox`'s `Text`, so the displayed text tracks the state rather than whatever Roblox last typed. Setting the same value again is a no-op — `onValueChange` only fires when the text actually differs from the current value.
 
 ### Change and commit
 
-A keystroke fires the `TextBox` text change, which calls `onValueChange` with the new text. A commit happens on `FocusLost` — when the player clicks away, presses Enter, or otherwise ends editing — which calls `onValueCommit` with the final text. Use `onValueChange` for live updates (counters, filtering) and `onValueCommit` for validation or persistence you only want once editing settles.
+A keystroke fires the `TextBox` text change, which calls `onValueChange` with the new text. A commit happens on `FocusLost` — when the player presses Enter, clicks away, or otherwise ends editing — and calls `onValueCommit` with the text as it stands in the box at that moment. Commit is not a diff: it fires on every focus loss, including when the text is unchanged, and it is suppressed only while `disabled` (a `readOnly` field still commits its unchanged text). Use `onValueChange` for live updates and `onValueCommit` for validation or persistence you only want once editing settles.
 
-### Disabled, readOnly, and validation
+### Disabled and readOnly
 
-`disabled` and `readOnly` both stop edits from updating the value: while either is set, `Root.setValue` ignores incoming text and the `Input` rewrites the `TextBox` back to the owned value. They differ in interaction — `disabled` also clears `Active`/`Selectable` and dims the input text, while `readOnly` keeps the field selectable but not editable. A disabled field additionally suppresses the commit callback on focus loss. `Input` can also set `disabled`/`readOnly` locally, which combine with `Root`'s state via OR.
+`disabled` and `readOnly` both stop edits from updating the value: while either is set, `Root.setValue` ignores incoming text and the `Input` rewrites the `TextBox` back to the owned value, so stray platform input cannot desync the field. They differ in interaction — `disabled` also clears `Active`/`Selectable`, makes the text non-editable, and dims the input text, while `readOnly` only drops `TextEditable`, keeping the field selectable and focusable. A disabled field additionally suppresses the commit callback on focus loss. `Input` can also set `disabled`/`readOnly` locally, which combine with `Root`'s state via OR — useful for locking one input inside an otherwise live field.
 
-`required` and `invalid` are shared flags that carry no enforcement on their own — `required` is exposed for your own validation, and `invalid` is a visual/semantic marker. When `invalid` is set, `TextField.Message` recolors its text to the error color. The `name` prop is passed through context for form identification.
+### Required, invalid, and name
+
+`required` and `invalid` are shared flags that carry no enforcement on their own — `required` is exposed on context for your own validation and submission logic, and `invalid` is a visual/semantic marker. When `invalid` is set, `TextField.Message` recolors its text to the error tone (`RGB(255, 128, 128)`); `Description` never recolors for validity. The `name` prop is passed through context for form identification and is otherwise inert.
 
 ### Label and focus
 
-`TextField.Label` renders a `textbutton`; activating it calls `CaptureFocus()` on the input, so clicking the label focuses the field. When the field is disabled the label drops its `Active`/`Selectable` state and does nothing on activation. `Description` and `Message` are non-interactive labels that read shared state for their text color.
+`TextField.Label` renders a `textbutton`; activating it calls `CaptureFocus()` on the input's `TextBox`, so clicking the label focuses the field. While the field is disabled the label drops its `Active`/`Selectable` state, dims, and does nothing on activation. `Description` and `Message` are non-interactive labels that read shared state for their text color and dim alongside a disabled field.
+
+### Input focus motion
+
+The `Input` tracks focus and animates its `BackgroundColor3` with the field response recipe — settling on the focused accent while the field is focused and editable, and back to the resting tone otherwise. Focus while `disabled` or `readOnly` does not count as active, so a read-only field never lights up as editable. This motion is driven through the input's ref, so it applies to your own `textbox` under `asChild` too: design around a primitive-driven background color and put your styling in strokes, corners, padding, and text properties.
 
 <Callout title="Default text and visuals">
-Each part renders sensible defaults when used without `asChild`: the `Input` shows a `"Type..."` placeholder, and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the example) to supply real copy and styling while keeping the wired-up behavior.
+Each part renders sensible defaults when used without `asChild`: the `Input` is a 240x36 `textbox` with a `"Type..."` placeholder and `ClearTextOnFocus` off, and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the examples) to supply real copy and styling while keeping the wired-up behavior — under `asChild` the parts leave your element's `Text` alone (as of 0.5.0; earlier releases overwrote it with the placeholder text).
+</Callout>
+
+<Callout title="Commit fires on every focus loss">
+`onValueCommit` is not change detection — it fires whenever editing ends, even if the text is identical to the last commit, and `readOnly` does not suppress it (only `disabled` does). If you persist on commit, dedupe against the last saved value yourself, as in the change-vs-commit example.
+</Callout>
+
+<Callout title="Input children must be a TextBox">
+With `asChild`, the `Input` merges its `Text` binding, editability flags, and `Focused`/`FocusLost`/text-change handlers onto your single child, and its ref wiring only accepts instances that are a `TextBox`. Use a `textbox` element; a `textlabel` or `frame` will not report changes or focus.
 </Callout>
 
 ## API reference
@@ -129,13 +341,13 @@ Each part renders sensible defaults when used without `asChild`: the `Input` sho
   rows={[
     { name: "value", type: "string", description: "Controlled value. Pair with onValueChange." },
     { name: "defaultValue", type: "string", description: "Initial value for uncontrolled usage. Defaults to an empty string." },
-    { name: "onValueChange", type: "(value: string) => void", description: "Called on every text change while the field is editable." },
-    { name: "onValueCommit", type: "(value: string) => void", description: "Called with the final text when editing ends (focus lost). Suppressed when disabled." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called on every text change while the field is editable. Not called when the new text equals the current value." },
+    { name: "onValueCommit", type: "(value: string) => void", description: "Called with the box's final text when editing ends (focus lost via Enter or clicking away). Fires even when the text is unchanged; suppressed while disabled." },
     { name: "disabled", type: "boolean", description: "Blocks edits, clears Active/Selectable, dims the input, and suppresses commit. Defaults to false." },
-    { name: "readOnly", type: "boolean", description: "Blocks edits while keeping the field selectable. Defaults to false." },
-    { name: "required", type: "boolean", description: "Shared flag exposed for your own validation; not enforced. Defaults to false." },
-    { name: "invalid", type: "boolean", description: "Marks the field invalid and recolors the Message part. Defaults to false." },
-    { name: "name", type: "string", description: "Identifier passed through context for form usage." },
+    { name: "readOnly", type: "boolean", description: "Blocks edits while keeping the field selectable and focusable; commit still fires. Defaults to false." },
+    { name: "required", type: "boolean", description: "Shared flag exposed on context for your own validation wiring; not enforced. Defaults to false." },
+    { name: "invalid", type: "boolean", description: "Marks the field invalid and recolors the Message part to the error tone. Defaults to false." },
+    { name: "name", type: "string", description: "Identifier passed through context for form usage. No behavior of its own." },
     { name: "children", type: "React.ReactNode", description: "The field parts." },
   ]}
 />
@@ -144,7 +356,7 @@ Each part renders sensible defaults when used without `asChild`: the `Input` sho
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default textbox." },
+    { name: "asChild", type: "boolean", description: "Merge input behavior onto the single child element instead of rendering the default textbox. The child must be a textbox." },
     { name: "disabled", type: "boolean", description: "Local disabled state, combined with Root's via OR. Defaults to false." },
     { name: "readOnly", type: "boolean", description: "Local readOnly state, combined with Root's via OR. Defaults to false." },
     { name: "children", type: "React.ReactElement", description: "The textbox element to render. Required when asChild is set." },
@@ -155,7 +367,7 @@ Each part renders sensible defaults when used without `asChild`: the `Input` sho
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge label behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge label behavior (focus-on-activate, disabled state) onto the single child element instead of rendering the default textbutton." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

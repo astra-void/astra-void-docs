@@ -3,10 +3,11 @@ title: Radio Group
 description: Single-selection primitive that owns the chosen value, registers items in order, and moves selection across them with gamepad and arrow-key navigation.
 section: components
 sidebar:
-  order: 90
+  order: 20
+  group: Form
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/radio-group"
@@ -15,9 +16,9 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion"]}
 />
 
-Radio Group is the primitive for picking exactly one option from a set: difficulty selectors, team pickers, quality settings, and any mutually-exclusive choice. `Root` owns the selected value; `Item` registers itself in the group, reflects whether it is checked, and handles activation and directional navigation; `Indicator` reveals a checkmark on the selected item.
+Radio Group is the primitive for picking exactly one option from a set: difficulty selectors, team pickers, quality settings, and any mutually-exclusive choice. `Root` owns the selected value; `Item` registers itself in the group, reflects whether it is checked, and handles activation and directional navigation; `Indicator` reveals a marker on the selected item.
 
-Reach for Radio Group when a choice is **single-select**, the options should be **navigable as a unit** with the arrow keys or a gamepad, and selection should **follow focus** the way native radio groups do.
+Reach for Radio Group when a choice is **single-select**, the options should be **navigable as a unit** with the arrow keys or a gamepad, and selection should **follow focus** the way native radio groups do. For a choice that lives behind a trigger and opens in a popup, [Select](/lattice-ui/components/select/) is usually the better fit.
 
 ## Import
 
@@ -27,7 +28,9 @@ import { RadioGroup } from "@lattice-ui/radio-group";
 
 ## Anatomy
 
-Wrap a set of `Item`s in a `Root`. Each `Item` carries a `value` and may contain an `Indicator` that shows only while that item is checked.
+Wrap a set of `Item`s in a `Root`. Each `Item` carries a `value` and may contain an `Indicator` that shows only while that item is checked. `Root` renders no instance of its own — it only provides context — so the surrounding container and layout are yours (see [How it behaves](#root-renders-no-container)).
+
+<PrimitiveAnatomy title="RadioGroup anatomy">
 
 ```tsx title="RadioGroup anatomy"
 <RadioGroup.Root>
@@ -39,53 +42,230 @@ Wrap a set of `Item`s in a `Root`. Each `Item` carries a `value` and may contain
 
 | Part | Required | Responsibility |
 | --- | --- | --- |
-| `RadioGroup.Root` | yes | Owns the selected value, group state, item registry, and directional selection movement. |
+| `RadioGroup.Root` | yes | Owns the selected value, group state, item registry, and directional selection movement. Renders no instance. |
 | `RadioGroup.Item` | yes | A selectable button bound to a `value`; activates, registers as a focus node, and drives arrow navigation. |
 | `RadioGroup.Indicator` | no | Presence-driven marker rendered only while its parent item is checked. |
 
-## Example
+</PrimitiveAnatomy>
 
-A vertical difficulty picker driven by app state, with a checkmark indicator inside each item.
+## Examples
 
-```tsx title="DifficultyPicker.tsx"
+### Basic usage
+
+The smallest possible group: uncontrolled state seeded with `defaultValue` and the default item visuals. Each default item is a `textbutton` labeled with its own `value` and tinted by whether it is checked, which makes it useful for wiring things up before you style anything. Because `Root` renders no container, the group borrows the layout of whatever frame it sits in.
+
+```tsx title="BasicRadioGroup.tsx"
+import { RadioGroup } from "@lattice-ui/radio-group";
+
+export function BasicRadioGroup() {
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(170, 120)}>
+      <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <RadioGroup.Root
+        defaultValue="Normal"
+        onValueChange={(value) => print(`selected: ${value}`)}
+      >
+        <RadioGroup.Item value="Easy" />
+        <RadioGroup.Item value="Normal" />
+        <RadioGroup.Item value="Hard" />
+      </RadioGroup.Root>
+    </frame>
+  );
+}
+```
+
+### Controlled group
+
+Pass `value` and `onValueChange` when something outside the group needs to read or set the choice — persisting a setting, syncing with a server, or resetting from elsewhere. `onValueChange` fires with the newly selected value and never with `undefined`, so it is safe to store directly.
+
+```tsx title="QualitySetting.tsx"
 import { useState } from "@rbxts/react";
 import { RadioGroup } from "@lattice-ui/radio-group";
 
-const OPTIONS = ["Easy", "Normal", "Hard"] as const;
+const QUALITIES = ["Low", "Medium", "High", "Ultra"];
 
-export function DifficultyPicker() {
+export function QualitySetting(props: { onSave: (quality: string) => void }) {
+  const [quality, setQuality] = useState("Medium");
+
+  const selectQuality = (nextQuality: string) => {
+    setQuality(nextQuality);
+    props.onSave(nextQuality);
+  };
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(170, 160)}>
+      <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <RadioGroup.Root value={quality} onValueChange={selectQuality}>
+        {QUALITIES.map((option) => (
+          <RadioGroup.Item key={option} value={option} />
+        ))}
+      </RadioGroup.Root>
+    </frame>
+  );
+}
+```
+
+### Orientation and arrow keys
+
+`orientation` picks the arrow-key axis: a vertical group (the default) moves on `Up`/`Down`, a horizontal group on `Left`/`Right`. The prop does not lay the items out — pair it with a `uilistlayout` whose `FillDirection` matches so the keys move the way the group looks. Movement clamps at both ends rather than wrapping, so holding `Right` on the last item keeps it selected.
+
+```tsx title="TeamPicker.tsx"
+import { useState } from "@rbxts/react";
+import { RadioGroup } from "@lattice-ui/radio-group";
+
+const TEAMS = ["Red", "Blue", "Green"];
+
+export function TeamPicker() {
+  const [team, setTeam] = useState("Red");
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(540, 34)}>
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 8)}
+        SortOrder={Enum.SortOrder.LayoutOrder}
+      />
+
+      <RadioGroup.Root value={team} onValueChange={setTeam} orientation="horizontal">
+        {TEAMS.map((option) => (
+          <RadioGroup.Item key={option} value={option} />
+        ))}
+      </RadioGroup.Root>
+    </frame>
+  );
+}
+```
+
+### Card-style items with asChild
+
+Use `asChild` to project the item behavior — activation, gamepad selection, and the arrow-key wiring — onto your own button, and place an `Indicator` inside it as the selection dot. The primitive still animates the item's `BackgroundColor3` between its accent palette (see [How it behaves](#default-item-rendering-and-color-motion)), so put your own styling in strokes, corners, and children. The default indicator reveal settles at 10x10; this dot matches that size, so no custom `transition` is needed.
+
+```tsx title="DifficultyCards.tsx"
+import { useState } from "@rbxts/react";
+import { RadioGroup } from "@lattice-ui/radio-group";
+
+const OPTIONS = ["Easy", "Normal", "Hard"];
+
+export function DifficultyCards() {
   const [difficulty, setDifficulty] = useState("Normal");
 
   return (
-    <RadioGroup.Root value={difficulty} onValueChange={setDifficulty} orientation="vertical">
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(220, 160)}>
       <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
 
-      {OPTIONS.map((option) => (
-        <RadioGroup.Item key={option} value={option}>
-          <uilistlayout
-            FillDirection={Enum.FillDirection.Horizontal}
-            Padding={new UDim(0, 8)}
-            VerticalAlignment={Enum.VerticalAlignment.Center}
-          />
-          <frame
-            BackgroundColor3={Color3.fromRGB(20, 22, 28)}
-            Size={UDim2.fromOffset(20, 20)}
-          >
-            <uicorner CornerRadius={new UDim(1, 0)} />
-            <RadioGroup.Indicator>
+      <RadioGroup.Root value={difficulty} onValueChange={setDifficulty}>
+        {OPTIONS.map((option) => (
+          <RadioGroup.Item key={option} value={option} asChild>
+            <textbutton AutoButtonColor={false} Size={UDim2.fromOffset(220, 44)} Text="">
+              <uicorner CornerRadius={new UDim(0, 8)} />
+              <uistroke Color={Color3.fromRGB(88, 142, 255)} Thickness={1} />
+              <uilistlayout
+                FillDirection={Enum.FillDirection.Horizontal}
+                Padding={new UDim(0, 10)}
+                VerticalAlignment={Enum.VerticalAlignment.Center}
+              />
+              <uipadding PaddingLeft={new UDim(0, 12)} />
+
               <frame
-                AnchorPoint={new Vector2(0.5, 0.5)}
-                BackgroundColor3={Color3.fromRGB(240, 244, 252)}
-                Position={UDim2.fromScale(0.5, 0.5)}
-                Size={UDim2.fromOffset(10, 10)}
+                BackgroundColor3={Color3.fromRGB(20, 22, 28)}
+                Size={UDim2.fromOffset(18, 18)}
               >
                 <uicorner CornerRadius={new UDim(1, 0)} />
+                <RadioGroup.Indicator asChild>
+                  <frame
+                    AnchorPoint={new Vector2(0.5, 0.5)}
+                    BackgroundColor3={Color3.fromRGB(240, 244, 252)}
+                    Position={UDim2.fromScale(0.5, 0.5)}
+                    Size={UDim2.fromOffset(10, 10)}
+                  >
+                    <uicorner CornerRadius={new UDim(1, 0)} />
+                  </frame>
+                </RadioGroup.Indicator>
               </frame>
-            </RadioGroup.Indicator>
-          </frame>
-        </RadioGroup.Item>
-      ))}
-    </RadioGroup.Root>
+
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(160, 20)}
+                Text={option}
+                TextColor3={Color3.fromRGB(236, 241, 249)}
+                TextXAlignment={Enum.TextXAlignment.Left}
+              />
+            </textbutton>
+          </RadioGroup.Item>
+        ))}
+      </RadioGroup.Root>
+    </frame>
+  );
+}
+```
+
+### Disabled items
+
+`disabled` on an item makes it inert and removes it from navigation entirely: it cannot be activated, it drops out of gamepad selection, and arrow movement resolves the next item from the enabled entries only — so stepping "through" a disabled item lands on the next enabled one. Setting `disabled` on `Root` freezes the whole group instead. Here a locked mode stays visible but cannot be chosen.
+
+```tsx title="GameModePicker.tsx"
+import { useState } from "@rbxts/react";
+import { RadioGroup } from "@lattice-ui/radio-group";
+
+const MODES = [
+  { value: "Classic", locked: false },
+  { value: "Ranked", locked: true },
+  { value: "Endless", locked: false },
+];
+
+export function GameModePicker() {
+  const [mode, setMode] = useState("Classic");
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(170, 120)}>
+      <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <RadioGroup.Root value={mode} onValueChange={setMode}>
+        {MODES.map((entry) => (
+          <RadioGroup.Item key={entry.value} value={entry.value} disabled={entry.locked} />
+        ))}
+      </RadioGroup.Root>
+    </frame>
+  );
+}
+```
+
+### Dynamic item lists
+
+Items register with the group on mount and unregister on unmount, and directional navigation walks that registry in **mount order** (see [How it behaves](#item-registration-order)). For a list that grows at runtime, appending to the end keeps mount order and visual order aligned; inserting into the middle of the array renders in the middle but navigates last, so prefer append-only growth or a `LayoutOrder` that mirrors mount order.
+
+```tsx title="LoadoutPicker.tsx"
+import { useState } from "@rbxts/react";
+import { RadioGroup } from "@lattice-ui/radio-group";
+
+export function LoadoutPicker() {
+  const [loadouts, setLoadouts] = useState(["Scout", "Tank"]);
+  const [selected, setSelected] = useState("Scout");
+
+  const addLoadout = () => {
+    setLoadouts([...loadouts, `Custom ${loadouts.size() - 1}`]);
+  };
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(170, 240)}>
+      <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+      <RadioGroup.Root value={selected} onValueChange={setSelected}>
+        {loadouts.map((loadout) => (
+          <RadioGroup.Item key={loadout} value={loadout} />
+        ))}
+      </RadioGroup.Root>
+
+      <textbutton
+        BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+        Event={{ Activated: addLoadout }}
+        Size={UDim2.fromOffset(170, 30)}
+        Text="+ New loadout"
+        TextColor3={Color3.fromRGB(236, 241, 249)}
+      />
+    </frame>
   );
 }
 ```
@@ -94,30 +274,48 @@ export function DifficultyPicker() {
 
 ### Value and selection
 
-`RadioGroup.Root` is controllable: pass `value` and `onValueChange` to drive it, or `defaultValue` to run uncontrolled. An `Item` is checked when its `value` equals the group value. Activating an item (click, `Return`, `Space`, or gaining gamepad selection) calls `setValue` with that item's value. When the group or the item is `disabled`, activation is ignored.
+`RadioGroup.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage. With no `defaultValue`, the group starts with nothing selected until an item is activated. An `Item` is checked when its `value` equals the group value, and `onValueChange` is only ever called with a defined string — there is no way to clear the selection through interaction, matching native radio behavior.
 
-### Orientation and navigation
+Activating an item calls the group's `setValue` with that item's value. When `Root` is `disabled`, `setValue` drops every change, so neither activation nor programmatic movement can alter the value; an individual `disabled` item just refuses its own activation.
 
-`Root` takes an `orientation` of `"vertical"` (default) or `"horizontal"`. Each `Item` registers as a [focus node](/lattice-ui/guides/focus-management/) and listens for arrow keys: `Up`/`Down` move selection in a vertical group, `Left`/`Right` in a horizontal one. Movement walks the ordered item registry, focuses the next item, and selects it in the same step — so selection follows focus, matching native radio behavior. `disabled` items are skipped by focus.
+### Activation
+
+An item selects itself on any of three inputs: `Activated` (click or tap), `Return`/`Space` via `InputBegan`, and `SelectionGained` — meaning that on a gamepad, merely moving selection onto an item commits it. The default item is `Active` and `Selectable` only while enabled, so a disabled item drops out of gamepad selection and cannot fire any of these paths.
+
+With `asChild`, these handlers are merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
+
+### Orientation and arrow-key navigation
+
+`Root` takes an `orientation` of `"vertical"` (default) or `"horizontal"`, which selects the arrow-key axis each item listens on: `Up`/`Down` in a vertical group, `Left`/`Right` in a horizontal one; the other axis is ignored. A matching arrow press asks the group to move selection one step: the group resolves the next entry from the ordered registry, focuses it through the [focus manager](/lattice-ui/guides/focus-management/), and selects it in the same step — selection follows focus.
+
+Movement is computed over **available** entries only — an entry is skipped if it is disabled, its instance is not `Visible`, or it is not `Selectable`. The step index is clamped to the ends of that list, so movement never wraps: pressing past the last item is a no-op. If the currently selected item is itself unavailable (say it became disabled), the next forward move lands on the first available item and the next backward move on the last.
 
 ### Item registration order
 
-Items register themselves with `Root` on mount and unregister on unmount, each carrying a monotonically increasing `order`. Directional navigation resolves the next item from this ordered registry, so navigation order tracks mount order rather than visual position. Lay items out with a `uilistlayout` whose order matches mount order to keep navigation intuitive.
+Items register themselves with `Root` on mount and unregister on unmount, each stamped with a monotonically increasing `order` on its first render. An item keeps its order for its whole lifetime; remounting assigns a fresh, higher one. Directional navigation sorts the registry by this order, so navigation tracks **mount order rather than visual position**. Keep the two aligned: render items from one array, append new entries at the end, and lay them out with a `uilistlayout` whose `SortOrder` follows the same sequence.
 
-### Indicator motion
+### Default item rendering and color motion
 
-`RadioGroup.Indicator` is presence-driven: it mounts a reveal recipe from `@lattice-ui/motion` when its item becomes checked and runs an exit animation when unchecked before unmounting. Pass `transition` to override the recipe. Set `forceMount` to keep the indicator mounted through its exit (driving visibility yourself), in which case it bypasses the presence wrapper and stays rendered. The default marker is a small light frame; with `asChild`, your child element is rendered and its visibility is bound to the presence state.
+Without `asChild`, an `Item` renders a 170x34 `textbutton` whose `Text` is the item's `value`, dimming its label while disabled. The primitive animates the item's `BackgroundColor3` between a fixed accent palette — checked settles on `RGB(88, 142, 255)` and unchecked on `RGB(47, 53, 68)` — using the selection response recipe (a quick settle; override the timing with `transition`). This applies to your own element under `asChild` too: there is no opt-out prop, so design your item around a primitive-driven background color and put your own styling in strokes, corners, and children.
 
-### Default item rendering
+### Indicator presence and motion
 
-Without `asChild`, an `Item` renders a `textbutton` whose `Text` is the item's `value`, tinted by selection (it animates `BackgroundColor3` between an active and inactive accent via the selection response recipe; override with `transition`). Use `asChild` to project the item behavior onto your own element via the core `Slot`, keeping the activation, selection, and arrow-key wiring.
+`RadioGroup.Indicator` is presence-driven by its parent item's checked state. When the item becomes checked it mounts and runs the default indicator-reveal recipe — growing from zero to a 10x10 size while fading in — then plays the reverse exit and unmounts when another item is chosen. Override the animation with `transition`; the default recipe settles at 10x10, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/motion`) built with its own size. Pass `forceMount` to keep the indicator mounted regardless of checked state, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 10x10 frame and its `Visible` property is bound to the presence state.
 
-<Callout title="Controlled vs uncontrolled">
-Pass `value`/`onValueChange` when something outside the group needs to read or set the choice. Use `defaultValue` for a self-contained group. With no `defaultValue`, the group starts with nothing selected until an item is activated.
-</Callout>
+### Root renders no container
+
+`RadioGroup.Root` renders no instance — it only provides context — so its children are parented to whatever frame surrounds it. Supply the container and `uilistlayout` yourself, which also means one group's items can share a layout with neighboring elements (a heading, a divider) without extra nesting.
 
 <Callout title="Selection follows focus">
-On a gamepad, moving selection onto an item selects it immediately (via `SelectionGained`), and arrow navigation both focuses and selects. This matches the native radio pattern but means a group should not be the default-selected element if you do not want the first hover to commit a choice.
+On a gamepad, moving selection onto an item selects it immediately (via `SelectionGained`), and arrow navigation both focuses and selects in one step. This matches the native radio pattern, but it means a group should not be the default-selected element if you do not want the first hover to commit a choice.
+</Callout>
+
+<Callout title="Arrow movement clamps at the ends">
+Directional movement clamps to the first and last available items instead of wrapping around. Pressing past either end keeps the current selection, and disabled or invisible items are stepped over as if they were not there.
+</Callout>
+
+<Callout title="The primitive tints the item">
+Even with `asChild`, the item drives your element's `BackgroundColor3` between the fixed checked and unchecked accents — `transition` changes the motion, not the colors. Style your item with strokes, corners, and child elements rather than a hand-set background color.
 </Callout>
 
 ## API reference
@@ -127,12 +325,12 @@ On a gamepad, moving selection onto an item selects it immediately (via `Selecti
 <PropTable
   rows={[
     { name: "value", type: "string", description: "Controlled selected value. Pair with onValueChange." },
-    { name: "defaultValue", type: "string", description: "Initial selected value for uncontrolled usage." },
-    { name: "onValueChange", type: "(value: string) => void", description: "Called when the selected value changes (never with undefined)." },
-    { name: "disabled", type: "boolean", description: "Disables the whole group; activation and selection are ignored. Defaults to false." },
-    { name: "required", type: "boolean", description: "Marks selection as required. Exposed on context for consumers. Defaults to false." },
-    { name: "orientation", type: '"horizontal" | "vertical"', description: "Axis for arrow-key navigation. Defaults to \"vertical\"." },
-    { name: "children", type: "React.ReactNode", description: "The radio items." },
+    { name: "defaultValue", type: "string", description: "Initial selected value for uncontrolled usage. Omit to start with nothing selected." },
+    { name: "onValueChange", type: "(value: string) => void", description: "Called when the selected value changes. Never called with undefined." },
+    { name: "disabled", type: "boolean", description: "Disables the whole group; activation, selection, and movement are ignored. Defaults to false." },
+    { name: "required", type: "boolean", description: "Marks selection as required for your own form/validation wiring. Exposed on context; does not change interaction on its own. Defaults to false." },
+    { name: "orientation", type: '"horizontal" | "vertical"', description: "Axis for arrow-key navigation: Up/Down when vertical, Left/Right when horizontal. Defaults to \"vertical\"." },
+    { name: "children", type: "React.ReactNode", description: "The radio items. Root renders no instance of its own, so children mount into the surrounding container." },
   ]}
 />
 
@@ -140,10 +338,10 @@ On a gamepad, moving selection onto an item selects it immediately (via `Selecti
 
 <PropTable
   rows={[
-    { name: "value", type: "string", description: "The value this item represents. Required; used to compare against the group value." },
-    { name: "disabled", type: "boolean", description: "Disables this item; it is skipped by navigation and cannot be selected. Defaults to false." },
-    { name: "transition", type: "ResponseMotionConfig", description: "Overrides the default selection response recipe used to tint the item by checked state." },
-    { name: "asChild", type: "boolean", description: "Project item behavior onto your own element via Slot instead of the default textbutton." },
+    { name: "value", type: "string", description: "The value this item represents. Required; compared against the group value to determine checked state." },
+    { name: "disabled", type: "boolean", description: "Disables this item; it cannot be selected and is skipped by arrow and gamepad navigation. Defaults to false." },
+    { name: "transition", type: "ResponseMotionConfig", description: "Overrides the selection response recipe that animates the item's background between the checked and unchecked accents." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element via Slot instead of rendering the default textbutton. The child must be an activatable button." },
     { name: "children", type: "React.ReactElement", description: "The element to render (with asChild) or content placed inside the default button, such as an Indicator." },
   ]}
 />
@@ -152,10 +350,10 @@ On a gamepad, moving selection onto an item selects it immediately (via `Selecti
 
 <PropTable
   rows={[
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default reveal/exit recipe for showing and hiding the marker." },
-    { name: "forceMount", type: "boolean", description: "Keeps the indicator mounted regardless of presence, bypassing the exit animation wrapper. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Render your own marker element instead of the default frame; its visibility is bound to presence." },
-    { name: "children", type: "React.ReactNode", description: "The marker content to render." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default indicator-reveal/exit recipe. The default settles at a 10x10 offset size; pass your own recipe for other sizes." },
+    { name: "forceMount", type: "boolean", description: "Keeps the indicator mounted regardless of checked state, bypassing the presence wrapper so you drive visibility yourself. Defaults to false." },
+    { name: "asChild", type: "boolean", description: "Render your own marker element instead of the default 10x10 frame. The child's Visible property is bound to presence." },
+    { name: "children", type: "React.ReactNode", description: "The marker content shown while the item is checked." },
   ]}
 />
 

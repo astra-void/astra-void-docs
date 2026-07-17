@@ -3,7 +3,8 @@ title: Switch
 description: Boolean toggle primitive that owns checked state, animates the thumb between ends of the track, and lets you choose whether the primitive or your component owns track color.
 section: components
 sidebar:
-  order: 130
+  order: 30
+  group: Form
 ---
 
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
@@ -17,7 +18,7 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/
 
 Switch is the primitive for an on/off toggle: settings flips, feature enables, and any binary control. The root is the toggleable track that owns checked state, and the thumb slides between the two ends as the state changes. You decide whether the primitive animates the track color for you or leaves your own colors untouched.
 
-Reach for Switch when a control is **boolean**, should **toggle on activation**, and wants a **thumb that animates** between off and on positions.
+Reach for Switch when a control is **boolean**, should **toggle on activation**, and wants a **thumb that animates** between off and on positions. If you need a third `"indeterminate"` state or a reveal-style indicator instead of a sliding handle, [Checkbox](/lattice-ui/components/checkbox/) is usually the better fit.
 
 ## Import
 
@@ -44,15 +45,122 @@ import { Switch } from "@lattice-ui/switch";
 
 </PrimitiveAnatomy>
 
-## Example
+## Examples
 
-A controlled switch with an app-owned track and a custom thumb, letting the primitive animate the track color.
+### Basic usage
+
+The smallest possible switch: uncontrolled state seeded with `defaultChecked`, default visuals. The default root is a `textbutton` whose label reflects the current state (`"On"` or `"Off"`), and the default thumb is a 16x16 light frame that slides between the track's ends — useful for wiring things up before you style anything.
+
+```tsx title="BasicSwitch.tsx"
+import { Switch } from "@lattice-ui/switch";
+
+export function BasicSwitch() {
+  return (
+    <Switch.Root
+      defaultChecked={true}
+      onCheckedChange={(checked) => print(`switch is now: ${checked}`)}
+    >
+      <Switch.Thumb />
+    </Switch.Root>
+  );
+}
+```
+
+### Controlled settings toggle
+
+Pass `checked` and `onCheckedChange` when something outside the switch needs to read or set the value — persisting a setting, syncing with a server, or resetting from elsewhere. Here a music toggle keeps local state for instant feedback and forwards every change to a save callback.
 
 ```tsx title="MusicToggle.tsx"
 import { useState } from "@rbxts/react";
 import { Switch } from "@lattice-ui/switch";
 
-export function MusicToggle() {
+export function MusicToggle(props: { onSave: (enabled: boolean) => void }) {
+  const [enabled, setEnabled] = useState(true);
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(280, 36)}>
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 12)}
+        VerticalAlignment={Enum.VerticalAlignment.Center}
+      />
+
+      <textlabel
+        BackgroundTransparency={1}
+        Size={UDim2.fromOffset(100, 20)}
+        Text="Music"
+        TextColor3={Color3.fromRGB(236, 241, 249)}
+        TextXAlignment={Enum.TextXAlignment.Left}
+      />
+
+      <Switch.Root
+        checked={enabled}
+        onCheckedChange={(checked) => {
+          setEnabled(checked);
+          props.onSave(checked);
+        }}
+      >
+        <Switch.Thumb />
+      </Switch.Root>
+    </frame>
+  );
+}
+```
+
+### Custom track and thumb with asChild
+
+Use `asChild` on the root to project the toggle behavior onto your own track element, and on the thumb to slide your own handle. With `trackColorMode="consumer"` the primitive never touches the track's `BackgroundColor3`, so your component owns the color entirely — here it branches on the controlled state directly. The thumb still animates: its checked-end position is computed from your handle's `Size`, so a 20x20 thumb lands correctly inside the 48x24 track.
+
+```tsx title="StyledSwitch.tsx"
+import { useState } from "@rbxts/react";
+import { Switch } from "@lattice-ui/switch";
+
+export function StyledSwitch() {
+  const [enabled, setEnabled] = useState(false);
+
+  return (
+    <Switch.Root
+      checked={enabled}
+      onCheckedChange={setEnabled}
+      trackColorMode="consumer"
+      asChild
+    >
+      <frame
+        BackgroundColor3={enabled ? Color3.fromRGB(52, 168, 108) : Color3.fromRGB(44, 48, 60)}
+        BorderSizePixel={0}
+        Size={UDim2.fromOffset(48, 24)}
+      >
+        <uicorner CornerRadius={new UDim(1, 0)} />
+        <uistroke Color={Color3.fromRGB(88, 142, 255)} Thickness={1} />
+
+        <Switch.Thumb asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(240, 244, 252)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(20, 20)}
+          >
+            <uicorner CornerRadius={new UDim(1, 0)} />
+          </frame>
+        </Switch.Thumb>
+      </frame>
+    </Switch.Root>
+  );
+}
+```
+
+<Callout title="Track color ownership">
+By default an `asChild` switch leaves track color to you (`"consumer"`), but passing any of `trackOnColor`/`trackOffColor`/`disabledTrackColor` opts the primitive into animating the color. Set `trackColorMode` explicitly — as above — to remove the ambiguity.
+</Callout>
+
+### Primitive-owned track color
+
+The inverse of the previous example: keep `asChild` for a custom track shape, but hand the color back to the primitive by passing track color props (or `trackColorMode="switch"`). The primitive then animates `BackgroundColor3` between `trackOffColor` and `trackOnColor` with a short settle, so you get a smooth color transition without wiring any state into your styling.
+
+```tsx title="NotificationsToggle.tsx"
+import { useState } from "@rbxts/react";
+import { Switch } from "@lattice-ui/switch";
+
+export function NotificationsToggle() {
   const [enabled, setEnabled] = useState(true);
 
   return (
@@ -70,7 +178,7 @@ export function MusicToggle() {
       >
         <uicorner CornerRadius={new UDim(1, 0)} />
 
-        <Switch.Thumb>
+        <Switch.Thumb asChild>
           <frame
             BackgroundColor3={Color3.fromRGB(240, 244, 252)}
             BorderSizePixel={0}
@@ -85,19 +193,68 @@ export function MusicToggle() {
 }
 ```
 
-<Callout title="Track color ownership">
-By default an `asChild` switch leaves track color to you (`"consumer"`), but passing any of `trackOnColor`/`trackOffColor`/`disabledTrackColor` — as above — opts the primitive into animating the color. Set `trackColorMode` explicitly to remove the ambiguity.
-</Callout>
+### Disabled state
+
+`disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are dropped — and removes the switch from gamepad selection. While disabled and the primitive owns track color, both the on and off states settle on `disabledTrackColor`, so the track visibly reads as inert regardless of its checked value. Here a premium-only option stays visible but inactive.
+
+```tsx title="PremiumToggle.tsx"
+import { Switch } from "@lattice-ui/switch";
+
+export function PremiumToggle(props: { hasPremium: boolean }) {
+  return (
+    <Switch.Root
+      defaultChecked={false}
+      disabled={!props.hasPremium}
+      disabledTrackColor={Color3.fromRGB(84, 90, 106)}
+    >
+      <Switch.Thumb />
+    </Switch.Root>
+  );
+}
+```
+
+### Custom thumb size
+
+The thumb's motion has no transition prop — the slide is a fixed short settle — but the geometry adapts to your handle. With `asChild`, the thumb reads your element's `Size` to compute the checked-end position (right edge of the track, minus the thumb width and a 2px inset), so a larger handle inside a taller track still lands flush at both ends. Match the track height to the thumb height plus 4px (2px inset on each side) for a snug fit.
+
+```tsx title="LargeThumbSwitch.tsx"
+import { useState } from "@rbxts/react";
+import { Switch } from "@lattice-ui/switch";
+
+export function LargeThumbSwitch() {
+  const [enabled, setEnabled] = useState(false);
+
+  return (
+    <Switch.Root checked={enabled} onCheckedChange={setEnabled} trackColorMode="switch" asChild>
+      <frame BackgroundColor3={Color3.fromRGB(66, 73, 91)} BorderSizePixel={0} Size={UDim2.fromOffset(64, 32)}>
+        <uicorner CornerRadius={new UDim(1, 0)} />
+
+        <Switch.Thumb asChild>
+          <frame
+            BackgroundColor3={Color3.fromRGB(240, 244, 252)}
+            BorderSizePixel={0}
+            Size={UDim2.fromOffset(28, 28)}
+          >
+            <uicorner CornerRadius={new UDim(1, 0)} />
+          </frame>
+        </Switch.Thumb>
+      </frame>
+    </Switch.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Checked state
 
-`Switch.Root` is controllable. Pass `checked` and `onCheckedChange` to control it, or `defaultChecked` to run uncontrolled (defaults to `false`). Activating the root toggles the state; when `disabled`, activation is ignored and the state cannot change. The default (non-`asChild`) root renders a `textbutton` whose `Text` reflects `"On"`/`"Off"`.
+`Switch.Root` is controllable on `checked`/`onCheckedChange`, with `defaultChecked` for uncontrolled usage (defaulting to `false`). The state is a plain boolean — activating the root flips it. When `disabled`, both the toggle and direct `setChecked` calls from context are ignored, so the state cannot change until the switch is re-enabled.
 
-### The thumb
+### Activation and selection
 
-`Switch.Thumb` animates its `Position` between the two ends of the track as `checked` changes, with a small inset on each side. It reads the thumb's `Size` (from the slotted child when `asChild`, otherwise a 16×16 default) to compute the checked-end position, so non-default thumb sizes still land correctly. Pass `forceMount` to keep the thumb mounted regardless of state.
+The default `Switch.Root` renders an activatable `textbutton` (160x36, labeled `"On"`/`"Off"`) that toggles on `Activated`, so click, tap, and gamepad activation all work. It is `Active` and `Selectable` only while enabled, so a disabled switch drops out of gamepad selection and dims its label.
+
+With `asChild`, the toggle behavior is merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use an element that fires `Activated`, such as a `textbutton` or `imagebutton`.
 
 ### Track color ownership
 
@@ -106,11 +263,21 @@ By default an `asChild` switch leaves track color to you (`"consumer"`), but pas
 - `"switch"` — the primitive animates between `trackOnColor`, `trackOffColor`, and `disabledTrackColor` as state changes.
 - `"consumer"` — the primitive leaves the track color alone so your slotted/default colors stand.
 
-When `trackColorMode` is unset, the default is `"switch"` for a non-`asChild` root, and `"consumer"` for an `asChild` root unless you pass any track color prop (which opts into `"switch"`). Setting `trackColorMode` explicitly always wins over that fallback.
+When `trackColorMode` is unset, the default is `"switch"` for a non-`asChild` root, and `"consumer"` for an `asChild` root unless you pass any track color prop (which opts into `"switch"`). Setting `trackColorMode` explicitly always wins over that fallback. While disabled with primitive-owned color, both the checked and unchecked targets become `disabledTrackColor`, so the track holds a single inert color until re-enabled. In `"consumer"` mode nothing animates the color for you — set it from your own state, and animate it yourself if you want more than an instant swap.
+
+### The thumb
+
+`Switch.Thumb` animates its `Position` between the two ends of the track as `checked` changes: the unchecked end sits at a 2px inset from the top-left, and the checked end is derived from the thumb's own `Size` so it lands 2px in from the track's right edge. Without `asChild` the thumb is a 16x16 light frame; with `asChild` your element's `Size` drives both the wrapper and the checked-end math, so non-default thumb sizes still land correctly.
+
+Under `asChild`, the primitive wraps your element in a transparent frame that it animates, and pins your element to `Position` (0, 0) inside that wrapper — so put your styling on the child, but leave its `Position` alone. The thumb is always mounted regardless of checked state; unlike `Checkbox.Indicator` it is not presence-driven, so there is no `forceMount` prop (the vestigial declaration left over from the 0.4.0 removal is gone as of 0.5.0).
 
 ### Motion
 
-Both the track color (when owned) and the thumb position animate with a short response settle, so toggling feels immediate but smooth rather than snapping instantly.
+Both the track color (when owned) and the thumb position animate with the same short response settle — a 0.08s swift, responsive tween — so toggling feels immediate but smooth rather than snapping instantly. Neither `Root` nor `Thumb` exposes a `transition` prop; the recipe is fixed, and you shape the feel through geometry (track and thumb sizes) and colors instead.
+
+<Callout title="No transition prop">
+Unlike `Checkbox.Indicator`, the switch's motion is not configurable: the 0.08s settle for both the thumb slide and the track color is built in. If your design needs a different animation entirely, use `trackColorMode="consumer"` for the color and drive your own motion outside the primitive.
+</Callout>
 
 <Callout title="Roblox gotchas">
 The root is a Roblox button (`textbutton`, or your slotted element via `asChild`). It is made `Active` and `Selectable` only while enabled, so a disabled switch drops out of gamepad selection. The thumb is positioned by offset inside the track, so give the track a fixed size; the checked position is derived from the thumb's own `Size` and a 2px inset.
@@ -124,14 +291,14 @@ The root is a Roblox button (`textbutton`, or your slotted element via `asChild`
   rows={[
     { name: "checked", type: "boolean", description: "Controlled checked state. Pair with onCheckedChange." },
     { name: "defaultChecked", type: "boolean", description: "Initial checked state for uncontrolled usage. Defaults to false." },
-    { name: "onCheckedChange", type: "(checked: boolean) => void", description: "Called when the checked state changes." },
-    { name: "disabled", type: "boolean", description: "Prevents toggling and removes the switch from selection. Defaults to false." },
-    { name: "trackColorMode", type: '"consumer" | "switch"', description: "Who owns track BackgroundColor3. Defaults to \"switch\" without asChild, or \"consumer\" with asChild unless a track color prop is provided." },
+    { name: "onCheckedChange", type: "(checked: boolean) => void", description: "Called whenever the checked state changes." },
+    { name: "disabled", type: "boolean", description: "Prevents toggling and removes the switch from gamepad selection. Defaults to false." },
+    { name: "trackColorMode", type: '"consumer" | "switch"', description: "Who owns track BackgroundColor3. Defaults to \"switch\" without asChild, or \"consumer\" with asChild unless a track color prop is provided. Explicit values win over that fallback." },
     { name: "trackOnColor", type: "Color3", description: "Track color when checked (when the primitive owns color). Defaults to RGB(86, 141, 255)." },
     { name: "trackOffColor", type: "Color3", description: "Track color when unchecked (when the primitive owns color). Defaults to RGB(66, 73, 91)." },
-    { name: "disabledTrackColor", type: "Color3", description: "Track color when disabled (when the primitive owns color). Defaults to RGB(103, 110, 128)." },
-    { name: "asChild", type: "boolean", description: "Merge the track behavior onto the single child element instead of rendering the default textbutton." },
-    { name: "children", type: "React.ReactNode", description: "The track contents (typically a Switch.Thumb). Required when asChild is set." },
+    { name: "disabledTrackColor", type: "Color3", description: "Track color while disabled (when the primitive owns color); used for both checked and unchecked states. Defaults to RGB(103, 110, 128)." },
+    { name: "asChild", type: "boolean", description: "Merge the track behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "children", type: "React.ReactNode", description: "The track contents, typically a Switch.Thumb. Must be a single valid element when asChild is set." },
   ]}
 />
 
@@ -139,9 +306,8 @@ The root is a Roblox button (`textbutton`, or your slotted element via `asChild`
 
 <PropTable
   rows={[
-    { name: "forceMount", type: "boolean", description: "Keeps the thumb mounted regardless of state. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Merge the animated thumb onto the single child element instead of rendering the default frame; the child's Size is used to compute the checked position." },
-    { name: "children", type: "React.ReactNode", description: "The thumb contents. Required when asChild is set." },
+    { name: "asChild", type: "boolean", description: "Merge the animated thumb onto the single child element instead of rendering the default 16x16 frame. The child's Size drives the checked-end position; its Position is managed by the primitive." },
+    { name: "children", type: "React.ReactNode", description: "The thumb contents. Must be a single valid element when asChild is set." },
   ]}
 />
 

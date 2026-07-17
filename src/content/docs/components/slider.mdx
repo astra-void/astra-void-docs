@@ -3,7 +3,8 @@ title: Slider
 description: Single-thumb slider primitive that owns clamped, stepped value state and pointer-drag plus keyboard adjustment while you own the track, range, and thumb visuals.
 section: components
 sidebar:
-  order: 120
+  order: 50
+  group: Form
 ---
 
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
@@ -49,47 +50,200 @@ import { Slider } from "@lattice-ui/slider";
 
 </PrimitiveAnatomy>
 
-## Example
+<Callout title="Single thumb only">
+This release of Slider is **single-thumb only**. There is no range/dual-thumb mode, and `value`/`defaultValue` are a single `number`, not an array. Compose two independent sliders or track your own state if you need a min/max range until multi-thumb lands.
+</Callout>
 
-A controlled volume slider from 0 to 100 in steps of 5, committing the value only when the drag ends.
+## Examples
+
+### Basic volume slider
+
+The smallest useful slider: uncontrolled state seeded with `defaultValue`, default visuals for every part (a 260x10 dark track, a blue fill, a 16x16 light thumb). `onValueChange` would fire on every drag tick, but for a "save on release" control you only need `onValueCommit` — it fires once when the interaction ends, which is the right moment to persist the setting or send it over the network.
 
 ```tsx title="VolumeSlider.tsx"
-import { useState } from "@rbxts/react";
 import { Slider } from "@lattice-ui/slider";
 
-export function VolumeSlider() {
-  const [volume, setVolume] = useState(50);
-
+export function VolumeSlider(props: { onSave: (volume: number) => void }) {
   return (
     <Slider.Root
-      value={volume}
-      onValueChange={setVolume}
-      onValueCommit={(value) => print(`committed: ${value}`)}
+      defaultValue={40}
       min={0}
       max={100}
       step={5}
+      onValueCommit={(volume) => props.onSave(volume)}
     >
       <Slider.Track>
+        <Slider.Range />
+        <Slider.Thumb />
+      </Slider.Track>
+    </Slider.Root>
+  );
+}
+```
+
+### Controlled slider with live readout
+
+Pass `value` and `onValueChange` when something outside the slider needs the number as it moves — here a label that tracks the drag in real time. `Slider.Root` renders no instance of its own (it is a context provider), so the track participates directly in the surrounding row layout.
+
+```tsx title="BrightnessSlider.tsx"
+import { useState } from "@rbxts/react";
+import { Slider } from "@lattice-ui/slider";
+
+export function BrightnessSlider() {
+  const [brightness, setBrightness] = useState(70);
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(330, 32)}>
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 12)}
+        VerticalAlignment={Enum.VerticalAlignment.Center}
+      />
+
+      <Slider.Root value={brightness} onValueChange={setBrightness}>
+        <Slider.Track>
+          <Slider.Range />
+          <Slider.Thumb />
+        </Slider.Track>
+      </Slider.Root>
+
+      <textlabel
+        BackgroundTransparency={1}
+        Size={UDim2.fromOffset(48, 20)}
+        Text={`${brightness}%`}
+        TextColor3={Color3.fromRGB(236, 241, 249)}
+        TextXAlignment={Enum.TextXAlignment.Left}
+      />
+    </frame>
+  );
+}
+```
+
+### Fine-grained steps with min and max
+
+`min`, `max`, and `step` shape the whole value space: every value — incoming, dragged, or keyed — is clamped to `[min, max]` and snapped to the nearest multiple of `step` counted from `min`. A camera-sensitivity slider from 0.1 to 2 in 0.05 increments lands only on 0.10, 0.15, 0.20, and so on; format the readout yourself since the value is a plain number.
+
+```tsx title="SensitivitySlider.tsx"
+import { useState } from "@rbxts/react";
+import { Slider } from "@lattice-ui/slider";
+
+export function SensitivitySlider(props: { onCommit: (sensitivity: number) => void }) {
+  const [sensitivity, setSensitivity] = useState(1);
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(330, 32)}>
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, 12)}
+        VerticalAlignment={Enum.VerticalAlignment.Center}
+      />
+
+      <Slider.Root
+        value={sensitivity}
+        onValueChange={setSensitivity}
+        onValueCommit={props.onCommit}
+        min={0.1}
+        max={2}
+        step={0.05}
+      >
+        <Slider.Track>
+          <Slider.Range />
+          <Slider.Thumb />
+        </Slider.Track>
+      </Slider.Root>
+
+      <textlabel
+        BackgroundTransparency={1}
+        Size={UDim2.fromOffset(48, 20)}
+        Text={string.format("%.2f", sensitivity)}
+        TextColor3={Color3.fromRGB(236, 241, 249)}
+        TextXAlignment={Enum.TextXAlignment.Left}
+      />
+    </frame>
+  );
+}
+```
+
+### Vertical orientation
+
+Set `orientation="vertical"` for a column-style control such as a mixer channel. The default track becomes 10x220, the range fills from the bottom, and the thumb travels bottom-to-top; dragging maps the pointer's Y position to the value, with the top of the track as `max`.
+
+```tsx title="AmbienceChannel.tsx"
+import { useState } from "@rbxts/react";
+import { Slider } from "@lattice-ui/slider";
+
+export function AmbienceChannel() {
+  const [level, setLevel] = useState(60);
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(64, 260)}>
+      <uilistlayout
+        HorizontalAlignment={Enum.HorizontalAlignment.Center}
+        Padding={new UDim(0, 8)}
+        SortOrder={Enum.SortOrder.LayoutOrder}
+      />
+
+      <Slider.Root orientation="vertical" value={level} onValueChange={setLevel}>
+        <Slider.Track>
+          <Slider.Range />
+          <Slider.Thumb />
+        </Slider.Track>
+      </Slider.Root>
+
+      <textlabel
+        BackgroundTransparency={1}
+        Size={UDim2.fromOffset(48, 20)}
+        Text={`${level}`}
+        TextColor3={Color3.fromRGB(236, 241, 249)}
+      />
+    </frame>
+  );
+}
+```
+
+### Custom visuals with asChild
+
+Every part accepts `asChild` to project its behavior onto your own element. The track slot carries the drag-start handler, ref, and selection props; the thumb slot additionally centers your element with a forced `AnchorPoint` of (0.5, 0.5). `Slider.Range` is different: your child is stretched to fill the animated fill frame (its `Position` and `Size` are overridden), so style it with color, gradients, and corners rather than sizing it yourself.
+
+```tsx title="StyledSlider.tsx"
+import { useState } from "@rbxts/react";
+import { Slider } from "@lattice-ui/slider";
+
+export function StyledSlider() {
+  const [value, setValue] = useState(50);
+
+  return (
+    <Slider.Root value={value} onValueChange={setValue}>
+      <Slider.Track asChild>
         <frame
-          BackgroundColor3={Color3.fromRGB(47, 53, 68)}
+          BackgroundColor3={Color3.fromRGB(30, 33, 42)}
           BorderSizePixel={0}
-          Size={UDim2.fromOffset(260, 10)}
+          Size={UDim2.fromOffset(280, 8)}
         >
-          <Slider.Range>
-            <frame
-              BackgroundColor3={Color3.fromRGB(86, 142, 255)}
-              BorderSizePixel={0}
-              Size={UDim2.fromScale(1, 1)}
-            />
+          <uicorner CornerRadius={new UDim(1, 0)} />
+
+          <Slider.Range asChild>
+            <frame BackgroundColor3={Color3.fromRGB(255, 255, 255)} BorderSizePixel={0}>
+              <uicorner CornerRadius={new UDim(1, 0)} />
+              <uigradient
+                Color={
+                  new ColorSequence(Color3.fromRGB(88, 142, 255), Color3.fromRGB(140, 190, 255))
+                }
+              />
+            </frame>
           </Slider.Range>
 
-          <Slider.Thumb>
-            <frame
-              AnchorPoint={new Vector2(0.5, 0.5)}
-              BackgroundColor3={Color3.fromRGB(235, 241, 250)}
+          <Slider.Thumb asChild>
+            <textbutton
+              AutoButtonColor={false}
+              BackgroundColor3={Color3.fromRGB(240, 244, 252)}
               BorderSizePixel={0}
-              Size={UDim2.fromOffset(16, 16)}
-            />
+              Size={UDim2.fromOffset(20, 20)}
+              Text=""
+            >
+              <uicorner CornerRadius={new UDim(1, 0)} />
+              <uistroke Color={Color3.fromRGB(88, 142, 255)} Thickness={2} />
+            </textbutton>
           </Slider.Thumb>
         </frame>
       </Slider.Track>
@@ -98,31 +252,64 @@ export function VolumeSlider() {
 }
 ```
 
-<Callout title="Single thumb only">
-This release of Slider is **single-thumb only**. There is no range/dual-thumb mode, and `value`/`defaultValue` are a single `number`, not an array. Compose two independent sliders or track your own state if you need a min/max range until multi-thumb lands.
-</Callout>
+### Keyboard adjustment
+
+When the thumb has input focus, keyboard input adjusts the value without a drag: `Right`/`Up` add `step`, `Left`/`Down` subtract it, `PageUp`/`PageDown` move by `step * 10`, and `Home`/`End` jump to `min`/`max`. Each of those keys both changes **and commits** the value, so a keypress-heavy control fires `onValueCommit` once per press — keep the commit handler cheap or debounce expensive work yourself. `Return`/`Space` commits the current value without changing it. With `step={1}`, this FOV slider nudges by 1 per arrow press and 10 per page press.
+
+```tsx title="FieldOfViewSlider.tsx"
+import { useState } from "@rbxts/react";
+import { Slider } from "@lattice-ui/slider";
+
+export function FieldOfViewSlider(props: { onCommit: (fov: number) => void }) {
+  const [fov, setFov] = useState(80);
+
+  return (
+    <Slider.Root
+      value={fov}
+      onValueChange={setFov}
+      onValueCommit={props.onCommit}
+      min={60}
+      max={110}
+      step={1}
+    >
+      <Slider.Track>
+        <Slider.Range />
+        <Slider.Thumb />
+      </Slider.Track>
+    </Slider.Root>
+  );
+}
+```
 
 ## How it behaves
 
 ### Value, clamping, and stepping
 
-The value is a single `number`. `Slider.Root` is controllable via `value`/`onValueChange`, or uncontrolled via `defaultValue` (which itself defaults to `min`). Every value — incoming, dragged, or keyed — is clamped to `[min, max]` and snapped to the nearest multiple of `step`. `min`/`max` default to `0`/`100` and are normalized so the lower bound is always the smaller of the two; `step` defaults to `1`.
+The value is a single `number`. `Slider.Root` is controllable via `value`/`onValueChange`, or uncontrolled via `defaultValue` (which itself defaults to `min`). Every value — incoming, dragged, or keyed — is clamped to `[min, max]` and snapped to the nearest multiple of `step` counted from `min`. `min`/`max` default to `0`/`100` and are normalized so the lower bound is always the smaller of the two; `step` defaults to `1`, and a zero or negative `step` falls back to `1`.
 
 ### Change vs. commit
 
-`onValueChange` fires continuously as the value moves (every drag tick, every keypress). `onValueCommit` fires once at the end of an interaction — when a drag ends, or on a keyboard `Return`/`Space` — making it the right place to persist or send the final value over the network.
+`onValueChange` fires as the value moves — every drag tick and every value-changing keypress. `onValueCommit` fires once at the end of an interaction: when a drag is released, after each keyboard adjustment, or on a keyboard `Return`/`Space`. Treat `onValueChange` as the "live preview" channel (update a label, adjust volume locally) and `onValueCommit` as the "persist" channel (save the setting, fire a remote).
+
+### Rendering and layout
+
+`Slider.Root` renders no instance — it is purely a context provider — so `Slider.Track` is the outermost GuiObject and sits directly in the parent layout. The default track is a `frame` sized 260x10 (horizontal) or 10x220 (vertical); the default range is an animated fill `frame`; the default thumb is a 16x16 `textbutton` anchored at its center. All three can be replaced with `asChild`.
 
 ### Dragging
 
-A pointer press (`MouseButton1` or `Touch`) on either `Slider.Track` or `Slider.Thumb` starts a drag and immediately jumps the value to the pressed position. While dragging, the root listens to `UserInputService` input changes and updates the value as the pointer moves, then commits on release. Touch drags are tracked per input object so multi-touch doesn't cross wires. Drag listeners are cleaned up when the slider unmounts.
+A pointer press (`MouseButton1` or `Touch`) on either `Slider.Track` or `Slider.Thumb` starts a drag and immediately jumps the value to the pressed position. While dragging, the root listens to `UserInputService` input changes and updates the value as the pointer moves — even after it leaves the track — then commits on release. Touch drags are tracked per input object so multi-touch doesn't cross wires. Drag listeners are cleaned up when the slider unmounts.
 
 ### Keyboard adjustment
 
-`Slider.Thumb` handles keyboard input when focused: arrow `Right`/`Up` increase and `Left`/`Down` decrease by `step`; `PageUp`/`PageDown` move by `step * 10`; `Home`/`End` jump to `min`/`max`. Each of these both changes and commits the value. `Return`/`Space` commits the current value without changing it.
+`Slider.Thumb` handles keyboard input when focused: arrow `Right`/`Up` increase and `Left`/`Down` decrease by `step`; `PageUp`/`PageDown` move by `step * 10`; `Home`/`End` jump to `min`/`max`. Each of these both changes and commits the value. `Return`/`Space` commits the current value without changing it. These are keyboard key codes — gamepad buttons are not mapped to value changes in this release.
 
 ### Orientation
 
 Set `orientation` to `"horizontal"` (default) or `"vertical"`. It governs which pointer axis maps to the value, where the default track sizes itself, and how `Slider.Range` and `Slider.Thumb` position themselves — horizontally the range grows from the left and the thumb tracks left-to-right; vertically the range grows from the bottom and the thumb tracks bottom-to-top.
+
+### Composition with asChild
+
+`Slider.Track` and `Slider.Thumb` merge their behavior onto your single child through the core `Slot`: the slot's `Active`, `Selectable`, ref, and `InputBegan` drag/keyboard handling win over the child's own props, and the thumb also forces `AnchorPoint` to (0.5, 0.5) so it stays centered on its position. `Slider.Range` with `asChild` keeps the animated fill frame and stretches your child to fill it — the child's `Position` and `Size` are overridden — so express its look through color, gradients, corners, and strokes.
 
 ### Motion
 
@@ -130,6 +317,14 @@ Set `orientation` to `"horizontal"` (default) or `"vertical"`. It governs which 
 
 <Callout title="Roblox gotchas">
 Drag uses Roblox pointer input on the track and thumb, so those nodes are made `Active` and `Selectable` only while the slider is enabled — when `disabled`, input is ignored and selection is removed. Keyboard adjustment fires through the thumb's `InputBegan`, so the thumb must be able to receive selection (e.g. via gamepad) for arrow/page keys to reach it.
+</Callout>
+
+<Callout title="Keyboard input commits on every press">
+Arrow, page, and `Home`/`End` presses call `onValueCommit` as well as `onValueChange` — one commit per keypress, unlike a drag's single commit on release. If commit triggers network traffic, debounce it in your handler rather than assuming one commit per interaction.
+</Callout>
+
+<Callout title="Root is not a container">
+`Slider.Root` renders no GuiObject, so you cannot size or position "the slider" through it. Size the track (or your `asChild` track element) instead, and wrap the slider in your own frame when it needs padding or a background.
 </Callout>
 
 ## API reference
@@ -144,10 +339,10 @@ Drag uses Roblox pointer input on the track and thumb, so those nodes are made `
     { name: "onValueCommit", type: "(value: number) => void", description: "Called once when an interaction ends (drag release or keyboard commit)." },
     { name: "min", type: "number", description: "Lower bound of the range. Defaults to 0." },
     { name: "max", type: "number", description: "Upper bound of the range. Defaults to 100." },
-    { name: "step", type: "number", description: "Increment the value snaps to. Defaults to 1." },
+    { name: "step", type: "number", description: "Increment the value snaps to. Defaults to 1; non-positive values fall back to 1." },
     { name: "orientation", type: '"horizontal" | "vertical"', description: "Axis the slider runs along. Defaults to \"horizontal\"." },
     { name: "disabled", type: "boolean", description: "Disables drag and keyboard input and removes the track/thumb from selection. Defaults to false." },
-    { name: "children", type: "React.ReactNode", description: "The slider parts." },
+    { name: "children", type: "React.ReactNode", description: "The slider parts. Root renders no instance of its own." },
   ]}
 />
 
@@ -164,7 +359,7 @@ Drag uses Roblox pointer input on the track and thumb, so those nodes are made `
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the animated fill onto the single child element; the child is stretched to fill the animated range frame." },
+    { name: "asChild", type: "boolean", description: "Merge the animated fill onto the single child element; the child is stretched to fill the animated range frame, overriding its Position and Size." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -173,7 +368,7 @@ Drag uses Roblox pointer input on the track and thumb, so those nodes are made `
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge thumb behavior (drag start, keyboard handling, ref, selection) onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge thumb behavior (drag start, keyboard handling, ref, selection, centered AnchorPoint) onto the single child element instead of rendering the default textbutton." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

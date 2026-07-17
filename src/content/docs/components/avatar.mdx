@@ -3,10 +3,11 @@ title: Avatar
 description: An image-with-fallback primitive that tracks load status, debounces the fallback with a delay, and lets your component own the visuals.
 section: components
 sidebar:
-  order: 20
+  order: 30
+  group: Display
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/avatar"
@@ -27,7 +28,9 @@ import { Avatar } from "@lattice-ui/avatar";
 
 ## Anatomy
 
-Compose `Root` around an `Image` and a `Fallback`. The root owns the source and status; the image shows once loaded and the fallback shows otherwise.
+Compose `Root` around an `Image` and a `Fallback`. The root owns the source and status; the image shows once loaded and the fallback shows otherwise. The root itself renders no instance — it is a pure context provider — so both parts mount directly into whatever parent you place the avatar in.
+
+<PrimitiveAnatomy title="Avatar anatomy">
 
 ```tsx title="Avatar anatomy"
 <Avatar.Root src="...">
@@ -42,38 +45,205 @@ Compose `Root` around an `Image` and a `Fallback`. The root owns the source and 
 | `Avatar.Image` | yes | Renders the image and reports its load status back to the root. |
 | `Avatar.Fallback` | no | Placeholder shown while the image is missing, loading past the delay, or errored. |
 
-## Example
+</PrimitiveAnatomy>
 
-A player headshot that resolves a thumbnail from a `UserId` and shows initials while it loads.
+## Examples
 
-```tsx title="PlayerAvatar.tsx"
-import { useMemo } from "@rbxts/react";
-import { Players } from "@rbxts/services";
+### Basic image with initials fallback
+
+The smallest useful avatar: a source on the root, the default 40x40 circular image, and an initials fallback. The fallback uses `asChild` to render your own label — the default fallback is a placeholder `textlabel` with `"AB"` text, so real content should replace it rather than sit inside it.
+
+```tsx title="BasicAvatar.tsx"
 import { Avatar } from "@lattice-ui/avatar";
 
-export function PlayerAvatar(props: { userId: number; initials: string }) {
-  const src = useMemo(() => {
-    const [content] = Players.GetUserThumbnailAsync(
-      props.userId,
-      Enum.ThumbnailType.HeadShot,
-      Enum.ThumbnailSize.Size48x48,
-    );
-    return content;
-  }, [props.userId]);
-
+export function BasicAvatar() {
   return (
-    <Avatar.Root src={src} delayMs={200}>
+    <Avatar.Root src="rbxassetid://1234567890">
       <Avatar.Image />
-      <Avatar.Fallback>
+      <Avatar.Fallback asChild>
         <textlabel
-          BackgroundTransparency={1}
-          Size={UDim2.fromScale(1, 1)}
-          Text={props.initials}
+          BackgroundColor3={Color3.fromRGB(65, 72, 89)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(40, 40)}
+          Text="MJ"
           TextColor3={Color3.fromRGB(235, 240, 248)}
           TextSize={14}
-        />
+        >
+          <uicorner CornerRadius={new UDim(1, 0)} />
+        </textlabel>
       </Avatar.Fallback>
     </Avatar.Root>
+  );
+}
+```
+
+### Tuning the fallback delay
+
+`delayMs` controls how long a loading avatar stays blank before the fallback appears. The default is `250`, which absorbs most fast loads without a placeholder flash; raise it when your art direction prefers a longer blank window, or set it to `0` to show the fallback the moment loading starts. The delay only applies while loading — an empty or absent `src` skips it and shows the fallback immediately, and an errored load always shows it.
+
+```tsx title="LoadoutSlotAvatar.tsx"
+import { Avatar } from "@lattice-ui/avatar";
+
+export function LoadoutSlotAvatar(props: { iconSrc?: string }) {
+  return (
+    <Avatar.Root src={props.iconSrc} delayMs={400}>
+      <Avatar.Image />
+      <Avatar.Fallback asChild>
+        <textlabel
+          BackgroundColor3={Color3.fromRGB(65, 72, 89)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(40, 40)}
+          Text="?"
+          TextColor3={Color3.fromRGB(235, 240, 248)}
+          TextSize={16}
+        >
+          <uicorner CornerRadius={new UDim(1, 0)} />
+        </textlabel>
+      </Avatar.Fallback>
+    </Avatar.Root>
+  );
+}
+```
+
+### Player headshot from a UserId
+
+The most common source in a Roblox game: a `rbxthumb://` headshot URL built from a `UserId`. The engine resolves and caches the thumbnail itself, `Avatar.Image` reports `loaded` once the `ImageLabel` finishes, and the initials cover the gap for players whose thumbnails are slow or unavailable.
+
+```tsx title="PlayerHeadshot.tsx"
+import { Avatar } from "@lattice-ui/avatar";
+
+export function PlayerHeadshot(props: { userId: number; displayName: string }) {
+  const src = `rbxthumb://type=AvatarHeadShot&id=${props.userId}&w=150&h=150`;
+  const initials = props.displayName.sub(1, 2).upper();
+
+  return (
+    <Avatar.Root src={src}>
+      <Avatar.Image />
+      <Avatar.Fallback asChild>
+        <textlabel
+          BackgroundColor3={Color3.fromRGB(65, 72, 89)}
+          BorderSizePixel={0}
+          Size={UDim2.fromOffset(40, 40)}
+          Text={initials}
+          TextColor3={Color3.fromRGB(235, 240, 248)}
+          TextSize={14}
+        >
+          <uicorner CornerRadius={new UDim(1, 0)} />
+        </textlabel>
+      </Avatar.Fallback>
+    </Avatar.Root>
+  );
+}
+```
+
+### Status ring composition
+
+Presence indicators are app-owned visuals: the primitive handles only the image-versus-fallback handoff, so a status ring is just your own frame composed around it. Because `Avatar.Root` renders no instance, both parts mount straight into the ring frame; `asChild` on the image lets you center it inside the slightly larger wrapper.
+
+```tsx title="StatusAvatar.tsx"
+import { Avatar } from "@lattice-ui/avatar";
+
+export function StatusAvatar(props: { userId: number; online: boolean }) {
+  const src = `rbxthumb://type=AvatarHeadShot&id=${props.userId}&w=150&h=150`;
+  const statusColor = props.online ? Color3.fromRGB(64, 200, 120) : Color3.fromRGB(96, 104, 122);
+
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(48, 48)}>
+      <uicorner CornerRadius={new UDim(1, 0)} />
+      <uistroke Color={statusColor} Thickness={2} />
+
+      <Avatar.Root src={src}>
+        <Avatar.Image asChild>
+          <imagelabel
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundTransparency={1}
+            BorderSizePixel={0}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(40, 40)}
+          >
+            <uicorner CornerRadius={new UDim(1, 0)} />
+          </imagelabel>
+        </Avatar.Image>
+        <Avatar.Fallback asChild>
+          <frame
+            AnchorPoint={new Vector2(0.5, 0.5)}
+            BackgroundColor3={Color3.fromRGB(65, 72, 89)}
+            BorderSizePixel={0}
+            Position={UDim2.fromScale(0.5, 0.5)}
+            Size={UDim2.fromOffset(40, 40)}
+          >
+            <uicorner CornerRadius={new UDim(1, 0)} />
+          </frame>
+        </Avatar.Fallback>
+      </Avatar.Root>
+
+      <frame
+        AnchorPoint={new Vector2(1, 1)}
+        BackgroundColor3={statusColor}
+        BorderSizePixel={0}
+        Position={UDim2.fromScale(1, 1)}
+        Size={UDim2.fromOffset(12, 12)}
+      >
+        <uicorner CornerRadius={new UDim(1, 0)} />
+        <uistroke Color={Color3.fromRGB(24, 26, 32)} Thickness={2} />
+      </frame>
+    </frame>
+  );
+}
+```
+
+### Avatar stack
+
+A party-members row with overlapping avatars. Negative `uilistlayout` padding pulls each wrapper over the previous one, descending `ZIndex` keeps the leftmost member on top, and a stroke in the panel's background color creates the separation cut. Each member gets their own `Avatar.Root`, so slow thumbnails resolve independently.
+
+```tsx title="PartyStack.tsx"
+import { Avatar } from "@lattice-ui/avatar";
+
+const PARTY = [
+  { userId: 156, initials: "BH" },
+  { userId: 261, initials: "SH" },
+  { userId: 1179762, initials: "JN" },
+];
+
+export function PartyStack() {
+  return (
+    <frame BackgroundTransparency={1} Size={UDim2.fromOffset(160, 40)}>
+      <uilistlayout
+        FillDirection={Enum.FillDirection.Horizontal}
+        Padding={new UDim(0, -12)}
+        SortOrder={Enum.SortOrder.LayoutOrder}
+      />
+
+      {PARTY.map((member, index) => (
+        <frame
+          key={member.userId}
+          BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+          BorderSizePixel={0}
+          LayoutOrder={index}
+          Size={UDim2.fromOffset(40, 40)}
+          ZIndex={PARTY.size() - index}
+        >
+          <uicorner CornerRadius={new UDim(1, 0)} />
+          <uistroke Color={Color3.fromRGB(24, 26, 32)} Thickness={2} />
+
+          <Avatar.Root src={`rbxthumb://type=AvatarHeadShot&id=${member.userId}&w=150&h=150`}>
+            <Avatar.Image />
+            <Avatar.Fallback asChild>
+              <textlabel
+                BackgroundColor3={Color3.fromRGB(65, 72, 89)}
+                BorderSizePixel={0}
+                Size={UDim2.fromOffset(40, 40)}
+                Text={member.initials}
+                TextColor3={Color3.fromRGB(235, 240, 248)}
+                TextSize={13}
+              >
+                <uicorner CornerRadius={new UDim(1, 0)} />
+              </textlabel>
+            </Avatar.Fallback>
+          </Avatar.Root>
+        </frame>
+      ))}
+    </frame>
   );
 }
 ```
@@ -82,20 +252,40 @@ export function PlayerAvatar(props: { userId: number; initials: string }) {
 
 ### Load status
 
-`Avatar.Root` tracks a status of `idle`, `loading`, `loaded`, or `error`. On mount and whenever `src` changes, it starts in `loading` if a non-empty source is set, or `error` if the source is empty or absent. `Avatar.Image` watches its `ImageLabel`'s `IsLoaded` property and reports `loaded` once the asset finishes; if the resolved source is empty it reports `error`. The image is only visible while the status is `loaded`.
+`Avatar.Root` tracks an `AvatarStatus` of `"idle"`, `"loading"`, `"loaded"`, or `"error"`. On mount and whenever `src` changes, it enters `"loading"` if a non-empty source is set, or `"error"` if the source is empty or absent — the `"idle"` member exists in the union but the built-in parts never produce it. Changing `src` restarts the cycle: status resets to `"loading"` and the fallback delay timer starts over, with a sequence guard so a stale timer from a previous source cannot fire.
 
-`Avatar.Image` resolves its source from its own `src` prop first, then falls back to the root's `src`. This lets you set the source once on the root, or override it per image.
+`Avatar.Image` reports the actual load result. It checks its `ImageLabel`'s `IsLoaded` property immediately and subscribes to `GetPropertyChangedSignal("IsLoaded")`, setting the shared status to `"loaded"` once the engine finishes the asset; if its resolved source is empty it reports `"error"` instead. The image is only `Visible` while the status is `"loaded"`, so a broken or in-flight asset never shows as an empty box.
+
+### Source resolution
+
+`Avatar.Image` resolves its source from its own `src` prop first, then falls back to the root's `src`. Set the source once on the root for the common case, or override it per image when one avatar composition needs a different asset than the shared context.
 
 ### Fallback timing
 
-`Avatar.Fallback` is shown based on status and a delay. It is hidden once the image is `loaded`, always shown on `error`, and otherwise shown only after the delay has elapsed. The root starts a `delayMs` timer (default `250`, clamped to at least `0`) when a source begins loading; until that timer fires, the fallback stays hidden so a fast load does not flash a placeholder. When there is no source, the delay is considered elapsed immediately so the fallback appears at once.
+`Avatar.Fallback` derives visibility from the status and the delay: hidden once `"loaded"`, always shown on `"error"`, and otherwise shown only after the delay has elapsed. The root starts a `delayMs` timer (default `250`, clamped to a minimum of `0`) when a source begins loading; until it fires, the fallback stays hidden so a fast load never flashes a placeholder. When there is no source, the delay is treated as elapsed immediately and the fallback appears at once.
+
+This rule is exported as `resolveAvatarFallbackVisible(status, delayElapsed)` alongside the `AvatarStatus` type, so custom status-driven parts can share the exact same visibility logic.
+
+### Default parts and asChild
+
+`Avatar.Root` renders no instance of its own — it only provides context — so `Image` and `Fallback` mount directly into the surrounding parent and you control layout entirely from outside. The default `Avatar.Image` is a 40x40 circular `imagelabel` with a transparent background; the default `Avatar.Fallback` is a 40x40 circular `textlabel` with placeholder `"AB"` text, and children passed without `asChild` render inside that label rather than replacing it.
+
+With `asChild`, `Avatar.Image` merges the resolved `Image` source, load-bound `Visible`, and its status-tracking ref onto your single child element, and `Avatar.Fallback` merges only the derived `Visible`. Both parts error if `asChild` is set without a child.
 
 <Callout title="Render both Image and Fallback together">
 Keep `Avatar.Image` and `Avatar.Fallback` mounted as siblings at the same time. Visibility of each is driven by the shared status — the image hides itself until loaded and the fallback hides itself until needed — so you should not conditionally mount one or the other yourself.
 </Callout>
 
+<Callout title="asChild images must be imagelabels">
+`Avatar.Image` narrows its ref with `IsA("ImageLabel")` before watching `IsLoaded`. If your `asChild` child is any other class — including an `imagebutton` — load tracking never attaches, the status never reaches `"loaded"`, and the image stays invisible. Project onto an `imagelabel` only.
+</Callout>
+
+<Callout title="The default fallback has placeholder text">
+Without `asChild`, `Avatar.Fallback` renders a `textlabel` whose `Text` is `"AB"` and puts your children inside it — custom content will sit on top of that placeholder text. For real fallback visuals (initials, an icon), pass your element with `asChild` so it replaces the default label.
+</Callout>
+
 <Callout title="Roblox image loading">
-Status comes from the `ImageLabel.IsLoaded` signal, so it reflects the engine's own asset pipeline. Pass a resolved asset string (for example from `Players.GetUserThumbnailAsync`) as `src`. An empty string is treated as an error and shows the fallback immediately.
+Status comes from the `ImageLabel.IsLoaded` signal, so it reflects the engine's own asset pipeline. Pass a resolved asset string — a `rbxassetid://` id, a `rbxthumb://` URL, or the result of `Players.GetUserThumbnailAsync` — as `src`. An empty string is treated as an error and shows the fallback immediately.
 </Callout>
 
 ## API reference
@@ -104,9 +294,9 @@ Status comes from the `ImageLabel.IsLoaded` signal, so it reflects the engine's 
 
 <PropTable
   rows={[
-    { name: "src", type: "string", description: "Default image source shared with Avatar.Image through context. An empty or absent source resolves to the error status." },
+    { name: "src", type: "string", description: "Default image source shared with Avatar.Image through context. An empty or absent source resolves to the error status and shows the fallback immediately." },
     { name: "delayMs", type: "number", description: "Milliseconds to wait before showing the fallback while loading, so fast loads do not flash a placeholder. Defaults to 250 and is clamped to a minimum of 0." },
-    { name: "children", type: "React.ReactNode", description: "The image and fallback parts." },
+    { name: "children", type: "React.ReactNode", description: "The image and fallback parts. The root renders no instance of its own, so children mount into the surrounding parent." },
   ]}
 />
 
@@ -115,7 +305,7 @@ Status comes from the `ImageLabel.IsLoaded` signal, so it reflects the engine's 
 <PropTable
   rows={[
     { name: "src", type: "string", description: "Image source for this part. Overrides the root's src when set; otherwise the root's src is used." },
-    { name: "asChild", type: "boolean", description: "Merge the image source and visibility onto the single child element instead of rendering the default imagelabel." },
+    { name: "asChild", type: "boolean", description: "Merge the resolved source, load-bound visibility, and status-tracking ref onto the single child element instead of rendering the default 40x40 circular imagelabel. The child must be an imagelabel." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -124,8 +314,8 @@ Status comes from the `ImageLabel.IsLoaded` signal, so it reflects the engine's 
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the fallback visibility onto the single child element instead of rendering the default textlabel." },
-    { name: "children", type: "React.ReactElement", description: "The placeholder element to render, such as initials or an icon. Required when asChild is set; otherwise rendered inside the default label." },
+    { name: "asChild", type: "boolean", description: "Merge the derived visibility onto the single child element instead of rendering the default 40x40 circular textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The placeholder element to render, such as initials or an icon. Required when asChild is set; otherwise rendered inside the default label on top of its placeholder text." },
   ]}
 />
 
