@@ -1,4 +1,6 @@
 ---
+import { Code } from "astro-expressive-code/components";
+
 interface Props {
   packageName: string;
   manager?: "pnpm" | "npm" | "yarn" | "bun";
@@ -6,19 +8,98 @@ interface Props {
 
 const { packageName, manager = "pnpm" } = Astro.props as Props;
 
-const commands = {
+const MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
+
+const commands: Record<(typeof MANAGERS)[number], string> = {
   pnpm: `pnpm add ${packageName}`,
   npm: `npm install ${packageName}`,
   yarn: `yarn add ${packageName}`,
   bun: `bun add ${packageName}`,
 };
-
-const command = commands[manager];
 ---
 
-<figure class="not-prose my-6">
-  <figcaption class="mb-2 text-sm font-medium text-muted-foreground">
-    Install with {manager}
-  </figcaption>
-  <pre class="overflow-x-auto rounded-lg bg-muted p-4 text-sm"><code>{command}</code></pre>
+<figure class="not-prose my-6" data-package-install>
+  <div
+    class="mb-2 inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/45 p-0.5"
+    role="tablist"
+    aria-label="Package manager"
+  >
+    {MANAGERS.map((name) => (
+      <button
+        aria-selected={name === manager ? "true" : "false"}
+        class:list={[
+          "rounded-md px-2.5 py-1 font-mono text-xs transition-colors",
+          name === manager
+            ? "bg-card text-foreground shadow-card"
+            : "text-muted-foreground hover:text-foreground",
+        ]}
+        data-pm-tab={name}
+        role="tab"
+        type="button"
+      >
+        {name}
+      </button>
+    ))}
+  </div>
+
+  {MANAGERS.map((name) => (
+    <div
+      class:list={[name === manager ? "" : "hidden"]}
+      data-pm-panel={name}
+      role="tabpanel"
+    >
+      <Code code={commands[name]} frame="code" lang="bash" />
+    </div>
+  ))}
 </figure>
+
+<script>
+  const STORAGE_KEY = "docs-package-manager"
+
+  function applyManager(root: Element, name: string) {
+    for (const tab of root.querySelectorAll<HTMLButtonElement>("[data-pm-tab]")) {
+      const active = tab.dataset.pmTab === name
+      tab.setAttribute("aria-selected", active ? "true" : "false")
+      tab.classList.toggle("bg-card", active)
+      tab.classList.toggle("text-foreground", active)
+      tab.classList.toggle("shadow-card", active)
+      tab.classList.toggle("text-muted-foreground", !active)
+      tab.classList.toggle("hover:text-foreground", !active)
+    }
+
+    for (const panel of root.querySelectorAll<HTMLElement>("[data-pm-panel]")) {
+      panel.classList.toggle("hidden", panel.dataset.pmPanel !== name)
+    }
+  }
+
+  function setupPackageInstall() {
+    const roots = document.querySelectorAll("[data-package-install]")
+    if (roots.length === 0) return
+
+    const stored = window.localStorage.getItem(STORAGE_KEY)
+
+    for (const root of roots) {
+      if (stored && root.querySelector(`[data-pm-tab="${stored}"]`)) {
+        applyManager(root, stored)
+      }
+
+      root.addEventListener("click", (event) => {
+        const tab = (event.target as HTMLElement).closest<HTMLButtonElement>(
+          "[data-pm-tab]",
+        )
+        if (!tab?.dataset.pmTab) return
+
+        const name = tab.dataset.pmTab
+        window.localStorage.setItem(STORAGE_KEY, name)
+
+        // Keep every install block on the page in sync.
+        for (const other of document.querySelectorAll("[data-package-install]")) {
+          applyManager(other, name)
+        }
+      })
+    }
+  }
+
+  setupPackageInstall()
+  document.addEventListener("astro:after-swap", setupPackageInstall)
+</script>
