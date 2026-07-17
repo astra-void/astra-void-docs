@@ -27,29 +27,9 @@ export default defineConfig({
     ],
   },
   integrations: [
-    astroExpressiveCode({
-      themes: ["vitesse-light", "vitesse-dark"],
-      themeCssSelector: (theme) =>
-        theme.type === "dark" ? ".dark" : ":root:not(.dark)",
-      useDarkModeMediaQuery: false,
-      frames: {
-        showCopyToClipboardButton: true,
-      },
-      styleOverrides: {
-        borderRadius: "0.75rem",
-        borderWidth: "1px",
-        borderColor: "var(--border)",
-        codeFontFamily:
-          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-        codeFontSize: "0.8125rem",
-        codeLineHeight: "1.7",
-        codePaddingBlock: "0.875rem",
-        codePaddingInline: "1rem",
-        frames: {
-          shadowColor: "transparent",
-        },
-      },
-    }),
+    // Expressive Code options live in ec.config.mjs so the <Code> component
+    // can be used in .astro files.
+    astroExpressiveCode(),
     mdx(),
     react(),
   ],
