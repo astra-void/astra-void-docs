@@ -42,13 +42,22 @@ export type DocNavItem = {
   path: string
   url: string
   sidebarOrder?: number
+  sidebarGroup?: string
+}
+
+export type DocsSectionSubgroup = {
+  label?: string
+  items: DocNavItem[]
 }
 
 export type DocsSectionGroup = {
   key: DocsSection
   label: string
   items: DocNavItem[]
+  subgroups?: DocsSectionSubgroup[]
 }
+
+export const COMPONENT_GROUP_ORDER = ["Form", "Overlays", "Display"] as const
 
 export type DocsShellData = {
   product: DocsProduct
@@ -102,6 +111,18 @@ function getSidebarOrder(doc: DocNavItem) {
   return doc.sidebarOrder ?? Number.MAX_SAFE_INTEGER
 }
 
+function getSidebarGroupOrder(doc: DocNavItem) {
+  if (!doc.sidebarGroup) {
+    return COMPONENT_GROUP_ORDER.length
+  }
+
+  const index = (COMPONENT_GROUP_ORDER as readonly string[]).indexOf(
+    doc.sidebarGroup,
+  )
+
+  return index === -1 ? COMPONENT_GROUP_ORDER.length : index
+}
+
 function compareDocs(product: DocsProduct, a: DocNavItem, b: DocNavItem) {
   const sectionDelta =
     SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section)
@@ -117,6 +138,14 @@ function compareDocs(product: DocsProduct, a: DocNavItem, b: DocNavItem) {
 
   if (aIsSectionIndex !== bIsSectionIndex) {
     return aIsSectionIndex ? -1 : 1
+  }
+
+  // Keep the flat order aligned with the grouped sidebar so DocsPager
+  // prev/next follows what the reader sees.
+  const groupDelta = getSidebarGroupOrder(a) - getSidebarGroupOrder(b)
+
+  if (groupDelta !== 0) {
+    return groupDelta
   }
 
   const sidebarDelta = getSidebarOrder(a) - getSidebarOrder(b)
@@ -183,6 +212,7 @@ export async function getDocs(
         path,
         url: getDocUrl(path, productId),
         sidebarOrder: entry.data.sidebar?.order,
+        sidebarGroup: entry.data.sidebar?.group,
       }
     })
     .sort((a, b) => compareDocs(product, a, b))
@@ -199,6 +229,36 @@ export async function getDocByPath(
   return docs.find((doc) => normalizePath(doc.path, product) === normalizedPath)
 }
 
+function buildSectionSubgroups(
+  items: DocNavItem[],
+): DocsSectionSubgroup[] | undefined {
+  if (!items.some((item) => item.sidebarGroup)) {
+    return undefined
+  }
+
+  const subgroups: DocsSectionSubgroup[] = []
+
+  for (const label of COMPONENT_GROUP_ORDER) {
+    const grouped = items.filter((item) => item.sidebarGroup === label)
+
+    if (grouped.length > 0) {
+      subgroups.push({ label, items: grouped })
+    }
+  }
+
+  const ungrouped = items.filter(
+    (item) =>
+      !item.sidebarGroup ||
+      !(COMPONENT_GROUP_ORDER as readonly string[]).includes(item.sidebarGroup),
+  )
+
+  if (ungrouped.length > 0) {
+    subgroups.push({ label: "Other", items: ungrouped })
+  }
+
+  return subgroups
+}
+
 export async function getDocsShellData(
   currentPath: string,
   productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
@@ -210,11 +270,16 @@ export async function getDocsShellData(
     (doc) => normalizePath(doc.path, product) === normalizedPath,
   )
 
-  const sections = SECTION_ORDER.map((section) => ({
-    key: section,
-    label: SECTION_LABELS[section],
-    items: docs.filter((doc) => doc.section === section),
-  })).filter((section) => section.items.length > 0)
+  const sections = SECTION_ORDER.map((section) => {
+    const items = docs.filter((doc) => doc.section === section)
+
+    return {
+      key: section,
+      label: SECTION_LABELS[section],
+      items,
+      subgroups: buildSectionSubgroups(items),
+    }
+  }).filter((section) => section.items.length > 0)
 
   return {
     product,

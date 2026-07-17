@@ -32,12 +32,13 @@ if (!entry) {
   throw new Error(`Missing docs entry for ${id}.`)
 }
 
-const { Content } = await render(entry)
+const { Content, headings } = await render(entry)
 ---
 
 <DocsLayout
   currentPath={currentPath}
   description={entry.data.description}
+  headings={headings}
   productId={DEFAULT_DOCS_PRODUCT.id}
   title={entry.data.title}>
   <Content />

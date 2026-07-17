@@ -1,0 +1,97 @@
+---
+import type { MarkdownHeading } from "astro"
+
+interface Props {
+  headings: MarkdownHeading[]
+}
+
+const { headings } = Astro.props as Props
+
+const tocHeadings = headings.filter(
+  (heading) => heading.depth === 2 || heading.depth === 3,
+)
+---
+
+{tocHeadings.length > 0 && (
+  <aside class="hidden w-56 shrink-0 xl:block">
+    <div class="sticky top-14 max-h-[calc(100vh-3.5rem)] overflow-y-auto py-10 pl-2">
+      <nav aria-label="On this page" data-docs-toc>
+        <h4 class="mb-3 text-[0.8rem] font-medium text-foreground">
+          On this page
+        </h4>
+        <ul class="space-y-1 border-l border-border text-sm">
+          {tocHeadings.map((heading) => (
+            <li>
+              <a
+                class:list={[
+                  "-ml-px block border-l border-transparent py-1 leading-5 text-muted-foreground transition-colors hover:text-foreground",
+                  heading.depth === 2 ? "pl-4" : "pl-7",
+                ]}
+                data-toc-link
+                href={`#${heading.slug}`}
+              >
+                {heading.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  </aside>
+)}
+
+<script>
+  function setupTocScrollSpy() {
+    const toc = document.querySelector<HTMLElement>("[data-docs-toc]")
+    if (!toc) return
+
+    const links = Array.from(
+      toc.querySelectorAll<HTMLAnchorElement>("[data-toc-link]"),
+    )
+    const targets = links
+      .map((link) =>
+        document.getElementById(decodeURIComponent(link.hash.slice(1))),
+      )
+      .filter((target): target is HTMLElement => target !== null)
+
+    if (targets.length === 0) return
+
+    const activeClasses = ["border-foreground", "text-foreground", "font-medium"]
+
+    const setActive = (id: string) => {
+      for (const link of links) {
+        const isActive = decodeURIComponent(link.hash.slice(1)) === id
+        link.classList.toggle("border-transparent", !isActive)
+        for (const cls of activeClasses) {
+          link.classList.toggle(cls, isActive)
+        }
+      }
+    }
+
+    // Track which headings are above the reading line and highlight the last one.
+    const visible = new Set<string>()
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visible.add(entry.target.id)
+          } else {
+            visible.delete(entry.target.id)
+          }
+        }
+
+        const firstVisible = targets.find((target) => visible.has(target.id))
+        if (firstVisible) {
+          setActive(firstVisible.id)
+        }
+      },
+      { rootMargin: "-56px 0px -70% 0px" },
+    )
+
+    targets.forEach((target) => observer.observe(target))
+  }
+
+  setupTocScrollSpy()
+  document.addEventListener("astro:after-swap", setupTocScrollSpy)
+</script>

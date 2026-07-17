@@ -3,6 +3,8 @@ import DocsHeader from "@/components/docs/DocsHeader.astro"
 import DocsMobileNav from "@/components/docs/DocsMobileNav.astro"
 import DocsPager from "@/components/docs/DocsPager.astro"
 import DocsSidebar from "@/components/docs/DocsSidebar.astro"
+import DocsToc from "@/components/docs/DocsToc.astro"
+import type { MarkdownHeading } from "astro"
 import ThemeScript from "@/components/docs/ThemeScript.astro"
 import { codeBlockIconVars } from "@/lib/codeblock-icons"
 import {
@@ -18,6 +20,7 @@ interface Props {
   description: string
   currentPath: string
   productId?: DocsProductId
+  headings?: MarkdownHeading[]
 }
 
 const {
@@ -25,6 +28,7 @@ const {
   description,
   currentPath,
   productId = DEFAULT_DOCS_PRODUCT.id,
+  headings = [],
 } = Astro.props as Props
 
 const shell = await getDocsShellData(currentPath, productId)
@@ -96,7 +100,9 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
               ) : null}
             </div>
 
-            <h1 class="scroll-m-20 text-4xl font-semibold tracking-tight lg:text-[2.5rem]">
+            <h1
+              class="scroll-m-20 text-4xl font-semibold tracking-tight lg:text-[2.5rem]"
+            >
               {title}
             </h1>
 
@@ -112,6 +118,8 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           <DocsPager next={shell.next} previous={shell.previous} />
         </div>
       </main>
+
+      <DocsToc headings={headings} />
     </div>
   </body>
 </html>

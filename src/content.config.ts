@@ -19,6 +19,7 @@ const docs = defineCollection({
     sidebar: z
       .object({
         order: z.number().int().optional(),
+        group: z.string().optional(),
       })
       .optional(),
   }),
