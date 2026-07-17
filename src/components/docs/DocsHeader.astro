@@ -1,5 +1,6 @@
 ---
 import { ModeToggle } from "@/components/docs/ModeToggle"
+import { SearchDialog } from "@/components/docs/SearchDialog"
 import type { DocsProduct } from "@/lib/docs"
 
 interface Props {
@@ -12,7 +13,9 @@ interface Props {
 const { product, docsHref, componentsHref, guidesHref } = Astro.props as Props
 ---
 
-<header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+<header
+  class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+>
   <div class="mx-auto flex h-14 max-w-screen-2xl items-center px-4 sm:px-6 lg:px-8">
     <div class="mr-4 flex min-w-0 items-center">
       <button
@@ -63,6 +66,7 @@ const { product, docsHref, componentsHref, guidesHref } = Astro.props as Props
     </div>
 
     <div class="ml-auto flex items-center gap-2">
+      <SearchDialog client:load />
       <a
         class="hidden text-sm text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
         href={product.githubUrl}

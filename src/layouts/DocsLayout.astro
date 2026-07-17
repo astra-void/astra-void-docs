@@ -87,7 +87,7 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
 
       <main class="min-w-0 flex-1 py-10">
         <div class="w-full max-w-3xl">
-          <header class="mb-10">
+          <header class="mb-10" data-pagefind-body>
             <div class="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
               <a class="transition-colors hover:text-foreground" href={shell.product.href}>
                 {shell.product.shortTitle}
@@ -102,6 +102,7 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
 
             <h1
               class="scroll-m-20 text-4xl font-semibold tracking-tight lg:text-[2.5rem]"
+              data-pagefind-meta="title"
             >
               {title}
             </h1>
@@ -111,7 +112,7 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
             </p>
           </header>
 
-          <article class="docs-prose">
+          <article class="docs-prose" data-pagefind-body>
             <slot />
           </article>
 
