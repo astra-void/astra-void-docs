@@ -2,6 +2,7 @@
 import { getCollection, render } from "astro:content"
 import { Code } from "astro-expressive-code/components"
 import DocsCard from "@/components/docs/DocsCard.astro"
+import LoomPreview from "@/components/docs/mdx/LoomPreview.astro"
 import DocsLayout from "@/layouts/DocsLayout.astro"
 import {
   COMPONENT_GROUP_ORDER,
@@ -120,6 +121,14 @@ const pillars = [
       >
         Browse components
       </a>
+    </div>
+
+    <div class="mt-10">
+      <LoomPreview
+        height={420}
+        label="Avatar · Switch · Slider · Dialog · Toast — one live scene. Toggle, drag, and send an invite."
+        scene="HomeShowcaseScene"
+      />
     </div>
 
     <div class="mt-8">
