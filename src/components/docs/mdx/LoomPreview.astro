@@ -1,0 +1,91 @@
+---
+/**
+ * Embeds a live, interactive Loom preview of a lattice-ui scene. Loom renders
+ * the real Roblox `@rbxts/react` component tree in the browser, so the preview
+ * is fully interactive (click, type, drag) — not a screenshot.
+ *
+ * The bundle is produced by `pnpm preview:build` into `public/loom-preview/`
+ * and served statically; the iframe deep-links one target with `chrome=none`.
+ * The iframe `src` is set lazily (IntersectionObserver) so off-screen previews
+ * don't load until scrolled near.
+ */
+interface Props {
+  /** Scene module name, e.g. "CheckboxBasicScene". */
+  scene: string
+  /** Iframe height in px. Scenes vary; default suits most single-panel demos. */
+  height?: number
+  /** Short caption under the frame. */
+  label?: string
+}
+
+const { scene, height = 380, label } = Astro.props as Props
+
+const target = `src/preview-targets/${scene}.loom.tsx`
+const previewSrc = `${import.meta.env.BASE_URL}loom-preview/index.html?target=${encodeURIComponent(
+  target,
+)}&chrome=none`
+---
+
+<figure class="not-prose my-6" data-loom-preview>
+  <div class="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+    <div class="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-2">
+      <span class="font-mono text-xs text-muted-foreground">Live preview</span>
+      <span class="font-mono text-[0.7rem] text-muted-foreground/70">
+        Roblox UI · interactive
+      </span>
+    </div>
+    <iframe
+      class="block w-full bg-[#14161a]"
+      data-loom-frame
+      data-src={previewSrc}
+      height={height}
+      loading="lazy"
+      style={`height:${height}px`}
+      title={`Live preview of ${scene}`}
+    >
+    </iframe>
+  </div>
+  {label ? (
+    <figcaption class="mt-2 text-center text-sm text-muted-foreground">
+      {label}
+    </figcaption>
+  ) : null}
+</figure>
+
+<script>
+  function mountLoomPreviews() {
+    const frames = document.querySelectorAll<HTMLIFrameElement>(
+      "[data-loom-frame]:not([data-loaded])",
+    )
+    if (frames.length === 0) return
+
+    const load = (frame: HTMLIFrameElement) => {
+      const src = frame.dataset.src
+      if (!src || frame.dataset.loaded) return
+      frame.src = src
+      frame.dataset.loaded = "true"
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      frames.forEach(load)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            load(entry.target as HTMLIFrameElement)
+            obs.unobserve(entry.target)
+          }
+        }
+      },
+      { rootMargin: "200px" },
+    )
+
+    frames.forEach((frame) => observer.observe(frame))
+  }
+
+  mountLoomPreviews()
+  document.addEventListener("astro:after-swap", mountLoomPreviews)
+</script>

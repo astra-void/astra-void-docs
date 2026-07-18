@@ -8,3 +8,6 @@ node_modules
 .vscode
 digest.txt
 .serena/
+
+# Generated Loom preview bundles (pnpm preview:build)
+public/loom-preview

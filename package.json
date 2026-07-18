@@ -6,6 +6,7 @@
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
+    "preview:build": "node scripts/build-loom-previews.mjs",
     "typecheck": "astro check"
   },
   "dependencies": {
