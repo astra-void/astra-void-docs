@@ -17,18 +17,9 @@ All `@lattice-ui/*` packages version in lockstep, so a single release number des
   per-package stability tiers before upgrading.
 </Callout>
 
-## Unreleased
-
-In-progress work on the `next` prerelease line:
-
-- Placement-relative Popper positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) adopted across positioned overlays.
-- `usePopper` now exposes resolved placement/position metadata (`position`, `anchorPoint`, `placement`, `contentSize`, `isPositioned`, `update`).
-- Improved Popper flip/clamp behavior near viewport edges, and overlay content stays mounted while motion is active so exit animations finish cleanly.
-- Normalized slider and switch thumb anchors so wrapped layouts keep animated thumbs aligned.
-
 ## 0.5.0
 
-Extracted shared focus and motion helpers into dedicated packages, expanded CLI project scaffolding, and standardized motion behavior across layered primitives.
+The current stable release. Extracts shared focus and motion helpers into dedicated packages, expands CLI project scaffolding, adopts placement-relative Popper positioning, and standardizes motion behavior across layered primitives.
 
 **Migration**
 
@@ -38,8 +29,11 @@ Extracted shared focus and motion helpers into dedicated packages, expanded CLI 
 **Highlights**
 
 - New `@lattice-ui/motion` package for tween and presence helpers, and `@lattice-ui/focus` for focus management.
+- Placement-relative Popper positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) adopted across positioned overlays, with improved flip/clamp behavior near viewport edges.
+- `usePopper` exposes resolved placement/position metadata (`position`, `anchorPoint`, `placement`, `contentSize`, `isPositioned`, `update`).
 - Interactive `init` CLI command for existing projects with safe template merging; `create` and `init` scaffold from maintained package templates.
-- Layered components share the same motion recipes and focus infrastructure, so exit animations complete instead of flashing or unmounting early.
+- Layered components share the same motion recipes and focus infrastructure — overlay content stays mounted while motion is active, so exit animations complete instead of flashing or unmounting early.
+- Normalized slider and switch thumb anchors so wrapped layouts keep animated thumbs aligned.
 
 ## 0.4.x
 
