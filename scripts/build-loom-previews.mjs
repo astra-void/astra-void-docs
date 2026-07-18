@@ -37,12 +37,17 @@ for (const [label, path] of [
 }
 
 console.log(`[preview:build] building lattice previews → ${outDir}`);
+// Run through the loom CLI package (`loom-dev`) so `tsx` resolves from that
+// package's own bin — a bare `pnpm exec tsx` at the repo root relies on
+// hoisting that a fresh CI `--frozen-lockfile` install doesn't guarantee.
 execFileSync(
   "pnpm",
   [
+    "--filter",
+    "loom-dev",
     "exec",
     "tsx",
-    "packages/cli/src/cli.ts",
+    "src/cli.ts",
     "build",
     latticeApp,
     "--targets",
