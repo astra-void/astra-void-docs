@@ -4,7 +4,17 @@
     {
       "name": "docs-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
+      "port": 4321
+    },
+    {
+      "name": "docs-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "preview"
+      ],
       "port": 4321
     }
   ]
