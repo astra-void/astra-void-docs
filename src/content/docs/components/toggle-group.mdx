@@ -7,7 +7,7 @@ sidebar:
   group: Form
 ---
 
-import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/toggle-group"
@@ -45,6 +45,12 @@ A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the
 | `ToggleGroup.Item` | yes | One toggle; reads its pressed state from `Root` and animates between states. |
 
 </PrimitiveAnatomy>
+
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="ToggleGroupBasicScene" height={380} />
 
 ## Examples
 

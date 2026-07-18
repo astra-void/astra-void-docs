@@ -7,7 +7,7 @@ sidebar:
   group: Display
 ---
 
-import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/tabs"
@@ -45,6 +45,12 @@ Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every 
 | `Tabs.List` | yes | A container `frame` that groups the triggers. |
 | `Tabs.Trigger` | yes | A `textbutton` that selects its `value` on activation, selection, or Enter/Space. |
 | `Tabs.Content` | yes | A panel that mounts and animates while its `value` is active. |
+
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="TabsBasicScene" height={420} />
 
 ## Examples
 
