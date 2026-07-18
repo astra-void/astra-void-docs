@@ -20,6 +20,12 @@ Avatar represents a player or entity with an image, falling back to placeholder 
 
 Reach for Avatar wherever you show a thumbnail that might be missing or slow — headshots, group icons, item images — and want the image-then-fallback handoff handled for you, including a short delay before the fallback appears so quick loads stay seamless.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="AvatarExampleScene" height={180} />
+
 ## Import
 
 ```ts
@@ -46,12 +52,6 @@ Compose `Root` around an `Image` and a `Fallback`. The root owns the source and 
 | `Avatar.Fallback` | no | Placeholder shown while the image is missing, loading past the delay, or errored. |
 
 </PrimitiveAnatomy>
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="AvatarExampleScene" height={180} />
 
 ## Examples
 

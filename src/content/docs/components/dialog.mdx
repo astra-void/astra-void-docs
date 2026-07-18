@@ -20,6 +20,12 @@ Dialog is the primitive for any surface that should take over the screen: confir
 
 Reach for Dialog when a surface needs to be **modal** (block interaction behind it), **restore focus** to whatever opened it, and **dismiss predictably** — by an explicit close, an outside interaction, or a controlled state change.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="DialogExampleScene" height={420} />
+
 ## Import
 
 ```ts
@@ -52,12 +58,6 @@ Compose the full set of parts. `Trigger`, `Overlay`, and `Close` are optional de
 | `Dialog.Close` | no | A button that closes the dialog from inside the content. |
 
 </PrimitiveAnatomy>
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="DialogExampleScene" height={420} />
 
 ## Examples
 

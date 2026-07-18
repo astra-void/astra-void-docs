@@ -20,6 +20,12 @@ Tabs is the primitive for switching between mutually exclusive views: settings c
 
 Reach for Tabs when a set of triggers should drive **value-based selection** — exactly one active at a time — with **keyboard and gamepad movement** across the list and **panels that animate in and out** as the value changes.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="TabsExampleScene" height={300} />
+
 ## Import
 
 ```ts
@@ -45,12 +51,6 @@ Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every 
 | `Tabs.List` | yes | A container `frame` that groups the triggers. |
 | `Tabs.Trigger` | yes | A `textbutton` that selects its `value` on activation, selection, or Enter/Space. |
 | `Tabs.Content` | yes | A panel that mounts and animates while its `value` is active. |
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="TabsExampleScene" height={300} />
 
 ## Examples
 

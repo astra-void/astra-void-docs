@@ -20,6 +20,12 @@ Slider is the primitive for picking a number from a continuous range: volume, se
 
 Reach for Slider when a control needs a **single numeric value**, **drag interaction on a track**, and **predictable clamping and stepping** without you doing the pointer math.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="SliderExampleScene" height={160} />
+
 ## Import
 
 ```ts
@@ -53,12 +59,6 @@ import { Slider } from "@lattice-ui/slider";
 <Callout title="Single thumb only">
 This release of Slider is **single-thumb only**. There is no range/dual-thumb mode, and `value`/`defaultValue` are a single `number`, not an array. Compose two independent sliders or track your own state if you need a min/max range until multi-thumb lands.
 </Callout>
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="SliderExampleScene" height={160} />
 
 ## Examples
 

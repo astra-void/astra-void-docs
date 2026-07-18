@@ -20,6 +20,12 @@ Checkbox is the primitive for a toggleable on/off control with an optional third
 
 Reach for Checkbox for settings toggles, opt-ins, multi-select lists, and "select all" headers — anywhere you need a tri-state value (checked, unchecked, or indeterminate) with controlled or uncontrolled state and a built-in animated indicator. For a plain boolean flip with a sliding handle, [Switch](/lattice-ui/components/switch/) is usually the better fit.
 
+## Preview
+
+The component running live — the same `@rbxts/react` tree Roblox renders, mounted in the browser. Click the boxes to toggle them.
+
+<LoomPreview scene="CheckboxExampleScene" height={220} />
+
 ## Import
 
 ```ts
@@ -40,12 +46,6 @@ Compose `Root` as the toggleable button and place an `Indicator` inside it to sh
 | --- | --- | --- |
 | `Checkbox.Root` | yes | Owns the checked state, handles toggling, and renders the activatable button. |
 | `Checkbox.Indicator` | no | Mounts and animates in while the box is checked or indeterminate. |
-
-## Preview
-
-The component running live — the same `@rbxts/react` tree Roblox renders, mounted in the browser. Click the boxes to toggle them.
-
-<LoomPreview scene="CheckboxExampleScene" height={220} />
 
 ## Examples
 

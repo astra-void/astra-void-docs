@@ -20,6 +20,12 @@ Combobox is the primitive for a filterable, single-value picker: searchable sele
 
 Reach for Combobox when a select needs **type-to-filter** behavior: an input narrows a registered list of items by text, the user picks one, and the chosen value drives the field. Combobox owns three pieces of state at once — the selected **value**, the **input text**, and the **open** state — and keeps them in sync, repairing a selection that no longer resolves to an enabled item so the field does not point at a value that no longer exists.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="ComboboxExampleScene" height={400} />
+
 ## Import
 
 ```ts
@@ -65,12 +71,6 @@ Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the wor
 | `Combobox.Separator` | no | A thin divider between items or groups. |
 
 </PrimitiveAnatomy>
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="ComboboxExampleScene" height={400} />
 
 ## Examples
 

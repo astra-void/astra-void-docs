@@ -20,6 +20,12 @@ Textarea is the primitive for multi-line input: a report description, a tribe me
 
 Reach for Textarea when an input needs **controlled or uncontrolled value state**, a clean **change-versus-commit** split, **auto-resizing** that clamps between a minimum and maximum number of rows, and shared **disabled / readOnly / required / invalid** state across a label, description, and message. For single-line input without the height machinery, [Text Field](/lattice-ui/components/text-field/) is the sibling primitive.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="TextareaExampleScene" height={260} />
+
 ## Import
 
 ```ts
@@ -56,12 +62,6 @@ Compose `Root` around an `Input`, plus any of the optional text parts. Only `Roo
 | `Textarea.Message` | no | A `textlabel` for validation text that recolors when `invalid` is set. |
 
 </PrimitiveAnatomy>
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="TextareaExampleScene" height={260} />
 
 ## Examples
 

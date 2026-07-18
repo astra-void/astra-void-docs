@@ -20,6 +20,12 @@ Toggle Group is the primitive for a related set of toggles that share selection 
 
 Reach for Toggle Group when several toggles belong together and should behave as **one control** — either a **single-select** group where picking one clears the others, or a **multiple-select** group where each item toggles independently. For a lone on/off control, [Checkbox](/lattice-ui/components/checkbox/) or [Switch](/lattice-ui/components/switch/) is the better fit.
 
+## Preview
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
+
+<LoomPreview scene="ToggleGroupExampleScene" height={160} />
+
 ## Import
 
 ```ts
@@ -45,12 +51,6 @@ A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the
 | `ToggleGroup.Item` | yes | One toggle; reads its pressed state from `Root` and animates between states. |
 
 </PrimitiveAnatomy>
-
-## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
-
-<LoomPreview scene="ToggleGroupExampleScene" height={160} />
 
 ## Examples
 
