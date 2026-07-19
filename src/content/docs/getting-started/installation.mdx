@@ -8,9 +8,13 @@ sidebar:
 
 import { PackageInstall, Callout } from "@/components/docs/mdx";
 
-Lattice UI is a set of headless primitives for `rbxts/react`. Each primitive ships as its own `@lattice-ui/<name>` package, owns the tricky interaction work — open state, focus, layering, motion — and leaves the visuals to you. You install only the packages a screen actually uses.
+Lattice UI is a set of headless primitives for `rbxts/react`. Each primitive ships as its own `@lattice-ui/react-<name>` package, owns the tricky interaction work — open state, focus, layering, motion — and leaves the visuals to you. You install only the packages a screen actually uses.
 
-This page gets one primitive into your project. The rest of getting started uses Dialog as the worked example, so installing `@lattice-ui/dialog` here is a good place to start.
+This page gets one primitive into your project. The rest of getting started uses Dialog as the worked example, so installing `@lattice-ui/react-dialog` here is a good place to start.
+
+<Callout title="The react- prefix">
+Since **0.6.1** every package is namespaced by framework layer: `@lattice-ui/<name>` became `@lattice-ui/react-<name>`, and the old `@lattice-ui/core` is now `@lattice-ui/react-runtime`. This is a rename only — no exports or APIs changed. If you are upgrading from 0.6.0 or earlier, add the prefix to every import, and run `npx lattice-ui init` to rewrite the old names in your `package.json` — leaving both names listed makes the old and new copies resolve side by side, which npm rejects.
+</Callout>
 
 ## Prerequisites
 
@@ -21,36 +25,38 @@ import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 ```
 
-`@rbxts/react` and `@rbxts/react-roblox` are **peer dependencies** of every primitive (`^17`). Install them yourself if they are not already in your project — the primitive packages do not bundle them.
+`@rbxts/react` and `@rbxts/react-roblox` are **peer dependencies** of every primitive (`^17.3.7-ts.1`). Install them yourself if they are not already in your project — the primitive packages do not bundle them.
 
 ## Install a package
 
-<PackageInstall packageName="@lattice-ui/dialog" />
+<PackageInstall packageName="@lattice-ui/react-dialog" />
 
-Install one primitive at a time. Each package pulls in the shared foundations it needs (`@lattice-ui/core`, and depending on the primitive, `@lattice-ui/focus`, `@lattice-ui/layer`, `@lattice-ui/motion`), so you do not add those by hand.
+Install one primitive at a time. Each package pulls in the shared foundations it needs — every primitive depends on `@lattice-ui/react-runtime`, and Dialog additionally brings `@lattice-ui/react-focus`, `@lattice-ui/react-layer`, and `@lattice-ui/react-motion` — so you do not add those by hand.
 
 ```ts title="Import the primitive"
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 ```
 
 ## Use the lattice CLI
 
-If you would rather not manage packages by hand, the `lattice` CLI installs primitives for you and resolves your package manager automatically from the project lockfile.
+If you would rather not manage packages by hand, the `lattice` CLI installs primitives for you, adds the `@rbxts/react` peers alongside them, and resolves your package manager automatically from the project lockfile. It needs **Node 20+** and runs straight from npm — no install required.
 
 ```bash title="Add a primitive"
 npx lattice-ui add dialog
 ```
 
-You can add several primitives at once, or pull in a curated preset — `overlay` bundles popover, tooltip, dialog, and toast, while `form` bundles checkbox, radio-group, switch, text-field, and textarea. The full preset list lives in the [CLI reference](/lattice-ui/reference/cli/).
+Note the argument is the registry name (`dialog`), not the npm package name — the CLI maps it to `@lattice-ui/react-dialog` for you. You can add several primitives at once — space- or comma-separated — or pull in a curated preset. `overlay` bundles popover, tooltip, dialog, and toast, while `form` bundles checkbox, radio-group, switch, text-field, and textarea. The full command and preset reference lives in the [CLI reference](/lattice-ui/reference/cli/).
 
 ```bash title="Add multiple primitives and a preset"
 npx lattice-ui add dialog toast --preset overlay
 ```
 
+Run `add` with no names and no `--preset` and it prompts you to pick presets and components interactively. Add `--dry-run` to print the exact install command without touching anything.
+
 The CLI also scaffolds and maintains projects: `lattice create` starts a new `rbxts` project, `lattice init` wires the toolchain into an existing one, and `lattice remove` / `lattice upgrade` keep your installed primitives in sync. Run `lattice doctor` if you want it to check your setup.
 
 <Callout title="Pick a package manager">
-Both the manual install and the CLI work with pnpm, npm, and yarn. Pass `--pm <pnpm|npm|yarn>` to any CLI command to override the manager it detects from your lockfile.
+The manual install works with any package manager. The CLI supports pnpm, npm, and yarn — pass `--pm <pnpm|npm|yarn>` to any command to override the manager it detects from your lockfile.
 </Callout>
 
 ## Verify it works
@@ -59,7 +65,7 @@ Render the minimum useful surface to confirm the import resolves and the primiti
 
 ```tsx title="smoke-test.tsx"
 import React from "@rbxts/react";
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 
 export function SmokeTest() {
   return (

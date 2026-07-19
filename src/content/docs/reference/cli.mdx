@@ -37,6 +37,10 @@ lattice <command> [options]
 
 Both binaries (`lattice` and `lattice-ui`) run the same program. Run `lattice help` for the built-in usage summary or `lattice version` to print the installed version.
 
+<Callout title="With npx, use the package name">
+`npx lattice` does not work — `npx` resolves the published **package** name, not the shorthand binary alias, so it fails to find anything to run. Always write `npx lattice-ui`. The short `lattice` form is for an installed CLI, global or local.
+</Callout>
+
 <Callout title="Global options">
 `--help` / `-h` prints usage and `--version` / `-v` prints the version. As the first argument they short-circuit any command. An unknown global option (any other leading `-` token) is a usage error.
 </Callout>
@@ -80,6 +84,10 @@ Initializes Lattice inside an existing project. Unlike `create`, it accepts no p
 ```bash
 npx lattice-ui init --dry-run
 ```
+
+`init` is also the migration path off the 0.6.1 rename. Before merging the template it rewrites any pre-0.6.1 package names in `dependencies`/`devDependencies` to their `react-` replacements (`@lattice-ui/dialog` → `@lattice-ui/react-dialog`, `@lattice-ui/core` → `@lattice-ui/react-runtime`), resolving a version for each replacement it has to add. Dropping the old name matters: leaving both in the manifest makes the old and new copies resolve side by side, which npm then rejects on peer resolution.
+
+If the install fails, `init` and `create` roll their file changes back rather than leaving a half-written scaffold for the next run to merge on top of.
 
 <PropTable
   rows={[
@@ -131,7 +139,7 @@ npx lattice-ui remove dialog --dry-run
 
 ### upgrade
 
-Upgrades installed `@lattice-ui/*` packages. Same selection inputs and flags as `add` and `remove`.
+Upgrades installed `@lattice-ui/*` packages. Same selection inputs and flags as `add` and `remove`. Pre-0.6.1 package names are skipped rather than upgraded — their dist-tags no longer move, so run `init` to rewrite them to their `react-` replacements first.
 
 ```bash
 npx lattice-ui upgrade --dry-run
@@ -149,7 +157,20 @@ npx lattice-ui upgrade --dry-run
 
 ### doctor
 
-Audits the project and reports issues without changing anything. It checks for a missing or duplicated lockfile, a `packageManager` field that disagrees with the resolved manager, whether any `@lattice-ui` component packages are installed, unknown `@lattice-ui` packages, and missing peers or providers. Missing **required** providers are errors (non-zero exit); everything else is a warning. It finishes with recommended commands.
+Audits the project and reports issues without changing anything, then finishes with recommended commands. It checks for:
+
+| Check | Level |
+| --- | --- |
+| Missing or duplicated lockfile | warn |
+| A `packageManager` field that disagrees with the resolved manager | warn |
+| No `@lattice-ui` component packages installed at all | warn |
+| A pre-0.6.1 package name that no longer receives releases | **error** |
+| A `typescript` major other than the one roblox-ts compiles with | warn |
+| An `@lattice-ui` package that is installed but not in the CLI registry | warn |
+| A missing peer, or a missing optional provider | warn |
+| A missing **required** provider | **error** |
+
+Errors exit non-zero; warnings do not.
 
 ```bash
 npx lattice-ui doctor
@@ -172,10 +193,12 @@ Presets are named bundles of components so you can install a related set in one 
 
 ## Package manager resolution
 
-When `--pm` is omitted, the CLI resolves a package manager automatically from the project lockfile or installed managers, and pass `--pm <pnpm|npm|yarn>` to override that choice. `doctor` surfaces resolution problems: a missing lockfile, multiple lockfiles, or a `packageManager` field that does not match the resolved manager.
+When `--pm` is omitted, the CLI resolves a package manager automatically from the project lockfile or installed managers; pass `--pm <pnpm|npm|yarn>` to override that choice. `doctor` surfaces resolution problems: a missing lockfile, multiple lockfiles, or a `packageManager` field that does not match the resolved manager.
+
+The resolved manager is also **pinned** into the project. `create` and `init` record it as a `devEngines.packageManager` entry, and `add`, `remove`, and `upgrade` reapply the pin before they touch dependencies — if the pin names a different manager than the one this run uses, the CLI warns and repins. The pin is what keeps a project scaffolded with pnpm from being quietly installed with npm: both managers refuse to install when the pin names the other one.
 
 <Callout title="Peers and providers">
-Every component declares the peers it needs (`@rbxts/react`, `@rbxts/react-roblox`) and, for layered primitives, optional providers such as `@lattice-ui/layer`'s `PortalProvider`. `add` installs peers and required providers automatically but only *suggests* optional providers — wire those up yourself when you want the behavior they enable (for example, portal-mounted dialog or menu content).
+Every component declares the peers it needs (`@rbxts/react`, `@rbxts/react-roblox`) and, for layered primitives, optional providers such as `@lattice-ui/react-layer`'s `PortalProvider`. `add` installs peers and required providers automatically but only *suggests* optional providers — wire those up yourself when you want the behavior they enable (for example, portal-mounted dialog or menu content).
 </Callout>
 
 ## Dry runs
