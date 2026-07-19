@@ -1,0 +1,162 @@
+---
+title: Theming
+description: How the Vela theme works — three families of raw Luau expression strings, the extend-versus-replace merge rules, and what ships by default.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 10
+draft: false
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+A Vela theme has exactly three families: `colors`, `radius`, and `spacing`. There is nothing else. No `content`, no `plugins`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them.
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+
+export default defineConfig({
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          500: "Color3.fromRGB(99, 102, 241)",
+          700: "Color3.fromRGB(67, 56, 202)",
+        },
+        surface: "Color3.fromRGB(24, 24, 27)",
+      },
+      radius: { card: "new UDim(0, 10)" },
+      spacing: { gutter: "new UDim(0, 20)" },
+    },
+  },
+});
+```
+
+## Values are Luau source, not values
+
+The single most surprising thing about the config: **every theme value is a raw Luau expression string.** It is not a color object, not a hex string, not a number. Vela pastes the string you write straight into the emitted Luau, so it has to be an expression that evaluates in Roblox.
+
+That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"`. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is taken at face value: nothing checks that it is valid Luau, so `"#3b82f6"` is pasted verbatim into the output and only surfaces later, as a Luau error.
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: {
+    extend: {
+      // correct — a Luau expression, as a string
+      colors: { ink: "Color3.fromRGB(17, 24, 39)" },
+      radius: { pill: "new UDim(0.5, 0)" },
+      // wrong — compiles, then breaks at runtime as invalid Luau
+      // colors: { ink: "#111827" },
+      // wrong — not a string, so this throws at config-load time
+      // radius: { pill: 999 },
+    },
+  },
+});
+```
+
+The config file itself is discovered by walking up from the source file being compiled, looking for exactly one filename: `vela.config.ts`. See the [configuration reference](/vela-rbxts/reference/config/) for discovery, loading, and the full schema.
+
+## Extend merges, top-level replaces
+
+Each of the three families can be set in two places, and the two places mean different things.
+
+`theme.extend.X` merges over the built-in defaults. Your keys win on collision, everything else you did not mention survives.
+
+`theme.X` at the top level **replaces the entire scale.** If you write `theme.radius`, the ten built-in radius keys are gone and only yours exist. If you write `theme.spacing`, the one built-in spacing key is gone. If you write `theme.colors`, all 28 built-in color families are gone.
+
+For colors the merge is deeper than a key swap: `extend` merges family by family, and when both sides of a family are shade palettes it merges shade by shade. So extending `blue` with only a `400` key keeps the other ten shades. A literal color replaces a palette wholesale, and a palette replaces a literal wholesale — there is no blending across those two shapes.
+
+<Callout title="theme.colors silently discards theme.extend.colors">
+When a top-level `theme.colors` is present, `theme.extend.colors` is **thrown away without a warning.** The resolved theme contains only what you put in `theme.colors`.
+
+This is not how real Tailwind behaves — there, `extend` is applied on top of a replaced `colors`. In Vela it is not. The same trap applies to `radius` and `spacing`: a top-level entry replaces the whole scale and its `extend` counterpart never runs.
+
+**Use `theme.extend.colors` alone to add colors.** If you set both, every built-in palette disappears *and* the colors you thought you were adding under `extend` never resolve, so classes like `bg-brand-500` fail with `unknown-theme-key`.
+</Callout>
+
+```ts title="vela.config.ts"
+// Do not do this — `brand` never resolves, and every built-in palette is dropped.
+export default defineConfig({
+  theme: {
+    colors: { surface: "Color3.fromRGB(24, 24, 27)" },
+    extend: {
+      colors: { brand: { 500: "Color3.fromRGB(99, 102, 241)" } },
+    },
+  },
+});
+```
+
+Reach for a top-level family only when you genuinely want to start from an empty scale — a locked-down design system where referencing `bg-slate-700` should be an error.
+
+## Semantic colors and shade palettes
+
+A color entry is either a **literal** — one Luau string, used as-is — or a **palette**, an object keyed by shade. The eleven valid shade tokens are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, and `950`. A palette does not have to define all of them, but any shade you reference must be present.
+
+```ts title="vela.config.ts"
+theme: {
+  extend: {
+    colors: {
+      // literal — used as `bg-surface`, with no shade
+      surface: "Color3.fromRGB(24, 24, 27)",
+      // palette — used as `bg-brand-500`
+      brand: {
+        500: "Color3.fromRGB(99, 102, 241)",
+        700: "Color3.fromRGB(67, 56, 202)",
+      },
+    },
+  },
+}
+```
+
+Which one a class name means is decided by `split_color_key`. It splits the class payload at the **last** hyphen and treats the trailing part as a shade only if that part is exactly one of the eleven shade tokens. Otherwise the whole payload is a single semantic key.
+
+So `bg-my-color` looks up the semantic key `my-color`. It is not read as the family `my` with the shade `color`. Multi-word semantic names are safe, and the only names you cannot use are ones that end in a hyphen plus a shade number.
+
+The failure modes are distinct diagnostics: referencing a palette without a shade is `color-missing-shade`, giving a literal a shade is `color-invalid-shade`, asking a palette for a shade it does not define is also `color-invalid-shade`, and a name that is not in the theme at all is `unknown-theme-key`.
+
+## What ships by default
+
+### Colors
+
+The defaults are 26 shade palettes at 11 shades each, plus the two literals `black` (`Color3.fromRGB(0, 0, 0)`) and `white` (`Color3.fromRGB(255, 255, 255)`).
+
+The palettes are `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`, `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`, `mauve`, `olive`, `mist`, and `taupe`.
+
+The last four — `mauve`, `olive`, `mist`, and `taupe` — are not Tailwind palettes. They are Vela additions and they behave exactly like the rest: 11 shades, referenced as `bg-mauve-300`, `text-taupe-800`, and so on.
+
+### Radius
+
+Ten keys, consumed by `rounded-*`.
+
+| Key | Value |
+| --- | --- |
+| `none` | `new UDim(0, 0)` |
+| `xs` | `new UDim(0, 2)` |
+| `sm` | `new UDim(0, 4)` |
+| `md` | `new UDim(0, 6)` |
+| `lg` | `new UDim(0, 8)` |
+| `xl` | `new UDim(0, 12)` |
+| `2xl` | `new UDim(0, 16)` |
+| `3xl` | `new UDim(0, 24)` |
+| `4xl` | `new UDim(0, 32)` |
+| `full` | `new UDim(0.5, 0)` |
+
+### Spacing
+
+`theme.spacing` ships **exactly one key**: `"4"`, mapped to `"new UDim(0, 16)"`. That is the entire built-in spacing theme.
+
+Everything else you have ever written — `p-2`, `gap-6`, `px-1.5`, `w-40` — does not come from the theme at all. When a spacing key is not found in `theme.spacing`, the compiler falls back to arithmetic: the key is multiplied by 4 and emitted as `new UDim(0, key * 4)`.
+
+The fallback has rules. The key must not start with `-` or `+`, must parse as a finite number that is zero or greater, and must be a multiple of `0.5`. So `p-1.5` is 6px and `p-40` is 160px, while `p-0.25` and `p-[-2]` are rejected with `unknown-theme-key` on the `spacing` family.
+
+Two consequences worth internalising. First, you almost never need to add spacing keys — the arithmetic covers the whole numeric range. Add a key only when you want a *named* step like `gutter`, or a value the arithmetic cannot express. Second, because `"4"` is a real theme entry, redefining it in `theme.extend.spacing` changes what `p-4` means while leaving `p-3` and `p-5` on the arithmetic path. That asymmetry is easy to trip over.
+
+<Callout title="The editor's spacing suggestions are not the theme">
+Completions offer a familiar-looking scale — `0`, `0.5`, `1`, `1.5`, `2`, `3`, `4`, `6`, `8`, `12`, `16`, `20`, `24`, `32`, `40`, `64`, `80`. That list is hardcoded editor sugar to make autocomplete useful. It is not theme data, and any other multiple of `0.5` works just as well.
+</Callout>
+
+## See also
+
+- [Configuration reference](/vela-rbxts/reference/config/) — the full schema, config discovery, and load behavior.
+- [Colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/) — the utilities that consume `theme.colors` and `theme.radius`.
+- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities that consume `theme.spacing`.

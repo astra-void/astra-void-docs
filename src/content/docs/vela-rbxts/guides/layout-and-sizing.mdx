@@ -1,0 +1,275 @@
+---
+title: Layout and sizing
+description: How Vela's flex, padding, sizing, position, and transform utilities lower to UIListLayout, UIPadding, Size, and the other Roblox layout instances.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Roblox has no box model. There is no margin, no document flow, and no absolute-versus-relative distinction — an element is positioned by `Position` and `AnchorPoint`, sized by `Size` and `AutomaticSize`, and laid out by child instances like `UIListLayout` and `UIPadding`. Vela's layout utilities are a thin, honest mapping onto those instances, not an emulation of CSS. This guide walks through each family, what it emits, and where the mapping stops.
+
+Two rules explain most of the surprises on this page. First, a utility either sets a property on the element itself or sets a property on a *helper instance* that Vela prepends to the element's children. Second, several Tailwind names that look like siblings land on entirely different Roblox properties, because Roblox splits alignment and flex distribution into separate enums.
+
+## Flex and `UIListLayout`
+
+Any flex, alignment, gap, or wrap utility contributes to a single `UIListLayout` child. Vela emits one per element and merges every contributing utility into it.
+
+Direction comes from `flex`, `flex-row`, and `flex-col`. Bare `flex` and `flex-row` both mean horizontal:
+
+| Class | Property |
+| --- | --- |
+| `flex` | `FillDirection = Enum.FillDirection.Horizontal` |
+| `flex-row` | `FillDirection = Enum.FillDirection.Horizontal` |
+| `flex-col` | `FillDirection = Enum.FillDirection.Vertical` |
+
+Any other `flex-*` direction word (`flex-row-reverse`, `flex-col-reverse`) produces `unsupported-flex-direction`. Roblox `UIListLayout` has no reversed fill direction; reorder the children instead.
+
+### `justify-*` splits across two properties
+
+This is the mapping most likely to bite you. `justify-start`, `justify-center`, and `justify-end` set `HorizontalAlignment`. The distribution values — `justify-between`, `justify-around`, `justify-evenly` — set **`HorizontalFlex`**, which is a different property with a different enum type.
+
+| Class | Property | Value |
+| --- | --- | --- |
+| `justify-start` | `HorizontalAlignment` | `Enum.HorizontalAlignment.Left` |
+| `justify-center` | `HorizontalAlignment` | `Enum.HorizontalAlignment.Center` |
+| `justify-end` | `HorizontalAlignment` | `Enum.HorizontalAlignment.Right` |
+| `justify-between` | `HorizontalFlex` | `Enum.UIFlexAlignment.SpaceBetween` |
+| `justify-around` | `HorizontalFlex` | `Enum.UIFlexAlignment.SpaceAround` |
+| `justify-evenly` | `HorizontalFlex` | `Enum.UIFlexAlignment.SpaceEvenly` |
+
+<Callout title="They do not override each other">
+Because `HorizontalAlignment` and `HorizontalFlex` are separate properties, `justify-center justify-between` sets both, and the two interact inside Roblox's layout solver rather than the later class winning. Pick one.
+</Callout>
+
+`items-*` splits the same way on the cross axis. `items-start`, `items-center`, and `items-end` set `VerticalAlignment` (`Top`, `Center`, `Bottom`); `items-stretch` sets **`VerticalFlex = Enum.UIFlexAlignment.Fill`**.
+
+Note that these names are axis-fixed, not direction-relative: `justify-*` always drives the horizontal properties and `items-*` always drives the vertical ones, even under `flex-col`. That mirrors the Roblox property names, not CSS main-axis/cross-axis semantics.
+
+### Wrapping and gap
+
+`flex-wrap` and `flex-nowrap` set `UIListLayout.Wraps` to `true` and `false`.
+
+`gap-{key}` sets `UIListLayout.Padding`. There is no `gap-x-` or `gap-y-` — `UIListLayout` has a single `Padding` value that applies along the fill direction, so an axis-split gap has nothing to lower to.
+
+```tsx title="src/client/Toolbar.tsx"
+<frame className="flex justify-between items-center gap-2">
+  <textlabel className="text-lg" Text="Inventory" />
+  <textbutton className="px-3 py-2 rounded-md bg-slate-700" Text="Close" />
+</frame>
+```
+
+### Flex items and `UIFlexItem`
+
+Eight literal class names lower to a `UIFlexItem` child on the element itself. The mapping is not one-to-one with CSS — several names collapse onto the same `FlexMode`.
+
+| Class | `UIFlexItem.FlexMode` |
+| --- | --- |
+| `flex-1` | `Enum.UIFlexMode.Fill` |
+| `flex-auto` | `Enum.UIFlexMode.Fill` |
+| `flex-initial` | `Enum.UIFlexMode.Shrink` |
+| `flex-none` | `Enum.UIFlexMode.None` |
+| `grow` | `Enum.UIFlexMode.Grow` |
+| `grow-0` | `Enum.UIFlexMode.None` |
+| `shrink` | `Enum.UIFlexMode.Shrink` |
+| `shrink-0` | `Enum.UIFlexMode.None` |
+
+Those eight are the complete set. Numeric variants such as `grow-2` or `flex-2` are not recognized.
+
+## Padding and `UIPadding`
+
+Padding utilities collect into one `UIPadding` child. The axis mapping is direct:
+
+| Class | Properties set |
+| --- | --- |
+| `p-*` | `PaddingTop`, `PaddingRight`, `PaddingBottom`, `PaddingLeft` |
+| `px-*` | `PaddingLeft`, `PaddingRight` |
+| `py-*` | `PaddingTop`, `PaddingBottom` |
+| `pt-*` | `PaddingTop` |
+| `pr-*` | `PaddingRight` |
+| `pb-*` | `PaddingBottom` |
+| `pl-*` | `PaddingLeft` |
+
+There is **no margin family**. `m-*`, `mx-*`, `mt-*` and friends do not exist and produce `unsupported-utility-family`. Roblox has no margin; use the parent's `gap-*` and `p-*` to create the same spacing.
+
+## The spacing value grammar
+
+`p-*`, `gap-*`, the min/max constraints, and the offset branch of the sizing utilities all share one value resolver, and it runs in two steps.
+
+1. **Theme lookup.** The key is looked up in `theme.spacing`. If it is there, that raw Luau expression is used verbatim.
+2. **Arithmetic fallback.** If the key is not in the theme, it is parsed as a number. It must be finite, non-negative, and an exact multiple of `0.5`. The result is `new UDim(0, key * 4)`.
+
+So `p-1.5` is `new UDim(0, 6)` and `p-40` is `new UDim(0, 160)`. `p-0.25` is not a multiple of `0.5`, so it fails both steps and emits `unknown-theme-key` for the `spacing` family. A leading `-` or `+` is rejected outright.
+
+<Callout title="The built-in spacing scale has one key">
+`theme.spacing` ships with exactly `"4"`. Every other numeric spacing key you write works through the arithmetic fallback, not through the theme. Adding your own named keys is covered in [Theming](/vela-rbxts/guides/theming/).
+</Callout>
+
+## Sizing and `Size`
+
+`w-*`, `h-*`, and `size-*` build a `UDim2` for the element's `Size` property. Each axis value resolves through one of four branches.
+
+**`px`** is offset `1` — a literal one-pixel axis, not a unit suffix.
+
+**`full`** is scale `1`.
+
+**Fractions** map to a scale. The accepted set is exact and not arithmetic:
+
+| Denominator | Accepted numerators |
+| --- | --- |
+| `/2` | `1` |
+| `/3` | `1`, `2` |
+| `/4` | `1`, `3` |
+| `/5` | `1`, `2`, `3`, `4` |
+| `/6` | `1`, `5` |
+| `/12` | `1` through `11` |
+
+Anything outside that table is rejected, including the reducible forms. `w-2/4` and `w-3/6` are **not** accepted even though they equal `w-1/2`; write `w-1/2`.
+
+**Anything else** goes through the spacing grammar above and becomes an offset. If the resolved spacing value has a non-zero scale component — which can happen with a custom theme entry like `new UDim(0.5, 0)` — you get `unsupported-size-spacing-value`, because a size axis takes an offset here, not a scale.
+
+### Automatic sizing
+
+`auto` and `fit` are handled separately and lower to `AutomaticSize` rather than `Size`:
+
+| Class | Property |
+| --- | --- |
+| `w-fit`, `w-auto` | `AutomaticSize = Enum.AutomaticSize.X` |
+| `h-fit`, `h-auto` | `AutomaticSize = Enum.AutomaticSize.Y` |
+| `size-fit`, `size-auto` | `AutomaticSize = Enum.AutomaticSize.XY` |
+| `w-fit h-fit` | `AutomaticSize = Enum.AutomaticSize.XY` |
+
+### What gets emitted
+
+The two axes merge into a single `Size` prop, and the emitted expression depends on which components are zero:
+
+- Both scales zero → `UDim2.fromOffset(x, y)`
+- Both offsets zero → `UDim2.fromScale(x, y)`
+- Otherwise → `UDim2.new(sx, ox, sy, oy)`
+
+```tsx title="Merged into one Size"
+<frame className="w-full h-12" />
+// Size = UDim2.new(1, 0, 0, 48)
+
+<frame className="w-1/2 h-1/2" />
+// Size = UDim2.fromScale(0.5, 0.5)
+
+<frame className="w-40 h-8" />
+// Size = UDim2.fromOffset(160, 32)
+```
+
+`w-` and `h-` on the same element always merge into one `Size`. That merge is a property of the static path; the runtime path behaves differently, which is covered in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
+
+## Min and max size
+
+`min-w-`, `max-w-`, `min-h-`, and `max-h-` build a `UISizeConstraint` child with `MinSize` and `MaxSize` as `Vector2` values.
+
+These values are **offset-only**. They go through the spacing offset resolver, so fractions and `full` are not accepted here — `max-w-1/2` does not work.
+
+An axis you do not specify gets a default: unspecified min axes default to `0`, and unspecified max axes default to `math.huge`. So `max-w-80` alone emits `MaxSize = new Vector2(320, math.huge)`, leaving the vertical axis unconstrained.
+
+## Position and anchor
+
+Position utilities write into the element's `Position`:
+
+| Class | Effect |
+| --- | --- |
+| `left-*` | sets the X component |
+| `top-*` | sets the Y component |
+| `inset-*` | sets both components |
+| `-left-*`, `-top-*`, `-inset-*` | the same, negated |
+
+They accept `px`, `full`, the same exact fraction set as sizing, and spacing offsets.
+
+<Callout title="There is no right-* or bottom-*">
+Vela does not implement `right-*` or `bottom-*` in any form. Roblox positions from the anchor point, so anchoring to the far edge is the job of `origin-*`: `origin-bottom-right` plus `left-full top-full` puts an element's bottom-right corner at its parent's bottom-right corner.
+</Callout>
+
+Vela also has no `absolute` / `relative` / `fixed` / `static` family. Every Roblox GUI object is positioned relative to its parent already, so there is nothing for those keywords to switch between. If a parent has a `UIListLayout`, that layout owns child positions and `left-*`/`top-*` will not take effect — remove the layout utilities from the parent instead.
+
+`origin-{key}` sets `AnchorPoint`. Exactly nine keys are valid:
+
+| Class | `AnchorPoint` |
+| --- | --- |
+| `origin-top-left` | `(0, 0)` |
+| `origin-top` | `(0.5, 0)` |
+| `origin-top-right` | `(1, 0)` |
+| `origin-left` | `(0, 0.5)` |
+| `origin-center` | `(0.5, 0.5)` |
+| `origin-right` | `(1, 0.5)` |
+| `origin-bottom-left` | `(0, 1)` |
+| `origin-bottom` | `(0.5, 1)` |
+| `origin-bottom-right` | `(1, 1)` |
+
+Anything else is `unsupported-anchor-value`.
+
+## Aspect ratio
+
+`aspect-{key}` emits a `UIAspectRatioConstraint` child with an `AspectRatio` value. `aspect-square` is `1` and `aspect-video` is `1.7777777778`. Two arbitrary forms are also accepted: `aspect-[W/H]`, which divides, and `aspect-[N]`, a single number. Both require positive finite values.
+
+```tsx title="Arbitrary aspect ratios"
+<imagelabel className="w-full aspect-[16/9]" />
+<frame className="w-40 aspect-[2.35]" />
+```
+
+`aspect-auto` is not supported and emits `unsupported-aspect-value`.
+
+## Z-index
+
+`z-{value}` sets `ZIndex`, and only six values are accepted: `z-0`, `z-10`, `z-20`, `z-30`, `z-40`, `z-50`.
+
+Everything else produces one of four distinct diagnostics, so the message tells you exactly what went wrong:
+
+| Input | Diagnostic |
+| --- | --- |
+| `z-auto` | `unsupported-z-index-auto` |
+| `-z-10` | `unsupported-negative-z-index` |
+| `z-[7]` | `unsupported-arbitrary-z-index` |
+| `z-5` | `unsupported-z-index-value` |
+
+## Rotation and scale
+
+`rotate-N` and `-rotate-N` set `Rotation` in degrees. The accepted degree set is exact: `0`, `1`, `2`, `3`, `6`, `12`, `45`, `90`, `180`. Anything else is `unsupported-rotation-value`. `-rotate-0` resolves to `0`.
+
+`scale-N` emits a `UIScale` child. The value map is fixed:
+
+| Class | `Scale` |
+| --- | --- |
+| `scale-0` | `0` |
+| `scale-50` | `0.5` |
+| `scale-75` | `0.75` |
+| `scale-90` | `0.9` |
+| `scale-95` | `0.95` |
+| `scale-100` | `1` |
+| `scale-105` | `1.05` |
+| `scale-110` | `1.1` |
+| `scale-125` | `1.25` |
+| `scale-150` | `1.5` |
+
+Any other value is `unsupported-scale-value`.
+
+## Visibility and clipping
+
+`hidden` sets `Visible = false` and `visible` sets `Visible = true`.
+
+`overflow-hidden` and `overflow-clip` both set `ClipsDescendants = true`; `overflow-visible` sets it to `false`. Any other `overflow-*` value emits `unsupported-overflow-value` — there is no scroll variant, because scrolling is a property of the `scrollingframe` host element rather than a style.
+
+## Families that do not exist
+
+Being explicit about the gaps saves debugging time. None of the following are implemented, and each produces `unsupported-utility-family`:
+
+- **Margin** — `m-*`, `mx-*`, `my-*`, `mt-*`, `mr-*`, `mb-*`, `ml-*`. Use the parent's `gap-*` and `p-*`.
+- **Positioning keywords** — `absolute`, `relative`, `fixed`, `static`, `sticky`. Roblox positioning is always parent-relative.
+- **Grid** — `grid`, `grid-cols-*`, `col-span-*`, `row-*`, and everything else in the grid family. `UIGridLayout` has no utility mapping yet; add the instance yourself as a child if you need it.
+- **Edge positions** — `right-*`, `bottom-*`.
+
+Axis gaps — `gap-x-*` and `gap-y-*` — are also unimplemented, per the single `UIListLayout.Padding` property, but they fail differently. They match the `gap-` prefix, so the leftover text is treated as a spacing key and the failure comes out as `unknown-theme-key` in the `spacing` family rather than `unsupported-utility-family`.
+
+## See also
+
+- [Colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/) for `bg-*`, `border-*`, gradients, and shadows.
+- [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) for breakpoint- and input-conditional layout.
+- [Utilities reference](/vela-rbxts/reference/utilities/) for the complete class list.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) for every warning code named on this page.

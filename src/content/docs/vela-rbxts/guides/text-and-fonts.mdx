@@ -1,0 +1,143 @@
+---
+title: Text and fonts
+description: Text sizing, weight, alignment, wrapping and truncation — plus the host restriction the compiler does not actually enforce.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 40
+draft: false
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Text utilities write to the text properties of Roblox's text instances — `TextSize`, `TextColor3`, `FontFace`, `TextXAlignment`, `TextYAlignment`, `TextWrapped`, `TextTruncate`. Three host elements have those properties: `textlabel`, `textbutton`, and `textbox`.
+
+```tsx title="src/client/Title.tsx"
+<textlabel
+  className="text-2xl font-semibold text-slate-100 text-center align-middle"
+  Text="Match found"
+/>
+```
+
+## The host restriction is editor-only
+
+Vela knows which utilities belong on which host element, and reports `unsupported-host-utility` when you get it wrong. That check lives in the LSP surface — diagnostics, hover, completions, and document colors.
+
+**The compiler never consults it.** The transform pipeline does not check host tags at all, so `<frame className="text-red-500" />` compiles cleanly and emits `TextColor3` onto a `Frame` with no build-time warning of any kind.
+
+<Callout title="Editor warns, build does not">
+The utility-per-host rules — text utilities on `textlabel`/`textbutton`/`textbox`, `image-*` on `imagelabel`/`imagebutton`, `placeholder-*` on `textbox` — are enforced **only** by the editor and LSP. `rbxtsc` will happily emit `TextColor3` on a `Frame`.
+
+Roblox ignores an unknown property assignment on the instance, so nothing crashes; the class simply does nothing and you get no signal outside the editor. If you build in CI without the LSP, these mistakes ship silently. Use [editor setup](/vela-rbxts/guides/editor-setup/) to get the warning where it is useful.
+</Callout>
+
+## How `text-*` is disambiguated
+
+`text-` is the most overloaded prefix in the whole system. One rule, applied in order, decides what a given `text-*` class means:
+
+1. If the payload is a text-size key (`xs` through `9xl`), it is `TextSize`.
+2. If the payload is `left`, `center`, `right`, or `justify`, it is `TextXAlignment`.
+3. If the payload is `wrap` or `nowrap`, it is `TextWrap`.
+4. **Everything else falls through to `TextColor`.**
+
+That fourth step is a catch-all, and it has a visible consequence: there is no such thing as an unrecognised `text-*` class. `text-foo` is treated as a color, the compiler looks up `foo` in `theme.colors`, does not find it, and reports **`unknown-theme-key`** — not `unsupported-utility-family`.
+
+So when you misspell a size and see a theme-key warning, that is why. Reading `unknown-theme-key` on a `text-*` class as "you probably meant a size or an alignment" saves a lot of confusion.
+
+## Size
+
+`text-{size}` sets `TextSize` in pixels.
+
+| Class | `TextSize` |
+| --- | --- |
+| `text-xs` | 12 |
+| `text-sm` | 14 |
+| `text-base` | 16 |
+| `text-lg` | 18 |
+| `text-xl` | 20 |
+| `text-2xl` | 24 |
+| `text-3xl` | 30 |
+| `text-4xl` | 36 |
+| `text-5xl` | 48 |
+| `text-6xl` | 60 |
+| `text-7xl` | 72 |
+| `text-8xl` | 96 |
+| `text-9xl` | 128 |
+
+The set is fixed and does not come from the theme, so there is no way to add or change a size key. Anything outside the list falls through to the color branch as described above.
+
+## Weight
+
+`font-{weight}` sets `FontFace` to a complete `Font` value:
+
+```lua
+new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)
+```
+
+| Class | `Enum.FontWeight` |
+| --- | --- |
+| `font-thin` | `Thin` |
+| `font-extralight` | `ExtraLight` |
+| `font-light` | `Light` |
+| `font-normal` | `Regular` |
+| `font-medium` | `Medium` |
+| `font-semibold` | `SemiBold` |
+| `font-bold` | `Bold` |
+| `font-extrabold` | `ExtraBold` |
+| `font-black` | `Heavy` |
+
+Two names do not match their class: `font-normal` produces `Regular`, and `font-black` produces `Heavy`. Those are the Roblox enum member names, so the class names follow Tailwind while the emitted values follow Roblox.
+
+<Callout title="The font family is hard-coded">
+Every `font-*` class emits the **Source Sans Pro** family asset. The family is baked into the utility and there is no class, no theme key, and no config option that changes it — `font-*` controls weight only.
+
+To use a different typeface, set `FontFace` directly as a prop on the instance and leave `font-*` off that element:
+
+```tsx
+<textlabel
+  FontFace={new Font("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)}
+  Text="Custom family"
+/>
+```
+
+An unrecognised weight reports `unsupported-font-weight`.
+</Callout>
+
+## Alignment
+
+Horizontal alignment comes from `text-left`, `text-center`, and `text-right`, which set `TextXAlignment`.
+
+Vertical alignment uses a different prefix — `align-top`, `align-middle`, and `align-bottom`, setting `TextYAlignment` to `Top`, `Center`, and `Bottom`. Note that `align-middle` maps to `Center`, matching the enum rather than the class name. Anything else after `align-` reports `unsupported-text-alignment`.
+
+`text-justify` parses but does not resolve — Roblox's `TextXAlignment` has no justified mode — and reports `unsupported-text-alignment`. There is no workaround; pick one of the three real alignments.
+
+## Wrapping and truncation
+
+`text-wrap` sets `TextWrapped = true` and `text-nowrap` sets it to `false`.
+
+`truncate` sets `TextTruncate = Enum.TextTruncate.AtEnd`, cutting overflowing text with an ellipsis at the end. It is a bare class with no payload, and `AtEnd` is the only truncation mode Vela emits.
+
+```tsx title="src/client/PlayerRow.tsx"
+<textlabel className="text-sm text-nowrap truncate" Text={playerName} />
+```
+
+## Placeholders
+
+`placeholder-*` sets `PlaceholderColor3` and is meaningful only on `textbox` — no other host element has the property. As with every host restriction on this page, the editor flags it and the compiler does not.
+
+`placeholder-transparent` is an error (`unsupported-color-key`) because `PlaceholderColor3` has no paired transparency property for the `transparent` keyword to set. See [Colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/) for how `transparent` works across the other families.
+
+## Typography families that do not exist
+
+Several Tailwind typography families have no implementation in Vela. They are not partially supported and not silently degraded — they simply are not recognised, so they parse as an unknown family and report `unsupported-utility-family`:
+
+- `leading-*` — line height. Roblox exposes `LineHeight` on text instances, but no utility writes to it. Set the property directly.
+- `tracking-*` — letter spacing. There is no Roblox property for it at all.
+- `uppercase`, `lowercase`, `capitalize` — text transforms. Roblox has no text-transform property; change the string you pass to `Text`.
+
+## See also
+
+- [Colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/) — the color half of `text-*`, plus `transparent` and the shade rules.
+- [Theming](/vela-rbxts/guides/theming/) — where `text-{color}` keys come from.
+- [Editor setup](/vela-rbxts/guides/editor-setup/) — getting the host-restriction warnings the compiler does not give you.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) — every code and what triggers it.

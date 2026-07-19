@@ -1,0 +1,141 @@
+---
+title: Installation
+description: Add the Vela transformer to a roblox-ts project — packages, tsconfig plugin, config file, and the ambient declaration.
+product: vela-rbxts
+section: getting-started
+sidebar:
+  order: 10
+---
+
+import { Callout, PackageInstall } from "@/components/docs/mdx";
+
+Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements, and a TypeScript transformer rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
+
+Nothing about Vela is a runtime library you render. It is a transformer you register in `tsconfig.json`, plus a config file it reads from disk. This page gets both in place.
+
+## Install the package
+
+<PackageInstall packageName="vela-rbxts" />
+
+`vela-rbxts` expects the ordinary roblox-ts React stack alongside it. Install those yourself if the project does not already have them.
+
+```bash title="Runtime dependencies"
+pnpm add @rbxts/react @rbxts/react-roblox @rbxts/services
+```
+
+`@rbxts/react` and `@rbxts/services` matter beyond your own imports: when Vela takes its runtime path it inlines a helper module into your output that imports `React` from `@rbxts/react` and `{ UserInputService, Workspace }` from `@rbxts/services`. Both must resolve in the built place even if you never import them by hand. `@rbxts/react-roblox` is what you need to mount a tree at all.
+
+```bash title="Dev dependencies"
+pnpm add -D roblox-ts typescript @rbxts/compiler-types @rbxts/types
+```
+
+<Callout title="Nothing here is enforced">
+No package in the Vela repo declares a single `peerDependency`, and the only `engines` field anywhere is the VS Code extension's `vscode: ^1.90.0`. TypeScript, roblox-ts and React are plain dependencies, so your package manager will not warn you about a mismatch. What follows is what Vela is developed and tested against, not a constraint you have to satisfy: **Node 24** in CI, **TypeScript 5.9.3** pinned exactly in the repo, **roblox-ts `^3.0.0`**, `@rbxts/compiler-types ^3.0.0-types.0`, `@rbxts/types ^1.0.935`, `@rbxts/react ^17.3.7-ts.1`, and `@rbxts/services ^1.6.0`. One detail is worth knowing: the host adapter resolves `typescript` from your install at runtime without declaring a dependency on it, so a project that somehow has no resolvable `typescript` will fail when Vela tries to load your config.
+</Callout>
+
+## Register the transformer
+
+Vela runs as a roblox-ts transformer plugin. Add one entry to `compilerOptions.plugins`:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "downlevelIteration": true,
+    "jsx": "react",
+    "jsxFactory": "React.createElement",
+    "jsxFragmentFactory": "React.Fragment",
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "moduleDetection": "force",
+    "noLib": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "target": "ESNext",
+    "typeRoots": ["node_modules/@rbxts"],
+    "rootDir": "src",
+    "outDir": "out",
+    "incremental": true,
+    "tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
+    "declaration": false,
+    "plugins": [{ "transform": "vela-rbxts/transformer" }]
+  }
+}
+```
+
+`vela-rbxts/transformer` is a separate export from the package root. The root export (`vela-rbxts`) gives you `defineConfig` and types; the `/transformer` subpath is the callable roblox-ts consumes. Do not swap one for the other.
+
+The plugin entry object is also where transformer options go — file-filter toggles, a diagnostic code base, a project root. The defaults are what you want to start with; the [configuration reference](/vela-rbxts/reference/config/) covers the rest.
+
+## Add `vela.config.ts`
+
+Vela looks for exactly one filename, `vela.config.ts`, walking up from the directory of each source file until it finds one or hits the filesystem root. There are no `.js`, `.mjs` or `.cjs` variants and no `package.json` key. If nothing is found, Vela uses its built-in default theme, which already contains 28 color families, ten radius keys, and the spacing fallback.
+
+The minimum useful file accepts the defaults wholesale:
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+
+export default defineConfig();
+```
+
+When you do want your own values, put them under `theme.extend`. Every value is a **raw Luau expression string**, not a color object or a number:
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+
+export default defineConfig({
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          500: "Color3.fromRGB(59, 130, 246)",
+          700: "Color3.fromRGB(29, 78, 216)",
+        },
+      },
+      radius: {
+        panel: "new UDim(0, 10)",
+      },
+    },
+  },
+});
+```
+
+<Callout title="Use theme.extend, not top-level theme.colors">
+A top-level `theme.colors` **replaces the entire color registry** and, critically, causes `theme.extend.colors` to be discarded silently — no error, no warning. Setting both means only the top-level scale survives, every built-in palette disappears, and your `extend` colors never resolve. This differs from real Tailwind, where `extend` is layered on top. The same replace-wholesale rule applies to `theme.radius` and `theme.spacing`. Unless you genuinely want to throw away every default, add colors through `theme.extend.colors` alone.
+</Callout>
+
+Full details on merge behavior and the shipped defaults are in the [theming guide](/vela-rbxts/guides/theming/).
+
+## Declare the `className` prop
+
+Roblox host elements have no `className` prop in `@rbxts/types`. Vela adds one by augmenting `React.Attributes` globally, and that augmentation only takes effect if the package is imported for its side effect somewhere in your program. Create a declaration file to do that once:
+
+```ts title="src/vela-rbxts.d.ts"
+import "vela-rbxts";
+```
+
+That single import pulls in `declare global { namespace React { interface Attributes { className?: ClassValue } } }`. Without it, every `className` you write is a type error, even though the transformer would still have processed it.
+
+Keep the file inside `rootDir` so TypeScript picks it up with the rest of your sources.
+
+## Build and serve
+
+There is no Vela-specific build step. Compile with roblox-ts as usual:
+
+```bash title="Build"
+npx rbxtsc
+```
+
+Then sync `out/` into Studio with Rojo the same way you already do:
+
+```bash title="Serve"
+rojo serve
+```
+
+You do not need a Rojo mapping for Vela, and there is no Vela runtime package to place in the DataModel. Everything Vela produces is either an ordinary Roblox property, a helper instance emitted as a JSX child, or — on the runtime path — a helper module inlined directly into the same output file. The only things that must exist in your place tree are `@rbxts/react` and `@rbxts/services`, which your existing `node_modules` → `ReplicatedStorage` mapping already covers.
+
+## Next step
+
+Write something and watch it lower in [Your first component](/vela-rbxts/getting-started/first-component/).

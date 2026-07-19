@@ -1,0 +1,15 @@
+---
+title: Vela
+description: Tailwind-style className compilation for roblox-ts React interfaces.
+product: vela-rbxts
+section: home
+---
+
+Vela adds `className` to `roblox-ts` React elements and compiles it away. A supported utility class
+becomes a Roblox property or a helper instance at build time — `p-4` becomes a `UIPadding` child,
+`rounded-lg` becomes a `UICorner`, `bg-slate-700` becomes `BackgroundColor3`. Nothing about Vela
+survives into the shipped Lua unless a class genuinely needs to be evaluated at runtime.
+
+It is not Tailwind parity, and it does not try to be. Vela implements a Roblox-oriented slice of the
+utility vocabulary, mapped onto the instances Roblox actually gives you, and reports a diagnostic for
+everything it cannot lower rather than quietly dropping it.

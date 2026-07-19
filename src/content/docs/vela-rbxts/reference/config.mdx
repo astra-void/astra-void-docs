@@ -1,0 +1,295 @@
+---
+title: Configuration
+description: How vela.config.ts is found and loaded, the complete theme schema, the built-in defaults, and the tsconfig plugin options.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 20
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+Vela reads a single optional file, `vela.config.ts`, and it configures exactly one thing: the theme.
+There is no build configuration to write — file selection, output, and diagnostics all come from
+`tsconfig.json` instead.
+
+## Discovery
+
+The filename is exactly `vela.config.ts`. There are no `.js`, `.mjs`, `.cjs`, or `.mts` variants, and
+no `package.json` key.
+
+For each source file it is about to transform, Vela walks upward from that file's directory to the
+filesystem root and uses the first `vela.config.ts` it finds. If it finds none, it uses
+`defaultConfig`. Because the walk starts at the source file, a config in a subdirectory shadows one
+at the repo root for the files beneath it — which is usually accidental rather than intended.
+
+<Callout title="The config is re-executed for every file">
+There is no caching. Config resolution runs once per eligible source file, which means
+`vela.config.ts` is re-read, re-transpiled, and re-executed for each `.tsx` file in your project.
+Keep the file cheap: no filesystem access, no network, no heavy computation at module scope.
+</Callout>
+
+## How the file is loaded
+
+Vela does not hand the file to roblox-ts. It loads it itself, in three steps:
+
+1. Every `import ... from "vela-rbxts"` statement is stripped from the source text.
+2. The remainder is transpiled with `ts.transpileModule` to CommonJS with diagnostics reporting on.
+3. The result is executed as a function with `exports`, `require`, `module`, `__filename`,
+   `__dirname`, and — this is the part that matters — `defineConfig` and `defaultConfig` injected as
+   arguments.
+
+The injection is why step 1 is safe: the import is removed, but the bindings it declared are still in
+scope when the code runs.
+
+Three consequences follow from this. First, the file is transpiled, not type-checked. `transpileModule`
+reports syntax and emit diagnostics only, and any of those throws `Failed to compile vela.config.ts` —
+but a type error is not among them and passes silently. Second, because the transpiled output is then
+executed through `createRequire` and `new Function`, module specifiers resolve at runtime relative to
+the config file. Your project's `tsconfig.json` `paths` aliases and ambient types are never consulted,
+so the config cannot rely on either. Third, the export must be usable: Vela takes `module.exports.default` if present and
+otherwise `module.exports`, then requires it to be either an already-resolved `TailwindConfig` or an
+input-shaped object it can pass through `defineConfig`. Anything else throws
+`Expected <path> to export a TailwindConfig-compatible object.`
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+
+export default defineConfig({
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          500: "Color3.fromRGB(99, 102, 241)",
+          700: "Color3.fromRGB(67, 56, 202)",
+        },
+      },
+    },
+  },
+});
+```
+
+## Schema
+
+The entire schema is one optional `theme` key. There is no `content`, `plugins`, `presets`,
+`darkMode`, `prefix`, `important`, `corePlugins`, `safelist`, or `variants` option. Those keys do not
+exist in the type and are ignored if you write them anyway.
+
+<PropTable
+  rows={[
+    {
+      name: "theme.colors",
+      type: "Record<string, string | Partial<Record<Shade, string>>>",
+      description:
+        "Replaces the entire color registry. A value is either a literal Luau expression string or a map from shade (50…950) to one.",
+    },
+    {
+      name: "theme.radius",
+      type: "Record<string, string>",
+      description:
+        "Replaces the entire radius scale. Each value is a Luau expression producing a UDim.",
+    },
+    {
+      name: "theme.spacing",
+      type: "Record<string, string>",
+      description:
+        "Replaces the entire spacing scale. Each value is a Luau expression producing a UDim.",
+    },
+    {
+      name: "theme.extend.colors",
+      type: "Record<string, string | Partial<Record<Shade, string>>>",
+      description:
+        "Merges over the default color registry, per family and — when both sides are palettes — per shade.",
+    },
+    {
+      name: "theme.extend.radius",
+      type: "Record<string, string>",
+      description: "Shallow-merges over the default radius scale by key.",
+    },
+    {
+      name: "theme.extend.spacing",
+      type: "Record<string, string>",
+      description: "Shallow-merges over the default spacing scale by key.",
+    },
+  ]}
+/>
+
+The valid shades are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`. An
+empty palette object is rejected with
+`Color palette normalization requires at least one shade value.`
+
+### Values are raw Luau expression strings
+
+Every value in the theme is a string containing a Luau expression that Vela pastes into the emitted
+code. It is not a color object, not a hex string, and not a number.
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: {
+    extend: {
+      colors: { ink: "Color3.fromRGB(17, 17, 17)" },
+      radius: { pill: "new UDim(0.5, 0)" },
+      spacing: { gutter: "new UDim(0, 20)" },
+    },
+  },
+});
+```
+
+`"#111111"` and `4` are not valid values, and they fail at different times. `4` is not a string, and
+every theme value must be one, so it is rejected while the config is being loaded. `"#111111"` is a
+string, and nothing checks that a string is valid Luau — it is emitted verbatim and surfaces as a
+Luau error in the generated output rather than as a config error.
+
+## Merge semantics
+
+For `radius` and `spacing`: a top-level key replaces the whole scale; `extend` shallow-merges over
+the defaults by key. For `colors`: `extend` merges per family, and per shade when both the default
+and your value are palettes. A literal replaces a palette wholesale, and vice versa.
+
+<Callout title="theme.colors silently discards theme.extend.colors">
+If `theme.colors` is present, `theme.extend.colors` is **not applied at all** — it is dropped
+without warning, and every built-in palette is dropped with it. This diverges from real Tailwind,
+where `extend` is layered on top of a replaced `colors`.
+
+So a config with `theme.colors.surface` and `theme.extend.colors.brand` resolves to a theme
+containing only `surface`. `brand-500` will not resolve, and neither will `slate-700`.
+
+Add colors with `theme.extend.colors` alone. Only use top-level `theme.colors` when you genuinely
+want to throw the default palette away. The same replace-wholesale rule applies to `theme.radius` and
+`theme.spacing`.
+</Callout>
+
+## The default theme
+
+`defaultConfig` is the resolved form of the built-in defaults, and it is what you get when no
+`vela.config.ts` is found.
+
+### Colors
+
+Twenty-eight families. Two are literals: `black` and `white`. The other twenty-six are palettes with
+all eleven shades (`50` through `950`):
+
+`slate`, `gray`, `zinc`, `neutral`, `stone`, `red`, `orange`, `amber`, `yellow`, `lime`, `green`,
+`emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`,
+`mauve`, `olive`, `mist`, `taupe`.
+
+The first twenty-two track the Tailwind palette. The last four — `mauve`, `olive`, `mist`, and
+`taupe` — are Vela additions with no Tailwind equivalent. They are muted neutrals intended for
+surfaces, and they behave exactly like any other palette: `bg-mauve-800`, `text-taupe-300`.
+
+### Radius
+
+Ten keys.
+
+| Key | Value |
+|---|---|
+| `none` | `new UDim(0, 0)` |
+| `xs` | `new UDim(0, 2)` |
+| `sm` | `new UDim(0, 4)` |
+| `md` | `new UDim(0, 6)` |
+| `lg` | `new UDim(0, 8)` |
+| `xl` | `new UDim(0, 12)` |
+| `2xl` | `new UDim(0, 16)` |
+| `3xl` | `new UDim(0, 24)` |
+| `4xl` | `new UDim(0, 32)` |
+| `full` | `new UDim(0.5, 0)` |
+
+Because `rounded-*` is a pure theme lookup with no numeric fallback, this table is the complete set
+of radii you can write until you extend it.
+
+### Spacing
+
+One key: `"4"`, mapped to `new UDim(0, 16)`.
+
+There is no built-in spacing scale. Every other spacing value you write — `p-2`, `gap-6`, `w-40` —
+resolves through the compiler's arithmetic fallback, not through the theme. That fallback accepts any
+unsigned finite number that is a multiple of `0.5` and produces `new UDim(0, key * 4)`, so `p-2` is
+8 pixels and `gap-6` is 24 pixels.
+
+The practical effect is that a lookup only fails for values that break the arithmetic rule — a
+negative number, a fraction finer than `0.5`, or a non-numeric word. Those give `unknown-theme-key`
+in the `spacing` family. Adding named spacing keys through `theme.extend.spacing` is how you get
+`p-gutter`-style tokens.
+
+## tsconfig plugin options
+
+The plugin entry object in `tsconfig.json` is passed straight through as options. These are the keys
+that are expressible in JSON.
+
+<PropTable
+  rows={[
+    {
+      name: "filter.skipNodeModules",
+      type: "boolean",
+      description: "Default true. Skip any file whose path contains a node_modules segment.",
+    },
+    {
+      name: "filter.requireClassName",
+      type: "boolean",
+      description:
+        "Default true. Skip any file whose source text does not contain the substring className.",
+    },
+    {
+      name: "filter.requireJsxSyntax",
+      type: "boolean",
+      description:
+        "Default true. Skip any file whose source text does not match an opening-JSX-tag pattern.",
+    },
+    {
+      name: "diagnosticCodeBase",
+      type: "number",
+      description:
+        "Default 89000. The first numeric diagnostic code; each diagnostic in a file gets base + index.",
+    },
+    {
+      name: "projectRoot",
+      type: "string",
+      description:
+        "Defaults to the program's current directory. Currently inert — nothing resolves paths from it; discovery walks up from each file being compiled.",
+    },
+    {
+      name: "config",
+      type: "TailwindConfig",
+      description:
+        "An explicit resolved config used for every file. It overrides the discovered config but does not skip discovery, which still runs and can still fail the build.",
+    },
+  ]}
+/>
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "transform": "vela-rbxts/transformer",
+        "filter": { "skipNodeModules": true },
+        "diagnosticCodeBase": 89000
+      }
+    ]
+  }
+}
+```
+
+## File eligibility
+
+A file is transformed only if it passes all five checks, applied in this order:
+
+1. The filename ends with `.tsx`, case-insensitively. **A `.ts` file is never transformed**, whatever
+   is in it.
+2. It is not a declaration file — no `.d.ts` or `.d.tsx`.
+3. Its path contains no `node_modules` segment, unless `filter.skipNodeModules` is off.
+4. Its source text contains the literal substring `className`, unless `filter.requireClassName` is
+   off.
+5. Its source text matches an opening-JSX-tag pattern, unless `filter.requireJsxSyntax` is off.
+
+There is no include or exclude glob support. The three booleans above are the only controls, so the
+way to keep Vela out of a directory is to keep `className` out of the `.tsx` files in it.
+
+Checks 4 and 5 are text scans, not semantic ones. A file that mentions `className` only inside a
+comment still passes, which costs a compiler round trip but changes nothing in the output.
+
+## See also
+
+- [Theming](/vela-rbxts/guides/theming/) for a working walkthrough of extending the theme.
+- [Utility reference](/vela-rbxts/reference/utilities/) for the classes that read these theme keys.
+- [API](/vela-rbxts/reference/api/) for `defineConfig` and `defaultConfig`.

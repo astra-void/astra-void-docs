@@ -1,0 +1,116 @@
+---
+title: Editor setup
+description: Install the Vela VS Code extension, understand exactly what the language server provides, and wire the LSP into any other editor over stdio.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 70
+---
+
+import { Callout, PropTable } from "@/components/docs/mdx";
+
+Vela ships a language server, `vela-rbxts-lsp`, and a VS Code extension that drives it. The server reuses the compiler crate directly, so what the editor tells you about a class name is what the compiler would do with it — the same parser, the same theme resolution, the same diagnostic codes.
+
+## VS Code
+
+Install **Vela LSP** from the marketplace, id `astra-void.vela-rbxts-lsp`, published by `astra-void`. It requires VS Code `^1.90.0`.
+
+The extension activates on TypeScript and TypeScript React documents and attaches to `file:`-scheme documents in those two languages. There is nothing to enable per project — open a `.tsx` file and the server starts.
+
+### Settings
+
+The extension contributes three settings and **no commands**. There is no "restart server" command in the palette; changing any of these three settings restarts the client for you.
+
+<PropTable
+  rows={[
+    { name: "velaRbxts.lsp.serverPath", type: "string", description: "Explicit path to a server binary. A relative path is resolved against the workspace root. Defaults to \"\", meaning auto-resolve." },
+    { name: "velaRbxts.lsp.trace.server", type: "\"off\" | \"messages\" | \"verbose\"", description: "LSP protocol trace level written to the extension's output channel. Defaults to \"off\"." },
+    { name: "velaRbxts.lsp.enabled", type: "boolean", description: "Whether to start the language client at all. Defaults to true." },
+  ]}
+/>
+
+### How the server binary is resolved
+
+If `velaRbxts.lsp.serverPath` is set, that path is used directly (resolved against the workspace root when relative). Otherwise the extension launches the server through `process.execPath` with `require.resolve("@vela-rbxts/lsp")`, gated on the matching platform package being present.
+
+<Callout title="Two platforms have no prebuilt binary">
+The VSIX bundles exactly the same set of platforms that npm publishes: **darwin** arm64 and x64, **linux x64** gnu and musl, **linux arm64 gnu**, and **win32 x64**. Linux arm64 musl and Windows on ARM have no binary on either channel, so there is no workaround through npm — on those two you have to build the server from source and point `velaRbxts.lsp.serverPath` at the result.
+</Callout>
+
+There is no `cargo run` fallback. If you are developing the server itself, build it and set `serverPath` explicitly, or run `cargo run --manifest-path packages/lsp/Cargo.toml` and point the client at the result.
+
+## What the language server provides
+
+The declared capability set is small and deliberate.
+
+**Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete.
+
+**Hover.** Shows what a class token resolves to.
+
+**Diagnostics.** Push-based via `publish_diagnostics`, debounced 200 ms and gated on the document version. There is no pull-diagnostics provider, so a client that only implements pull diagnostics will see nothing.
+
+**Document colors and color presentations.** Color utilities get a swatch in the gutter and can be edited through the editor's color picker.
+
+**Code actions.** Quickfix only, driven by diagnostics whose source is `vela-rbxts`. Each diagnostic offers up to three ranked replacement suggestions plus a "remove token" action.
+
+**Document highlight.** Highlights other occurrences of the token under the cursor.
+
+That is the complete list. The server does **not** provide go-to-definition, references, rename, formatting, semantic tokens, inlay hints, or signature help. Those requests are not advertised, so your editor falls back to its TypeScript language service for them, which is the correct behavior — Vela only understands the inside of `className`.
+
+Text synchronization is incremental and the position encoding is UTF-16.
+
+<Callout title="unsupported-host-utility is editor-only">
+The rule that `text-*` belongs on `textlabel`/`textbutton`/`textbox`, `image-*` on `imagelabel`/`imagebutton`, and `placeholder-*` on `textbox` is enforced **only** in the editor. The transform pipeline never consults it. `<frame className="text-red-500" />` shows a squiggle in VS Code and compiles without complaint, emitting `TextColor3` onto a Frame. Treat that diagnostic as a lint, and do not expect a build to catch it.
+</Callout>
+
+The editor also suppresses `unknown-theme-key` while the text after the first `-` is three characters or shorter, so partially typed color names do not flash warnings at you mid-keystroke.
+
+## Other editors
+
+The server speaks LSP over stdio and has no VS Code dependency. Spawn it with:
+
+```bash
+npx --package @vela-rbxts/lsp vela-rbxts-lsp
+```
+
+The binary is named `vela-rbxts-lsp` but it is owned by the `@vela-rbxts/lsp` package — `vela-rbxts-lsp` on its own is the VS Code extension id, published as a VSIX, not an npm package, so a bare `npx vela-rbxts-lsp` resolves nothing.
+
+The one thing you must get right is configuration. **The server does not read `vela.config.ts` from disk.** It has no file loader and no config discovery of its own — the client is responsible for evaluating each config and handing over the result. Without it the server falls back to the built-in default theme, and every custom color or spacing key you defined will report `unknown-theme-key`.
+
+Pass the configs in `initializationOptions`:
+
+```json title="initializationOptions"
+{
+  "workspaceRoot": "/abs/path/to/project",
+  "configs": [
+    { "dir": "/abs/path/to/project", "json": "{\"theme\":{\"colors\":{ }}}" }
+  ]
+}
+```
+
+`workspaceRoot` and `configs` are top-level siblings. Get the shape wrong and you will not see an error: the server deserializes the options with `from_value(...).ok().unwrap_or_default()`, so anything it cannot parse silently becomes zero configs and you are back on the default theme.
+
+Each entry is a directory plus the resolved config serialized as JSON. The server matches a file to the nearest containing `dir`, which is how per-package configs in a monorepo work.
+
+To update configs after startup — for example when the user edits `vela.config.ts` — send the custom method `vela-rbxts/setConfigs`. Its payload carries only `configs`, with no `workspaceRoot`. That is exactly what the VS Code extension does: it watches `**/vela.config.ts`, evaluates each match through `@vela-rbxts/rbxtsc-host/project-config`, pushes `{ dir, json }` pairs at startup, and pushes again on every change.
+
+If your client cannot evaluate TypeScript, you can build the same JSON however you like — the server only cares that the shape matches the resolved `TailwindConfig`. See [Configuration](/vela-rbxts/reference/config/) for that shape.
+
+### Platform packages
+
+The `vela-rbxts-lsp` launcher resolves one of six platform-specific packages:
+
+- `@vela-rbxts/lsp-darwin-arm64`
+- `@vela-rbxts/lsp-darwin-x64`
+- `@vela-rbxts/lsp-linux-arm64-gnu`
+- `@vela-rbxts/lsp-linux-x64-gnu`
+- `@vela-rbxts/lsp-linux-x64-musl`
+- `@vela-rbxts/lsp-win32-x64-msvc`
+
+Those six are what the release workflow builds and publishes, and they are the same six the VSIX bundles. The launcher's lookup table also names `@vela-rbxts/lsp-linux-arm64-musl` and `@vela-rbxts/lsp-win32-arm64-msvc`, but nothing builds them and they do not exist on npm — on linux arm64 musl and Windows on ARM you have to build the server from source.
+
+## See also
+
+- [Configuration](/vela-rbxts/reference/config/) — the config shape the server expects.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) — every code the editor can surface, and which ones also appear in a build.
+- [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — the case the editor cannot help you with, because nothing is reported at all.

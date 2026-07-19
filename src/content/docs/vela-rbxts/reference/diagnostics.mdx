@@ -1,0 +1,157 @@
+---
+title: Diagnostics
+description: Every diagnostic code Vela can emit, how it reaches your build or editor, and the two caveats that make some of them easy to miss.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 30
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+When Vela cannot lower a class, it reports it rather than dropping it quietly. This page lists every
+code it can produce and what to do about the ones you will actually hit.
+
+## How diagnostics reach you
+
+The compiler produces diagnostics. The host adapter maps them into rbxtsc's diagnostic list, using
+this message format:
+
+```text
+[@vela-rbxts/compiler] unknown-theme-key: unknown color key "brand-500"
+```
+
+The bracketed prefix is the phase. It is `@vela-rbxts/compiler` for anything the compiler found in
+your classes, and `@vela-rbxts/rbxtsc-host` for the one diagnostic the adapter synthesizes itself.
+Numeric codes are assigned per file as `diagnosticCodeBase + index`, with the base defaulting to
+`89000` — so the first diagnostic in a file is 89000, the second 89001, and the numbering restarts
+for the next file. The category comes from the diagnostic's level and defaults to Warning.
+
+<Callout title="Two things that will surprise you">
+**Diagnostics can be dropped entirely.** They are delivered through `context.addDiagnostic`. If the
+roblox-ts version you are on does not expose that on the transformation context, every Vela
+diagnostic is silently discarded and your build looks clean while classes go missing. If you have
+never seen a Vela warning, verify with a deliberately broken class such as `className="bg-nope-500"`
+before concluding your code is clean.
+
+**The reported span is often in the wrong place.** The span is computed as the first textual
+occurrence of the offending token anywhere in the file. It is not the actual JSX attribute. If
+`p-0.25` appears in three components, all three diagnostics point at the first one — and if the token
+also appears in a comment or a string above the real usage, the squiggle lands there instead. Read
+the message, not the underline.
+</Callout>
+
+## Code table
+
+Every code is a warning unless marked otherwise.
+
+| Code | Level | Fires when |
+|---|---|---|
+| `unsupported-utility-family` | Warning | The token does not match any known utility family |
+| `unsupported-z-index-auto` | Warning | `z-auto` |
+| `unsupported-negative-z-index` | Warning | The token starts with `-z-` |
+| `unsupported-arbitrary-z-index` | Warning | `z-[...]` |
+| `unsupported-z-index-value` | Warning | `z-{n}` outside `0, 10, 20, 30, 40, 50` |
+| `unsupported-rotation-value` | Warning | Rotation degrees outside the supported list |
+| `unsupported-scale-value` | Warning | `scale-{n}` outside the supported list |
+| `unsupported-opacity-value` | Warning | Opacity is not an integer from 0 to 100 |
+| `unsupported-aspect-value` | Warning | Aspect key is not `square`, `video`, or a valid bracket value |
+| `unsupported-flex-direction` | Warning | `flex-*` that is neither a direction nor a flex-item keyword |
+| `unsupported-alignment-value` | Warning | A `justify-*` or `items-*` value that cannot be resolved |
+| `unsupported-text-size` | Warning | A `text-{size}` that cannot be resolved (not reachable in practice) |
+| `unsupported-font-weight` | Warning | `font-{x}` is not a known weight name |
+| `unsupported-text-alignment` | Warning | `text-justify`, or an `align-*` outside top/middle/bottom |
+| `unsupported-gradient-direction` | Warning | `bg-gradient-to-{x}` with a direction outside the eight |
+| `unsupported-shadow-inset` | Warning | `shadow-inner` |
+| `unsupported-overflow-value` | Warning | `overflow-*` other than `hidden`, `clip`, `visible` |
+| `unsupported-anchor-value` | Warning | `origin-{x}` outside the nine origin keys |
+| `unknown-theme-key` | Warning | A color, radius, or spacing key is absent from the theme |
+| `unsupported-size-spacing-value` | Warning | A spacing value used for a size is not offset-only |
+| `unsupported-border-value` | Warning | A border payload on the explicit rejection list |
+| `unsupported-color-key` | Warning | `current` or `inherit`, or `transparent` on a property with no transparency channel |
+| `color-missing-shade` | Warning | A palette family referenced without a shade |
+| `color-invalid-shade` | Warning | A literal given a shade, or a palette missing that shade |
+| `unsupported-host-utility` | Warning, **editor only** | The utility is not allowed on that host element tag |
+| `tsx-parse-failed` | **Error** | The file failed to parse, or parsed with recovered errors |
+| `tsx-emit-failed` | **Error** | Code generation failed after a successful transform |
+| `compiler-invocation-failed` | **Error** | The native compiler call threw; synthesized by the host adapter |
+
+`unsupported-host-utility` never appears in a build. The per-element restrictions it reports —
+text properties only on `textlabel`/`textbutton`/`textbox`, `image-*` only on
+`imagelabel`/`imagebutton`, `placeholder-*` only on `textbox` — are checked by the editor surface
+alone. The transform pipeline never consults them, so `<frame className="text-red-500" />` compiles
+and emits a `TextColor3` assignment on a Frame with no complaint at all. Treat this one as a lint
+rule you only get in the editor.
+
+The three errors are structural rather than about your classes.
+
+## The four you will actually hit
+
+### unsupported-utility-family
+
+You wrote a class Vela does not implement. The token is dropped from the output and the element is
+otherwise compiled normally.
+
+```tsx title="Not supported"
+<frame className="m-4 rounded-lg" />
+```
+
+`rounded-lg` is applied; `m-4` is dropped. There is no margin in Roblox — pad the parent or use
+`gap-*` on a list layout instead. The [Not implemented](/vela-rbxts/reference/utilities/#not-implemented)
+table lists every family in this bucket along with what to reach for.
+
+### unknown-theme-key
+
+The class parsed fine, but the key it looked up is not in the resolved theme. The family in the
+message tells you which scale was searched: `colors`, `radius`, or `spacing`.
+
+```tsx title="Fails"
+<frame className="rounded-huge p-0.25" />
+```
+
+`rounded-huge` fails because `rounded-*` is a pure theme lookup and `huge` is not one of the ten
+default radius keys — add it under `theme.extend.radius` or use `4xl`. `p-0.25` fails because the
+spacing fallback only accepts multiples of `0.5`; use `p-0.5`.
+
+The most common form of this one is subtler. A color you thought you defined in `theme.extend.colors`
+will report `unknown-theme-key` if your config also sets a top-level `theme.colors`, because that
+combination silently discards `extend`. See the callout in
+[Configuration](/vela-rbxts/reference/config/#merge-semantics).
+
+### color-missing-shade
+
+You named a palette family without a shade. Palettes are not usable bare.
+
+```tsx title="Fails"
+<frame className="bg-slate" />
+```
+
+Write `bg-slate-800`. Only literal colors — `black`, `white`, and anything you define as a plain
+string — are usable without a shade.
+
+### color-invalid-shade
+
+Either you gave a literal a shade, or you asked a palette for a shade it does not have.
+
+```tsx title="Fails"
+<frame className="bg-white-500 text-brand-400" />
+```
+
+`bg-white-500` fails because `white` is a literal — write `bg-white`. `text-brand-400` fails if your
+`brand` palette only defines `500` and `700` — add `400`, or use a shade you defined. Palettes do not
+interpolate missing shades.
+
+## Editor-only filtering
+
+The editor surface applies one filter the build does not: it suppresses `unknown-theme-key` while the
+text after the first `-` in the token is three characters or shorter. This keeps the squiggle from
+flashing on every keystroke as you type `bg-sla` on the way to `bg-slate-800`.
+
+The consequence is that a genuinely wrong short key can look fine in the editor and still warn in the
+build. `bg-red` reports `color-missing-shade`, which is not filtered, but a short unknown key can be
+hidden until you compile.
+
+## See also
+
+- [Utility reference](/vela-rbxts/reference/utilities/) for the values each family accepts.
+- [Editor setup](/vela-rbxts/guides/editor-setup/) for getting these into your editor.

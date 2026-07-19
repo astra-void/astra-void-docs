@@ -1,0 +1,166 @@
+---
+title: Colors and surfaces
+description: Color utilities and the Roblox properties they write — fills, text, strokes, corner radius, shadows, gradients, and background transparency.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 30
+draft: false
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Every color utility in Vela resolves a key from `theme.colors` and writes it onto a specific Roblox property — either on the host instance itself or on a helper instance that Vela adds as a child. Nothing is inherited and nothing cascades: a class writes one property on one instance, and that is the whole model.
+
+```tsx title="src/client/Card.tsx"
+<frame className="bg-slate-800 rounded-lg border border-slate-700 shadow-lg">
+  <textlabel className="text-slate-100" Text="Ready" />
+</frame>
+```
+
+## The color families
+
+| Family | Roblox property | Written on |
+| --- | --- | --- |
+| `bg-*` | `BackgroundColor3` | the host instance |
+| `text-*` | `TextColor3` | the host instance |
+| `image-*` | `ImageColor3` | the host instance |
+| `placeholder-*` | `PlaceholderColor3` | the host instance |
+| `border-{color}` | `Color` | a `UIStroke` child |
+| `shadow-{color}` | `Color` | a `UIShadow` child |
+| `from-*`, `via-*`, `to-*` | color keypoints | a `UIGradient` child |
+
+Each of these except `placeholder-*` and the gradient stops also has a paired transparency property — `BackgroundTransparency`, `TextTransparency`, `ImageTransparency`, `UIStroke.Transparency`, `UIShadow.Transparency`. Setting `border-{color}` writes `Color` and also sets `Transparency` to `0`, so a colored stroke is visible without a second class. `shadow-{color}` does not do the same — it writes `Color` alone.
+
+`text-*` is not only a color family. It also carries sizes, alignment, and wrapping — see [Text and fonts](/vela-rbxts/guides/text-and-fonts/) for how the compiler decides which one you meant.
+
+## `transparent`, and the two rejected keywords
+
+`transparent` is not a theme color. It is handled specially: it sets the family's **transparency** property to `1` and **removes** the color property entirely. `bg-transparent` emits `BackgroundTransparency = 1` and no `BackgroundColor3`.
+
+That is why `placeholder-transparent` is an error. `PlaceholderColor3` has no paired transparency property, so there is nothing for the utility to set, and the compiler reports `unsupported-color-key` rather than emitting something that would not work.
+
+`current` and `inherit` are rejected outright with `unsupported-color-key`. Both are CSS cascade concepts, and there is no cascade on Roblox — a `TextLabel` does not learn its color from an ancestor `Frame`. There is no equivalent to fall back to, so Vela refuses rather than guessing.
+
+## Shades and diagnostics
+
+A color payload is either a literal key or a palette key plus a shade. The suffix after the last hyphen counts as a shade only if it is one of `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`. Anything else means the whole payload is one semantic key, so `bg-my-color` looks up `my-color`.
+
+Three diagnostics cover the failure modes:
+
+| Code | Fires when |
+| --- | --- |
+| `color-missing-shade` | you referenced a palette with no shade, like `bg-blue` |
+| `color-invalid-shade` | you gave a literal a shade (`bg-white-500`), or asked a palette for a shade it does not define |
+| `unknown-theme-key` | the name is not in `theme.colors` at all |
+
+All three are warnings, not errors. The class is dropped and compilation continues. See [Theming](/vela-rbxts/guides/theming/) for what the default palette contains and how to add your own.
+
+## Borders
+
+`border-*` builds a `UIStroke` child. Roblox strokes are a much narrower surface than CSS borders, and Vela's border family reflects that narrowness rather than papering over it.
+
+Thickness accepts **exactly four values**: `border-0`, `border-1`, `border-2`, and `border-4`. Bare `border` is shorthand for thickness `1`. Any other number — `border-3`, `border-8` — is rejected with `unsupported-border-value`.
+
+`border-transparent` sets `Transparency = 1`. `border-{color}` sets `Color` and `Transparency = 0`.
+
+`border-round`, `border-bevel`, and `border-miter` set `LineJoinMode` to `Enum.LineJoinMode.Round`, `.Bevel`, and `.Miter`. This family is easy to miss because it has no CSS analogue.
+
+```tsx title="src/client/Panel.tsx"
+<frame className="border-2 border-slate-600 border-miter" />
+```
+
+Everything below is explicitly detected and rejected with `unsupported-border-value`, so you get a diagnostic instead of a silent no-op:
+
+- Border styles — `border-dashed`, `border-solid`, `border-dotted`, `border-double`. `UIStroke` draws one continuous line and has no style property.
+- Side-specific keys — `border-x`, `border-y`, `border-t`, `border-r`, `border-b`, `border-l`, and their prefixed forms like `border-t-2` or `border-x-slate-500`. A `UIStroke` outlines the whole instance; there are no per-side strokes.
+- `border-opacity-*`. Use `border-transparent`, or set the color you actually want.
+- Arbitrary values in brackets, like `border-[3]`.
+- Anything containing a `/`, such as `border-slate-500/50`.
+
+## Radius
+
+`rounded-{key}` sets `CornerRadius` on a `UICorner` child, and on the static path it is a **pure theme lookup**. The key must exist in `theme.radius` or you get `unknown-theme-key` on the `radius` family.
+
+There are no arbitrary values on the static path — `rounded-[8]` does not compile to anything. If you need a radius the theme does not have, add it to `theme.extend.radius` and give it a name.
+
+```ts title="vela.config.ts"
+theme: { extend: { radius: { card: "new UDim(0, 10)" } } }
+```
+
+```tsx
+<frame className="rounded-card" />
+```
+
+## Shadows
+
+`shadow` and the size presets build a `UIShadow` child. The presets are fixed; there is no way to tune them from a class.
+
+| Class | Blur radius | Y offset | Spread | Transparency |
+| --- | --- | --- | --- | --- |
+| `shadow` | 3 | 1 | 0 | 0.9 |
+| `shadow-sm` | 2 | 1 | 0 | 0.95 |
+| `shadow-md` | 6 | 4 | −1 | 0.9 |
+| `shadow-lg` | 15 | 10 | −3 | 0.9 |
+| `shadow-xl` | 25 | 20 | −5 | 0.9 |
+| `shadow-2xl` | 50 | 25 | −12 | 0.75 |
+
+Blur is emitted as `BlurRadius = new UDim(0, blur)`, offset as `Offset = UDim2.fromOffset(0, offsetY)`, and spread as `Spread = UDim2.fromOffset(s, s)` — the spread property is only written when it is non-zero, which is why `shadow` and `shadow-sm` do not set it.
+
+`shadow-none` sets `Enabled = false` on the `UIShadow`, disabling it rather than removing the instance.
+
+`shadow-inner` is rejected with `unsupported-shadow-inset`. `UIShadow` draws outside the instance and has no inset mode.
+
+`shadow-{color}` is a separate family that sets only the shadow's `Color`, leaving whatever `Transparency` the preset established. The one exception is `shadow-transparent`, which writes `Transparency = 1` and no color. It composes with a preset:
+
+```tsx
+<frame className="shadow-lg shadow-slate-950" />
+```
+
+## Gradients
+
+`bg-gradient-to-{dir}` creates a `UIGradient` child. `bg-linear-to-{dir}` is an accepted alias for the same thing.
+
+Eight directions map to `UIGradient` rotations:
+
+| Class suffix | Direction | Rotation |
+| --- | --- | --- |
+| `t` | to top | 270 |
+| `tr` | to top right | 315 |
+| `r` | to right | 0 |
+| `br` | to bottom right | 45 |
+| `b` | to bottom | 90 |
+| `bl` | to bottom left | 135 |
+| `l` | to left | 180 |
+| `tl` | to top left | 225 |
+
+Rotation is only emitted when it is not `0`, so `bg-gradient-to-r` leaves the property at its default. A direction outside the eight reports `unsupported-gradient-direction`.
+
+Color stops come from `from-*`, `via-*`, and `to-*`, and how many you write changes the emitted `ColorSequence`:
+
+- One stop becomes `new ColorSequence(c)` — a flat sequence of a single color.
+- Two stops become `new ColorSequence(a, b)`.
+- Three stops become `new ColorSequence([keypoints])` with explicit keypoints.
+
+```tsx title="src/client/Header.tsx"
+<frame className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
+```
+
+<Callout title="A gradient forces the background to white">
+When a gradient is present, Vela sets `BackgroundColor3` to `Color3.fromRGB(255, 255, 255)`. `UIGradient` multiplies against the instance's background color, so anything other than white would tint every stop. This means a `bg-*` class on the same element is overwritten — pick the gradient or the fill, not both.
+</Callout>
+
+## Background transparency
+
+`opacity-N` maps to `BackgroundTransparency`. It accepts **any integer from 0 to 100** — not a fixed step scale — and inverts it, because Roblox measures transparency where CSS measures opacity. `opacity-100` is fully opaque (`BackgroundTransparency = 0`), `opacity-0` is fully transparent (`= 1`), and `opacity-40` emits `0.6`.
+
+A non-integer or out-of-range value reports `unsupported-opacity-value`. The editor's completion list shows a shorter set of round numbers, but that list is suggestion sugar — `opacity-37` compiles fine.
+
+Note that `opacity-N` only touches the background. It does not fade text, images, strokes, or shadows; each of those has its own transparency property, and the only class-level control over them is `transparent` on the matching family.
+
+## See also
+
+- [Theming](/vela-rbxts/guides/theming/) — the color, radius, and spacing scales these utilities read.
+- [Text and fonts](/vela-rbxts/guides/text-and-fonts/) — how `text-*` disambiguates between color, size, alignment, and wrapping.
+- [Utilities reference](/vela-rbxts/reference/utilities/) — the complete family list.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) — every code, and what triggers it.

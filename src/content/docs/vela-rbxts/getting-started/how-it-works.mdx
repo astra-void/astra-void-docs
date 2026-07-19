@@ -1,0 +1,86 @@
+---
+title: How it works
+description: The Vela pipeline from rbxtsc to emitted Luau, and the two lowering paths a className can take.
+product: vela-rbxts
+section: getting-started
+sidebar:
+  order: 30
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Vela has no runtime you install and no build step of its own. It is a TypeScript program transformer that roblox-ts loads, plus a native compiler that does the actual class-name work. Understanding the order of those pieces explains most of Vela's behavior, including the parts that surprise people.
+
+## The pipeline
+
+**`rbxtsc` loads the transformer.** The `{ "transform": "vela-rbxts/transformer" }` entry in your `tsconfig.json` is resolved by roblox-ts, which calls the exported factory with your `Program`, the plugin options object, and its own `typescript` instance. The factory throws if roblox-ts does not hand it that instance, so the transformer cannot be driven by a plain `tsc`.
+
+**The host adapter filters files.** Before any parsing happens, each source file is checked against five conditions in order, and a file that fails any of them is passed through untouched:
+
+1. The filename must end in `.tsx`, case-insensitively. **`.ts` files are never transformed**, so a `className` string built in a `.ts` helper is invisible to Vela.
+2. `.d.ts` and `.d.tsx` files are skipped.
+3. Any path containing a `node_modules` segment is skipped.
+4. The source text must contain the literal substring `className`.
+5. The source text must match a coarse JSX-open-tag regex.
+
+Those last three are toggles (`skipNodeModules`, `requireClassName`, `requireJsxSyntax`) on the plugin options object, all on by default. There is no include or exclude glob support — those three booleans are the whole filter surface.
+
+**The adapter finds your config.** For each eligible file, Vela walks up from that file's directory looking for `vela.config.ts`, reads it, strips every `import … from "vela-rbxts"` statement, transpiles it with `ts.transpileModule`, and executes the result in a function scope where `defineConfig` and `defaultConfig` are injected as parameters. That injection is why the stripped import still works. A TypeScript diagnostic in your config throws; an export that is neither a resolved config nor an input-shaped object throws. Finding nothing at all is fine — you get the default theme.
+
+<Callout title="Config discovery is not cached">
+Config resolution runs **per file**, so `vela.config.ts` is re-read, re-transpiled and re-executed once for every eligible source file in your project. On a large project this is a measurable share of build time. Keep the config file small and side-effect-free.
+</Callout>
+
+**The native compiler parses and lowers.** The file's text goes to the Rust compiler, which parses the TSX, walks the JSX tree, resolves each class token against the merged theme, and produces both new source text and a diagnostic list.
+
+**The output is re-parsed and re-injected.** Vela does not perform AST node surgery on TypeScript's tree. It takes the emitted text, parses it into a fresh `SourceFile`, and substitutes that. If the compiler reports no change, this step is skipped entirely. Diagnostics are handed back through roblox-ts's `addDiagnostic` — and if the version of roblox-ts in use does not expose that hook, they are dropped silently.
+
+## Only eight tags are touched
+
+Vela recognizes exactly eight Roblox host elements:
+
+`frame`, `scrollingframe`, `canvasgroup`, `textlabel`, `textbutton`, `textbox`, `imagelabel`, `imagebutton`
+
+Every other JSX element is skipped outright. That includes your own components. Putting `className` on `<Panel />` does nothing at all — no lowering, no diagnostic, no error. If you want a component to take utility classes, accept a prop and forward it to a host element inside.
+
+## The two lowering paths
+
+This is the part worth internalizing. A `className` is lowered in one of two very different ways, and which one you get changes the shape of the output, the size of the supported utility set, and whether anything runs at runtime.
+
+### Static lowering
+
+The default. The compiler resolves every token to a concrete value, emits Roblox properties directly on the element, prepends helper instances (`uicorner`, `uistroke`, `uipadding`, `uilistlayout`, `uigradient`, `uisizeconstraint`, `uiaspectratioconstraint`, `uiscale`, `uishadow`, `uiflexitem`) as children, and removes the `className` attribute. The element keeps its original tag. Nothing from Vela survives into the running game.
+
+This path supports the full utility set.
+
+### The runtime path
+
+When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted as `as any` casts, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`.
+
+At runtime that component normalizes the theme strings into `Color3` and `UDim` values, reads the environment, applies whichever rules match, tokenizes the dynamic `className` and applies whichever utilities it understands, strips the internal props, and calls `React.createElement` with the original tag and the helper children.
+
+The inlined helper imports `React` from `@rbxts/react` and `{ UserInputService, Workspace }` from `@rbxts/services`. It reads `Workspace.CurrentCamera.ViewportSize` for width, height and orientation, and `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, re-evaluating on camera changes and on those input signals.
+
+### What triggers the runtime path
+
+Two independent conditions, either one sufficient:
+
+**A `className` expression that cannot collapse to static tokens.** A template literal with an interpolation, a variable, a ternary whose branches Vela cannot fold, an array or object `ClassValue` built at runtime, an empty expression container — anything the compiler cannot reduce to a known list of strings.
+
+**Any token carrying a variant prefix.** This one catches people out. The eight runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
+
+```tsx title="Static string, runtime path"
+<frame className="w-full sm:w-1/2" />
+```
+
+That injects the whole helper module into the file. There is no way to evaluate a breakpoint at compile time, so this is expected — but it is worth knowing that the trigger is the variant, not the dynamism.
+
+<Callout title="The runtime path understands far less">
+The runtime token resolver handles **only** `border`, `border-*`, `bg-*`, `rounded-*`, the padding family (`p-`, `px-`, `py-`, `pt-`, `pr-`, `pb-`, `pl-`), `gap-`, `w-`, `h-` and `size-`. Every other utility inside a *dynamic* `className` is dropped with no diagnostic — it simply does not appear in the output. Variant-prefixed static tokens are not affected by this limit; they go through the static resolver and are only evaluated at runtime.
+</Callout>
+
+The full list of divergences — including the runtime path accepting arbitrary bracket values the static path rejects, and `w-`/`h-` overwriting rather than merging — is in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/). Read it before you reach for a computed `className`.
+
+## Next step
+
+Get the honest boundaries of the project at 0.2.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).

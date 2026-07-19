@@ -1,0 +1,420 @@
+---
+title: Utility reference
+description: Every utility class Vela supports, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 10
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+This is the complete list of what Vela compiles. If a class is not on this page, Vela does not
+implement it — most unknown families produce an `unsupported-utility-family` warning, and a few
+(anything that looks like `text-*`) get misread as a color key instead. See
+[Diagnostics](/vela-rbxts/reference/diagnostics/) for what each warning means.
+
+Every utility lowers to one of two things: a **property** set directly on the host element, or a
+**helper instance** — a child instance Vela prepends to the element's children so the property has
+somewhere to live. The helper instances are `UIPadding`, `UIListLayout`, `UICorner`, `UIStroke`,
+`UIGradient`, `UISizeConstraint`, `UIAspectRatioConstraint`, `UIScale`, `UIShadow`, and
+`UIFlexItem`. One helper of each kind is created per element and all utilities that target it write
+into the same instance, so `p-4 px-8` produces a single `UIPadding`.
+
+## Supported host elements
+
+Vela only looks at these eight intrinsic elements. Any other JSX element — including your own
+components — is skipped entirely, and a `className` on it is left untouched.
+
+| Element | Notes |
+|---|---|
+| `frame` | Layout container |
+| `scrollingframe` | Layout container |
+| `canvasgroup` | Layout container |
+| `textlabel` | Text properties allowed |
+| `textbutton` | Text properties allowed |
+| `textbox` | Text properties allowed, plus `placeholder-*` |
+| `imagelabel` | `image-*` allowed |
+| `imagebutton` | `image-*` allowed |
+
+Text utilities (`text-*` color and size, `font-*`, `text-{left,center,right}`, `align-*`,
+`text-wrap`, `truncate`) are only meaningful on `textlabel`, `textbutton`, and `textbox`; `image-*`
+only on `imagelabel` and `imagebutton`; `placeholder-*` only on `textbox`. Those restrictions are
+enforced **only by the editor**. The compiler does not check them, so
+`<frame className="text-red-500" />` builds without complaint and emits a `TextColor3` assignment on
+a Frame that has no such property.
+
+## Color
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `bg-{color}` | theme color key | `BackgroundColor3` + `BackgroundTransparency` | |
+| `text-{color}` | theme color key | `TextColor3` + `TextTransparency` | Fallback branch of `text-*` |
+| `image-{color}` | theme color key | `ImageColor3` + `ImageTransparency` | |
+| `placeholder-{color}` | theme color key | `PlaceholderColor3` | No transparency channel |
+| `border-{color}` | theme color key | `UIStroke.Color` + `UIStroke.Transparency` | Helper instance |
+| `shadow-{color}` | theme color key | `UIShadow.Color` | Helper instance |
+| `from-{color}`, `via-{color}`, `to-{color}` | theme color key | `UIGradient.Color` keypoints | Helper instance |
+
+A color key is either a literal (`black`, `white`, or anything you define as a plain string) or a
+palette family plus a shade from `50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`. The shade is
+split off with the last `-` in the token, and only if the suffix is exactly one of those eleven
+numbers — so `bg-my-color` is looked up as the single key `my-color`, not as family `my` shade
+`color`.
+
+Two keywords behave specially. `transparent` sets the transparency property to `1` and removes the
+color property entirely; on `placeholder-*`, which has no transparency property, it produces
+`unsupported-color-key`. `current` and `inherit` are rejected outright with `unsupported-color-key`.
+
+Getting the shade wrong is its own diagnostic: a palette with no shade gives `color-missing-shade`, a
+literal with a shade or a palette missing that shade gives `color-invalid-shade`, and a name that is
+not in the theme at all gives `unknown-theme-key`.
+
+<Callout title="text-* is greedy">
+`text-*` is classified in one pass: known size keys become `TextSize`, `left`/`center`/`right`/`justify`
+become `TextXAlignment`, `wrap`/`nowrap` become `TextWrap`, and **everything else falls through to
+the color branch**. That means a typo like `text-smal` is not reported as an unknown utility — it is
+reported as `unknown-theme-key` for a color named `smal`.
+</Callout>
+
+## Border
+
+Everything here writes into a `UIStroke` helper instance.
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `border` | — | `UIStroke.Thickness = 1` | Bare form |
+| `border-{n}` | `0`, `1`, `2`, `4` | `UIStroke.Thickness` | No other numbers |
+| `border-transparent` | — | `UIStroke.Transparency = 1` | |
+| `border-{join}` | `round`, `bevel`, `miter` | `UIStroke.LineJoinMode` | |
+| `border-{color}` | theme color key | `UIStroke.Color`, `Transparency = 0` | |
+
+Explicitly rejected with `unsupported-border-value`: the CSS border styles `dashed`, `solid`,
+`dotted`, `double`; every side-specific form (`border-x`, `border-y`, `border-t`, `border-r`,
+`border-b`, `border-l` and their `-{n}` variants); `border-opacity-*`; arbitrary values in brackets;
+anything containing a slash; and any numeric thickness other than `0`, `1`, `2`, `4`.
+
+## Radius
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `rounded-{key}` | any key in `theme.radius` | `UICorner.CornerRadius` | Pure theme lookup |
+
+The default theme ships ten keys: `none`, `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`, `4xl`, `full`.
+There is no numeric fallback and no arbitrary `rounded-[8]` on the compile-time path — an unknown key
+is `unknown-theme-key` in the `radius` family. The runtime path does accept brackets; see
+[Dynamic class names](#dynamic-class-names) below.
+
+## Shadow
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `shadow` | — | `UIShadow` preset | blur 3, offset Y 1, spread 0, transparency `0.9` |
+| `shadow-sm` | — | `UIShadow` preset | 2 / 1 / 0 / `0.95` |
+| `shadow-md` | — | `UIShadow` preset | 6 / 4 / −1 / `0.9` |
+| `shadow-lg` | — | `UIShadow` preset | 15 / 10 / −3 / `0.9` |
+| `shadow-xl` | — | `UIShadow` preset | 25 / 20 / −5 / `0.9` |
+| `shadow-2xl` | — | `UIShadow` preset | 50 / 25 / −12 / `0.75` |
+| `shadow-none` | — | `UIShadow.Enabled = false` | |
+| `shadow-{color}` | theme color key | `UIShadow.Color` | `shadow-transparent` instead sets `Transparency = 1` |
+| `shadow-inner` | — | — | `unsupported-shadow-inset` |
+
+Presets emit `BlurRadius = new UDim(0, blur)`, `Offset = UDim2.fromOffset(0, offsetY)`, `Spread` only
+when it is non-zero, and `Transparency`.
+
+## Gradient
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `bg-gradient-to-{dir}` | `t`, `tr`, `r`, `br`, `b`, `bl`, `l`, `tl` | `UIGradient.Rotation` | Rotations 270, 315, 0, 45, 90, 135, 180, 225 |
+| `bg-linear-to-{dir}` | same | same | Accepted alias |
+| `from-{color}`, `via-{color}`, `to-{color}` | theme color key | `UIGradient.Color` | |
+
+Stops flush into a `ColorSequence`: one stop becomes `new ColorSequence(c)`, two become
+`new ColorSequence(a, b)`, three become `new ColorSequence([keypoints])`. `Rotation` is only emitted
+when it is not `0`, and `BackgroundColor3` is forced to `Color3.fromRGB(255, 255, 255)` so the
+gradient is not tinted by the element's own background. A bad direction is
+`unsupported-gradient-direction`.
+
+## Z-index
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `z-{n}` | `0`, `10`, `20`, `30`, `40`, `50` | `ZIndex` | Exactly these six |
+
+Everything else is a distinct diagnostic: `z-auto` gives `unsupported-z-index-auto`, `z-[N]` gives
+`unsupported-arbitrary-z-index`, a negative `-z-N` gives `unsupported-negative-z-index`, and any
+other number gives `unsupported-z-index-value`.
+
+## Padding
+
+All padding writes into a single `UIPadding` helper instance.
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `p-{key}` | spacing value | `PaddingTop`, `PaddingRight`, `PaddingBottom`, `PaddingLeft` | |
+| `px-{key}` | spacing value | `PaddingLeft`, `PaddingRight` | |
+| `py-{key}` | spacing value | `PaddingTop`, `PaddingBottom` | |
+| `pt-{key}` | spacing value | `PaddingTop` | |
+| `pr-{key}` | spacing value | `PaddingRight` | |
+| `pb-{key}` | spacing value | `PaddingBottom` | |
+| `pl-{key}` | spacing value | `PaddingLeft` | |
+
+### Spacing values
+
+A spacing key is resolved against `theme.spacing` first. If it is not there, Vela falls back to
+arithmetic: the key must not carry a sign, must parse as a finite number greater than or equal to
+zero, and must be a multiple of `0.5`. The result is `new UDim(0, key * 4)`.
+
+So `p-1.5` is 6 pixels, `p-40` is 160 pixels, and `p-0.25` is rejected with `unknown-theme-key` in
+the `spacing` family. The default theme contains exactly one spacing key, `"4"` — every other number
+you write is coming from this fallback, not from the theme.
+
+## Gap
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `gap-{key}` | spacing value | `UIListLayout.Padding` | No `gap-x-` or `gap-y-` |
+
+Roblox's `UIListLayout` has one padding axis, so there is no axis-specific gap to expose.
+
+## Size
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `w-{value}` | see below | `Size` X component | Merges with `h-` |
+| `h-{value}` | see below | `Size` Y component | Merges with `w-` |
+| `size-{value}` | see below | both axes | |
+| `w-auto`, `w-fit` | — | `AutomaticSize = Enum.AutomaticSize.X` | |
+| `h-auto`, `h-fit` | — | `AutomaticSize = Enum.AutomaticSize.Y` | |
+| `size-auto`, `size-fit` | — | `AutomaticSize = Enum.AutomaticSize.XY` | Also when both axes are set |
+
+Accepted values on the sizing axes:
+
+- `px` — one pixel of offset.
+- `full` — scale `1`.
+- Fractions, from an exact allowlist: `1/2`; `1/3`, `2/3`; `1/4`, `3/4`; `1/5`, `2/5`, `3/5`, `4/5`;
+  `1/6`, `5/6`; and `1/12` through `11/12`. Unreduced forms such as `2/4`, `3/6`, and `2/6` are
+  **not** accepted.
+- Any spacing value, used as an offset. If the resolved spacing carries a non-zero scale component,
+  it is rejected with `unsupported-size-spacing-value`.
+
+`w-` and `h-` on the same element merge into one `Size` property. The emitted form depends on the
+values: both scales zero gives `UDim2.fromOffset(x, y)`, both offsets zero gives
+`UDim2.fromScale(x, y)`, and a mix gives the full `UDim2.new(sx, ox, sy, oy)`.
+
+## Constraints
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `min-w-{key}` | spacing offset | `UISizeConstraint.MinSize` X | |
+| `min-h-{key}` | spacing offset | `UISizeConstraint.MinSize` Y | |
+| `max-w-{key}` | spacing offset | `UISizeConstraint.MaxSize` X | |
+| `max-h-{key}` | spacing offset | `UISizeConstraint.MaxSize` Y | |
+
+Emitted as `new Vector2(x, y)`. An axis you do not specify gets a default: `0` for `MinSize` and
+`math.huge` for `MaxSize`. These are offset-only — no fractions, no `full`.
+
+## Position
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `left-{value}` | `px`, `full`, fractions, spacing offsets | `Position` X | |
+| `top-{value}` | same | `Position` Y | |
+| `inset-{value}` | same | both axes | |
+| `-left-{value}`, `-top-{value}`, `-inset-{value}` | same | negated | |
+
+The fraction set is the same allowlist as sizing. There is no `right-*` and no `bottom-*`; anchor
+from the other side with `origin-*` instead.
+
+## Anchor
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `origin-{key}` | `top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right` | `AnchorPoint` | Emitted as `new Vector2(x, y)` |
+
+Anything outside those nine keys is `unsupported-anchor-value`.
+
+## Flex layout
+
+These write into a `UIListLayout` helper instance.
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `flex` | — | `FillDirection = Enum.FillDirection.Horizontal` | Bare form |
+| `flex-row` | — | `FillDirection = Enum.FillDirection.Horizontal` | |
+| `flex-col` | — | `FillDirection = Enum.FillDirection.Vertical` | |
+| `flex-wrap` | — | `Wraps = true` | |
+| `flex-nowrap` | — | `Wraps = false` | |
+| `justify-start`, `justify-center`, `justify-end` | — | `HorizontalAlignment = Left, Center, Right` | |
+| `justify-between`, `justify-around`, `justify-evenly` | — | `HorizontalFlex = Enum.UIFlexAlignment.SpaceBetween, SpaceAround, SpaceEvenly` | Different property |
+| `items-start`, `items-center`, `items-end` | — | `VerticalAlignment = Top, Center, Bottom` | |
+| `items-stretch` | — | `VerticalFlex = Enum.UIFlexAlignment.Fill` | Different property |
+
+Any other `flex-{something}` that is not a flex-item keyword is `unsupported-flex-direction`. An
+unresolvable `justify-*` or `items-*` value is `unsupported-alignment-value`.
+
+Note that `justify-*` and `items-*` are named after the horizontal and vertical axes of the Roblox
+layout, not after the flex main and cross axes. They do not swap when you use `flex-col`.
+
+## Flex items
+
+These write into a `UIFlexItem` helper instance on the child.
+
+| Class | Roblox target |
+|---|---|
+| `flex-1` | `FlexMode = Enum.UIFlexMode.Fill` |
+| `flex-auto` | `FlexMode = Enum.UIFlexMode.Fill` |
+| `flex-initial` | `FlexMode = Enum.UIFlexMode.Shrink` |
+| `flex-none` | `FlexMode = Enum.UIFlexMode.None` |
+| `grow` | `FlexMode = Enum.UIFlexMode.Grow` |
+| `grow-0` | `FlexMode = Enum.UIFlexMode.None` |
+| `shrink` | `FlexMode = Enum.UIFlexMode.Shrink` |
+| `shrink-0` | `FlexMode = Enum.UIFlexMode.None` |
+
+That is the exact and complete list. There is no `grow-{n}`, no `shrink-{n}`, and no `basis-*`.
+
+## Aspect ratio
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `aspect-square` | — | `UIAspectRatioConstraint.AspectRatio = 1` | |
+| `aspect-video` | — | `AspectRatio = 1.7777777778` | |
+| `aspect-[W/H]` | positive finite numbers | `AspectRatio` | Arbitrary value |
+| `aspect-[N]` | positive finite number | `AspectRatio` | Arbitrary value |
+| `aspect-auto` | — | — | `unsupported-aspect-value` |
+
+Arbitrary bracket values are accepted here on the compile-time path, unlike `rounded-*`.
+
+## Transform
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `rotate-{deg}`, `-rotate-{deg}` | `0`, `1`, `2`, `3`, `6`, `12`, `45`, `90`, `180` | `Rotation` | `-rotate-0` stays `0` |
+| `scale-{n}` | `0`, `50`, `75`, `90`, `95`, `100`, `105`, `110`, `125`, `150` | `UIScale.Scale` | Maps to `0`, `0.5`, `0.75`, `0.9`, `0.95`, `1`, `1.05`, `1.1`, `1.25`, `1.5` |
+
+Degrees outside the list give `unsupported-rotation-value`; scales outside the list give
+`unsupported-scale-value`.
+
+## Effects
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `opacity-{n}` | any integer `0`–`100` | `BackgroundTransparency` | Inverted: `opacity-100` is fully opaque |
+
+The value is converted to transparency as `100 - n` and formatted as `0` for fully opaque, `1` for
+fully transparent, one decimal place for multiples of ten, and two decimal places otherwise. Any
+non-integer or out-of-range value gives `unsupported-opacity-value`.
+
+`opacity-*` only touches `BackgroundTransparency`. Text, image, and stroke transparency come from the
+corresponding `text-transparent`, `image-transparent`, and `border-transparent` forms, which set the
+channel to fully transparent rather than to a level.
+
+## Typography
+
+| Class | Values | Roblox target | Notes |
+|---|---|---|---|
+| `text-{size}` | `xs` 12, `sm` 14, `base` 16, `lg` 18, `xl` 20, `2xl` 24, `3xl` 30, `4xl` 36, `5xl` 48, `6xl` 60, `7xl` 72, `8xl` 96, `9xl` 128 | `TextSize` | Pixel values shown |
+| `font-{weight}` | `thin`, `extralight`, `light`, `normal`, `medium`, `semibold`, `bold`, `extrabold`, `black` | `FontFace` | See below |
+| `text-left`, `text-center`, `text-right` | — | `TextXAlignment` | |
+| `text-justify` | — | — | `unsupported-text-alignment` |
+| `align-top`, `align-middle`, `align-bottom` | — | `TextYAlignment = Top, Center, Bottom` | |
+| `text-wrap`, `text-nowrap` | — | `TextWrapped = true, false` | |
+| `truncate` | — | `TextTruncate = Enum.TextTruncate.AtEnd` | |
+
+`font-*` emits a complete `Font` value:
+`new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.X)`. The family is fixed —
+there is no `font-sans`/`font-mono` family selection and no way to point at a different font asset
+through a utility. Two weight names do not map one-to-one: `normal` becomes `Regular` and `black`
+becomes `Heavy`. An unknown weight gives `unsupported-font-weight`.
+
+## Visibility
+
+| Class | Roblox target |
+|---|---|
+| `hidden` | `Visible = false` |
+| `visible` | `Visible = true` |
+
+## Overflow
+
+| Class | Roblox target |
+|---|---|
+| `overflow-hidden` | `ClipsDescendants = true` |
+| `overflow-clip` | `ClipsDescendants = true` |
+| `overflow-visible` | `ClipsDescendants = false` |
+
+Any other `overflow-*` value gives `unsupported-overflow-value`. There is no `overflow-auto` and no
+`overflow-scroll` — use a `scrollingframe` for scrolling.
+
+## Variants
+
+Eight variant prefixes are supported. They chain with colons, and multiple prefixes on one token
+combine with AND — `md:touch:w-full` applies only when both conditions hold. An unrecognized prefix
+makes the whole token fail to split, after which it parses as a plain utility and usually ends up as
+`unsupported-utility-family`.
+
+| Variant | Condition |
+|---|---|
+| `sm` | Viewport width ≥ 640 |
+| `md` | Viewport width ≥ 768 |
+| `lg` | Viewport width ≥ 1024 |
+| `portrait` | Viewport width less than height |
+| `landscape` | Viewport width ≥ height |
+| `touch` | `UserInputService.TouchEnabled`, and no gamepad |
+| `mouse` | Neither gamepad nor touch |
+| `gamepad` | `UserInputService.GamepadEnabled` |
+
+All three breakpoints are minimum-width only; there is no maximum-width form and no `xl`/`2xl`.
+A square viewport counts as `landscape`. Input mode is resolved by priority — gamepad wins over
+touch, touch wins over mouse — so exactly one of `touch`, `mouse`, and `gamepad` is ever active.
+
+Any variant-prefixed token forces the runtime helper into the module, even inside a plain string
+literal. See
+[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) for the cost model.
+
+## Not implemented
+
+These families are not recognized at all. They produce `unsupported-utility-family` and are dropped
+from the output.
+
+| Family | Why, and what to use instead |
+|---|---|
+| `m-*` and every margin variant (`mx-`, `my-`, `mt-`, `mr-`, `mb-`, `ml-`) | Roblox has no margin box. Pad the parent, or use `gap-*` on a list layout. |
+| `absolute`, `relative` | Roblox positioning is always absolute-within-parent. Use `top-*`/`left-*`/`inset-*` and `origin-*`. |
+| `right-*`, `bottom-*` | Only the left and top edges are exposed. Set `origin-*` to anchor from the other side. |
+| `grid-*` | No grid lowering exists. Use `UIGridLayout` directly. |
+| `ring-*` | Use `border` and `border-{color}`, which target `UIStroke`. |
+| `blur-*` | No blur lowering exists. |
+| `leading-*`, `tracking-*` | Roblox text has no line-height or letter-spacing property to target. |
+| `uppercase`, `lowercase`, `capitalize` | No text-transform property exists. Transform the string in code. |
+| `transition-*`, `duration-*`, `ease-*`, `animate-*` | Vela does not emit tweens. Animate with `TweenService` or a motion library. |
+| `transform`, `translate-*`, `skew-*` | Only `rotate-*` and `scale-*` are lowered. Translation is `top-*`/`left-*`. |
+| `content-*`, `self-*`, `place-*` | Not mapped onto the `UIListLayout`/`UIFlexItem` model. |
+
+## Dynamic class names
+
+When `className` is a dynamic expression rather than something Vela can collapse at compile time,
+the class string is resolved by the injected runtime helper instead. That helper implements a much
+smaller subset — **fifteen prefixes and nothing else**:
+
+`border` (bare), `border-*`, `bg-*`, `rounded-*`, `p-`, `px-`, `py-`, `pt-`, `pr-`, `pb-`, `pl-`,
+`gap-`, `w-`, `h-`, `size-`.
+
+Any other utility inside a dynamic `className` is **silently dropped**. There is no diagnostic,
+because the compiler never sees the final string. Three further differences from the compile-time
+path:
+
+- The runtime path accepts arbitrary bracket values that the compile-time path rejects:
+  `rounded-[8]`, `p-[10]`, `w-[240]`.
+- The `auto` and `fit` sizing keywords return nothing on the runtime path, so `w-auto`, `h-auto`, `size-auto`, `w-fit`, `h-fit` and `size-fit` never set `AutomaticSize` there.
+- `w-` and `h-` each emit a whole `Size` property, so the later one overwrites the earlier instead of
+  merging into one value.
+
+Read [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) before you build class strings at
+runtime — the gap between the two paths is the single most common source of "my class did nothing"
+reports.
+
+## See also
+
+- [Configuration](/vela-rbxts/reference/config/) for the theme keys these utilities look up.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) for every warning code named on this page.

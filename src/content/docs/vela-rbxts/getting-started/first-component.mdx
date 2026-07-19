@@ -1,0 +1,129 @@
+---
+title: Your first component
+description: Build a small panel with Vela utilities and read the Roblox properties and helper instances it lowers to.
+product: vela-rbxts
+section: getting-started
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+The fastest way to understand Vela is to write a small component and read what comes out the other side. This page builds a panel with a title and a caption, then walks through what each class name became.
+
+## The component
+
+```tsx title="src/client/Panel.tsx"
+import React from "@rbxts/react";
+
+export function Panel() {
+  return (
+    <frame className="flex flex-col gap-4 p-4 rounded-lg bg-slate-800 border border-slate-700 w-80">
+      <textlabel className="text-slate-100 text-lg font-semibold" Text="Loadout" />
+      <textlabel className="text-slate-400 text-sm" Text="Two slots remaining" />
+    </frame>
+  );
+}
+```
+
+Every class on the `frame` resolves at compile time. Nothing in this file reads the theme at runtime, and nothing in the output refers back to Vela.
+
+## What each class lowers to
+
+The `frame` classes split into two kinds of result: properties set directly on the Frame, and helper instances that have to exist as children because Roblox models layout, padding, corners and strokes as separate objects.
+
+| Class | Result | Value |
+|---|---|---|
+| `flex` | `UIListLayout` child, `FillDirection` | `Enum.FillDirection.Horizontal` |
+| `flex-col` | `UIListLayout.FillDirection` | `Enum.FillDirection.Vertical` |
+| `gap-4` | `UIListLayout.Padding` | `new UDim(0, 16)` |
+| `p-4` | `UIPadding` child, all four sides | `new UDim(0, 16)` |
+| `rounded-lg` | `UICorner.CornerRadius` | `new UDim(0, 8)` |
+| `bg-slate-800` | `BackgroundColor3` | `Color3.fromRGB(29, 41, 61)` |
+| `border` | `UIStroke.Thickness` | `1` |
+| `border-slate-700` | `UIStroke.Color` and `Transparency` | `Color3.fromRGB(49, 65, 88)`, `0` |
+| `w-80` | `Size` | `UDim2.fromOffset(320, 0)` |
+
+A few of those deserve a note.
+
+`flex` and `flex-col` write to the same instance. Bare `flex` sets `FillDirection` to `Horizontal`; `flex-col` then overwrites it with `Vertical`. Only one `UIListLayout` is emitted, no matter how many layout classes you stack on the element. If you only ever want a column, `flex-col` alone is enough.
+
+`gap-4` and `p-4` both resolve `4` through the theme's `spacing` scale, which is where the built-in default has its only entry: `"4": "new UDim(0, 16)"`. Every other numeric spacing key — `p-2`, `gap-6`, `p-1.5` — comes from an arithmetic fallback instead: the key must parse as a non-negative multiple of `0.5`, and the result is that number times four pixels. That is why `w-80` is 320 pixels rather than a lookup failure.
+
+`w-80` produces a whole `Size`, and a sibling `h-*` on the same element merges into it rather than replacing it. With only a width given, the height axis stays at zero, so the emitted value is `UDim2.fromOffset(320, 0)`. Add `h-40` and you get `UDim2.fromOffset(320, 160)`.
+
+`border` and `border-slate-700` are two different utilities that happen to share a prefix. The bare form sets thickness; the color form sets color and transparency. Writing only `border-slate-700` gives you a colored stroke with no explicit thickness set.
+
+The `textlabel` classes are text-only utilities: `text-slate-100` and `text-slate-400` set `TextColor3`, `text-lg` sets `TextSize` to `18`, `text-sm` sets it to `14`, and `font-semibold` sets `FontFace` to `new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)`. Note that `text-*` is disambiguated by value, not by prefix: a known size key becomes `TextSize`, an alignment keyword becomes `TextXAlignment`, and anything else is treated as a color.
+
+## Roughly what comes out
+
+The transformer removes `className` entirely, emits the resolved properties on the element, and prepends the helper instances as children ahead of whatever children you wrote:
+
+```tsx title="Transformed output (shape, not verbatim)"
+<frame
+  BackgroundColor3={Color3.fromRGB(29, 41, 61)}
+  Size={UDim2.fromOffset(320, 0)}
+>
+  <uicorner CornerRadius={new UDim(0, 8)} />
+  <uistroke Thickness={1} Color={Color3.fromRGB(49, 65, 88)} Transparency={0} />
+  <uipadding
+    PaddingTop={new UDim(0, 16)}
+    PaddingRight={new UDim(0, 16)}
+    PaddingBottom={new UDim(0, 16)}
+    PaddingLeft={new UDim(0, 16)}
+  />
+  <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 16)} />
+  <textlabel
+    TextColor3={Color3.fromRGB(241, 245, 249)}
+    TextSize={18}
+    FontFace={new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)}
+    Text="Loadout"
+  />
+  <textlabel
+    TextColor3={Color3.fromRGB(144, 161, 185)}
+    TextSize={14}
+    Text="Two slots remaining"
+  />
+</frame>
+```
+
+Because the helpers are prepended, they always sort ahead of your own children in the emitted JSX. That does not affect layout — `UIListLayout` ignores non-`GuiObject` siblings — but it is worth knowing if you index children positionally.
+
+This is the **static path**, and it is the one you want. The element keeps its original tag, no helper module is injected, and the whole cost of Vela is paid at build time. The [pipeline page](/vela-rbxts/getting-started/how-it-works/) explains when that stops being true.
+
+## Something that does not work
+
+Vela is a Roblox-shaped subset of Tailwind, not a port of it. Margins are a good example — Roblox has no margin concept, so there is no `m-*` family at all:
+
+```tsx title="This warns"
+<frame className="m-4 p-4 bg-slate-800" />
+```
+
+The build still succeeds, but the transformer reports a warning through roblox-ts:
+
+```text title="Compiler output"
+[@vela-rbxts/compiler] unsupported-utility-family: Unsupported utility family "m" in className literal.
+```
+
+`p-4` and `bg-slate-800` are applied normally; only the unrecognized token is dropped. Use padding on the parent, or `gap-*` on the parent's `UIListLayout`, to get the spacing you were reaching for.
+
+Colors have their own failure mode. Every palette in the theme is a set of shades, and referencing one without picking a shade is an error rather than a default:
+
+```tsx title="This warns too"
+<frame className="bg-slate" />
+```
+
+```text title="Compiler output"
+[@vela-rbxts/compiler] color-missing-shade: Color palette "slate" for background color utility requires an explicit shade such as "slate-500" in className literal.
+```
+
+<Callout title="Where the squiggle lands">
+The host adapter locates a diagnostic by searching for the first textual occurrence of the offending token anywhere in the file, not by the actual JSX attribute position. If the same token appears earlier in a comment or another string, the underline will point at that instead. The message and code are still correct.
+</Callout>
+
+The full list of codes, and what each one means, is in the [diagnostics reference](/vela-rbxts/reference/diagnostics/).
+
+## Next step
+
+See how the transformer fits into an `rbxtsc` build, and what makes it switch to a runtime path, in [How it works](/vela-rbxts/getting-started/how-it-works/).

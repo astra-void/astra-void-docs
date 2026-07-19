@@ -1,0 +1,229 @@
+---
+title: API
+description: Everything importable from vela-rbxts, the two different createTransformer functions, the published packages, and what versions Vela is tested against.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 40
+---
+
+import { Callout, PackageInstall, PropTable } from "@/components/docs/mdx";
+
+Vela's import surface is small. One package has a public entry point, that entry point exports three
+values and four types, and a second subpath exports the transformer you wire into `tsconfig.json`.
+
+<PackageInstall packageName="vela-rbxts" />
+
+## From `vela-rbxts`
+
+```ts
+import {
+  defaultConfig,
+  defineConfig,
+  createTransformer,
+  type TailwindConfig,
+  type TailwindConfigInput,
+  type ClassValue,
+  type StylableProps,
+} from "vela-rbxts";
+```
+
+### defineConfig
+
+```ts
+function defineConfig(input?: TailwindConfigInput): TailwindConfig;
+```
+
+Takes an input-shaped theme object and resolves it against the built-in defaults, returning a fully
+resolved config. The argument is optional; `defineConfig()` returns a fresh object that is deep-equal
+to `defaultConfig` but not the same reference. This is what you call
+in `vela.config.ts`, and it is injected into that file's scope automatically, which is why stripping
+the import from it still works. See [Configuration](/vela-rbxts/reference/config/).
+
+### defaultConfig
+
+```ts
+const defaultConfig: TailwindConfig;
+```
+
+The resolved built-in theme: 28 color families, 10 radius keys, and a single spacing key. This is
+what Vela uses when no `vela.config.ts` is found. Import it if you need to read the defaults — for
+example to reuse a default palette value while replacing the rest.
+
+### createTransformer
+
+```ts
+function createTransformer(
+  options?: RbxtscTransformerBridgeOptions,
+): RbxtscTransformerBridge;
+
+// the returned bridge:
+// { name, getFileEligibility, shouldTransformFile, transformSource, transformFile }
+```
+
+The rbxtsc host bridge. It returns an object whose `name` is `"@vela-rbxts/rbxtsc-host"`, along with
+the eligibility predicates and the transform entry point. `transformSource` and `transformFile` are
+the same function object under two names — calling either one does the same thing.
+
+You do not need this to use Vela. It exists for tooling that drives the transform itself rather than
+going through the TypeScript plugin.
+
+<Callout title="Two different createTransformer functions">
+`createTransformer` imported from `vela-rbxts` is the **rbxtsc host bridge** described above.
+
+`createTransformer` on `vela-rbxts/transformer` is the **TypeScript program transformer factory**.
+It is a completely different function with a different signature and a different job.
+
+The one that goes in `tsconfig.json` is `vela-rbxts/transformer`. If you import `createTransformer`
+from the root package and pass the result to roblox-ts, nothing will be transformed and you will get
+no error explaining why.
+</Callout>
+
+### Types
+
+<PropTable
+  rows={[
+    {
+      name: "TailwindConfig",
+      type: "{ theme: { colors: ThemeColors; radius: ThemeScale; spacing: ThemeScale } }",
+      description:
+        "A fully resolved config — every scale present. What defineConfig returns and what the compiler consumes.",
+    },
+    {
+      name: "TailwindConfigInput",
+      type: "{ theme?: { colors?; radius?; spacing?; extend?: { colors?; radius?; spacing? } } }",
+      description:
+        "The authoring shape — everything optional, with the extend branch. What you pass to defineConfig.",
+    },
+    {
+      name: "ClassValue",
+      type: "string | number | boolean | null | undefined | Record<string, boolean | null | undefined> | ClassValue[]",
+      description:
+        "The accepted type of the className prop. Covers conditional dictionary and nested array forms, not just strings.",
+    },
+    {
+      name: "StylableProps",
+      type: "StylableProps<P = unknown>",
+      description:
+        "Intersects your own props P with { className?: ClassValue }. Use it when a component of yours should forward className.",
+    },
+  ]}
+/>
+
+### The global augmentation
+
+Importing `vela-rbxts` has a side effect: it declares
+
+```ts
+declare global {
+  namespace React {
+    interface Attributes {
+      className?: ClassValue;
+    }
+  }
+}
+```
+
+That augmentation is what makes `className` type-check on `frame`, `textlabel`, and the other host
+elements. It only applies once the module has been imported somewhere your program includes, which is
+why a project that never imports `vela-rbxts` at runtime still needs a reference to it — typically a
+one-line `.d.ts`:
+
+```ts title="src/vela.d.ts"
+import "vela-rbxts";
+```
+
+Several helpers exist in `@vela-rbxts/config` but are deliberately **not** re-exported from the root
+package: `SHADES`, `resolveThemeColors`, `mergeColorRegistry`, `normalizeColorRegistry`,
+`normalizeColorScale`, and the `Shade`, `ThemeScale`, `ColorPalette`, `ColorValue`, `ThemeColors`,
+`ColorInputMap`, `ThemeConfig`, and `ThemeConfigInput` types. Reach into `@vela-rbxts/config`
+directly if you need them, and expect them to be less stable than the root surface.
+
+## From `vela-rbxts/transformer`
+
+This subpath is a CommonJS module whose export is a callable program-transformer factory. The
+function also carries `.createTransformer`, `.createRbxtsTailwindProgramTransformer`, and `.default`
+properties, all pointing at itself — so every resolution style a tool might attempt lands on the same
+function.
+
+This is the value that goes in `tsconfig.json`:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "plugins": [{ "transform": "vela-rbxts/transformer" }]
+  }
+}
+```
+
+The factory throws if roblox-ts does not hand it a TypeScript instance, so a failure here is loud
+rather than silent. Plugin options are documented in
+[Configuration](/vela-rbxts/reference/config/#tsconfig-plugin-options).
+
+## Published packages
+
+| Package | What it is | Install directly? |
+|---|---|---|
+| `vela-rbxts` | The entry point: config helpers, types, the global augmentation, and the transformer subpath | **Yes** — this is the only one an app installs |
+| `@vela-rbxts/compiler` | The Rust compiler behind an N-API binding: transform, completions, hover, diagnostics, document colors | No, pulled in transitively |
+| `@vela-rbxts/config` | The theme schema, `defineConfig`, `defaultConfig`, and the color merge helpers | Only to reach a helper the root package does not re-export |
+| `@vela-rbxts/core` | Shared constants, including the supported host element tags | No — and nothing depends on it, so it never arrives transitively either |
+| `@vela-rbxts/ir` | The intermediate style representation shared between the compiler and its consumers | No |
+| `@vela-rbxts/types` | Shared TypeScript types | No |
+| `@vela-rbxts/rbxtsc-host` | The roblox-ts adapter: file eligibility, config discovery, diagnostic mapping | No |
+| `@vela-rbxts/lsp` | The language server binary and its platform packages | Only if you wire up a non-VS Code editor yourself |
+| `vela-rbxts-lsp` | The VS Code extension, published as a VSIX rather than to npm | Install from the marketplace as `astra-void.vela-rbxts-lsp` |
+
+For almost every project the answer is the same: install `vela-rbxts`, add the transformer to
+`tsconfig.json`, and install the VS Code extension. Everything else arrives as a dependency.
+
+All packages are versioned in lockstep at **0.2.0**, including the VS Code extension. There is no
+scenario in which you should mix versions across the `@vela-rbxts/*` scope.
+
+Two subpaths beyond the roots are public. `@vela-rbxts/rbxtsc-host/project-config` exposes the
+`vela.config.ts` discovery and loading logic — the VS Code extension uses it to evaluate config files
+it is watching, and any editor integration you write can do the same. `@vela-rbxts/compiler/native`
+exposes the raw N-API binding underneath the compiler's default entry.
+
+## Version requirements
+
+Be aware of what is and is not enforced. **No package declares an `engines` field** except the VS
+Code extension, which requires VS Code `^1.90.0`. **No package declares any `peerDependencies`.**
+roblox-ts, TypeScript, and React are ordinary dependencies or devDependencies throughout, so nothing
+is checked at install time and npm will not warn you about a mismatch. If your toolchain is too old,
+you find out from a build failure.
+
+What the project is developed and tested against:
+
+| Tool | Version |
+|---|---|
+| Node | 24 (what CI runs) |
+| TypeScript | 5.9.3, pinned exactly |
+| roblox-ts | `^3.0.0` |
+| `@rbxts/react` | `^17.3.7-ts.1` |
+| `@rbxts/services` | `^1.6.0` |
+
+`@rbxts/services` is a genuine runtime dependency, not just a type package: the injected runtime
+helper imports `UserInputService` and `Workspace` from it to evaluate variants. `@vela-rbxts/rbxtsc-host`
+needs a resolvable `typescript` at runtime but declares no dependency on it — in a normal project
+roblox-ts brings one.
+
+### Prebuilt compiler binaries
+
+The compiler ships N-API binaries for these targets:
+
+- `x86_64-unknown-linux-gnu`
+- `x86_64-unknown-linux-musl`
+- `aarch64-unknown-linux-gnu`
+- `aarch64-apple-darwin`
+- `x86_64-apple-darwin`
+- `x86_64-pc-windows-msvc`
+
+There is **no `aarch64-pc-windows-msvc` build**, so Windows on ARM has no prebuilt binary. There is
+also no linux arm64 musl build. On an unsupported target you need to build the compiler crate from
+source.
+
+## See also
+
+- [Configuration](/vela-rbxts/reference/config/) for the schema `defineConfig` accepts.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) for what the transformer reports.

@@ -1,0 +1,128 @@
+---
+title: Dynamic class names
+description: Computing className is allowed, but the runtime resolver supports only fifteen prefixes and silently drops everything else — here is how to stay on the static path.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 60
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+`className` is typed as `ClassValue`, so you can compute it: template strings, ternaries, arrays, values from props or state. The type system will not stop you, and neither will the compiler.
+
+What changes is *how* the class string is lowered. When Vela can collapse the expression to a fixed set of tokens at compile time, it takes the **static path** and the full utility set is available. When it cannot, the element falls onto the **runtime path**, where a much smaller resolver runs inside your game. The gap between those two sets is large, undocumented in the README, and — this is the important part — silent.
+
+## The runtime resolver supports fifteen prefixes
+
+When an element is on the runtime path, its className is tokenized in-game and each token is passed to a resolver that handles exactly these:
+
+`border` (bare) · `border-*` · `bg-*` · `rounded-*` · `p-` · `px-` · `py-` · `pt-` · `pr-` · `pb-` · `pl-` · `gap-` · `w-` · `h-` · `size-`
+
+That is the complete list. Colors, backgrounds, radius, padding, gap, and sizing survive.
+
+<Callout title="Everything else is silently dropped">
+Any other utility inside a dynamic `className` is discarded at runtime with **no diagnostic** — no compile warning, no editor squiggle, no runtime error. Layout, alignment, text, position, transforms, visibility, shadows, gradients, and constraints all vanish. The element simply renders without them.
+</Callout>
+
+## The trap, concretely
+
+Here is code that looks correct, compiles clean, and produces a broken layout:
+
+```tsx title="Broken — the layout classes disappear"
+import React from "@rbxts/react";
+
+interface CardProps {
+  emphasized: boolean;
+}
+
+export function Card({ emphasized }: CardProps) {
+  const classes = `flex flex-col items-center gap-2 p-4 rounded-lg ${
+    emphasized ? "bg-slate-700" : "bg-slate-800"
+  }`;
+
+  return (
+    <frame className={classes}>
+      <textlabel Text="Title" />
+      <textlabel Text="Body" />
+    </frame>
+  );
+}
+```
+
+The expression cannot be collapsed to static tokens, so the whole element is on the runtime path. Of the six utilities, only `gap-2`, `p-4`, `rounded-lg`, and the background survive. `flex`, `flex-col`, and `items-center` are dropped — which means no `UIListLayout` is created at all, the `gap-2` has no layout to attach to, and the two labels stack on top of each other at the frame's origin.
+
+Nothing warns you. You find out by looking at the screen.
+
+Note that inlining the template string directly into the attribute does not help. What matters is whether the *expression* collapses to fixed tokens, not where it is written. As long as any part of the string is computed, the whole element is on the runtime path and every unsupported token in it — including the literal `flex flex-col items-center` prefix — is dropped. The working fix is in [What to do instead](#what-to-do-instead).
+
+## The other divergences
+
+Even within the supported fifteen prefixes, the runtime path is not the static path with fewer features. Three behaviors differ outright.
+
+**Arbitrary bracket values work at runtime but not statically.** The runtime resolver parses bracket numerics, so `rounded-[8]`, `p-[10]`, and `w-[240]` all resolve. The static path rejects them — `rounded-[8]` is not a theme key, so you get `unknown-theme-key`. This is the one case where the runtime path is more permissive, and it makes bracket values a trap in reverse: a class that works in a computed string breaks when you inline it as a literal.
+
+**Automatic sizing is dropped at runtime.** Statically, `w-fit`, `h-fit`, `size-fit`, `w-auto`, `h-auto`, and `size-auto` emit `AutomaticSize`. The runtime resolver handles only `px`, `full`, `fit`, fractions, spacing keys and bracket numerics — `fit` resolves to nothing and `auto` matches no branch at all — so automatic sizing silently does not happen for any of them. If an element needs `AutomaticSize`, it must be on the static path.
+
+**`w-` and `h-` overwrite each other at runtime.** On the static path the two axes merge into a single `Size` prop. At runtime each of them emits a whole `Size` prop independently, so the later token wins and the earlier one is lost:
+
+```tsx title="Runtime path: h-12 wins, w-full is discarded"
+<frame className={someComputedString} />
+// where someComputedString === "w-full h-12"
+// → Size is whatever h-12 alone produces
+```
+
+On the static path the same string produces `UDim2.new(1, 0, 0, 48)`. This one is easy to miss because sizing *is* in the supported list — it is supported, just differently.
+
+## What to do instead
+
+Two patterns keep you out of trouble.
+
+### Keep the variable part inside the supported prefixes
+
+If the only thing that changes is a color, a radius, a padding, or a size, a computed string is fine. Those are exactly the prefixes the runtime resolver handles, so nothing is lost:
+
+```tsx title="Safe — only the background varies"
+const tone = disabled ? "bg-slate-800" : "bg-blue-600";
+return <frame className={`w-full ${tone}`} />;
+```
+
+Be aware that you are still paying for the runtime path — the helper module is inlined and the element becomes a `VelaRuntimeHost` — but the output is correct.
+
+### Branch between two fully static string literals
+
+This is the pattern to reach for by default. Instead of computing one string, choose between two complete literals. Each literal is a static string, so each branch takes the static path with the full utility set, full compile-time diagnostics, and no runtime helper:
+
+```tsx title="src/client/Card.tsx"
+import React from "@rbxts/react";
+
+interface CardProps {
+  emphasized: boolean;
+}
+
+export function Card({ emphasized, children }: CardProps & { children?: React.Element }) {
+  return emphasized ? (
+    <frame className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700">
+      {children}
+    </frame>
+  ) : (
+    <frame className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-800">
+      {children}
+    </frame>
+  );
+}
+```
+
+It is more verbose, and the duplication is real. That is the trade: two literal strings that both compile down to plain props, versus one clever string that quietly loses half its utilities. When the shared part grows large enough that duplication becomes a maintenance problem, push the shared layout onto a static wrapper element and let only the varying element branch.
+
+## How to tell which path an element took
+
+There is no diagnostic and no flag, so check the emitted Luau or the intermediate roblox-ts output. A static-path element keeps its original tag and gains plain props plus helper children. A runtime-path element is rendered as `VelaRuntimeHost` and carries `__velaTag` and, if variants are involved, `__velaRules`. If you see `VelaRuntimeHost` on an element you expected to be static, something in its `className` did not collapse.
+
+The other way onto the runtime path is variants — a single `sm:` or `touch:` prefix, even in a plain literal, is enough. That case is covered in [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/). Note that variant-prefixed tokens are analyzed statically and serialized as rules, so they keep the full utility set; it is the *dynamic className* case specifically that narrows to fifteen prefixes.
+
+## See also
+
+- [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) — the other trigger for the runtime path.
+- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the static-path behavior of the utilities most often lost here.
+- [How it works](/vela-rbxts/getting-started/how-it-works/) — the compile pipeline and where the two paths diverge.

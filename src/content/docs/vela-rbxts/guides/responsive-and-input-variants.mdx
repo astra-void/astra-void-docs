@@ -1,0 +1,111 @@
+---
+title: Responsive and input variants
+description: The eight variant prefixes, the exact breakpoints, how orientation and input mode are detected, and the compile-time cost of using a variant at all.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 50
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Vela supports eight variant prefixes. Each one is a condition evaluated at runtime on the player's client, and a token only applies when its condition matches.
+
+| Variant | Matches when |
+| --- | --- |
+| `sm` | viewport width is at least 640 |
+| `md` | viewport width is at least 768 |
+| `lg` | viewport width is at least 1024 |
+| `portrait` | viewport width is less than viewport height |
+| `landscape` | viewport width is greater than or equal to viewport height |
+| `touch` | the active input mode is touch |
+| `mouse` | the active input mode is mouse |
+| `gamepad` | the active input mode is gamepad |
+
+You write a variant as a colon prefix on a utility, exactly as in Tailwind:
+
+```tsx title="src/client/Panel.tsx"
+<frame className="w-full md:w-1/2 lg:w-1/3" />
+```
+
+Prefixes chain, and a chained token requires **all** of its conditions to match:
+
+```tsx title="Only on a touch device in portrait"
+<frame className="hidden touch:portrait:visible" />
+```
+
+There is no `not-` form, no arbitrary variant, and no group or peer variants. Order within the chain does not matter — the conditions are combined as a set.
+
+## Breakpoints are min-width only
+
+The three breakpoints are hard-coded pixel thresholds on the viewport's X dimension:
+
+| Variant | Threshold |
+| --- | --- |
+| `sm` | `width >= 640` |
+| `md` | `width >= 768` |
+| `lg` | `width >= 1024` |
+
+They are **min-width only**. There is no max-width form and no `max-sm:` style prefix, and the thresholds are not configurable through `vela.config.ts` — the theme schema has no breakpoint section. As in Tailwind, you write the small-viewport value unprefixed and layer larger viewports on top.
+
+## How orientation is derived
+
+Orientation is not read from a Roblox API. It is computed from the camera's `ViewportSize`: if width is greater than or equal to height the result is `landscape`, otherwise `portrait`.
+
+The `>=` matters. A perfectly square viewport counts as **landscape**, not portrait. If you are branching on orientation for a layout that has a meaningful square case, test it explicitly rather than assuming portrait catches it.
+
+## How input mode is detected
+
+The input mode is read from `UserInputService` and resolved by priority, not by which device was used most recently:
+
+1. If `GamepadEnabled` is true → `gamepad`
+2. Otherwise if `TouchEnabled` is true → `touch`
+3. Otherwise → `mouse`
+
+Exactly one mode is active at a time. On a device that reports both a gamepad and a touchscreen, `gamepad:` matches and `touch:` does not — gamepad wins over touch, and touch wins over mouse. A player who plugs in a controller mid-session flips to `gamepad` because the helper subscribes to the `TouchEnabled`, `MouseEnabled`, and `GamepadEnabled` change signals.
+
+## The cost: any variant forces the runtime path
+
+This is the part worth internalizing before you reach for a variant.
+
+Vela normally lowers `className` at compile time. The class string disappears, and the output is plain Roblox props plus a few helper instances — no per-element work, no extra imports.
+
+A variant condition cannot be evaluated at compile time, because it depends on the player's screen and input device. So any token carrying a variant prefix switches that element onto the **runtime path**: the JSX tag is replaced with a `VelaRuntimeHost` component, the element's variant tokens are serialized into a `__velaRules` JSON prop, the original tag is passed along as `__velaTag`, and the static props are emitted as casts.
+
+<Callout title="A variant in a plain string literal is enough">
+You do not need a dynamic `className` to trigger this. `className="sm:w-full"` — a fully static string literal — is enough. One variant-prefixed token anywhere in the file causes the whole runtime helper module to be inlined at the top of that file's output.
+</Callout>
+
+That helper is roughly fifteen hundred lines of generated roblox-ts. It imports `@rbxts/react` and `{ UserInputService, Workspace } from "@rbxts/services"`, normalizes your theme's color and spacing strings into `Color3` and `UDim` values at module load, and installs `useState`/`useEffect` subscriptions on each element that uses it.
+
+The practical consequences:
+
+- **Output size.** Every file that uses a variant carries its own copy of the helper. Sprinkling `md:` across twenty component files inlines the helper twenty times.
+- **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment changes, instead of being a fixed set of props.
+- **Fewer compile-time diagnostics.** Variant-prefixed tokens are still analyzed statically, so you keep your warnings for those. But the moment an element is on the runtime path for other reasons, the utility coverage narrows sharply — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
+
+The recommendation follows directly: use variants where they earn their keep — a handful of top-level layout containers that genuinely need to reflow between phone and desktop, or an input hint that only makes sense on gamepad — and keep leaf components on plain static classes. Concentrating variants in a few container components means only those files pay the inlining cost.
+
+## Known limitation: resizes do not re-evaluate
+
+The runtime helper re-reads the environment when `Workspace.CurrentCamera` changes and when the `UserInputService` input signals fire. It does **not** subscribe to `ViewportSize` changes on the camera.
+
+The effect is that a viewport resize does not re-evaluate breakpoints or orientation. A player who resizes a windowed Studio client, or a device that rotates without swapping the camera, keeps whatever `sm`/`md`/`lg`/`portrait`/`landscape` result was computed when the element first mounted. Input variants are unaffected — those signals are subscribed properly.
+
+If you need a layout to survive a live resize today, drive it from your own state rather than from Vela's variants: read `Workspace.CurrentCamera.ViewportSize` yourself, connect to its `GetPropertyChangedSignal("ViewportSize")`, and branch between two static class strings. That pattern is shown in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) and has the additional benefit of keeping both branches on the static path.
+
+## Unrecognized prefixes fail quietly-ish
+
+The variant splitter recognizes only the eight names above. If any segment of a colon-chained token is not one of them, the split is abandoned and the **entire token** — colons and all — is parsed as a single plain utility.
+
+```tsx title="A typo does not produce a variant error"
+<frame className="dark:w-full" />
+```
+
+There is no "unknown variant" diagnostic. `dark:w-full` is handed to the utility parser as one opaque name, which does not match any family, so what you actually see is `unsupported-utility-family` pointing at the whole token. When a variant seems to be doing nothing and the warning names the utility family rather than the variant, check the prefix spelling first.
+
+## See also
+
+- [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — the other way onto the runtime path, and the much sharper limits that come with it.
+- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities you will most often want to vary by breakpoint.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) — the full warning code list.

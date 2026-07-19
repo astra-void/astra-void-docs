@@ -1,0 +1,66 @@
+---
+title: Scope and status
+description: What Vela deliberately covers at 0.2.0, which Tailwind families are absent, and where enforcement has gaps.
+product: vela-rbxts
+section: getting-started
+sidebar:
+  order: 40
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Vela borrows Tailwind's syntax, not its scope. Roblox UI has a different layout model, a different set of primitives, and no CSS box model, so a faithful port would produce a large surface of classes that cannot mean anything. What Vela ships instead is a narrow, Roblox-oriented slice: the utilities that map cleanly onto real Roblox properties and helper instances, and nothing else.
+
+That is a design decision, not a roadmap gap. Reading `m-4` as an unsupported family is more useful than inventing a Roblox approximation of a margin. This page is the honest map of where the edges are at **0.2.0**.
+
+## What is in scope
+
+Utilities apply to exactly eight host elements:
+
+`frame`, `scrollingframe`, `canvasgroup`, `textlabel`, `textbutton`, `textbox`, `imagelabel`, `imagebutton`
+
+Any other JSX element — including every component you write — is skipped entirely, with no diagnostic. Within those eight, the covered ground is colors and gradients, borders and strokes, corner radius, padding, gap, sizing and min/max constraints, position and anchor point, z-index, rotation, scale, opacity, aspect ratio, shadows, flex layout and flex items, typography, visibility and overflow. The [utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it.
+
+## What is absent
+
+These are whole Tailwind families with no Vela equivalent. They are not silently ignored — each one produces an `unsupported-utility-family` warning naming the prefix, so a typo and a genuinely missing feature look the same in your build log, and neither one passes unnoticed.
+
+| Family | Notes |
+|---|---|
+| Margins — `m-*`, `mx-*`, `mt-*` and the rest | Roblox has no margin. Use `p-*` on the parent or `gap-*` on its layout. |
+| `absolute` / `relative` / `fixed` / `static` | Roblox positioning is not a CSS position model. Use `left-*`, `top-*`, `inset-*` and `origin-*`. |
+| `right-*` and `bottom-*` | Only the `left`, `top` and `inset` axes exist. Combine `left-*`/`top-*` with `origin-*` to anchor from another edge. |
+| Grid — `grid`, `grid-cols-*`, `col-span-*` | No `UIGridLayout` support. `flex` plus `flex-wrap` covers some of it. |
+| `ring-*` | Use `border` and `border-{color}`, which lower to `UIStroke`. |
+| `blur-*` and the filter families | No Roblox equivalent. |
+| `leading-*` and `tracking-*` | Line height and letter spacing are not exposed. |
+| Case transforms — `uppercase`, `lowercase`, `capitalize` | Transform the string in TypeScript instead. |
+| Transitions, animations, `translate-*`, `skew-*` | Vela emits static properties; there is no tween layer. `rotate-*` and `scale-*` do exist. |
+
+## Two silent gaps
+
+Most of Vela's edges announce themselves. Two do not, and both are worth reading twice.
+
+<Callout title="Host-element restrictions are editor-only">
+Vela knows which utilities make sense on which tag — `text-*`, `font-*` and the text alignment families belong on `textlabel`, `textbutton` and `textbox`; `image-*` on `imagelabel` and `imagebutton`; `placeholder-*` on `textbox` alone. That table drives completions, hover, and the `unsupported-host-utility` diagnostic in the language server. **The transform pipeline never consults it.** So `<frame className="text-red-500" />` compiles clean, emits `TextColor3` on a Frame, and produces no compile-time warning at all. The Frame simply ignores the property at runtime. Install the [editor tooling](/vela-rbxts/guides/editor-setup/) if you want this caught — the compiler will not catch it for you.
+
+The second gap is the runtime subset. When a `className` is a dynamic expression, only `border`, `border-*`, `bg-*`, `rounded-*`, the padding family, `gap-`, `w-`, `h-` and `size-` are resolved. Every other utility in that expression is **dropped with no diagnostic** — no warning, no error, just a property that never appears. A `flex-col` that works in a string literal vanishes when you move it into a ternary. [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence, including where runtime and static behavior differ for utilities both of them support.
+</Callout>
+
+## Release state
+
+Every package in the repo is at **0.2.0**, versioned in lockstep: `vela-rbxts` itself and the `@vela-rbxts/*` scope covering the compiler, config, core, IR, types, host adapter and language server, plus the `vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix anywhere moves everything.
+
+The changelog's `Unreleased` section is empty and there are no pending changesets. **No git tags have been cut yet** — releases are driven by scripts rather than tagged commits, so you cannot pin to a tag or diff two releases in the repository history. Treat the published npm versions as the source of truth for what shipped.
+
+Two consequences follow from the version being what it is. First, nothing is enforced at install time: no package declares `peerDependencies`, and the only `engines` field anywhere is the VS Code extension's `vscode: ^1.90.0`, so a mismatched roblox-ts or TypeScript will fail at build rather than at install. Second, prebuilt native binaries do not cover every platform — notably there is no `aarch64-pc-windows-msvc` target, so Windows on ARM is not supported.
+
+## A performance note
+
+Config discovery re-reads, re-transpiles and re-executes `vela.config.ts` for **every eligible source file**. There is no caching layer between files. On a project with hundreds of `.tsx` files this is hundreds of `transpileModule` calls per build. Keeping `vela.config.ts` to a plain `defineConfig` call with literal values — no imports beyond `vela-rbxts`, no computed theme generation, no side effects — keeps that cost small and predictable.
+
+## See also
+
+- [How it works](/vela-rbxts/getting-started/how-it-works/) for the pipeline and the two lowering paths.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) for every warning code and what triggers it.
+- [Editor setup](/vela-rbxts/guides/editor-setup/) for the checks the compiler does not run.
