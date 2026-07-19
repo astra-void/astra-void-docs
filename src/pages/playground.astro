@@ -269,10 +269,13 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           { key: "Mod-s", preventDefault: true, run: () => (run(), true) },
         ])
 
+        // What "Reset" goes back to; re-pointed whenever a template is picked.
+        let baseline = initialCode()
+
         const view = new EditorView({
           parent: host,
           state: EditorState.create({
-            doc: initialCode(),
+            doc: baseline,
             extensions: [
               runKeymap,
               basicSetup,
@@ -290,8 +293,17 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         })
 
         function initialCode() {
+          // A `#code=` fragment wins over any template: it is either a shared
+          // link or the "Edit" button on a docs example.
           const shared = decodeShared(location.hash)
-          if (shared) return shared
+          if (shared) {
+            const custom = document.createElement("option")
+            custom.textContent = "Custom"
+            custom.value = "__custom"
+            select.prepend(custom)
+            select.value = "__custom"
+            return shared
+          }
 
           // `select.value` is the server-rendered default (`selected` option)
           // unless `?example=` overrides it.
@@ -376,14 +388,18 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           const bytes = new TextEncoder().encode(source)
           let binary = ""
           for (const byte of bytes) binary += String.fromCharCode(byte)
-          history.replaceState(null, "", `#code=${btoa(binary)}`)
+          history.replaceState(
+            null,
+            "",
+            `#code=${encodeURIComponent(btoa(binary))}`,
+          )
         }
 
         function decodeShared(hash: string) {
           const match = /^#code=(.*)$/.exec(hash)
           if (!match) return undefined
           try {
-            const binary = atob(match[1])
+            const binary = atob(decodeURIComponent(match[1]))
             const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
             return new TextDecoder().decode(bytes)
           } catch {
@@ -413,17 +429,24 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           }
         })
 
+        function replaceDoc(source: string) {
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: source },
+          })
+          run()
+        }
+
         select.addEventListener("change", () => {
           const template = templates.find((item) => item.scene === select.value)
           if (!template) return
-          view.dispatch({
-            changes: { from: 0, to: view.state.doc.length, insert: template.source },
-          })
-          run()
+          baseline = template.source
+          replaceDoc(template.source)
         })
 
+        // Reset restores whatever the editor started from — the selected
+        // template, or the snippet a `#code=` link arrived with.
         root.querySelector("[data-playground-reset]")?.addEventListener("click", () => {
-          select.dispatchEvent(new Event("change"))
+          replaceDoc(baseline)
         })
 
         root.querySelector("[data-playground-run]")?.addEventListener("click", run)

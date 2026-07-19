@@ -53,6 +53,18 @@ export function stripSceneBoilerplate(source: string) {
     .trimEnd()}\n`
 }
 
+/**
+ * A `/playground` URL that opens this scene, or undefined when the playground
+ * has no template for it. Only the `*ExampleScene` targets are addressable by
+ * name; the showcase scenes would have to travel as a ~24KB base64 fragment,
+ * and they aren't examples anyone customizes.
+ */
+export function playgroundHref(scene: string, base: string) {
+  return scene.endsWith("ExampleScene")
+    ? `${base}playground/?example=${scene}`
+    : undefined
+}
+
 export type SceneTemplate = {
   /** Module name, e.g. "SwitchExampleScene". */
   scene: string

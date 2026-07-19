@@ -17,6 +17,7 @@
  */
 import { Code } from "astro-expressive-code/components"
 import {
+  playgroundHref,
   readSceneSource,
   sceneTarget,
   stripSceneBoilerplate,
@@ -42,6 +43,12 @@ const previewSrc = `${import.meta.env.BASE_URL}loom-preview/index.html?target=${
 
 const rawSource = readSceneSource(scene)
 const sourceCode = rawSource ? stripSceneBoilerplate(rawSource) : undefined
+
+// "Edit" opens the same scene in /playground, where the reader can change it
+// and watch it re-render.
+const editHref = rawSource
+  ? playgroundHref(scene, import.meta.env.BASE_URL)
+  : undefined
 ---
 
 <figure class="not-prose my-6" data-loom-preview>
@@ -71,9 +78,34 @@ const sourceCode = rawSource ? stripSceneBoilerplate(rawSource) : undefined
           </button>
         ) : null}
       </div>
-      <span class="px-1 font-mono text-[0.7rem] text-muted-foreground/70">
-        Roblox UI · interactive
-      </span>
+      <div class="flex items-center gap-2">
+        {editHref ? (
+          <a
+            class="inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            href={editHref}
+            title="Open this example in the playground"
+          >
+            Edit
+            <svg
+              aria-hidden="true"
+              fill="none"
+              height="11"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="11"
+            >
+              <path d="M7 17 17 7"></path>
+              <path d="M8 7h9v9"></path>
+            </svg>
+          </a>
+        ) : null}
+        <span class="hidden px-1 font-mono text-[0.7rem] text-muted-foreground/70 sm:inline">
+          Roblox UI · interactive
+        </span>
+      </div>
     </div>
     <div data-loom-panel="preview">
       <iframe
