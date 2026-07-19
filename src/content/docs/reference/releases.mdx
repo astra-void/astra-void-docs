@@ -17,9 +17,32 @@ All `@lattice-ui/*` packages version in lockstep, so a single release number des
   per-package stability tiers before upgrading.
 </Callout>
 
+## 0.6.0
+
+The current stable release. The 0.6 line hardens the layered surface rather than adding new components: gamepad- and keyboard-driven selection, presence-driven overlay motion, and more reliable dismissal and positioning.
+
+**Migration**
+
+- `Toast.Root`'s `transition` prop now takes a `PresenceMotionConfig` (`initial`/`reveal`/`exit`) instead of a `ResponseMotionConfig`. Update any custom toast transition to the presence shape.
+
+**Highlights**
+
+- Overlay triggers and items are gamepad-selectable: `Select` trigger/item, toggle-group item, and accordion trigger register focus nodes and route activation through a shared guard, so gamepad users can open menus, move between items, and commit without double-firing.
+- New `useActivationGuard` in `@lattice-ui/focus` collapses the gamepad/keyboard `Activated` + `Return`/`Space` double-fire into a single activation.
+- Toast now runs on presence motion: it fades in on entry, stays visible while its exit animation completes before removal, starts the expiry timer when it enters the visible window (not at enqueue), and animates `clear()` through the exit transition.
+- `Text` gains an opt-in `truncate` prop that applies an end-ellipsis for single-line overflow.
+
+**Fixes**
+
+- Dialog hosts its overlay in its own `ScreenGui` so content renders above its dim.
+- Dismissable layers re-promote on open for correct z-order and dismissal order, dismiss on sunk input, and register their trigger as an inside ref so clicking it no longer dismisses; outside-click dismissal also works without an explicit content boundary ref.
+- Popper resolves the `ScreenGui` viewport rect from the GUI inset for more accurate placement.
+- Combobox keeps its selected label, and Select keeps its selected value, after content unmounts.
+- Avatar re-reports loaded status for cached textures on source change; Textarea preserves its X scale during auto-resize.
+
 ## 0.5.1
 
-The current stable release. A patch on the 0.5 line:
+A patch on the 0.5 line:
 
 - Correct Combobox selection, filtering, and clear behavior.
 - Declare the loom-preview example-scene dependencies so the docs previews build from a clean install.
