@@ -13,7 +13,11 @@
  */
 import DocsHeader from "@/components/docs/DocsHeader.astro"
 import ThemeScript from "@/components/docs/ThemeScript.astro"
-import { DEFAULT_DOCS_PRODUCT, getDocsShellData } from "@/lib/docs"
+import {
+  DEFAULT_DOCS_PRODUCT,
+  getDocsShellData,
+  getHeaderNavLinks,
+} from "@/lib/docs"
 import { codeBlockIconVars } from "@/lib/codeblock-icons"
 import {
   listExampleScenes,
@@ -24,13 +28,7 @@ import "@/styles/global.css"
 
 const shell = await getDocsShellData(DEFAULT_DOCS_PRODUCT.href)
 
-const componentsHref =
-  shell.sections.find((section) => section.key === "components")?.items[0]
-    ?.url ?? shell.product.href
-
-const guidesHref =
-  shell.sections.find((section) => section.key === "guides")?.items[0]?.url ??
-  shell.product.href
+const navLinks = getHeaderNavLinks(shell)
 
 const FALLBACK_TEMPLATE: SceneTemplate = {
   scene: "InlineFallback",
@@ -130,9 +128,8 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
     style={codeBlockIconStyle}
   >
     <DocsHeader
-      componentsHref={componentsHref}
       docsHref={shell.product.href}
-      guidesHref={guidesHref}
+      navLinks={navLinks}
       product={shell.product}
     />
 

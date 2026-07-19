@@ -9,10 +9,11 @@ import {
   DEFAULT_DOCS_PRODUCT,
   getDocPathFromId,
   getDocs,
+  getProductIndexId,
 } from "@/lib/docs"
 
 const docs = await getCollection("docs")
-const entry = docs.find((doc) => doc.id === "index")
+const entry = docs.find((doc) => doc.id === getProductIndexId("lattice-ui"))
 
 if (!entry) {
   throw new Error("Missing docs home entry.")

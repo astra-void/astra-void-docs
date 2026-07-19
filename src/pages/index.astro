@@ -1,11 +1,11 @@
 ---
 import DocsCard from "@/components/docs/DocsCard.astro"
 import ThemeScript from "@/components/docs/ThemeScript.astro"
-import { DOCS_PRODUCTS } from "@/lib/docs"
+import { DOCS_PRODUCTS, DOCS_PRODUCT_ORDER } from "@/lib/docs"
 import { ClientRouter } from "astro:transitions"
 import "@/styles/global.css"
 
-const lattice = DOCS_PRODUCTS["lattice-ui"]
+const products = DOCS_PRODUCT_ORDER.map((id) => DOCS_PRODUCTS[id])
 ---
 
 <!doctype html>
@@ -28,16 +28,18 @@ const lattice = DOCS_PRODUCTS["lattice-ui"]
           astra-void docs
         </h1>
         <p class="mt-4 text-lg leading-8 text-muted-foreground">
-          Documentation for astra-void projects. Start with Lattice UI.
+          Documentation for astra-void projects.
         </p>
       </section>
 
-      <section class="mt-10 max-w-2xl">
-        <DocsCard
-          title={lattice.title}
-          description={lattice.description}
-          href={lattice.href}
-        />
+      <section class="mt-10 grid max-w-2xl gap-3 sm:grid-cols-2">
+        {products.map((product) => (
+          <DocsCard
+            title={product.title}
+            description={product.description}
+            href={product.href}
+          />
+        ))}
       </section>
     </main>
   </body>

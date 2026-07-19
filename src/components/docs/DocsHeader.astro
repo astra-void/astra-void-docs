@@ -6,11 +6,10 @@ import type { DocsProduct } from "@/lib/docs"
 interface Props {
   product: DocsProduct
   docsHref: string
-  componentsHref: string
-  guidesHref: string
+  navLinks: { label: string; href: string }[]
 }
 
-const { product, docsHref, componentsHref, guidesHref } = Astro.props as Props
+const { product, docsHref, navLinks } = Astro.props as Props
 ---
 
 <header
@@ -51,24 +50,14 @@ const { product, docsHref, componentsHref, guidesHref } = Astro.props as Props
         <a class="font-medium text-foreground" href={docsHref}>
           {product.title}
         </a>
-        <a
-          class="text-muted-foreground transition-colors hover:text-foreground"
-          href={componentsHref}
-        >
-          Components
-        </a>
-        <a
-          class="text-muted-foreground transition-colors hover:text-foreground"
-          href={guidesHref}
-        >
-          Guides
-        </a>
-        <a
-          class="text-muted-foreground transition-colors hover:text-foreground"
-          href="/playground/"
-        >
-          Playground
-        </a>
+        {navLinks.map((link) => (
+          <a
+            class="text-muted-foreground transition-colors hover:text-foreground"
+            href={link.href}
+          >
+            {link.label}
+          </a>
+        ))}
       </nav>
     </div>
 

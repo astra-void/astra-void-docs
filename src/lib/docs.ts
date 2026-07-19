@@ -1,6 +1,6 @@
 import { getCollection, type CollectionEntry } from "astro:content"
 
-export type DocsProductId = "lattice-ui"
+export type DocsProductId = "lattice-ui" | "vela-rbxts"
 
 export type DocsProduct = {
   id: DocsProductId
@@ -20,7 +20,21 @@ export const DOCS_PRODUCTS = {
     href: "/lattice-ui/",
     githubUrl: "https://github.com/astra-void/lattice-ui",
   },
+  "vela-rbxts": {
+    id: "vela-rbxts",
+    title: "Vela",
+    shortTitle: "Vela",
+    description:
+      "Tailwind-style className compilation for roblox-ts React interfaces.",
+    href: "/vela-rbxts/",
+    githubUrl: "https://github.com/astra-void/vela-rbxts",
+  },
 } as const satisfies Record<DocsProductId, DocsProduct>
+
+export const DOCS_PRODUCT_ORDER = [
+  "lattice-ui",
+  "vela-rbxts",
+] as const satisfies readonly DocsProductId[]
 
 export const DEFAULT_DOCS_PRODUCT = DOCS_PRODUCTS["lattice-ui"]
 
@@ -165,14 +179,41 @@ function compareDocs(product: DocsProduct, a: DocNavItem, b: DocNavItem) {
   return a.path.localeCompare(b.path, "en", { sensitivity: "base" })
 }
 
+/**
+ * The glob loader drops `/index`, so a product's home entry ends up with the
+ * product directory as its whole id.
+ */
+export function getProductIndexId(productId: DocsProductId) {
+  return productId
+}
+
+/**
+ * Entry ids are product-prefixed (`vela-rbxts/reference/config`) because every
+ * product shares one collection. Routes are per-product, so the prefix is
+ * stripped to form the slug. Ids that are already product-relative pass through.
+ */
+export function getDocSlug(
+  id: string,
+  productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
+) {
+  if (id === productId || id === "index") {
+    return ""
+  }
+
+  const prefix = `${productId}/`
+  const relative = id.startsWith(prefix) ? id.slice(prefix.length) : id
+
+  return relative.replace(/\/index$/, "")
+}
+
 export function getDocPathFromId(
   id: string,
   productId: DocsProductId = DEFAULT_DOCS_PRODUCT.id,
 ) {
   const product = getProduct(productId)
-  const normalizedId = id === "index" ? "" : id.replace(/\/index$/, "")
+  const slug = getDocSlug(id, productId)
 
-  return normalizedId ? `${product.href}${normalizedId}/` : product.href
+  return slug ? `${product.href}${slug}/` : product.href
 }
 
 export function getDocUrl(
@@ -200,7 +241,7 @@ export async function getDocs(
   const entries = await getCollection("docs")
 
   return entries
-    .filter((entry) => !entry.data.draft)
+    .filter((entry) => !entry.data.draft && entry.data.product === productId)
     .map<DocNavItem>((entry: CollectionEntry<"docs">) => {
       const path = getDocPathFromId(entry.id, productId)
 
@@ -257,6 +298,24 @@ function buildSectionSubgroups(
   }
 
   return subgroups
+}
+
+const HEADER_SECTIONS = ["components", "guides", "reference"] as const
+
+/** Header nav mirrors whichever sections the product actually ships. */
+export function getHeaderNavLinks(shell: DocsShellData) {
+  const links = HEADER_SECTIONS.flatMap((key) => {
+    const section = shell.sections.find((candidate) => candidate.key === key)
+    const href = section?.items[0]?.url
+
+    return section && href ? [{ label: section.label, href }] : []
+  })
+
+  if (shell.product.id === "lattice-ui") {
+    links.push({ label: "Playground", href: "/playground/" })
+  }
+
+  return links
 }
 
 export async function getDocsShellData(

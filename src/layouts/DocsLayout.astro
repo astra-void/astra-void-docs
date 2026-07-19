@@ -11,6 +11,7 @@ import { codeBlockIconVars } from "@/lib/codeblock-icons"
 import {
   DEFAULT_DOCS_PRODUCT,
   getDocsShellData,
+  getHeaderNavLinks,
   type DocsProductId,
 } from "@/lib/docs"
 import "@/styles/global.css"
@@ -35,13 +36,7 @@ const {
 const shell = await getDocsShellData(currentPath, productId)
 const sectionLabel = shell.current?.section?.replace(/-/g, " ")
 
-const componentsHref =
-  shell.sections.find((section) => section.key === "components")?.items[0]?.url ??
-  shell.product.href
-
-const guidesHref =
-  shell.sections.find((section) => section.key === "guides")?.items[0]?.url ??
-  shell.product.href
+const navLinks = getHeaderNavLinks(shell)
 
 const pageTitle =
   title === shell.product.title
@@ -68,9 +63,8 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
     style={codeBlockIconStyle}
   >
     <DocsHeader
-      componentsHref={componentsHref}
       docsHref={shell.product.href}
-      guidesHref={guidesHref}
+      navLinks={navLinks}
       product={shell.product}
     />
 
