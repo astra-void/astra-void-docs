@@ -35,32 +35,17 @@ No package in the Vela repo declares a single `peerDependency`, and the only `en
 
 ## Register the transformer
 
-Vela runs as a roblox-ts transformer plugin. Add one entry to `compilerOptions.plugins`:
+Vela runs as a roblox-ts transformer plugin. Add one entry to `compilerOptions.plugins` in your existing `tsconfig.json`:
 
 ```json title="tsconfig.json"
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "jsx": "react",
-    "jsxFactory": "React.createElement",
-    "jsxFragmentFactory": "React.Fragment",
-    "module": "commonjs",
-    "moduleDetection": "force",
-    "moduleResolution": "Node",
-    "noLib": true,
-    "strict": true,
-    "target": "ESNext",
-    "typeRoots": ["node_modules/@rbxts"],
-    "rootDir": "src",
-    "outDir": "out",
     "plugins": [{ "transform": "vela-rbxts/transformer" }]
   }
 }
 ```
 
-Only the `plugins` entry is Vela's. Everything else is either what roblox-ts checks or what makes JSX work. It refuses to build unless `allowSyntheticDefaultImports`, `module`, `moduleDetection`, `moduleResolution`, `noLib` and `strict` hold those exact values, `typeRoots` contains `node_modules/@rbxts`, and both `rootDir` and `outDir` are set. That list is the whole of what is validated — `target` is on roblox-ts's own enforced-options table but its check does nothing, so `"target": "ESNext"` above is a convention rather than a requirement. The three `jsx*` options are what make React JSX compile. If you already have a working roblox-ts React project, add the `plugins` entry and change nothing else.
-
-One thing to watch as your project grows: `typeRoots` has to list **every** scope you import types from. Pull in a scoped package of your own and it needs an entry too — `"typeRoots": ["node_modules/@rbxts", "node_modules/@your-scope"]`.
+That is the entire tsconfig change. Everything else in the file stays as your roblox-ts project already has it — Vela requires no compiler option of its own, and if the project builds today it will keep building. If you do not have a project yet, start from [roblox-ts's quick start](https://roblox-ts.com/docs/quick-start) and come back here.
 
 `vela-rbxts/transformer` is a separate export from the package root. The root export (`vela-rbxts`) gives you `defineConfig` and types; the `/transformer` subpath is the callable roblox-ts consumes. Do not swap one for the other.
 
