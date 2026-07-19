@@ -3,17 +3,17 @@ title: Toast
 description: Queued notification primitive that owns scheduling, visibility limits, and exit timing while you own the toast surface and its parts.
 section: components
 sidebar:
-  order: 50
+  order: 60
   group: Overlays
 ---
 
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/toast"
+  packageName="@lattice-ui/react-toast"
   status="stable-direction"
   importName="Toast"
-  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
 Toast is the primitive for transient, non-blocking notifications: saved-changes confirmations, reward pop-ups, connection warnings, and inline status messages. A `Provider` owns the queue — enqueuing, the visible-count limit, per-toast duration, and exit timing — so your component only renders the surface for each toast and reacts to actions.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Toast, useToast } from "@lattice-ui/toast";
+import { Toast, useToast } from "@lattice-ui/react-toast";
 ```
 
 ## Anatomy
@@ -70,7 +70,7 @@ import { Toast, useToast } from "@lattice-ui/toast";
 A provider at the top of the UI plus a button that enqueues toasts. The default `Viewport` renders a surface for every visible toast — title, description, and a close button wired to `remove` — so all you choose is where the stack sits. `enqueue` returns the new toast's id in case you want to remove it early.
 
 ```tsx title="SaveStatusToasts.tsx"
-import { Toast, useToast } from "@lattice-ui/toast";
+import { Toast, useToast } from "@lattice-ui/react-toast";
 
 function SaveButton() {
   const toast = useToast();
@@ -121,7 +121,7 @@ Both `onAction` and `onClose` are plain callbacks; neither removes the toast for
 
 ```tsx title="UndoDeleteToasts.tsx"
 import { useRef } from "@rbxts/react";
-import { Toast, useToast } from "@lattice-ui/toast";
+import { Toast, useToast } from "@lattice-ui/react-toast";
 
 function DeleteButton(props: { pendingUndos: Map<string, string> }) {
   const toast = useToast();
@@ -227,7 +227,7 @@ export function UndoDeleteToasts(props: { onUndo: (itemName: string) => void }) 
 Each toast lives for its own `durationMs`; when you omit it, the provider's `defaultDurationMs` applies. A `durationMs` of `0` (or less) makes the toast sticky — it never expires and stays until something calls `remove` or `clear`. Passing your own `id` lets a different code path remove a sticky toast later, like clearing a "connection lost" warning on reconnect.
 
 ```tsx title="ConnectionToasts.tsx"
-import { Toast, useToast } from "@lattice-ui/toast";
+import { Toast, useToast } from "@lattice-ui/react-toast";
 
 function ConnectionStatus() {
   const toast = useToast();
@@ -306,7 +306,7 @@ export function ConnectionToasts() {
 One caveat to design around: a toast's clock starts at `enqueue`, but expiry is only *evaluated* while it is inside the visible window. A toast that waited in the queue longer than its `durationMs` exits almost immediately once it surfaces. Under heavy bursts, give toasts a duration long enough to cover the expected wait, collapse the burst into a single summary toast ("Picked up 6 items"), or use sticky toasts with manual removal.
 
 ```tsx title="LootBurstToasts.tsx"
-import { Toast, useToast } from "@lattice-ui/toast";
+import { Toast, useToast } from "@lattice-ui/react-toast";
 
 const DROPS = ["Iron Ore", "Gold Ore", "Emerald", "Ancient Coin", "Rune Shard", "Phoenix Feather"];
 
@@ -353,7 +353,7 @@ The viewport is app-positioned: the default `Viewport` is a fixed 340x320 transp
 If you need a different stack direction, size, or layout entirely, switch to `Viewport asChild`. Note that `asChild` replaces the whole default rendering, including the per-toast surfaces, so you then map `visibleToasts` yourself as in the undo example above.
 
 ```tsx title="TopCenterToasts.tsx"
-import { Toast } from "@lattice-ui/toast";
+import { Toast } from "@lattice-ui/react-toast";
 
 export function TopCenterToasts() {
   return (
@@ -380,8 +380,8 @@ export function TopCenterToasts() {
 The `transition` prop only exists on roots you render yourself, so custom motion implies a custom viewport. Keep the duration at or under about 0.16s: the provider drops exiting toasts after a fixed ~160ms window regardless of your transition, so a slower fade gets cut off mid-motion.
 
 ```tsx title="SnappyToasts.tsx"
-import { Toast, useToast } from "@lattice-ui/toast";
-import { createToastResponseRecipe } from "@lattice-ui/motion";
+import { Toast, useToast } from "@lattice-ui/react-toast";
+import { createToastResponseRecipe } from "@lattice-ui/react-motion";
 
 // equivalent hand-built config:
 // const SNAPPY_FADE: ResponseMotionConfig = { settle: { duration: 0.08, tempo: "swift", tone: "responsive" } };

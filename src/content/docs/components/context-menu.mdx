@@ -1,0 +1,450 @@
+---
+title: Context Menu
+description: Pointer-anchored action menu that opens at the right-click position, owning open state, popper placement, and layered dismissal while you own the visuals.
+section: components
+sidebar:
+  order: 50
+  group: Overlays
+---
+
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy, LoomPreview } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@lattice-ui/react-context-menu"
+  status="feature-limited"
+  importName="ContextMenu"
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
+/>
+
+Context Menu is the primitive for actions that belong to a specific object rather than to a button: right-click a slot, a plot, a player name, and get a menu at the pointer. It differs from [Menu](/lattice-ui/components/menu/) in one decisive way — the menu is anchored to **where you clicked**, not to the element you clicked. The trigger is a region, not a button.
+
+Reach for Context Menu when the action list belongs to a **region of the screen**, when the menu should appear **under the pointer**, and when a **secondary (right) click** is the natural way to ask for it. Reach for [Menu](/lattice-ui/components/menu/) instead when a visible button opens the list, or when gamepad and keyboard users must be able to move through the items.
+
+<Callout title="Pointer-driven only">
+Context Menu opens on `MouseButton2` and highlights items on hover. Unlike Menu, its items do **not** register with the focus manager: there is no automatic focus of the first item, no `Up`/`Down` movement, and no focus restore on close. On a gamepad-first or keyboard-first surface, use [Menu](/lattice-ui/components/menu/).
+</Callout>
+
+The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive. Right-click inside the card to open the menu at the pointer.
+
+<LoomPreview scene="ContextMenuExampleScene" height={320} />
+
+## Import
+
+```ts
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+```
+
+## Anatomy
+
+`Root`, `Trigger`, `Portal`, and `Content` form the working menu; `Item` makes it useful, and `Group`, `Label`, and `Separator` structure longer lists. The part names match Menu's, so moving between the two is mostly a matter of swapping the namespace.
+
+<PrimitiveAnatomy title="Context Menu anatomy">
+
+```tsx title="Context Menu anatomy"
+<ContextMenu.Root>
+  <ContextMenu.Trigger />
+  <ContextMenu.Portal>
+    <ContextMenu.Content>
+      <ContextMenu.Label />
+      <ContextMenu.Group>
+        <ContextMenu.Item />
+      </ContextMenu.Group>
+      <ContextMenu.Separator />
+      <ContextMenu.Item />
+    </ContextMenu.Content>
+  </ContextMenu.Portal>
+</ContextMenu.Root>
+```
+
+| Part | Required | Responsibility |
+| --- | --- | --- |
+| `ContextMenu.Root` | yes | Owns open state and the pointer position the menu opens at. |
+| `ContextMenu.Trigger` | yes | The region that listens for a secondary click and reports where it happened. |
+| `ContextMenu.Portal` | yes | Renders the surface into a `ScreenGui` outside the local tree. |
+| `ContextMenu.Content` | yes | The pointer-anchored, dismissable, motion-driven surface. |
+| `ContextMenu.Item` | yes | A clickable action that emits `onSelect` and closes the menu. |
+| `ContextMenu.Group` | no | A vertical layout container that visually groups related items. |
+| `ContextMenu.Label` | no | A non-interactive heading for a group or section. |
+| `ContextMenu.Separator` | no | A thin divider between items or groups. |
+
+</PrimitiveAnatomy>
+
+## Examples
+
+### Basic context menu
+
+The smallest useful version: an uncontrolled root, a trigger region, and a few items. Every part renders its default element — the trigger is a 280x160 `textbutton` labeled `"Right-click here"`, and each item is a left-aligned 220x34 `textbutton` that highlights on hover — so you can wire up actions before styling anything. Right-clicking anywhere inside the trigger opens the menu at the pointer; selecting an item runs its `onSelect` and closes it.
+
+```tsx title="BasicContextMenu.tsx"
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+
+export function BasicContextMenu() {
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger />
+
+      <ContextMenu.Portal>
+        <ContextMenu.Content>
+          <ContextMenu.Item onSelect={() => print("rename")} />
+          <ContextMenu.Item onSelect={() => print("duplicate")} />
+          <ContextMenu.Item onSelect={() => print("delete")} />
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+```
+
+<Callout title="Uncontrolled by default">
+Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen` (closed by default). The pointer position is always owned by the root — even when you control `open` yourself, the anchor comes from the last secondary click on the trigger.
+</Callout>
+
+### A real trigger region
+
+`asChild` merges the secondary-click listener onto your own element, which is the normal way to use this primitive: the trigger is the thing the actions belong to. The child keeps all of its own props and handlers — the slot only adds `InputBegan` and `Active` — so a left-click `Activated` on the same element still does whatever it did before.
+
+```tsx title="PlotContextMenu.tsx"
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+
+export function PlotContextMenu(props: { plotName: string; onSelect: () => void }) {
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger asChild>
+        <textbutton
+          Size={UDim2.fromOffset(320, 200)}
+          Text={props.plotName}
+          Event={{ Activated: props.onSelect }}
+        />
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Portal>
+        <ContextMenu.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(200, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uicorner CornerRadius={new UDim(0, 8)} />
+
+            <ContextMenu.Item onSelect={() => print("build")}>
+              <textbutton Text="Build here" />
+            </ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => print("clear")}>
+              <textbutton Text="Clear plot" />
+            </ContextMenu.Item>
+          </frame>
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+```
+
+### Groups, labels, and separators
+
+`Group` wraps related items in a 220-wide vertical-layout frame, `Label` puts a muted, non-interactive heading above them, and `Separator` draws a 1px divider. None of them are interactive — they exist to give a long list structure.
+
+```tsx title="InventorySlotContextMenu.tsx"
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+
+export function InventorySlotContextMenu(props: { icon: string }) {
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger asChild>
+        <imagebutton Image={props.icon} Size={UDim2.fromOffset(64, 64)} />
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Portal>
+        <ContextMenu.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(220, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+            <uicorner CornerRadius={new UDim(0, 8)} />
+
+            <ContextMenu.Label asChild>
+              <textlabel
+                BackgroundTransparency={1}
+                Size={UDim2.fromOffset(220, 24)}
+                Text="Equipment"
+                TextColor3={Color3.fromRGB(162, 173, 191)}
+              />
+            </ContextMenu.Label>
+            <ContextMenu.Group>
+              <ContextMenu.Item onSelect={() => print("equip")}>
+                <textbutton Text="Equip" />
+              </ContextMenu.Item>
+              <ContextMenu.Item onSelect={() => print("inspect")}>
+                <textbutton Text="Inspect" />
+              </ContextMenu.Item>
+            </ContextMenu.Group>
+
+            <ContextMenu.Separator />
+
+            <ContextMenu.Item onSelect={() => print("drop")}>
+              <textbutton Text="Drop" TextColor3={Color3.fromRGB(244, 120, 120)} />
+            </ContextMenu.Item>
+          </frame>
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+```
+
+### Placement tuning
+
+`ContextMenu.Content` takes the same popper options as the other anchored primitives, but the anchor is a zero-height virtual frame at the pointer, as wide as the measured content. That is what makes the default `placement="bottom"` drop the menu's top-left corner at the cursor, the way a desktop context menu behaves. Change `placement` when you want it to grow the other way — near the bottom of the screen the popper flips it for you regardless.
+
+```tsx title="MinimapContextMenu.tsx"
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+
+export function MinimapContextMenu() {
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger asChild>
+        <imagebutton Image="rbxassetid://0" Size={UDim2.fromOffset(180, 180)} />
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Portal>
+        <ContextMenu.Content placement="bottom" sideOffset={2} collisionPadding={16}>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(190, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            <ContextMenu.Item onSelect={() => print("ping")}>
+              <textbutton Text="Ping location" />
+            </ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => print("waypoint")}>
+              <textbutton Text="Set waypoint" />
+            </ContextMenu.Item>
+          </frame>
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+```
+
+### Disabled items and staying open
+
+`disabled` on an item blocks activation and drops its hover highlight. `onSelect` receives a `ContextMenuSelectEvent`; calling `event.preventDefault()` marks it default-prevented and the item skips the automatic close — the one thing the default behavior does — so the menu stays open. That makes toggle-style items possible.
+
+```tsx title="MarkerContextMenu.tsx"
+import { useState } from "@rbxts/react";
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+
+export function MarkerContextMenu(props: { canDelete: boolean }) {
+  const [pinned, setPinned] = useState(false);
+
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger asChild>
+        <textbutton Size={UDim2.fromOffset(240, 120)} Text="Marker" />
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Portal>
+        <ContextMenu.Content>
+          <frame
+            AutomaticSize={Enum.AutomaticSize.Y}
+            BackgroundColor3={Color3.fromRGB(28, 32, 42)}
+            Size={UDim2.fromOffset(200, 0)}
+          >
+            <uilistlayout Padding={new UDim(0, 2)} SortOrder={Enum.SortOrder.LayoutOrder} />
+
+            {/* Stays open so you can see the state flip. */}
+            <ContextMenu.Item
+              onSelect={(event) => {
+                event.preventDefault();
+                setPinned(!pinned);
+              }}
+            >
+              <textbutton Text={pinned ? "Unpin" : "Pin"} />
+            </ContextMenu.Item>
+
+            <ContextMenu.Separator />
+
+            <ContextMenu.Item disabled={!props.canDelete} onSelect={() => print("delete")}>
+              <textbutton Text="Delete" />
+            </ContextMenu.Item>
+          </frame>
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+```
+
+### Controlled open state
+
+Pass `open` and `onOpenChange` when something outside the menu needs to close it — a round ending, a selection being cleared, a different panel taking over. The trigger still owns *where* the menu appears, so controlling `open` does not mean you have to supply a position.
+
+```tsx title="ControlledContextMenu.tsx"
+import { useEffect, useState } from "@rbxts/react";
+import { ContextMenu } from "@lattice-ui/react-context-menu";
+
+export function ControlledContextMenu(props: { editable: boolean }) {
+  const [open, setOpen] = useState(false);
+
+  // Leaving edit mode should take the menu with it.
+  useEffect(() => {
+    if (!props.editable) {
+      setOpen(false);
+    }
+  }, [props.editable]);
+
+  return (
+    <ContextMenu.Root open={open} onOpenChange={setOpen}>
+      <ContextMenu.Trigger disabled={!props.editable} asChild>
+        <textbutton Size={UDim2.fromOffset(320, 200)} Text="Canvas" />
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Portal>
+        <ContextMenu.Content>
+          <ContextMenu.Item onSelect={() => print("cut")} />
+          <ContextMenu.Item onSelect={() => print("paste")} />
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
+  );
+}
+```
+
+## How it behaves
+
+### Open state and the anchor
+
+`ContextMenu.Root` is controllable on `open`/`onOpenChange`, with `defaultOpen` for uncontrolled usage (defaulting to closed). `ContextMenu.Trigger` watches `InputBegan` and reacts only to `Enum.UserInputType.MouseButton2`: it converts the raw pointer position into the inset-adjusted space that `GuiObject.AbsolutePosition` uses, stores it on the root, and opens the menu. That stored position survives until the next secondary click, so a controlled root can reopen the menu at the same spot.
+
+A `disabled` trigger ignores the secondary click entirely and never updates the stored position.
+
+### Positioning
+
+`ContextMenu.Content` mounts an invisible virtual anchor at the stored pointer position and hands it to the shared popper machinery. The anchor has **zero height and the measured content's width**, which is what makes the resolved placement land the menu's top-left corner at the cursor instead of centering it under the pointer.
+
+From there it behaves like every other anchored surface: the requested `placement` (default `"bottom"`) is a preference, and on collision the popper tries the opposite side, then the orthogonal sides, then clamps the best candidate inside the viewport with `collisionPadding` (default `8`) kept from every edge. `sideOffset` and `alignOffset` shift the result. Until the first measurement completes the content is parked off-screen, so it never flashes at the wrong position.
+
+### Items and activation
+
+`ContextMenu.Item` activates on `Activated` and builds a `ContextMenuSelectEvent` (`{ defaultPrevented, preventDefault() }`) for `onSelect`; if the event is not default-prevented, the item closes the menu. A disabled item ignores activation.
+
+The default item renders a left-aligned `textbutton` (220x34) that highlights while hovered. The highlight is a motion-driven `BackgroundColor3` animation using the selection response recipe, driven by `MouseEnter`/`MouseLeave`, and it applies to your own element under `asChild` too.
+
+### Dismissal
+
+`ContextMenu.Content` participates in dismissable-layer behavior: only the top-most enabled layer receives outside interactions, so nested overlays dismiss one at a time. Context Menu is **modal by default**, so a full-screen blocker stops interaction behind the surface and an outside press dismisses the menu. Before dismissal, `onPointerDownOutside` fires for outside pointer presses and `onInteractOutside` fires for the interaction in general; both receive a `LayerInteractEvent` (`{ originalEvent, defaultPrevented, preventDefault() }`), and calling `preventDefault()` in either handler vetoes the dismissal while still letting you observe the interaction.
+
+### Motion and presence
+
+`ContextMenu.Content` runs a default popper-aware canvas-group reveal/exit recipe built from the **resolved** placement — if the popper flipped the menu above the pointer, the motion originates from above. Override it with `transition`, and pass `forceMount` to keep the content mounted through its exit animation. The content wrapper is an automatically-sized `canvasgroup`, so your surface defines the measured size.
+
+<Callout title="No ordered movement">
+`ContextMenu.Item` does not register a focus node. There is no automatic focus on open, no `Up`/`Down` movement between items, and no focus restore on close — `modal` here means "blocks pointer interaction behind the surface", not "traps selection". If your surface has to be operable without a mouse, build it with [Menu](/lattice-ui/components/menu/) instead.
+</Callout>
+
+<Callout title="The primitive drives the item highlight">
+Even with `asChild`, `ContextMenu.Item` animates your element's `BackgroundColor3` between its fixed hover colors; there is no opt-out prop. Style your item with strokes, corners, and child elements rather than a hand-set background color, or the highlight animation will fight it.
+</Callout>
+
+## API reference
+
+### ContextMenu.Root
+
+<PropTable
+  rows={[
+    { name: "open", type: "boolean", description: "Controlled open state. Pair with onOpenChange." },
+    { name: "defaultOpen", type: "boolean", description: "Initial open state for uncontrolled usage. Defaults to false." },
+    { name: "onOpenChange", type: "(open: boolean) => void", description: "Called whenever the open state changes." },
+    { name: "modal", type: "boolean", description: "When true, blocks pointer interaction behind the surface with a full-screen blocker. Defaults to true." },
+    { name: "children", type: "React.ReactNode", description: "The context menu parts." },
+  ]}
+/>
+
+### ContextMenu.Trigger
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the secondary-click listener onto the single child element instead of rendering the default textbutton region." },
+    { name: "disabled", type: "boolean", description: "Ignores the secondary click, so the menu never opens from this region." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### ContextMenu.Portal
+
+<PropTable
+  rows={[
+    { name: "container", type: "BasePlayerGui", description: "Target PlayerGui to render the surface into. Defaults to the surrounding portal context's container." },
+    { name: "displayOrderBase", type: "number", description: "Base DisplayOrder for the generated ScreenGui, used to order it against other layers. Defaults to the surrounding portal context's value." },
+    { name: "children", type: "React.ReactNode", description: "The content part." },
+  ]}
+/>
+
+### ContextMenu.Content
+
+<PropTable
+  rows={[
+    { name: "placement", type: '"top" | "bottom" | "left" | "right"', description: "Requested side to position the content on, relative to the pointer anchor. Falls back to the opposite side, then the orthogonal sides, on collision. Defaults to \"bottom\"." },
+    { name: "sideOffset", type: "number", description: "Gap in pixels between the pointer anchor and the content. Defaults to 0." },
+    { name: "alignOffset", type: "number", description: "Shift in pixels along the anchor's cross axis. Defaults to 0." },
+    { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from every screen edge when resolving and clamping placement. Defaults to 8." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned canvasgroup instead of the default contents." },
+    { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs, instead of unmounting on close." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper-aware canvas-group reveal/exit recipe, which animates from the resolved placement." },
+    { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal. Call event.preventDefault() to veto the dismissal." },
+    { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any outside interaction, before dismissal. Call event.preventDefault() to veto the dismissal." },
+    { name: "children", type: "React.ReactNode", description: "The menu contents." },
+  ]}
+/>
+
+### ContextMenu.Item
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button; its BackgroundColor3 is driven by the hover highlight." },
+    { name: "disabled", type: "boolean", description: "Prevents activation and drops the hover highlight." },
+    { name: "onSelect", type: "(event: ContextMenuSelectEvent) => void", description: "Called on activation. Call event.preventDefault() to keep the menu open." },
+    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
+  ]}
+/>
+
+### ContextMenu.Group
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the group onto the single child element instead of rendering the default vertical-layout frame." },
+    { name: "children", type: "React.ReactElement", description: "The grouped items to render. Required when asChild is set." },
+  ]}
+/>
+
+### ContextMenu.Label
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the label onto the single child element instead of rendering the default muted textlabel." },
+    { name: "children", type: "React.ReactElement", description: "The label element to render. Required when asChild is set." },
+  ]}
+/>
+
+### ContextMenu.Separator
+
+<PropTable
+  rows={[
+    { name: "asChild", type: "boolean", description: "Merge the separator onto the single child element instead of rendering the default 1px divider frame." },
+    { name: "children", type: "React.ReactElement", description: "The divider element to render. Required when asChild is set." },
+  ]}
+/>
+
+## Related
+
+- [Menu](/lattice-ui/components/menu/)
+- [Positioning with popper](/lattice-ui/guides/positioning-with-popper/)
+- [Portals and layers](/lattice-ui/guides/portals-and-layers/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)
+- [asChild composition](/lattice-ui/guides/as-child-composition/)

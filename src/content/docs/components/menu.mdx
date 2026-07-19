@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/menu"
+  packageName="@lattice-ui/react-menu"
   status="stable-direction"
   importName="Menu"
-  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
 Menu is the primitive for a list of actions that opens from a trigger: context menus, dropdown actions, overflow menus, and command lists. It coordinates open state, ordered item movement, positioning, dismissal, and exit motion so your component only has to render the items and their contents.
@@ -23,7 +23,7 @@ Reach for Menu when you need a surface of **selectable actions** that **moves se
 ## Import
 
 ```ts
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 ```
 
 ## Anatomy
@@ -68,7 +68,7 @@ Compose the parts you need. `Root`, `Trigger`, `Portal`, and `Content` form the 
 The smallest useful menu: an uncontrolled root, a trigger, and a few items. Every part here renders its default element — the trigger is a `textbutton` labeled `"Toggle Menu"`, and each item is a left-aligned 220x34 `textbutton` that highlights on hover and gamepad selection — so you can wire up actions before styling anything. Selecting an item runs its `onSelect` and closes the menu.
 
 ```tsx title="BasicActionsMenu.tsx"
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 
 export function BasicActionsMenu() {
   return (
@@ -88,7 +88,7 @@ export function BasicActionsMenu() {
 ```
 
 <Callout title="Uncontrolled by default">
-Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen` (closed by default). Reach for controlled state only when something outside the menu needs to open or close it — see [Controlled context menu](#controlled-context-menu).
+Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen` (closed by default). Reach for controlled state only when something outside the menu needs to open or close it — see [Controlled right-click menu](#controlled-right-click-menu).
 </Callout>
 
 ### Groups, labels, and separators
@@ -96,7 +96,7 @@ Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOp
 `Group` wraps related items in a vertical-layout frame, `Label` puts a muted, non-interactive heading above them, and `Separator` draws a 1px divider. None of them register with selection movement — Up/Down skips straight from the last item of one group to the first enabled item of the next.
 
 ```tsx title="InventoryItemMenu.tsx"
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 
 export function InventoryItemMenu(props: { itemName: string }) {
   return (
@@ -147,10 +147,10 @@ export function InventoryItemMenu(props: { itemName: string }) {
 
 ### Icon items with asChild
 
-`asChild` on `Item` merges the selection behavior — activation, Up/Down movement, hover and gamepad highlight — onto your own single element through the core `Slot`. The slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires; the primitive still animates your element's `BackgroundColor3` for the hover highlight (see [How it behaves](#items-and-activation)), so put your styling in strokes, corners, and children.
+`asChild` on `Item` merges the selection behavior — activation, Up/Down movement, hover and gamepad highlight — onto your own single element through the shared `Slot`. The slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires; the primitive still animates your element's `BackgroundColor3` for the hover highlight (see [How it behaves](#items-and-activation)), so put your styling in strokes, corners, and children.
 
 ```tsx title="IconActionsMenu.tsx"
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 
 const ACTIONS = [
   { id: "trade", label: "Trade", icon: "rbxassetid://1234567890" },
@@ -206,13 +206,17 @@ export function IconActionsMenu(props: { onAction: (id: string) => void }) {
 }
 ```
 
-### Controlled context menu
+### Controlled right-click menu
 
 Pass `open` and `onOpenChange` when something other than the trigger's own activation should open the menu — here a right-click (or long-press-style secondary input) on an inventory slot. The trigger still has to exist because it is the positioning anchor and the focus-restore target; with `asChild` its toggle behavior composes with your slot's own handlers, so a left-click `Activated` also toggles as usual.
 
+<Callout title="Anchored to the slot, not the pointer">
+This opens the menu **against the trigger**, which is what you want when the slot is small and the menu should hug it. If you want the menu to appear **at the cursor** instead, that is [Context Menu](/lattice-ui/components/context-menu/) — it anchors to the click position and needs no controlled state to do so. The trade-off is that Context Menu is pointer-only: it has no ordered gamepad or keyboard movement.
+</Callout>
+
 ```tsx title="SlotContextMenu.tsx"
 import { useState } from "@rbxts/react";
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 
 export function SlotContextMenu(props: { slotIcon: string; onAction: (id: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -260,7 +264,7 @@ export function SlotContextMenu(props: { slotIcon: string; onAction: (id: string
 `Menu.Content` accepts the popper positioning options. `placement` requests a side (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` adds a pixel gap between the trigger and the content, `alignOffset` shifts the content along the trigger's cross axis, and `collisionPadding` sets the minimum distance kept from the screen edge (default `8`). The requested side is a preference, not a guarantee — when it would overflow, the popper tries the opposite side, then the two orthogonal sides, and finally clamps the best candidate inside the viewport.
 
 ```tsx title="SidebarOverflowMenu.tsx"
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 
 export function SidebarOverflowMenu() {
   return (
@@ -298,7 +302,7 @@ export function SidebarOverflowMenu() {
 
 ```tsx title="LootFilterMenu.tsx"
 import { useState } from "@rbxts/react";
-import { Menu } from "@lattice-ui/menu";
+import { Menu } from "@lattice-ui/react-menu";
 
 const RARITIES = ["Common", "Rare", "Epic"];
 
@@ -478,6 +482,7 @@ Even with `asChild`, `Menu.Item` animates your element's `BackgroundColor3` betw
 
 ## Related
 
+- [Context Menu](/lattice-ui/components/context-menu/)
 - [Positioning with popper](/lattice-ui/guides/positioning-with-popper/)
 - [Focus management](/lattice-ui/guides/focus-management/)
 - [Portals and layers](/lattice-ui/guides/portals-and-layers/)
