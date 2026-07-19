@@ -60,7 +60,7 @@ Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the wor
 | Part | Required | Responsibility |
 | --- | --- | --- |
 | `Combobox.Root` | yes | Owns value, input, and open state, plus the item registry and filter function. |
-| `Combobox.Input` | no | A `TextBox` that drives the query and opens the list as the user types. Acts as the anchor. |
+| `Combobox.Input` | no | A `TextBox` that opens the list on focus and drives the query as the user types. Acts as the anchor. |
 | `Combobox.Trigger` | no | A button that toggles the list and acts as the anchor when no input is present. |
 | `Combobox.Value` | no | A label that displays the selected item's text (or a placeholder). |
 | `Combobox.Portal` | yes | Renders the listbox into a `ScreenGui` outside the local tree. |
@@ -379,7 +379,7 @@ export function StyledCosmeticSearch() {
 
 ### Open state
 
-`Combobox.Root` is controllable. Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled (defaults to closed). `Combobox.Trigger` toggles the list on activation (and on `Return`/`Space`), and typing in `Combobox.Input` opens it automatically. Selecting an item closes the list. A disabled root refuses to open, but can still close.
+`Combobox.Root` is controllable. Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled (defaults to closed). `Combobox.Trigger` toggles the list on activation (and on `Return`/`Space`). `Combobox.Input` opens the list when it gains focus — with an empty query every item matches, so the user sees the full set and then types to narrow it — and typing keeps it open. Selecting an item closes the list. A disabled root refuses to open, but can still close.
 
 ### Value and input state
 
