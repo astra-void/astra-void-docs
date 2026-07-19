@@ -81,19 +81,19 @@ exist in the type and are ignored if you write them anyway.
       name: "theme.colors",
       type: "Record<string, string | Partial<Record<Shade, string>>>",
       description:
-        "Replaces the entire color registry. A value is either a literal Luau expression string or a map from shade (50…950) to one.",
+        "Replaces the entire color registry. A value is either a literal roblox-ts expression string or a map from shade (50…950) to one.",
     },
     {
       name: "theme.radius",
       type: "Record<string, string>",
       description:
-        "Replaces the entire radius scale. Each value is a Luau expression producing a UDim.",
+        "Replaces the entire radius scale. Each value is a roblox-ts expression producing a UDim.",
     },
     {
       name: "theme.spacing",
       type: "Record<string, string>",
       description:
-        "Replaces the entire spacing scale. Each value is a Luau expression producing a UDim.",
+        "Replaces the entire spacing scale. Each value is a roblox-ts expression producing a UDim.",
     },
     {
       name: "theme.extend.colors",
@@ -118,10 +118,11 @@ The valid shades are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800
 empty palette object is rejected with
 `Color palette normalization requires at least one shade value.`
 
-### Values are raw Luau expression strings
+### Values are roblox-ts expression strings
 
-Every value in the theme is a string containing a Luau expression that Vela pastes into the emitted
-code. It is not a color object, not a hex string, and not a number.
+Every value in the theme is a string containing a roblox-ts expression that Vela splices into the
+TSX it emits, where roblox-ts compiles it like any other expression in your source. It is not a
+color object, not a hex string, and not a number.
 
 ```ts title="vela.config.ts"
 export default defineConfig({
@@ -137,8 +138,8 @@ export default defineConfig({
 
 `"#111111"` and `4` are not valid values, and they fail at different times. `4` is not a string, and
 every theme value must be one, so it is rejected while the config is being loaded. `"#111111"` is a
-string, and nothing checks that a string is valid Luau — it is emitted verbatim and surfaces as a
-Luau error in the generated output rather than as a config error.
+string, and nothing checks that a string is a valid roblox-ts expression — it is spliced in verbatim
+and surfaces as a roblox-ts compile error rather than as a config error.
 
 ## Merge semantics
 

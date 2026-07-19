@@ -82,7 +82,7 @@ import { defineConfig } from "vela-rbxts";
 export default defineConfig();
 ```
 
-When you do want your own values, put them under `theme.extend`. Every value is a **raw Luau expression string**, not a color object or a number:
+When you do want your own values, put them under `theme.extend`. Every value is an **expression string written in the roblox-ts dialect**, not a color object or a number:
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";

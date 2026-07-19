@@ -1,6 +1,6 @@
 ---
 title: Theming
-description: How the Vela theme works — three families of raw Luau expression strings, the extend-versus-replace merge rules, and what ships by default.
+description: How the Vela theme works — three families of roblox-ts expression strings, the extend-versus-replace merge rules, and what ships by default.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -32,20 +32,20 @@ export default defineConfig({
 });
 ```
 
-## Values are Luau source, not values
+## Values are source code, not values
 
-The single most surprising thing about the config: **every theme value is a raw Luau expression string.** It is not a color object, not a hex string, not a number. Vela pastes the string you write straight into the emitted Luau, so it has to be an expression that evaluates in Roblox.
+The single most surprising thing about the config: **every theme value is an expression string written in the roblox-ts dialect.** It is not a color object, not a hex string, not a number. Vela splices the string you write straight into the TSX it emits, and roblox-ts compiles it like any other expression in your source, so it has to be an expression that evaluates in Roblox.
 
-That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"`. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is taken at face value: nothing checks that it is valid Luau, so `"#3b82f6"` is pasted verbatim into the output and only surfaces later, as a Luau error.
+That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"` — roblox-ts syntax, not the `UDim.new(0, 6)` you would write in Luau. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is taken at face value: nothing checks that it is a valid roblox-ts expression, so `"#3b82f6"` is spliced verbatim into the output and only surfaces later, as a compile error from roblox-ts.
 
 ```ts title="vela.config.ts"
 export default defineConfig({
   theme: {
     extend: {
-      // correct — a Luau expression, as a string
+      // correct — a roblox-ts expression, as a string
       colors: { ink: "Color3.fromRGB(17, 24, 39)" },
       radius: { pill: "new UDim(0.5, 0)" },
-      // wrong — compiles, then breaks at runtime as invalid Luau
+      // wrong — accepted by the config, then fails when roblox-ts compiles it
       // colors: { ink: "#111827" },
       // wrong — not a string, so this throws at config-load time
       // radius: { pill: 999 },
@@ -90,7 +90,7 @@ Reach for a top-level family only when you genuinely want to start from an empty
 
 ## Semantic colors and shade palettes
 
-A color entry is either a **literal** — one Luau string, used as-is — or a **palette**, an object keyed by shade. The eleven valid shade tokens are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, and `950`. A palette does not have to define all of them, but any shade you reference must be present.
+A color entry is either a **literal** — one roblox-ts expression string, used as-is — or a **palette**, an object keyed by shade. The eleven valid shade tokens are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, and `950`. A palette does not have to define all of them, but any shade you reference must be present.
 
 ```ts title="vela.config.ts"
 theme: {

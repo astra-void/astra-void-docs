@@ -98,7 +98,7 @@ There is **no margin family**. `m-*`, `mx-*`, `mt-*` and friends do not exist an
 
 `p-*`, `gap-*`, the min/max constraints, and the offset branch of the sizing utilities all share one value resolver, and it runs in two steps.
 
-1. **Theme lookup.** The key is looked up in `theme.spacing`. If it is there, that raw Luau expression is used verbatim.
+1. **Theme lookup.** The key is looked up in `theme.spacing`. If it is there, that roblox-ts expression string is used verbatim.
 2. **Arithmetic fallback.** If the key is not in the theme, it is parsed as a number. It must be finite, non-negative, and an exact multiple of `0.5`. The result is `new UDim(0, key * 4)`.
 
 So `p-1.5` is `new UDim(0, 6)` and `p-40` is `new UDim(0, 160)`. `p-0.25` is not a multiple of `0.5`, so it fails both steps and emits `unknown-theme-key` for the `spacing` family. A leading `-` or `+` is rejected outright.
