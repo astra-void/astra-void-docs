@@ -95,13 +95,17 @@ Full details on merge behavior and the shipped defaults are in the [theming guid
 
 Roblox host elements have no `className` prop in `@rbxts/types`. Vela adds one by augmenting `React.Attributes` globally, and that augmentation only takes effect if the package is imported for its side effect somewhere in your program. Create a declaration file to do that once:
 
-```ts title="src/vela-rbxts.d.ts"
+```ts title="src/vela-env.d.ts"
 import "vela-rbxts";
 ```
 
 That single import pulls in `declare global { namespace React { interface Attributes { className?: ClassValue } } }`. Without it, every `className` you write is a type error, even though the transformer would still have processed it.
 
 Keep the file inside `rootDir` so TypeScript picks it up with the rest of your sources.
+
+<Callout title="Do not name the file src/vela-rbxts.d.ts">
+A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` before `node_modules` for a bare specifier. Under that name, `import "vela-rbxts"` resolves to the declaration file itself rather than the package, so the augmentation never loads and `className` stays a type error — with no diagnostic pointing at the cause. Any other name works.
+</Callout>
 
 ## Build and serve
 
