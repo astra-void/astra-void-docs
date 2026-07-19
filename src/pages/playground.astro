@@ -1,0 +1,462 @@
+---
+/**
+ * `/playground` — a live editor for lattice-ui scenes.
+ *
+ * The editor's TSX is compiled in the browser with sucrase (TypeScript + JSX →
+ * CommonJS) and posted into the Loom preview iframe, where `PlaygroundScene`
+ * evaluates it against the real `@lattice-ui/*` packages and renders the result.
+ * Nothing is sent anywhere: compile and run both happen client-side.
+ *
+ * Starter templates are the checked-in example scenes, read from the lattice
+ * checkout at build time (see @/lib/lattice-source). Without a checkout the
+ * page still builds and ships a single inline template.
+ */
+import DocsHeader from "@/components/docs/DocsHeader.astro"
+import ThemeScript from "@/components/docs/ThemeScript.astro"
+import { DEFAULT_DOCS_PRODUCT, getDocsShellData } from "@/lib/docs"
+import { codeBlockIconVars } from "@/lib/codeblock-icons"
+import {
+  listExampleScenes,
+  sceneTarget,
+  type SceneTemplate,
+} from "@/lib/lattice-source"
+import "@/styles/global.css"
+
+const shell = await getDocsShellData(DEFAULT_DOCS_PRODUCT.href)
+
+const componentsHref =
+  shell.sections.find((section) => section.key === "components")?.items[0]
+    ?.url ?? shell.product.href
+
+const guidesHref =
+  shell.sections.find((section) => section.key === "guides")?.items[0]?.url ??
+  shell.product.href
+
+const FALLBACK_TEMPLATE: SceneTemplate = {
+  scene: "InlineFallback",
+  label: "Switch",
+  source: `import { React } from "@lattice-ui/core";
+import { Text, useTheme } from "@lattice-ui/style";
+import { Switch } from "@lattice-ui/switch";
+import { DocExampleShell } from "./DocExampleShell";
+
+function Example() {
+  const { theme } = useTheme();
+  const [checked, setChecked] = React.useState(true);
+
+  return (
+    <frame BackgroundColor3={theme.colors.surfaceElevated} BorderSizePixel={0} Size={UDim2.fromScale(1, 1)}>
+      <uicorner CornerRadius={new UDim(0, theme.radius.lg)} />
+      <uistroke Color={theme.colors.border} Thickness={1} />
+      <uipadding
+        PaddingBottom={new UDim(0, theme.space[16])}
+        PaddingLeft={new UDim(0, theme.space[20])}
+        PaddingRight={new UDim(0, theme.space[20])}
+        PaddingTop={new UDim(0, theme.space[16])}
+      />
+
+      <Text
+        BackgroundTransparency={1}
+        Font={Enum.Font.GothamBold}
+        Size={UDim2.fromOffset(200, 18)}
+        Text="Wi-Fi"
+        TextColor3={theme.colors.textPrimary}
+        TextSize={theme.typography.bodyMd.textSize}
+        TextXAlignment={Enum.TextXAlignment.Left}
+      />
+
+      <Switch.Root asChild checked={checked} onCheckedChange={setChecked}>
+        <textbutton
+          AnchorPoint={new Vector2(1, 0)}
+          AutoButtonColor={false}
+          BackgroundColor3={checked ? theme.colors.accent : theme.colors.surface}
+          BorderSizePixel={0}
+          Position={new UDim2(1, 0, 0, 0)}
+          Size={UDim2.fromOffset(44, 24)}
+          Text=""
+        >
+          <uicorner CornerRadius={new UDim(1, 0)} />
+          <Switch.Thumb asChild>
+            <frame BackgroundColor3={theme.colors.accentContrast} BorderSizePixel={0} Size={UDim2.fromOffset(18, 18)}>
+              <uicorner CornerRadius={new UDim(1, 0)} />
+            </frame>
+          </Switch.Thumb>
+        </textbutton>
+      </Switch.Root>
+    </frame>
+  );
+}
+
+export const preview = {
+  render: () => (
+    <DocExampleShell height={120} width={320}>
+      <Example />
+    </DocExampleShell>
+  ),
+  title: "Playground",
+} as const;
+`,
+}
+
+const scenes = listExampleScenes()
+const templates = scenes.length > 0 ? scenes : [FALLBACK_TEMPLATE]
+const defaultTemplate =
+  templates.find((template) => template.scene === "SwitchExampleScene") ??
+  templates[0]
+
+const previewSrc = `${import.meta.env.BASE_URL}loom-preview/index.html?target=${encodeURIComponent(
+  sceneTarget("PlaygroundScene"),
+)}&chrome=none`
+
+const codeBlockIconStyle = Object.entries(codeBlockIconVars)
+  .map(([key, value]) => `--ec-icon-${key}: ${value};`)
+  .join("\n      ")
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Edit lattice-ui scenes and run them live in the browser."
+    />
+    <title>Playground · Lattice UI</title>
+    <ThemeScript />
+  </head>
+  <body
+    class="min-h-screen bg-background font-sans text-foreground antialiased"
+    style={codeBlockIconStyle}
+  >
+    <DocsHeader
+      componentsHref={componentsHref}
+      docsHref={shell.product.href}
+      guidesHref={guidesHref}
+      product={shell.product}
+    />
+
+    <main
+      class="mx-auto w-full max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8"
+      data-playground
+      data-preview-src={previewSrc}
+    >
+      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Playground</h1>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Real <code class="font-mono text-xs">@lattice-ui</code> components, compiled
+            and rendered in your browser. Nothing leaves this page.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="sr-only" for="playground-template">Example</label>
+          <select
+            class="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground transition-colors hover:bg-muted/50"
+            id="playground-template"
+          >
+            {templates.map((template) => (
+              <option selected={template.scene === defaultTemplate.scene} value={template.scene}>
+                {template.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            class="h-9 rounded-md border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            data-playground-reset
+            type="button"
+          >
+            Reset
+          </button>
+
+          <button
+            class="h-9 rounded-md border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            data-playground-share
+            type="button"
+          >
+            Copy link
+          </button>
+
+          <button
+            class="h-9 rounded-md bg-foreground px-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            data-playground-run
+            type="button"
+          >
+            Run <span class="ml-1 font-mono text-xs opacity-70">⌘↵</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <section class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+          <header
+            class="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-1.5 font-mono text-xs text-muted-foreground"
+          >
+            <span>playground.tsx</span>
+            <span data-playground-dirty hidden>unsaved · ⌘↵ to run</span>
+          </header>
+          <div
+            class="h-[52vh] min-h-[320px] overflow-hidden lg:h-[calc(100vh-16rem)]"
+            data-playground-editor
+          >
+          </div>
+        </section>
+
+        <section class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+          <header
+            class="flex items-center justify-between border-b border-border bg-muted/40 px-3 py-1.5 font-mono text-xs text-muted-foreground"
+          >
+            <span>preview</span>
+            <span data-playground-status>starting…</span>
+          </header>
+          <iframe
+            class="h-[52vh] min-h-[320px] w-full flex-1 bg-[#f6f9fc] lg:h-[calc(100vh-16rem)] dark:bg-[#12151a]"
+            data-playground-frame
+            title="Playground preview"></iframe>
+          <pre
+            class="max-h-40 overflow-auto border-t border-destructive/40 bg-destructive/10 px-3 py-2 font-mono text-xs whitespace-pre-wrap text-destructive"
+            data-playground-error
+            hidden></pre>
+        </section>
+      </div>
+
+      <p class="mt-3 text-xs text-muted-foreground">
+        Imports resolve to the published <code class="font-mono">@lattice-ui/*</code>
+        packages plus <code class="font-mono">./DocExampleShell</code>. Export
+        <code class="font-mono">preview = &#123; render &#125;</code> or a default component.
+      </p>
+    </main>
+
+    <script
+      id="playground-templates"
+      is:inline
+      set:html={JSON.stringify(templates)}
+      type="application/json"
+    />
+
+    <script>
+      import { javascript } from "@codemirror/lang-javascript"
+      import { Compartment, EditorState } from "@codemirror/state"
+      import { oneDark } from "@codemirror/theme-one-dark"
+      import { EditorView, keymap } from "@codemirror/view"
+      import { basicSetup } from "codemirror"
+      import { transform } from "sucrase"
+
+      type Template = { scene: string; label: string; source: string }
+
+      const root = document.querySelector<HTMLElement>("[data-playground]")
+      if (root) mountPlayground(root)
+
+      function mountPlayground(root: HTMLElement) {
+        const templates: Template[] = JSON.parse(
+          document.getElementById("playground-templates")?.textContent ?? "[]",
+        )
+        const select = document.querySelector<HTMLSelectElement>("#playground-template")!
+        const host = root.querySelector<HTMLElement>("[data-playground-editor]")!
+        const frame = root.querySelector<HTMLIFrameElement>("[data-playground-frame]")!
+        const statusEl = root.querySelector<HTMLElement>("[data-playground-status]")!
+        const errorEl = root.querySelector<HTMLElement>("[data-playground-error]")!
+        const dirtyEl = root.querySelector<HTMLElement>("[data-playground-dirty]")!
+
+        const isDark = () => document.documentElement.classList.contains("dark")
+
+        // --- editor ---------------------------------------------------------
+        const themeCompartment = new Compartment()
+        const runKeymap = keymap.of([
+          { key: "Mod-Enter", preventDefault: true, run: () => (run(), true) },
+          { key: "Mod-s", preventDefault: true, run: () => (run(), true) },
+        ])
+
+        const view = new EditorView({
+          parent: host,
+          state: EditorState.create({
+            doc: initialCode(),
+            extensions: [
+              runKeymap,
+              basicSetup,
+              javascript({ jsx: true, typescript: true }),
+              themeCompartment.of(isDark() ? [oneDark] : []),
+              EditorView.theme({
+                "&": { height: "100%", fontSize: "13px" },
+                ".cm-scroller": { fontFamily: "var(--font-mono, ui-monospace, monospace)" },
+              }),
+              EditorView.updateListener.of((update) => {
+                if (update.docChanged) scheduleRun()
+              }),
+            ],
+          }),
+        })
+
+        function initialCode() {
+          const shared = decodeShared(location.hash)
+          if (shared) return shared
+
+          // `select.value` is the server-rendered default (`selected` option)
+          // unless `?example=` overrides it.
+          const wanted =
+            new URLSearchParams(location.search).get("example") ?? select.value
+          const template =
+            templates.find((item) => item.scene === wanted) ?? templates[0]
+          if (template) select.value = template.scene
+
+          return template?.source ?? ""
+        }
+
+        // --- run pipeline ----------------------------------------------------
+        // The frame announces itself with `loom-playground-ready`; until then the
+        // latest compile is held back (the scene mounts a few hundred ms after
+        // the bundle loads).
+        let frameReady = false
+        let pending: string | undefined
+        let version = 0
+        let debounce: number | undefined
+
+        function scheduleRun() {
+          dirtyEl.hidden = false
+          window.clearTimeout(debounce)
+          debounce = window.setTimeout(run, 700)
+        }
+
+        function run() {
+          window.clearTimeout(debounce)
+          dirtyEl.hidden = true
+          const source = view.state.doc.toString()
+          writeShareHash(source)
+
+          let compiled: string
+          try {
+            compiled = transform(source, {
+              transforms: ["typescript", "jsx", "imports"],
+              jsxRuntime: "classic",
+              jsxPragma: "React.createElement",
+              jsxFragmentPragma: "React.Fragment",
+              filePath: "playground.tsx",
+            }).code
+          } catch (err) {
+            showError(err instanceof Error ? err.message : String(err))
+            return
+          }
+
+          version += 1
+          if (!frameReady) {
+            pending = compiled
+            setStatus("waiting for preview…")
+            return
+          }
+          send(compiled)
+        }
+
+        function send(compiled: string) {
+          setStatus("running…")
+          frame.contentWindow?.postMessage(
+            { type: "loom-playground-run", code: compiled, version },
+            "*",
+          )
+        }
+
+        function setStatus(text: string) {
+          statusEl.textContent = text
+        }
+
+        function showError(message: string) {
+          errorEl.textContent = message
+          errorEl.hidden = false
+          setStatus("error")
+        }
+
+        function clearError() {
+          errorEl.hidden = true
+          setStatus("ok")
+        }
+
+        // --- share links ------------------------------------------------------
+        function writeShareHash(source: string) {
+          const bytes = new TextEncoder().encode(source)
+          let binary = ""
+          for (const byte of bytes) binary += String.fromCharCode(byte)
+          history.replaceState(null, "", `#code=${btoa(binary)}`)
+        }
+
+        function decodeShared(hash: string) {
+          const match = /^#code=(.*)$/.exec(hash)
+          if (!match) return undefined
+          try {
+            const binary = atob(match[1])
+            const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+            return new TextDecoder().decode(bytes)
+          } catch {
+            return undefined
+          }
+        }
+
+        // --- wiring ------------------------------------------------------------
+        window.addEventListener("message", (event: MessageEvent) => {
+          const data = event.data as
+            | { type?: string; ok?: boolean; message?: string; version?: number }
+            | undefined
+          if (!data || event.source !== frame.contentWindow) return
+
+          if (data.type === "loom-playground-ready") {
+            frameReady = true
+            const compiled = pending
+            pending = undefined
+            if (compiled) send(compiled)
+            else run()
+            return
+          }
+
+          if (data.type === "loom-playground-result") {
+            if (data.ok) clearError()
+            else showError(data.message ?? "Unknown error.")
+          }
+        })
+
+        select.addEventListener("change", () => {
+          const template = templates.find((item) => item.scene === select.value)
+          if (!template) return
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: template.source },
+          })
+          run()
+        })
+
+        root.querySelector("[data-playground-reset]")?.addEventListener("click", () => {
+          select.dispatchEvent(new Event("change"))
+        })
+
+        root.querySelector("[data-playground-run]")?.addEventListener("click", run)
+
+        root
+          .querySelector("[data-playground-share]")
+          ?.addEventListener("click", async (event) => {
+            writeShareHash(view.state.doc.toString())
+            const button = event.currentTarget as HTMLButtonElement
+            await navigator.clipboard.writeText(location.href)
+            button.textContent = "Copied"
+            window.setTimeout(() => {
+              button.textContent = "Copy link"
+            }, 1500)
+          })
+
+        // Keep the preview and the editor on the docs site's theme.
+        new MutationObserver(() => {
+          const dark = isDark()
+          view.dispatch({
+            effects: themeCompartment.reconfigure(dark ? [oneDark] : []),
+          })
+          frame.contentWindow?.postMessage(
+            { type: "loom-theme", theme: dark ? "dark" : "light" },
+            "*",
+          )
+        }).observe(document.documentElement, {
+          attributeFilter: ["class"],
+          attributes: true,
+        })
+
+        frame.src = `${root.dataset.previewSrc}&theme=${isDark() ? "dark" : "light"}`
+      }
+    </script>
+  </body>
+</html>
