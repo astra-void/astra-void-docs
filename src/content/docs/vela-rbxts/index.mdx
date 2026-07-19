@@ -11,5 +11,7 @@ becomes a Roblox property or a helper instance at build time — `p-4` becomes a
 survives into the shipped Lua unless a class genuinely needs to be evaluated at runtime.
 
 It is not Tailwind parity, and it does not try to be. Vela implements a Roblox-oriented slice of the
-utility vocabulary, mapped onto the instances Roblox actually gives you, and reports a diagnostic for
-everything it cannot lower rather than quietly dropping it.
+utility vocabulary, mapped onto the instances Roblox actually gives you. On the compile-time path it
+reports a diagnostic for most of what it cannot lower, rather than quietly dropping it — but not for
+all of it. A few cases still fall through silently, such as a gradient stop set to `transparent` or a
+class the runtime host cannot resolve.

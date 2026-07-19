@@ -34,9 +34,9 @@ export default defineConfig({
 
 ## Values are source code, not values
 
-The single most surprising thing about the config: **every theme value is an expression string written in the roblox-ts dialect.** It is not a color object, not a hex string, not a number. Vela splices the string you write straight into the TSX it emits, and roblox-ts compiles it like any other expression in your source, so it has to be an expression that evaluates in Roblox.
+The single most surprising thing about the config: **every theme value is an expression string written in the roblox-ts dialect.** It is not a color object, not a hex string, not a number. On the static path Vela parses the string you write and splices the resulting expression into the TSX it emits, where roblox-ts compiles it like any other expression in your source, so it has to be an expression that evaluates in Roblox.
 
-That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"` — roblox-ts syntax, not the `UDim.new(0, 6)` you would write in Luau. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is taken at face value: nothing checks that it is a valid roblox-ts expression, so `"#3b82f6"` is spliced verbatim into the output and only surfaces later, as a compile error from roblox-ts.
+That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"` — roblox-ts syntax, not the `UDim.new(0, 6)` you would write in Luau. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is taken at face value: nothing checks that it is a valid roblox-ts expression. When the string does not parse as one, Vela falls back to emitting it as a *string literal*, so the output is `BackgroundColor3={"#3b82f6"}` — not pasted garbage, but a roblox-ts type error that surfaces on the next build rather than as a config error.
 
 ```ts title="vela.config.ts"
 export default defineConfig({
@@ -53,6 +53,17 @@ export default defineConfig({
   },
 });
 ```
+
+<Callout title="The runtime path understands only two exact shapes">
+Everything above describes the **static** path, where your string becomes a real roblox-ts expression. A class that has to be resolved at runtime — anything reaching the runtime host through a dynamic `className` — takes a different route: the whole resolved theme is serialized to JSON and shipped as string *data*, then re-parsed in Luau by two small hand-written parsers that accept exactly two textual forms.
+
+- `Color3.fromRGB(r, g, b)` — the prefix must be literally that, with three numeric arguments in `0`–`255`.
+- `new UDim(a, b)` — two numeric arguments.
+
+A value that is perfectly good roblox-ts but not in one of those two shapes compiles fine and then **silently degrades at runtime.** `"Color3.new(0.1, 0.2, 0.3)"` and `"Color3.fromHex(...)"` are dropped from the runtime color scale outright, so the class writes nothing. `"new UDim(0, PADDING)"` — a constant instead of a literal number — falls back to `new UDim(0, 0)`, so the radius or spacing collapses to zero. There is no diagnostic for any of this, and the static path keeps working, so the damage is invisible until you look at a dynamically classed element in-game.
+
+Keep every theme value in those two literal forms with numeric arguments, even if you do not think you use a dynamic `className`.
+</Callout>
 
 The config file itself is discovered by walking up from the source file being compiled, looking for exactly one filename: `vela.config.ts`. See the [configuration reference](/vela-rbxts/reference/config/) for discovery, loading, and the full schema.
 
@@ -92,14 +103,23 @@ Reach for a top-level family only when you genuinely want to start from an empty
 
 A color entry is either a **literal** — one roblox-ts expression string, used as-is — or a **palette**, an object keyed by shade. The eleven valid shade tokens are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, and `950`. A palette does not have to define all of them, but any shade you reference must be present.
 
+A palette may also carry a twelfth key, `DEFAULT`, which is what a bare family name resolves to — the same convention Tailwind uses for nested color objects. With `DEFAULT` set, `bg-brand` works with no shade at all. Every built-in palette ships one, mirroring its `500`, so `bg-slate`, `text-blue`, `border-rose`, and `from-sky` all resolve without any config.
+
+`DEFAULT` is a config key, not a class name. `bg-slate-DEFAULT` is not a valid class: only the eleven numeric tokens count as shades, so that payload is read as the semantic key `slate-DEFAULT` and reported as `unknown-theme-key`. Completions offer the bare family name instead.
+
+<Callout title="Bare palette names are not in 0.2.0">
+This behavior landed after `0.2.0` and is unreleased at the time of writing. On `vela-rbxts@0.2.0` from npm, every palette reference still needs an explicit shade and `bg-slate` reports `color-missing-shade`.
+</Callout>
+
 ```ts title="vela.config.ts"
 theme: {
   extend: {
     colors: {
       // literal — used as `bg-surface`, with no shade
       surface: "Color3.fromRGB(24, 24, 27)",
-      // palette — used as `bg-brand-500`
+      // palette — used as `bg-brand-500`, or bare `bg-brand` for the DEFAULT
       brand: {
+        DEFAULT: "Color3.fromRGB(99, 102, 241)",
         500: "Color3.fromRGB(99, 102, 241)",
         700: "Color3.fromRGB(67, 56, 202)",
       },
@@ -112,13 +132,13 @@ Which one a class name means is decided by `split_color_key`. It splits the clas
 
 So `bg-my-color` looks up the semantic key `my-color`. It is not read as the family `my` with the shade `color`. Multi-word semantic names are safe, and the only names you cannot use are ones that end in a hyphen plus a shade number.
 
-The failure modes are distinct diagnostics: referencing a palette without a shade is `color-missing-shade`, giving a literal a shade is `color-invalid-shade`, asking a palette for a shade it does not define is also `color-invalid-shade`, and a name that is not in the theme at all is `unknown-theme-key`.
+The failure modes are distinct diagnostics: referencing a palette that defines no `DEFAULT` without a shade is `color-missing-shade`, giving a literal a shade is `color-invalid-shade`, asking a palette for a shade it does not define is also `color-invalid-shade`, and a name that is not in the theme at all is `unknown-theme-key`.
 
 ## What ships by default
 
 ### Colors
 
-The defaults are 26 shade palettes at 11 shades each, plus the two literals `black` (`Color3.fromRGB(0, 0, 0)`) and `white` (`Color3.fromRGB(255, 255, 255)`).
+The defaults are 26 shade palettes at 11 shades each — plus a `DEFAULT` on every one of them, mirroring that palette's `500` — and the two literals `black` (`Color3.fromRGB(0, 0, 0)`) and `white` (`Color3.fromRGB(255, 255, 255)`).
 
 The palettes are `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`, `orange`, `amber`, `yellow`, `lime`, `green`, `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`, `mauve`, `olive`, `mist`, and `taupe`.
 

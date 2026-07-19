@@ -40,17 +40,21 @@ Each of these except `placeholder-*` and the gradient stops also has a paired tr
 
 That is why `placeholder-transparent` is an error. `PlaceholderColor3` has no paired transparency property, so there is nothing for the utility to set, and the compiler reports `unsupported-color-key` rather than emitting something that would not work.
 
+Gradient stops are the other family with no transparency property, but they do not behave the same way. `from-transparent`, `via-transparent`, and `to-transparent` produce **no diagnostic at all**: the stop is dropped and the gradient is built from whatever stops remain, exactly as if you had not written it. It is a silent no-op rather than an error, and it is worth knowing about because a two-stop gradient that quietly becomes a one-stop gradient renders as a flat fill.
+
 `current` and `inherit` are rejected outright with `unsupported-color-key`. Both are CSS cascade concepts, and there is no cascade on Roblox — a `TextLabel` does not learn its color from an ancestor `Frame`. There is no equivalent to fall back to, so Vela refuses rather than guessing.
 
 ## Shades and diagnostics
 
 A color payload is either a literal key or a palette key plus a shade. The suffix after the last hyphen counts as a shade only if it is one of `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`. Anything else means the whole payload is one semantic key, so `bg-my-color` looks up `my-color`.
 
+A bare palette name is not a mistake either. It resolves through the palette's `DEFAULT` key, and every built-in palette ships one mirroring its `500`, so `bg-blue`, `text-slate`, and `from-sky` all work. Note that `DEFAULT` is a config key and never a class — `bg-blue-DEFAULT` is read as the semantic key `blue-DEFAULT` and reported as `unknown-theme-key`. See [Theming](/vela-rbxts/guides/theming/) for setting it on your own palettes; this behavior landed after `0.2.0` and is unreleased at the time of writing, so on `vela-rbxts@0.2.0` a bare `bg-blue` still warns.
+
 Three diagnostics cover the failure modes:
 
 | Code | Fires when |
 | --- | --- |
-| `color-missing-shade` | you referenced a palette with no shade, like `bg-blue` |
+| `color-missing-shade` | you referenced a palette with no shade and that palette defines no `DEFAULT` |
 | `color-invalid-shade` | you gave a literal a shade (`bg-white-500`), or asked a palette for a shade it does not define |
 | `unknown-theme-key` | the name is not in `theme.colors` at all |
 

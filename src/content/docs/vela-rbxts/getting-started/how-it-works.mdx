@@ -45,11 +45,11 @@ Vela recognizes exactly eight Roblox host elements:
 
 A component is anything whose tag name starts with an uppercase letter — `<Panel />` — or any member expression — `<Switch.Root />`, at any depth. A namespaced tag such as `<svg:rect />` is never a component.
 
-Anything that is neither — a lowercase intrinsic tag Vela does not implement, like `<screengui className="bg-slate-700" />` — is skipped, its `className` is left in the output untouched, and you get a `classname-on-unsupported-host` warning naming the element.
+Anything that is neither is skipped, its `className` is left in the output untouched, and you get a `classname-on-unsupported-host` warning naming the element. That covers lowercase intrinsic tags Vela does not implement, like `<screengui className="bg-slate-700" />`, and namespaced tags too — the warning names only the local part, so `<svg:rect />` is reported as `rect`.
 
 ### `className` on components
 
-`<Panel className="p-4 bg-slate-800" />` is lowered the same way a host element is. On the static path the resolved props are emitted as ordinary JSX attributes on the component — no `as any` cast — the `className` attribute is removed, and any helper instances are prepended as the component's children. A self-closing component that needs helpers is de-self-closed and given a closing tag:
+`<Panel className="p-4 bg-slate-800" />` is lowered the same way a host element is. On the static path the resolved props are emitted as ordinary JSX attributes on the component — no cast of any kind — the `className` attribute is removed, and any helper instances are prepended as the component's children. A self-closing component that needs helpers is de-self-closed and given a closing tag:
 
 ```tsx title="In"
 <Box className="bg-slate-700 rounded-md" />
@@ -81,7 +81,7 @@ This path supports the full utility set.
 
 ### The runtime path
 
-When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted as `as any` casts, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`.
+When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because the runtime host's prop type does not describe them, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`.
 
 For a host element `__velaTag` is the tag string — `__velaTag="frame"`. For a component it is a live reference to the component itself — `__velaTag={Box}`, or `__velaTag={Switch.Root}` for a member expression — so the runtime helper renders your component rather than an intrinsic. Its tag type is `SupportedHostElementTag | ((props: never) => unknown)` accordingly.
 

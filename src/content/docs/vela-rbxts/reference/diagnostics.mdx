@@ -9,8 +9,9 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-When Vela cannot lower a class, it reports it rather than dropping it quietly. This page lists every
-code it can produce and what to do about the ones you will actually hit.
+On the compile-time path, Vela reports most of what it cannot lower rather than dropping it quietly.
+This page lists every code it can produce and what to do about the ones you will actually hit — and,
+just as usefully, marks the places where nothing is reported at all.
 
 ## How diagnostics reach you
 
@@ -18,7 +19,7 @@ The compiler produces diagnostics. The host adapter maps them into rbxtsc's diag
 this message format:
 
 ```text
-[@vela-rbxts/compiler] unknown-theme-key: unknown color key "brand-500"
+[@vela-rbxts/compiler] unknown-theme-key: Unknown theme key "brand-500" for background color utility in className literal.
 ```
 
 The bracketed prefix is the phase. It is `@vela-rbxts/compiler` for anything the compiler found in
@@ -34,14 +35,22 @@ diagnostic is silently discarded and your build looks clean while classes go mis
 never seen a Vela warning, verify with a deliberately broken class such as `className="bg-nope-500"`
 before concluding your code is clean.
 
-**Some spans are still guessed.** A diagnostic now carries a real source range whenever the compiler
-could anchor it, which covers every token inside a static string `className` — those squiggles land
-on the class you actually wrote, even if the same token appears elsewhere in the file. When there is
-no range, the host adapter falls back to the first textual occurrence of the token anywhere in the
-file. That fallback is what you get for diagnostics the compiler could not anchor: dynamic
-`className` expressions, `tsx-parse-failed`, and anything the adapter synthesizes itself. In those
-cases the underline can land on an unrelated comment or string, so read the message rather than the
-underline.
+**Some spans are still guessed, and some are not spans at all.** A diagnostic carries a real source
+range whenever the compiler could anchor it, which covers every token inside a static string
+`className` — those squiggles land on the class you actually wrote, even if the same token appears
+elsewhere in the file.
+
+When there is no range, the host adapter searches for the first textual occurrence of the
+diagnostic's token anywhere in the file. That search only happens if the diagnostic carries a token,
+and in practice the dynamic-`className` case is the only one that does. Everything else with no
+range falls all the way through to `{start: 0, length: 0}` and is reported at the very top of the
+file: `tsx-parse-failed`, `tsx-emit-failed`, and the adapter's own
+`compiler-invocation-failed` all carry no token at all. `classname-on-unsupported-host` is a middle
+case — it gets a real range when the `className` is a plain string literal, and lands at offset 0
+when it is a computed expression.
+
+So an underline can land on an unrelated comment or string, or on the first character of the file.
+Read the message rather than the underline.
 </Callout>
 
 ## Code table
@@ -72,24 +81,31 @@ Every code is a warning unless marked otherwise.
 | `unsupported-size-spacing-value` | Warning | A spacing value used for a size is not offset-only |
 | `unsupported-border-value` | Warning | A border payload on the explicit rejection list |
 | `unsupported-color-key` | Warning | `current` or `inherit`, or `transparent` on a property with no transparency channel |
-| `color-missing-shade` | Warning | A palette family referenced without a shade |
+| `color-missing-shade` | Warning | A palette family referenced without a shade, and that palette has no `DEFAULT` |
 | `color-invalid-shade` | Warning | A literal given a shade, or a palette missing that shade |
-| `classname-on-unsupported-host` | Warning | `className` sits on a JSX element that is neither a supported host element nor a component |
+| `classname-on-unsupported-host` | Warning, **build only** | `className` sits on a JSX element that is neither a supported host element nor a component |
 | `unsupported-host-utility` | Warning, **editor only** | The utility is not allowed on that host element tag |
 | `tsx-parse-failed` | **Error** | The file failed to parse, or parsed with recovered errors |
 | `tsx-emit-failed` | **Error** | Code generation failed after a successful transform |
 | `compiler-invocation-failed` | **Error** | The native compiler call threw; synthesized by the host adapter |
 
 `classname-on-unsupported-host` is the one that tells you nothing happened. Vela lowers `className`
-on the eight supported host elements and on components; on anything else — a lowercase intrinsic it
-does not implement, such as `screengui` — it leaves the attribute in the output exactly as written
-and warns:
+on the eight supported host elements and on components; on anything else it leaves the attribute in
+the output exactly as written and warns:
 
 ```tsx title="Warns, and the className survives untouched"
 <screengui className="bg-slate-700" />
 ```
 
-Move the classes onto a `frame` inside the `screengui`, or onto a component that forwards them.
+That bucket is everything neither host nor component — lowercase intrinsics Vela does not implement,
+such as `screengui`, and also namespaced tags such as `<svg:rect />`, which never count as
+components. The message names only the local part of the tag, so `<svg:rect />` is reported as
+`rect`. Move the classes onto a `frame` inside the unsupported element, or onto a component that
+forwards them.
+
+This one is **build only** in the opposite direction to `unsupported-host-utility` below: the editor
+surface never collects an unsupported element in the first place, so it never emits this code. You
+only see it when you compile.
 
 `unsupported-host-utility` never appears in a build. The per-element restrictions it reports —
 text properties only on `textlabel`/`textbutton`/`textbox`, `image-*` only on
@@ -136,14 +152,26 @@ combination silently discards `extend`. See the callout in
 
 ### color-missing-shade
 
-You named a palette family without a shade. Palettes are not usable bare.
+You named a palette family without a shade, and that palette has no `DEFAULT` to fall back on.
 
-```tsx title="Fails"
-<frame className="bg-slate" />
+```tsx title="Fails, if your brand palette defines only 500 and 700"
+<frame className="bg-brand" />
 ```
 
-Write `bg-slate-800`. Only literal colors — `black`, `white`, and anything you define as a plain
-string — are usable without a shade.
+```text title="Compiler output"
+[@vela-rbxts/compiler] color-missing-shade: Color palette "brand" for background color utility has no "DEFAULT" shade, so it requires an explicit shade such as "brand-500" in className literal.
+```
+
+Either write the shade — `bg-brand-500` — or add a `DEFAULT` key to the palette in
+`theme.extend.colors` so the bare form resolves. Literal colors — `black`, `white`, and anything you
+define as a plain string — are always usable without a shade.
+
+<Callout title="Not in 0.2.0">
+`DEFAULT` resolution is newer than the published release. On `vela-rbxts@0.2.0` from npm, *every*
+bare palette name is `color-missing-shade`, built-in ones included, and the message reads
+`Color palette "slate" for background color utility requires an explicit shade such as "slate-500"
+in className literal.`
+</Callout>
 
 ### color-invalid-shade
 
@@ -164,8 +192,8 @@ text after the first `-` in the token is three characters or shorter. This keeps
 flashing on every keystroke as you type `bg-sla` on the way to `bg-slate-800`.
 
 The consequence is that a genuinely wrong short key can look fine in the editor and still warn in the
-build. `bg-red` reports `color-missing-shade`, which is not filtered, but a short unknown key can be
-hidden until you compile.
+build. Codes other than `unknown-theme-key` are never filtered, so `color-missing-shade` on a
+`DEFAULT`-less palette shows up immediately — but a short unknown key stays hidden until you compile.
 
 ## See also
 

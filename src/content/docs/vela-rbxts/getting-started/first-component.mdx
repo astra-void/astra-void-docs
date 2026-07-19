@@ -108,18 +108,24 @@ The build still succeeds, but the transformer reports a warning through roblox-t
 
 `p-4` and `bg-slate-800` are applied normally; only the unrecognized token is dropped. Use padding on the parent, or `gap-*` on the parent's `UIListLayout`, to get the spacing you were reaching for.
 
-Colors have their own failure mode. Every palette in the theme is a set of shades, and referencing one without picking a shade is an error rather than a default:
+Colors have their own failure mode. A palette in the theme is a set of shades, and you reach a shade either by naming it or through the palette's `DEFAULT`. A palette that has neither is an error rather than a fallback — say your config adds a `brand` family with only `500` and `700`:
 
 ```tsx title="This warns too"
-<frame className="bg-slate" />
+<frame className="bg-brand" />
 ```
 
 ```text title="Compiler output"
-[@vela-rbxts/compiler] color-missing-shade: Color palette "slate" for background color utility requires an explicit shade such as "slate-500" in className literal.
+[@vela-rbxts/compiler] color-missing-shade: Color palette "brand" for background color utility has no "DEFAULT" shade, so it requires an explicit shade such as "brand-500" in className literal.
 ```
 
+Write `bg-brand-500`, or add a `DEFAULT` key to the palette so the bare form resolves. The built-in palettes all ship a `DEFAULT` mirroring their `500`, which is why `bg-slate` needs no shade while `bg-brand` does.
+
+<Callout title="Not in 0.2.0">
+Bare palette names are newer than the published release. On `vela-rbxts@0.2.0` from npm, every bare family name is `color-missing-shade` — `bg-slate` included — and the message does not mention `DEFAULT`.
+</Callout>
+
 <Callout title="Where the squiggle lands">
-For a static string `className` like both of these, the compiler anchors each diagnostic to the offending token's real position, so the underline lands on the class you actually wrote. That is not true everywhere: when the compiler cannot anchor a diagnostic — a computed `className`, a parse failure — the host adapter falls back to searching for the first textual occurrence of the token anywhere in the file, and the underline can land on an earlier comment or string. The message and code are always correct.
+For a static string `className` like both of these, the compiler anchors each diagnostic to the offending token's real position, so the underline lands on the class you actually wrote. That is not true everywhere. A computed `className` produces diagnostics with no range, and the host adapter falls back to searching for the first textual occurrence of the token anywhere in the file, so the underline can land on an earlier comment or string. Diagnostics that carry no token at all — a parse failure, an emit failure, or a crash inside the compiler — get no search either and are reported at the very start of the file. The message and code are always correct.
 </Callout>
 
 The full list of codes, and what each one means, is in the [diagnostics reference](/vela-rbxts/reference/diagnostics/).

@@ -79,9 +79,9 @@ exist in the type and are ignored if you write them anyway.
   rows={[
     {
       name: "theme.colors",
-      type: "Record<string, string | Partial<Record<Shade, string>>>",
+      type: 'Record<string, string | Partial<Record<Shade | "DEFAULT", string>>>',
       description:
-        "Replaces the entire color registry. A value is either a literal roblox-ts expression string or a map from shade (50…950) to one.",
+        "Replaces the entire color registry. A value is either a literal roblox-ts expression string or a map from shade (50…950, plus the optional DEFAULT that a bare family name resolves to) to one.",
     },
     {
       name: "theme.radius",
@@ -97,9 +97,9 @@ exist in the type and are ignored if you write them anyway.
     },
     {
       name: "theme.extend.colors",
-      type: "Record<string, string | Partial<Record<Shade, string>>>",
+      type: 'Record<string, string | Partial<Record<Shade | "DEFAULT", string>>>',
       description:
-        "Merges over the default color registry, per family and — when both sides are palettes — per shade.",
+        "Merges over the default color registry, per family and — when both sides are palettes — per shade. Setting DEFAULT on a family is what makes a bare bg-brand resolve.",
     },
     {
       name: "theme.extend.radius",
@@ -114,15 +114,32 @@ exist in the type and are ignored if you write them anyway.
   ]}
 />
 
-The valid shades are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`. An
-empty palette object is rejected with
-`Color palette normalization requires at least one shade value.`
+The valid shades are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`, plus
+one non-numeric key: `DEFAULT`. A palette that defines `DEFAULT` is what a bare family name resolves
+to, so `bg-brand` needs no shade. It is a config key only — `bg-brand-DEFAULT` is not a valid class,
+because only the eleven numeric tokens are treated as shades, so that payload is read as the semantic
+key `brand-DEFAULT` and reported as `unknown-theme-key`. Every built-in palette ships a `DEFAULT`
+mirroring its `500`.
+
+<Callout title="DEFAULT resolution is not in 0.2.0">
+Bare palette names landed after `0.2.0` and are unreleased at the time of writing. On
+`vela-rbxts@0.2.0` from npm, a palette reference always needs an explicit shade, and a bare `bg-brand`
+reports `color-missing-shade`.
+</Callout>
+
+An empty palette object throws
+`Color palette normalization requires at least one shade value.` — but only where the palette is
+actually normalized: a family that is not already in the registry, or any family under a top-level
+`theme.colors`. Extending a family that already exists as a palette takes the merge path instead,
+which spreads your object over the base and returns the base unchanged. So
+`theme.extend.colors: { blue: {} }` throws nothing, warns nothing, and does nothing.
 
 ### Values are roblox-ts expression strings
 
-Every value in the theme is a string containing a roblox-ts expression that Vela splices into the
-TSX it emits, where roblox-ts compiles it like any other expression in your source. It is not a
-color object, not a hex string, and not a number.
+Every value in the theme is a string containing a roblox-ts expression. On the static path Vela
+parses that string and splices the resulting expression into the TSX it emits, where roblox-ts
+compiles it like any other expression in your source. It is not a color object, not a hex string, and
+not a number.
 
 ```ts title="vela.config.ts"
 export default defineConfig({
@@ -138,8 +155,24 @@ export default defineConfig({
 
 `"#111111"` and `4` are not valid values, and they fail at different times. `4` is not a string, and
 every theme value must be one, so it is rejected while the config is being loaded. `"#111111"` is a
-string, and nothing checks that a string is a valid roblox-ts expression — it is spliced in verbatim
-and surfaces as a roblox-ts compile error rather than as a config error.
+string, and nothing checks that a string is a valid roblox-ts expression. When the string does not
+parse as an expression, Vela falls back to emitting it as a *string literal*, so the output is
+`BackgroundColor3={"#111111"}` — a roblox-ts type error on the next build, rather than a config error.
+
+<Callout title="The runtime path re-parses theme values from text">
+The splice above is the **static** path only. A class resolved at runtime goes through the runtime
+host, and there the whole resolved config is serialized to JSON and shipped as string data, then
+re-parsed in Luau by two hand-written parsers that accept exactly two textual shapes:
+`Color3.fromRGB(r, g, b)` with three numeric arguments in `0`–`255`, and `new UDim(a, b)` with two
+numeric arguments.
+
+A value that is valid roblox-ts but not in one of those shapes — `"Color3.new(0.1, 0.2, 0.3)"`,
+`"Color3.fromHex(...)"`, `"new UDim(0, PADDING)"` — compiles fine and then **silently degrades
+at runtime.** Unparseable colors are dropped from the runtime color scale entirely; unparseable radius
+and spacing values fall back to `new UDim(0, 0)`. No diagnostic is reported, and the static path keeps
+working, so the failure only shows up on dynamically classed elements. Keep every theme value in those
+two literal forms with numeric arguments.
+</Callout>
 
 ## Merge semantics
 
@@ -168,7 +201,8 @@ want to throw the default palette away. The same replace-wholesale rule applies 
 ### Colors
 
 Twenty-eight families. Two are literals: `black` and `white`. The other twenty-six are palettes with
-all eleven shades (`50` through `950`):
+all eleven shades (`50` through `950`), each also carrying a `DEFAULT` that mirrors that palette's
+`500`:
 
 `slate`, `gray`, `zinc`, `neutral`, `stone`, `red`, `orange`, `amber`, `yellow`, `lime`, `green`,
 `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`,

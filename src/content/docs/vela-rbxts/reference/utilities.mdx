@@ -37,9 +37,12 @@ Vela lowers `className` on these eight intrinsic elements, and on components.
 | `imagebutton` | `image-*` allowed |
 | Any component | An uppercase tag (`<Panel />`) or a member expression (`<Switch.Root />`). Every utility is allowed |
 
-Any other JSX element — a lowercase intrinsic that is not on this list, such as `screengui` — is
+Any other JSX element — anything that is neither one of those eight tags nor a component — is
 skipped, its `className` is left in the output untouched, and the compiler reports
-`classname-on-unsupported-host`.
+`classname-on-unsupported-host`. That bucket is wider than it looks: it holds lowercase intrinsics
+Vela does not implement, such as `screengui`, and also namespaced tags such as `<svg:rect />`, which
+are never treated as components. The warning names only the local part of the tag, so `<svg:rect />`
+is reported as `rect`.
 
 Text utilities (`text-*` color and size, `font-*`, `text-{left,center,right}`, `align-*`,
 `text-wrap`, `truncate`) are only meaningful on `textlabel`, `textbutton`, and `textbox`; `image-*`
@@ -64,7 +67,7 @@ element — nothing checks that it does. See
 | `placeholder-{color}` | theme color key | `PlaceholderColor3` | No transparency channel |
 | `border-{color}` | theme color key | `UIStroke.Color` + `UIStroke.Transparency` | Helper instance |
 | `shadow-{color}` | theme color key | `UIShadow.Color` | Helper instance |
-| `from-{color}`, `via-{color}`, `to-{color}` | theme color key | `UIGradient.Color` keypoints | Helper instance |
+| `from-{color}`, `via-{color}`, `to-{color}` | theme color key | `UIGradient.Color` keypoints | Helper instance, no transparency channel |
 
 A color key is either a literal (`black`, `white`, or anything you define as a plain string) or a
 palette family plus a shade from `50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`. The shade is
@@ -72,13 +75,30 @@ split off with the last `-` in the token, and only if the suffix is exactly one 
 numbers — so `bg-my-color` is looked up as the single key `my-color`, not as family `my` shade
 `color`.
 
+A palette family may also carry a `DEFAULT` key, and a bare family name resolves to it — `bg-slate`
+is `slate`'s `DEFAULT`, the same convention Tailwind uses for nested color objects. Every built-in
+palette ships a `DEFAULT` mirroring its `500`, so `bg-slate`, `text-blue`, `border-rose`,
+`shadow-slate` and `from-sky` all work with no config at all. A palette you define yourself resolves
+bare only if you give it a `DEFAULT`; without one, the bare form is `color-missing-shade`. Note that
+`DEFAULT` is not spellable in a class — only the eleven numeric suffixes count as shades, so
+`bg-slate-DEFAULT` is read as the single key `slate-DEFAULT` and gives `unknown-theme-key`.
+
+<Callout title="Not in 0.2.0">
+Bare palette names are newer than the published release. `vela-rbxts@0.2.0` on npm still requires an
+explicit shade and reports `color-missing-shade` for every bare family, built-in ones included.
+</Callout>
+
 Two keywords behave specially. `transparent` sets the transparency property to `1` and removes the
 color property entirely; on `placeholder-*`, which has no transparency property, it produces
 `unsupported-color-key`. `current` and `inherit` are rejected outright with `unsupported-color-key`.
 
-Getting the shade wrong is its own diagnostic: a palette with no shade gives `color-missing-shade`, a
-literal with a shade or a palette missing that shade gives `color-invalid-shade`, and a name that is
-not in the theme at all gives `unknown-theme-key`.
+Gradient stops are the other family with no transparency property, but they do not report anything:
+`from-transparent`, `via-transparent` and `to-transparent` are **silently dropped**, and the stop
+they would have contributed simply does not appear in the `ColorSequence`.
+
+Getting the shade wrong is its own diagnostic: a palette with neither a shade nor a `DEFAULT` gives
+`color-missing-shade`, a literal with a shade or a palette missing that shade gives
+`color-invalid-shade`, and a name that is not in the theme at all gives `unknown-theme-key`.
 
 <Callout title="text-* is greedy">
 `text-*` is classified in one pass: known size keys become `TextSize`, `left`/`center`/`right`/`justify`

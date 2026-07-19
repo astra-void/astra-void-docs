@@ -134,10 +134,14 @@ import "vela-rbxts";
 ```
 
 Several helpers exist in `@vela-rbxts/config` but are deliberately **not** re-exported from the root
-package: `SHADES`, `resolveThemeColors`, `mergeColorRegistry`, `normalizeColorRegistry`,
-`normalizeColorScale`, and the `Shade`, `ThemeScale`, `ColorPalette`, `ColorValue`, `ThemeColors`,
-`ColorInputMap`, `ThemeConfig`, and `ThemeConfigInput` types. Reach into `@vela-rbxts/config`
-directly if you need them, and expect them to be less stable than the root surface.
+package: `SHADES`, `PALETTE_DEFAULT_KEY`, `resolveThemeColors`, `mergeColorRegistry`,
+`normalizeColorRegistry`, `normalizeColorScale`, and the `Shade`, `PaletteKey`, `PaletteDefaultKey`,
+`ThemeScale`, `ColorPalette`, `ColorValue`, `ColorScaleInput`, `ThemeColors`, `ColorInputMap`,
+`ThemeConfig`, and `ThemeConfigInput` types. Reach into `@vela-rbxts/config` directly if you need
+them, and expect them to be less stable than the root surface.
+
+`PALETTE_DEFAULT_KEY`, `PaletteKey` and `PaletteDefaultKey` are newer than the published **0.2.0** —
+`vela-rbxts@0.2.0` on npm has neither the constant nor the types.
 
 ## From `vela-rbxts/transformer`
 
@@ -180,10 +184,12 @@ For almost every project the answer is the same: install `vela-rbxts`, add the t
 All packages are versioned in lockstep at **0.2.0**, including the VS Code extension. There is no
 scenario in which you should mix versions across the `@vela-rbxts/*` scope.
 
-Two subpaths beyond the roots are public. `@vela-rbxts/rbxtsc-host/project-config` exposes the
+Three subpaths beyond the roots are public. `@vela-rbxts/rbxtsc-host/project-config` exposes the
 `vela.config.ts` discovery and loading logic — the VS Code extension uses it to evaluate config files
 it is watching, and any editor integration you write can do the same. `@vela-rbxts/compiler/native`
-exposes the raw N-API binding underneath the compiler's default entry.
+exposes the raw N-API binding underneath the compiler's default entry. `@vela-rbxts/compiler` also
+declares `"./package.json"` in its exports map, which is boilerplate for tooling that reads the
+manifest rather than an API you would call.
 
 ## Version requirements
 
