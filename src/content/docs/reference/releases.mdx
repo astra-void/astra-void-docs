@@ -17,9 +17,40 @@ All `@lattice-ui/*` packages version in lockstep, so a single release number des
   per-package stability tiers before upgrading.
 </Callout>
 
+## 0.6.2
+
+The current stable release. It changes no primitive behavior — every fix is in the `lattice` CLI, and most of them are about making a scaffolded project install and type-check cleanly on npm, where a peer conflict is a hard error rather than a warning.
+
+**Migration**
+
+- Use `npx lattice-ui` rather than `npx lattice`. `npx` resolves the published package name, not the shorthand alias, so `npx lattice` never worked on npm projects; the CLI's own command hints now say `lattice-ui`. The `lattice` binary still works once the package is installed.
+- If your project still lists pre-0.6.1 package names, run `lattice init` — it now rewrites them to their `react-` replacements instead of leaving both names to fight over peers. `doctor` reports them and `upgrade` skips them.
+
+**Highlights**
+
+- `create` and `init` record the resolved package manager as a `devEngines` pin, and `add`, `remove`, and `upgrade` apply that pin before touching dependencies — so a project scaffolded with one manager cannot be quietly installed with another.
+- `typescript` is pinned to the version roblox-ts actually compiles with instead of being resolved from the latest dist-tag, and `doctor` warns when a project is already on an unsupported major.
+- A failed install no longer leaves a half-written scaffold behind: `init` and `create` roll their file changes back.
+- The scaffolded `tsconfig` skips lib checks, so `typecheck` passes on a freshly generated project.
+
+## 0.6.1
+
+A **rename-only** release: every package moved under a framework layer directory and gained a layer prefix in its published name, so future Vide and plain-Luau targets can sit beside React instead of one framework holding the unprefixed names. No runtime behavior, exports, or APIs changed.
+
+**Migration**
+
+- Add the `react-` prefix to every Lattice import: `@lattice-ui/<name>` is now `@lattice-ui/react-<name>` (for example `@lattice-ui/dialog` → `@lattice-ui/react-dialog`).
+- `@lattice-ui/core` is now `@lattice-ui/react-runtime` — a rename of the package, not just a prefix.
+- CLI component names are mostly unchanged: `lattice add dialog` still works. Only the `core` registry key was renamed, to `runtime`.
+
+**Highlights**
+
+- Packages now live at `packages/<layer>/<name>` and publish as `@lattice-ui/<layer>-<name>`, so package name and path convert 1:1.
+- The layer is a real directory boundary, which lets the "core must not import React" rule be enforced as a path rule.
+
 ## 0.6.0
 
-The current stable release. The 0.6 line hardens the layered surface rather than adding new components: gamepad- and keyboard-driven selection, presence-driven overlay motion, and more reliable dismissal and positioning.
+The 0.6 line hardens the layered surface rather than adding new components: gamepad- and keyboard-driven selection, presence-driven overlay motion, and more reliable dismissal and positioning.
 
 **Migration**
 
