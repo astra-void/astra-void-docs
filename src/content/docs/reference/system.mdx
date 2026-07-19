@@ -9,27 +9,27 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/system"
+  packageName="@lattice-ui/react-system"
   status="stable-direction"
-  dependencies={["@lattice-ui/core", "@lattice-ui/style"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-style"]}
 />
 
-System sits one level above `@lattice-ui/style`. Where Style owns the raw theme and host-prop helpers, System adds the app-facing layer: a **density** system that scales spacing, radius, and type globally; **layout primitives** (`Stack`, `Row`, `Grid`) that drive Roblox layout instances from theme spacing tokens; and **surface tones** for consistent backgrounds and borders. `SystemProvider` ties the theme and density together and feeds a density-resolved `Theme` down through `ThemeProvider`.
+System sits one level above `@lattice-ui/react-style`. Where Style owns the raw theme and host-prop helpers, System adds the app-facing layer: a **density** system that scales spacing, radius, and type globally; **layout primitives** (`Stack`, `Row`, `Grid`) that drive Roblox layout instances from theme spacing tokens; and **surface tones** for consistent backgrounds and borders. `SystemProvider` ties the theme and density together and feeds a density-resolved `Theme` down through `ThemeProvider`.
 
 ## Import
 
 ```ts
-import { SystemProvider, useSystemTheme } from "@lattice-ui/system";
-import { DensityProvider, useDensity, applyDensity, density } from "@lattice-ui/system";
-import { Stack, Row, Grid } from "@lattice-ui/system";
-import { Surface, surface } from "@lattice-ui/system";
+import { SystemProvider, useSystemTheme } from "@lattice-ui/react-system";
+import { DensityProvider, useDensity, applyDensity, density } from "@lattice-ui/react-system";
+import { Stack, Row, Grid } from "@lattice-ui/react-system";
+import { Surface, surface } from "@lattice-ui/react-system";
 ```
 
 ## API reference
 
 ### SystemProvider
 
-The top-level provider. It owns the raw (base) theme, wraps a `DensityProvider`, and exposes both through a system context. Density transforms are applied internally and the resolved theme is passed down via `@lattice-ui/style`'s `ThemeProvider`, so any `useTheme` consumer below sees the density-scaled theme automatically.
+The top-level provider. It owns the raw (base) theme, wraps a `DensityProvider`, and exposes both through a system context. Density transforms are applied internally and the resolved theme is passed down via `@lattice-ui/react-style`'s `ThemeProvider`, so any `useTheme` consumer below sees the density-scaled theme automatically.
 
 ```tsx
 function SystemProvider(props: SystemProviderProps): React.Element;
@@ -242,5 +242,5 @@ Props-only counterpart to the `Surface` primitive. Returns an `Sx` value that re
 ## Related links
 
 - [Style](/lattice-ui/reference/style/)
-- [Core](/lattice-ui/reference/core/)
+- [Runtime](/lattice-ui/reference/runtime/)
 - [Roblox UI constraints](/lattice-ui/guides/roblox-ui-constraints/)

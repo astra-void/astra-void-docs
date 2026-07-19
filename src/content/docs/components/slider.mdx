@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/slider"
+  packageName="@lattice-ui/react-slider"
   status="feature-limited"
   importName="Slider"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-motion"]}
 />
 
 Slider is the primitive for picking a number from a continuous range: volume, sensitivity, brightness, and any "drag to set a value" control. It owns the value — clamping it to `[min, max]` and snapping it to `step` — and translates pointer drags and keyboard input on the track and thumb into value changes, so your component only renders the track, the filled range, and the thumb.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 ```
 
 ## Anatomy
@@ -67,7 +67,7 @@ This release of Slider is **single-thumb only**. There is no range/dual-thumb mo
 The smallest useful slider: uncontrolled state seeded with `defaultValue`, default visuals for every part (a 260x10 dark track, a blue fill, a 16x16 light thumb). `onValueChange` would fire on every drag tick, but for a "save on release" control you only need `onValueCommit` — it fires once when the interaction ends, which is the right moment to persist the setting or send it over the network.
 
 ```tsx title="VolumeSlider.tsx"
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 
 export function VolumeSlider(props: { onSave: (volume: number) => void }) {
   return (
@@ -93,7 +93,7 @@ Pass `value` and `onValueChange` when something outside the slider needs the num
 
 ```tsx title="BrightnessSlider.tsx"
 import { useState } from "@rbxts/react";
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 
 export function BrightnessSlider() {
   const [brightness, setBrightness] = useState(70);
@@ -131,7 +131,7 @@ export function BrightnessSlider() {
 
 ```tsx title="SensitivitySlider.tsx"
 import { useState } from "@rbxts/react";
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 
 export function SensitivitySlider(props: { onCommit: (sensitivity: number) => void }) {
   const [sensitivity, setSensitivity] = useState(1);
@@ -176,7 +176,7 @@ Set `orientation="vertical"` for a column-style control such as a mixer channel.
 
 ```tsx title="AmbienceChannel.tsx"
 import { useState } from "@rbxts/react";
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 
 export function AmbienceChannel() {
   const [level, setLevel] = useState(60);
@@ -213,7 +213,7 @@ Every part accepts `asChild` to project its behavior onto your own element. The 
 
 ```tsx title="StyledSlider.tsx"
 import { useState } from "@rbxts/react";
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 
 export function StyledSlider() {
   const [value, setValue] = useState(50);
@@ -264,7 +264,7 @@ When the thumb has input focus, keyboard input adjusts the value without a drag:
 
 ```tsx title="FieldOfViewSlider.tsx"
 import { useState } from "@rbxts/react";
-import { Slider } from "@lattice-ui/slider";
+import { Slider } from "@lattice-ui/react-slider";
 
 export function FieldOfViewSlider(props: { onCommit: (fov: number) => void }) {
   const [fov, setFov] = useState(80);
@@ -315,7 +315,7 @@ Set `orientation` to `"horizontal"` (default) or `"vertical"`. It governs which 
 
 ### Composition with asChild
 
-`Slider.Track` and `Slider.Thumb` merge their behavior onto your single child through the core `Slot`: the slot's `Active`, `Selectable`, ref, and `InputBegan` drag/keyboard handling win over the child's own props, and the thumb also forces `AnchorPoint` to (0.5, 0.5) so it stays centered on its position. `Slider.Range` with `asChild` keeps the animated fill frame and stretches your child to fill it — the child's `Position` and `Size` are overridden — so express its look through color, gradients, corners, and strokes.
+`Slider.Track` and `Slider.Thumb` merge their behavior onto your single child through the shared `Slot`: the slot's `Active`, `Selectable`, ref, and `InputBegan` drag/keyboard handling win over the child's own props, and the thumb also forces `AnchorPoint` to (0.5, 0.5) so it stays centered on its position. `Slider.Range` with `asChild` keeps the animated fill frame and stretches your child to fill it — the child's `Position` and `Size` are overridden — so express its look through color, gradients, corners, and strokes.
 
 ### Motion
 

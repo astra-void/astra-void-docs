@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/switch"
+  packageName="@lattice-ui/react-switch"
   status="stable-direction"
   importName="Switch"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-motion"]}
 />
 
 Switch is the primitive for an on/off toggle: settings flips, feature enables, and any binary control. The root is the toggleable track that owns checked state, and the thumb slides between the two ends as the state changes. You decide whether the primitive animates the track color for you or leaves your own colors untouched.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 ```
 
 ## Anatomy
@@ -58,7 +58,7 @@ import { Switch } from "@lattice-ui/switch";
 The smallest possible switch: uncontrolled state seeded with `defaultChecked`, default visuals. The default root is a `textbutton` whose label reflects the current state (`"On"` or `"Off"`), and the default thumb is a 16x16 light frame that slides between the track's ends — useful for wiring things up before you style anything.
 
 ```tsx title="BasicSwitch.tsx"
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 
 export function BasicSwitch() {
   return (
@@ -78,7 +78,7 @@ Pass `checked` and `onCheckedChange` when something outside the switch needs to 
 
 ```tsx title="MusicToggle.tsx"
 import { useState } from "@rbxts/react";
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 
 export function MusicToggle(props: { onSave: (enabled: boolean) => void }) {
   const [enabled, setEnabled] = useState(true);
@@ -119,7 +119,7 @@ Use `asChild` on the root to project the toggle behavior onto your own track ele
 
 ```tsx title="StyledSwitch.tsx"
 import { useState } from "@rbxts/react";
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 
 export function StyledSwitch() {
   const [enabled, setEnabled] = useState(false);
@@ -164,7 +164,7 @@ The inverse of the previous example: keep `asChild` for a custom track shape, bu
 
 ```tsx title="NotificationsToggle.tsx"
 import { useState } from "@rbxts/react";
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 
 export function NotificationsToggle() {
   const [enabled, setEnabled] = useState(true);
@@ -204,7 +204,7 @@ export function NotificationsToggle() {
 `disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are dropped — and removes the switch from gamepad selection. While disabled and the primitive owns track color, both the on and off states settle on `disabledTrackColor`, so the track visibly reads as inert regardless of its checked value. Here a premium-only option stays visible but inactive.
 
 ```tsx title="PremiumToggle.tsx"
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 
 export function PremiumToggle(props: { hasPremium: boolean }) {
   return (
@@ -225,7 +225,7 @@ The thumb's motion has no transition prop — the slide is a fixed short settle 
 
 ```tsx title="LargeThumbSwitch.tsx"
 import { useState } from "@rbxts/react";
-import { Switch } from "@lattice-ui/switch";
+import { Switch } from "@lattice-ui/react-switch";
 
 export function LargeThumbSwitch() {
   const [enabled, setEnabled] = useState(false);
@@ -260,7 +260,7 @@ export function LargeThumbSwitch() {
 
 The default `Switch.Root` renders an activatable `textbutton` (160x36, labeled `"On"`/`"Off"`) that toggles on `Activated`, so click, tap, and gamepad activation all work. It is `Active` and `Selectable` only while enabled, so a disabled switch drops out of gamepad selection and dims its label.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use an element that fires `Activated`, such as a `textbutton` or `imagebutton`.
+With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use an element that fires `Activated`, such as a `textbutton` or `imagebutton`.
 
 ### Track color ownership
 

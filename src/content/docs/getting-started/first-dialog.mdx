@@ -13,7 +13,7 @@ Dialog is a good first primitive because it shows the whole Lattice UI model in 
 This page is a guided build, not a reference. For the full prop list and behavior details, see the [Dialog component page](/lattice-ui/components/dialog/).
 
 <Callout title="Before you start">
-This assumes `@lattice-ui/dialog` is installed. If it is not, follow [Installation](/lattice-ui/getting-started/installation/) first.
+This assumes `@lattice-ui/react-dialog` is installed. If it is not, follow [Installation](/lattice-ui/getting-started/installation/) first.
 </Callout>
 
 ## Step 1 — Import and sketch the anatomy
@@ -22,7 +22,7 @@ This assumes `@lattice-ui/dialog` is installed. If it is not, follow [Installati
 
 ```tsx title="ConfirmDialog.tsx"
 import React from "@rbxts/react";
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 
 export function ConfirmDialog() {
   return (
@@ -109,7 +109,7 @@ So far the dialog runs uncontrolled: the trigger and close button drive it throu
 
 ```tsx title="ConfirmDialog.tsx"
 import React, { useState } from "@rbxts/react";
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 
 export function ConfirmDialog() {
   const [open, setOpen] = useState(false);

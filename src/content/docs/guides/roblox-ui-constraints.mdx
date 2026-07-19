@@ -17,7 +17,7 @@ lattice-ui exists largely to paper over these constraints so you do not re-solve
 
 Gamepad and keyboard navigation on Roblox is **selection**: `GuiService.SelectedObject` holds at most one `GuiObject`. There is no focus tree and no built-in "previously focused" concept. A `GuiObject` is only selectable when its `Selectable` property is `true`, it is `Visible`, and its whole ancestor chain is visible and (for the `LayerCollector`) enabled.
 
-This is why lattice-ui ships `@lattice-ui/focus`: a single mutable property cannot, on its own, express "trap selection inside this dialog" or "restore selection to the trigger that opened it." The focus manager keeps a model of scopes and nodes, decides what *should* be selected, and writes it to `GuiService.SelectedObject` — reading it back when the player moves selection so the two stay in agreement.
+This is why lattice-ui ships `@lattice-ui/react-focus`: a single mutable property cannot, on its own, express "trap selection inside this dialog" or "restore selection to the trigger that opened it." The focus manager keeps a model of scopes and nodes, decides what *should* be selected, and writes it to `GuiService.SelectedObject` — reading it back when the player moves selection so the two stay in agreement.
 
 ```tsx title="Keep Selectable in lockstep with disabled state"
 <textbutton
@@ -34,13 +34,13 @@ Setting only `Active={false}` still leaves the button selectable by gamepad. Whe
 
 ## Portals target BasePlayerGui
 
-A surface that must visually escape its parent — a dialog, a popover anchored to a deeply nested button — cannot just render in place; a parent's clipping or `ZIndex` would trap it. On Roblox the destination for top-level UI is the player's `BasePlayerGui` (the `PlayerGui`), and `@lattice-ui/layer`'s `Portal` renders there via `ReactRoblox.createPortal`.
+A surface that must visually escape its parent — a dialog, a popover anchored to a deeply nested button — cannot just render in place; a parent's clipping or `ZIndex` would trap it. On Roblox the destination for top-level UI is the player's `BasePlayerGui` (the `PlayerGui`), and `@lattice-ui/react-layer`'s `Portal` renders there via `ReactRoblox.createPortal`.
 
 You set the container once at the root with `PortalProvider`, and every `Portal` (and every primitive that portals, like `Dialog.Portal`) inherits it:
 
 ```tsx title="UIRoot.tsx"
 import { Players } from "@rbxts/services";
-import { PortalProvider } from "@lattice-ui/layer";
+import { PortalProvider } from "@lattice-ui/react-layer";
 
 export function UIRoot(props: { children: React.ReactNode }) {
   const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui") as PlayerGui;
@@ -104,7 +104,7 @@ import {
   getCurrentOrderedSelectionEntry,
   getRelativeOrderedSelectionEntry,
   focusOrderedSelectionEntry,
-} from "@lattice-ui/focus";
+} from "@lattice-ui/react-focus";
 
 function focusNext(entries: Array<OrderedSelectionEntry>) {
   const current = getCurrentOrderedSelectionEntry(entries);

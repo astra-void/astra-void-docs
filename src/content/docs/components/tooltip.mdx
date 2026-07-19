@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/tooltip"
+  packageName="@lattice-ui/react-tooltip"
   status="stable-direction"
   importName="Tooltip"
-  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
 Tooltip is the primitive for a small, transient surface that explains a control: button hints, icon labels, and stat breakdowns. It opens on hover or gamepad selection, positions itself against the trigger with popper, and animates in and out — so your component only renders the label.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 ```
 
 ## Anatomy
@@ -66,7 +66,7 @@ import { Tooltip } from "@lattice-ui/tooltip";
 The smallest useful tooltip: a provider for timing, a trigger projected onto your own button with `asChild`, and an app-owned label surface inside the portal. Hovering the button waits out the provider delay, then the content animates in above it; moving the pointer away closes it.
 
 ```tsx title="StatTooltip.tsx"
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 
 export function StatTooltip() {
   return (
@@ -103,7 +103,7 @@ export function StatTooltip() {
 One `Provider` around a row of icon buttons gives every tooltip the same delay and — more importantly — the skip window. The first hover waits the full `delayDuration`; once any tooltip has opened, moving to a neighboring trigger within `skipDelayDuration` opens its tooltip after at most that short window, so scrubbing across the toolbar feels instant.
 
 ```tsx title="ActionToolbar.tsx"
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 
 const ACTIONS = [
   { icon: "rbxassetid://111111", label: "Attack" },
@@ -153,7 +153,7 @@ export function ActionToolbar() {
 `Tooltip.Content` accepts arbitrary children, so a tooltip can be a small card rather than a single line — here a keybind hint with a title row and a description. Keep it non-interactive: the tooltip closes as soon as the pointer leaves the trigger, so buttons inside it are unreachable by design.
 
 ```tsx title="KeybindHint.tsx"
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 
 export function KeybindHint() {
   return (
@@ -215,7 +215,7 @@ export function KeybindHint() {
 `placement` picks the preferred side (`"top"`, `"bottom"`, `"left"`, `"right"`), `sideOffset` sets the gap from the trigger, `alignOffset` slides the content along that side, and `collisionPadding` keeps it off the viewport edges. Popper flips or shifts away from the preferred side when it would collide, and the default entrance recipe follows the side that was actually resolved.
 
 ```tsx title="InventorySlotTooltip.tsx"
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 
 export function InventorySlotTooltip() {
   return (
@@ -253,7 +253,7 @@ Pass `open` and `onOpenChange` when something outside the tooltip should decide 
 
 ```tsx title="OnboardingHint.tsx"
 import { useState } from "@rbxts/react";
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 
 export function OnboardingHint() {
   const [showHint, setShowHint] = useState(true);
@@ -308,7 +308,7 @@ Even in controlled mode the content runs as a dismissable layer: a press outside
 The trigger listens to `SelectionGained`/`SelectionLost` alongside hover, and selection opens are immediate — no delay — because a gamepad user has already committed to the control. Nothing extra to wire: make the trigger selectable (the default trigger and the `asChild` slot both set `Selectable`) and D-pad focus shows the tooltip the moment the control is selected.
 
 ```tsx title="GamepadStatTooltip.tsx"
-import { Tooltip } from "@lattice-ui/tooltip";
+import { Tooltip } from "@lattice-ui/react-tooltip";
 
 export function GamepadStatTooltip() {
   return (

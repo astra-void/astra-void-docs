@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/tabs"
+  packageName="@lattice-ui/react-tabs"
   status="stable-direction"
   importName="Tabs"
-  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
 Tabs is the primitive for switching between mutually exclusive views: settings categories, inventory sections, shop pages, or any place where one panel is visible at a time. It owns the active value, keeps its triggers ordered, handles arrow-key movement between them, and mounts the matching panel with presence motion.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 ```
 
 ## Anatomy
@@ -59,7 +59,7 @@ Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every 
 An uncontrolled tab group. `defaultValue` picks the starting panel, and the default `Trigger` renders a `textbutton` whose label is its `value`. The `List` and `Content` defaults are zero-size transparent frames, so pass `asChild` with your own sized elements to lay them out.
 
 ```tsx title="ShopTabs.tsx"
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 export function ShopTabs() {
   return (
@@ -130,7 +130,7 @@ Drive the active value from your own state with `value`/`onValueChange`. Anythin
 
 ```tsx title="SettingsTabs.tsx"
 import { useState } from "@rbxts/react";
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 const CATEGORIES = ["general", "audio", "graphics"];
 
@@ -176,7 +176,7 @@ export function SettingsTabs() {
 Set `orientation="vertical"` to move selection with Up/Down instead of Left/Right. Orientation is behavioral only — lay the list out yourself with a vertical `uilistlayout`.
 
 ```tsx title="QuestCategories.tsx"
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 export function QuestCategories() {
   return (
@@ -246,7 +246,7 @@ export function QuestCategories() {
 Pass `asChild` on `Trigger` to supply your own button while keeping registration, activation, and movement wiring. The trigger's response motion still animates the child's `BackgroundColor3` and `TextColor3` between the built-in active/inactive palette on selection.
 
 ```tsx title="StyledTabs.tsx"
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 function StyledTrigger(props: { value: string; label: string }) {
   return (
@@ -309,7 +309,7 @@ export function StyledTabs() {
 A disabled trigger cannot be activated, is skipped by arrow-key movement, and never becomes the active value. If the active value becomes disabled, `Root` moves the selection to the next enabled trigger automatically.
 
 ```tsx title="PrestigeTabs.tsx"
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 export function PrestigeTabs(props: { prestigeUnlocked: boolean }) {
   return (
@@ -354,7 +354,7 @@ export function PrestigeTabs(props: { prestigeUnlocked: boolean }) {
 By default a panel unmounts after its exit animation. Pass `forceMount` to keep it in the tree at all times — Tabs then only toggles its `Visible` property. Use this when a panel is expensive to rebuild, like a `viewportframe` world map.
 
 ```tsx title="MapTabs.tsx"
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 export function MapTabs() {
   return (

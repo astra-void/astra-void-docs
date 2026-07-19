@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/popover"
+  packageName="@lattice-ui/react-popover"
   status="stable-direction"
   importName="Popover"
-  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
 Popover is the primitive for a non-blocking surface that floats next to the element that opened it: hover cards, inline editors, detail panels, and small forms. It coordinates open state, positioning, dismissal, and exit motion so your component only has to render the floating frame and its contents.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 ```
 
 ## Anatomy
@@ -68,7 +68,7 @@ Compose the parts you need. `Root`, `Portal`, and `Content` form the minimum use
 The smallest useful popover: an uncontrolled root, a trigger projected onto your own button with `asChild`, and a content surface in a portal. The trigger toggles on activation and doubles as the positioning anchor, an outside press dismisses, and the default content wrapper is an auto-sized `canvasgroup` — so your frame inside it just needs a size.
 
 ```tsx title="EmoteInfoPopover.tsx"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function EmoteInfoPopover() {
   return (
@@ -100,7 +100,7 @@ export function EmoteInfoPopover() {
 Add a `Popover.Anchor` when the surface should point at something other than the button that opens it. Here a help button in a toolbar opens a callout that annotates the quest tracker HUD frame instead of the button itself. A mounted anchor always wins over the trigger as the positioning reference, and with `asChild` it tracks your element directly instead of rendering its default zero-size frame.
 
 ```tsx title="QuestTrackerCallout.tsx"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function QuestTrackerCallout() {
   return (
@@ -148,7 +148,7 @@ export function QuestTrackerCallout() {
 Pass `open` and `onOpenChange` when something outside the popover decides visibility. This onboarding hint opens the moment the player receives their first item and closes through the same channel a trigger would use — an outside press or `Popover.Close` still calls `onOpenChange(false)`, so your state stays the source of truth. No trigger is needed; the anchor alone positions the surface.
 
 ```tsx title="InventoryHint.tsx"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function InventoryHint(props: { hasNewItem: boolean; onDismiss: () => void }) {
   return (
@@ -191,7 +191,7 @@ export function InventoryHint(props: { hasNewItem: boolean; onDismiss: () => voi
 Positioning is tuned entirely on `Popover.Content`. `placement` requests a side (default `"bottom"`), `sideOffset` adds a gap between the anchor and the surface, `alignOffset` shifts the surface along the anchor's cross axis, and `collisionPadding` sets the minimum distance kept from the screen edge (default `8`). When the requested side does not fit, the content flips to the opposite side — and its entrance motion animates from whichever side actually resolved.
 
 ```tsx title="StatTooltipPopover.tsx"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function StatTooltipPopover() {
   return (
@@ -223,7 +223,7 @@ export function StatTooltipPopover() {
 `Popover.Close` closes the popover from anywhere inside the content; with `asChild` it merges the close behavior onto your own button. On close, the focus scope restores gamepad selection to whatever was selected before the popover opened — the trigger focuses itself as it opens, so selection lands back on the trigger without any wiring on your side.
 
 ```tsx title="LoadoutSavePopover.tsx"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function LoadoutSavePopover(props: { onSave: () => void }) {
   return (
@@ -267,8 +267,8 @@ export function LoadoutSavePopover(props: { onSave: () => void }) {
 `Popover.Content` runs a placement-aware reveal/exit recipe by default. Override it with `transition`, and pass `forceMount` when the node should stay mounted instead of unmounting after the exit finishes — useful when you drive motion yourself or need the instance to persist. The default (non-`asChild`) wrapper is a `canvasgroup`, so build custom recipes with `createCanvasGroupPopperEntranceRecipe` to keep the `GroupTransparency` fade.
 
 ```tsx title="SlowRevealPopover.tsx"
-import { Popover } from "@lattice-ui/popover";
-import { createCanvasGroupPopperEntranceRecipe } from "@lattice-ui/motion";
+import { Popover } from "@lattice-ui/react-popover";
+import { createCanvasGroupPopperEntranceRecipe } from "@lattice-ui/react-motion";
 
 const SLOW_REVEAL = createCanvasGroupPopperEntranceRecipe("top", 16, 0.25);
 
@@ -322,7 +322,7 @@ Until the first measurement resolves, the surface is parked far offscreen and th
 
 ### Motion and presence
 
-`Popover.Content` runs a placement-aware reveal/exit recipe with no setup: the surface slides in 10 pixels from the resolved placement side while fading in, then plays the reverse on exit at 0.8x the reveal duration. The default wrapper is a `canvasgroup` animated through `GroupTransparency` (0.12s reveal); with `asChild` the recipe is applied to your element directly, animating `BackgroundTransparency` and position (0.16s reveal). Override either with `transition` — `createCanvasGroupPopperEntranceRecipe` and `createPopperEntranceRecipe` from `@lattice-ui/motion` build placement-aware variants with your own distance and duration.
+`Popover.Content` runs a placement-aware reveal/exit recipe with no setup: the surface slides in 10 pixels from the resolved placement side while fading in, then plays the reverse on exit at 0.8x the reveal duration. The default wrapper is a `canvasgroup` animated through `GroupTransparency` (0.12s reveal); with `asChild` the recipe is applied to your element directly, animating `BackgroundTransparency` and position (0.16s reveal). Override either with `transition` — `createCanvasGroupPopperEntranceRecipe` and `createPopperEntranceRecipe` from `@lattice-ui/react-motion` build placement-aware variants with your own distance and duration.
 
 Without `forceMount`, the content mounts when the popover opens and unmounts after the exit motion completes. Pass `forceMount` to skip the presence wrapper entirely: the node stays mounted while closed with its `Visible` driven by the motion controller, which is useful when you drive motion yourself or need the instance to persist across open cycles.
 
@@ -391,7 +391,7 @@ The default content wrapper is a `canvasgroup`, which fades via `GroupTransparen
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
     { name: "asChild", type: "boolean", description: "Position and animate the single child element instead of rendering the default auto-sized canvasgroup wrapper. Switches the default recipe to the transform variant." },
     { name: "forceMount", type: "boolean", description: "Keeps the content mounted while closed and through exit motion, with Visible driven by the motion controller, instead of unmounting after exit." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default placement-aware reveal/exit recipe. Build variants with createCanvasGroupPopperEntranceRecipe or createPopperEntranceRecipe from @lattice-ui/motion." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default placement-aware reveal/exit recipe. Build variants with createCanvasGroupPopperEntranceRecipe or createPopperEntranceRecipe from @lattice-ui/react-motion." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
     { name: "children", type: "React.ReactNode", description: "The surface contents. Must be a single valid element when asChild is set." },

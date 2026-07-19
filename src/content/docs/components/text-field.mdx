@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/text-field"
+  packageName="@lattice-ui/react-text-field"
   status="stable-direction"
   importName="TextField"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-motion"]}
 />
 
 Text Field is the primitive for any single-line input: a username box, a search bar, a price entry, a private-server name. It wraps a Roblox `TextBox`, owns the current value, and distinguishes a live change (every keystroke) from a commit (when editing ends), so your component decides when to validate or persist.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 ```
 
 ## Anatomy
@@ -64,7 +64,7 @@ Compose `Root` around an `Input`, plus any of the optional text parts. Only `Roo
 An uncontrolled field seeded with `defaultValue`: the Root keeps the value internally and you only hear about it through the callbacks. `Label`, `Input`, and `Description` each take `asChild` to project their behavior onto your own elements — clicking the label captures focus on the input, and the description is plain helper text that dims with the field.
 
 ```tsx title="DisplayNameField.tsx"
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 
 export function DisplayNameField() {
   return (
@@ -108,7 +108,7 @@ Pass `value` and `onValueChange` when something outside the field needs to read 
 
 ```tsx title="ItemSearchField.tsx"
 import { useState } from "@rbxts/react";
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 
 export function ItemSearchField(props: { onQueryChange: (query: string) => void }) {
   const [query, setQuery] = useState("");
@@ -148,7 +148,7 @@ export function ItemSearchField(props: { onQueryChange: (query: string) => void 
 
 ```tsx title="ServerNameField.tsx"
 import { useState } from "@rbxts/react";
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 
 export function ServerNameField(props: { onSave: (name: string) => void }) {
   const [draft, setDraft] = useState("My Server");
@@ -191,7 +191,7 @@ Validate on commit rather than every keystroke, then flip `invalid` on the Root.
 
 ```tsx title="UsernameField.tsx"
 import { useState } from "@rbxts/react";
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 
 export function UsernameField() {
   const [name, setName] = useState("");
@@ -245,7 +245,7 @@ export function UsernameField() {
 Both flags freeze the value, but they differ in interaction. `disabled` takes the input out of play entirely — it clears `Active`/`Selectable`, dims the text, ignores edits, and suppresses the commit callback. `readOnly` keeps the field focusable and selectable (players can still click into it and copy the text) but rejects edits; a focus loss still fires `onValueCommit` with the unchanged text. Here the join code is copyable but locked, while the region field is fully inert until unlocked.
 
 ```tsx title="ServerInfoFields.tsx"
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 
 export function ServerInfoFields(props: { joinCode: string; canEditRegion: boolean }) {
   return (
@@ -270,7 +270,7 @@ For numeric-only entry, control the value and strip rejected characters in `onVa
 
 ```tsx title="BetAmountField.tsx"
 import { useState } from "@rbxts/react";
-import { TextField } from "@lattice-ui/text-field";
+import { TextField } from "@lattice-ui/react-text-field";
 
 const MAX_BET = 500;
 

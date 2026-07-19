@@ -9,9 +9,9 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/motion"
+  packageName="@lattice-ui/react-motion"
   status="stable-direction"
-  dependencies={["@lattice-ui/core", "@rbxts/services"]}
+  dependencies={["@lattice-ui/react-runtime", "@rbxts/services"]}
 />
 
 Motion is the animation foundation for Lattice UI. Rather than asking you to hand-write tweens, it works in terms of **intent** (a tempo and tone) and **target contracts** (which properties motion is allowed to own on a given instance). Three hooks cover the three motion domains — **presence** for mount/unmount transitions, **response** for state-to-state settling, and **feedback** for momentary accents — and a library of recipes encodes the project's house style for common surfaces.
@@ -30,7 +30,7 @@ import {
   useFeedbackEffect,
   motionTargets,
   createCanvasGroupRevealRecipe,
-} from "@lattice-ui/motion";
+} from "@lattice-ui/react-motion";
 ```
 
 ## API reference

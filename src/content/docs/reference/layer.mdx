@@ -9,9 +9,9 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/layer"
+  packageName="@lattice-ui/react-layer"
   status="stable-direction"
-  dependencies={["@lattice-ui/core", "@lattice-ui/focus"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus"]}
 />
 
 Layer provides the three behaviors every overlay surface needs in Roblox: rendering **outside the local tree** into a `ScreenGui`, **dismissing on outside interaction** while optionally blocking input behind the surface, and **staying mounted through an exit animation**. Dialog, Popover, Menu, Select, Tooltip, and Toast are all built on these primitives.
@@ -27,7 +27,7 @@ import {
   usePortalContext,
   DismissableLayer,
   Presence,
-} from "@lattice-ui/layer";
+} from "@lattice-ui/react-layer";
 ```
 
 ## API reference

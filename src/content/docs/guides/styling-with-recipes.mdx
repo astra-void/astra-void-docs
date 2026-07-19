@@ -9,7 +9,7 @@ draft: false
 
 import { Callout } from "@/components/docs/mdx";
 
-Lattice primitives are headless — they give you behavior and leave the pixels to you. `@lattice-ui/style` is the package that fills the visual half, and it gives you exactly two styling tools:
+Lattice primitives are headless — they give you behavior and leave the pixels to you. `@lattice-ui/react-style` is the package that fills the visual half, and it gives you exactly two styling tools:
 
 - **`sx`** — a one-off style value: either a plain set of host props, or a function from the current `Theme` to host props. Use it where a component needs its own look, right there.
 - **`createRecipe`** — a reusable variant system, the Roblox-props equivalent of `cva` on the web. Base styles plus named variants plus compound overrides, resolved to a single props object you spread onto a host.
@@ -30,7 +30,7 @@ The `Box` and `Text` primitives accept an `sx` prop and resolve it against the a
 
 ```tsx title="Card.tsx"
 import { React } from "@rbxts/react";
-import { Box, Text } from "@lattice-ui/style";
+import { Box, Text } from "@lattice-ui/react-style";
 
 export function Card(props: { title: string }) {
   return (
@@ -61,7 +61,7 @@ Direct host props and the resolved `sx` are combined with `mergeGuiProps`, the m
 When you need to combine several sx values — a shared base plus a caller override — use `mergeSx`. It returns a single theme-resolving function that folds its arguments left to right, later entries winning:
 
 ```tsx title="Composing sx values"
-import { mergeSx, type Sx } from "@lattice-ui/style";
+import { mergeSx, type Sx } from "@lattice-ui/react-style";
 
 const panelBase: Sx<Record<string, unknown>> = (theme) => ({
   BackgroundColor3: theme.colors.surfaceElevated,
@@ -78,7 +78,7 @@ export function Panel(props: { sx?: Sx<Record<string, unknown>> }) {
 Inline `sx` scales badly once the same component needs sizes, tones, and states. `createRecipe` takes a config of `base`, `variants`, `defaultVariants`, and `compoundVariants` — each style slot is itself an `Sx`, so any of them can read the theme — and returns a resolver: `(selection, theme) => Partial<Props>`.
 
 ```tsx title="button.recipe.ts"
-import { createRecipe } from "@lattice-ui/style";
+import { createRecipe } from "@lattice-ui/react-style";
 
 export const buttonRecipe = createRecipe({
   base: (theme) => ({
@@ -120,7 +120,7 @@ Resolution is deterministic layering: the caller's selection is merged over `def
 
 ```tsx title="Button.tsx"
 import { React } from "@rbxts/react";
-import { useTheme } from "@lattice-ui/style";
+import { useTheme } from "@lattice-ui/react-style";
 import { buttonRecipe } from "./button.recipe";
 
 export function Button(props: {
@@ -158,8 +158,8 @@ This is where the style package meets the behavior packages. Lattice parts accep
 
 ```tsx title="StyledCheckbox.tsx"
 import { React } from "@rbxts/react";
-import { Checkbox } from "@lattice-ui/checkbox";
-import { createRecipe, useTheme } from "@lattice-ui/style";
+import { Checkbox } from "@lattice-ui/react-checkbox";
+import { createRecipe, useTheme } from "@lattice-ui/react-style";
 
 const checkboxRecipe = createRecipe({
   base: (theme) => ({

@@ -38,7 +38,7 @@ const { packageName, status, importName, dependencies = [] } = Astro.props as Pr
           <span>
             {index > 0 ? ", " : ""}
             <code class="font-mono text-xs text-foreground">
-              {dependency.replace("@lattice-ui/", "")}
+              {dependency.replace("@lattice-ui/react-", "")}
             </code>
           </span>
         ))}

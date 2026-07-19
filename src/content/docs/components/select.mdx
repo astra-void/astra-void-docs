@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/select"
+  packageName="@lattice-ui/react-select"
   status="feature-limited"
   importName="Select"
-  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
 Select is the primitive for picking one value from a list: difficulty pickers, region menus, sort dropdowns, and any "choose one" control. It coordinates open state, the selected value, item registration, popper positioning, and outside-press dismissal so your component only has to render a trigger, a value label, and the items.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 ```
 
 ## Anatomy
@@ -78,7 +78,7 @@ The smallest useful composition: a controlled root, the default trigger button w
 
 ```tsx title="RegionSelect.tsx"
 import { useState } from "@rbxts/react";
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 
 export function RegionSelect() {
   const [region, setRegion] = useState<string>();
@@ -116,7 +116,7 @@ Wire `value`/`onValueChange` to persist a selection the moment it happens — a 
 
 ```tsx title="GraphicsQualitySelect.tsx"
 import { useState } from "@rbxts/react";
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 
 const QUALITY_LEVELS = ["Low", "Medium", "High", "Ultra"];
 
@@ -164,7 +164,7 @@ export function GraphicsQualitySelect(props: {
 
 ```tsx title="SortSelect.tsx"
 import { useState } from "@rbxts/react";
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 
 export function SortSelect() {
   const [sort, setSort] = useState<string>("Newest");
@@ -244,7 +244,7 @@ A disabled item stays visible but inert: pressing it does nothing — the value 
 
 ```tsx title="ServerTierSelect.tsx"
 import { useState } from "@rbxts/react";
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 
 export function ServerTierSelect(props: { hasPremium: boolean }) {
   const [tier, setTier] = useState<string>("Standard");
@@ -285,7 +285,7 @@ Use `asChild` to project the trigger behavior onto your own button and the resol
 
 ```tsx title="LoadoutSelect.tsx"
 import { useState } from "@rbxts/react";
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 
 export function LoadoutSelect() {
   const [loadout, setLoadout] = useState<string>();
@@ -342,7 +342,7 @@ export function LoadoutSelect() {
 
 ```tsx title="HudSortSelect.tsx"
 import { useState } from "@rbxts/react";
-import { Select } from "@lattice-ui/select";
+import { Select } from "@lattice-ui/react-select";
 
 export function HudSortSelect() {
   const [sort, setSort] = useState<string>("Rarity");

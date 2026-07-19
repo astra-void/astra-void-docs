@@ -1,5 +1,5 @@
 ---
-title: Core
+title: Runtime
 description: The shared React runtime, slot composition, ref merging, and controllable state primitives every Lattice UI package builds on.
 section: reference
 sidebar:
@@ -9,14 +9,14 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/core"
+  packageName="@lattice-ui/react-runtime"
   status="stable-direction"
   dependencies={[]}
 />
 
-Core is the foundation layer underneath every other Lattice UI package. It pins a single React and React-Roblox runtime, and provides the small set of composition utilities that primitives reuse over and over: a strict context factory, ref-merging helpers, the `Slot` component that powers `asChild`, and a controllable-state hook for components that can run either controlled or uncontrolled.
+Runtime is the foundation layer underneath every other Lattice UI package. It pins a single React and React-Roblox runtime, and provides the small set of composition utilities that primitives reuse over and over: a strict context factory, ref-merging helpers, the `Slot` component that powers `asChild`, and a controllable-state hook for components that can run either controlled or uncontrolled.
 
-You rarely import Core directly when consuming a primitive — but every primitive depends on it, and if you build your own primitive on top of Lattice UI, this is the package you reach for first.
+You rarely import Runtime directly when consuming a primitive — but every primitive depends on it, and if you build your own primitive on top of Lattice UI, this is the package you reach for first.
 
 ## Import
 
@@ -31,7 +31,7 @@ import {
   setRef,
   getElementRef,
   toRef,
-} from "@lattice-ui/core";
+} from "@lattice-ui/react-runtime";
 ```
 
 ## API reference
@@ -39,15 +39,15 @@ import {
 ### React
 
 ```ts
-import { React } from "@lattice-ui/core";
+import { React } from "@lattice-ui/react-runtime";
 ```
 
-A re-export of `@rbxts/react`, exposed as a default-style named binding. Every Lattice UI package imports React through Core so the whole tree shares one React instance — sharing context, hooks, and reconciler state. When you build on top of Lattice UI, prefer importing `React` from here over `@rbxts/react` directly to avoid pulling in a second copy.
+A re-export of `@rbxts/react`, exposed as a default-style named binding. Every Lattice UI package imports React through Runtime so the whole tree shares one React instance — sharing context, hooks, and reconciler state. When you build on top of Lattice UI, prefer importing `React` from here over `@rbxts/react` directly to avoid pulling in a second copy.
 
 ### ReactRoblox
 
 ```ts
-import { ReactRoblox } from "@lattice-ui/core";
+import { ReactRoblox } from "@lattice-ui/react-runtime";
 ```
 
 A re-export of `@rbxts/react-roblox`. This is the host renderer used to create roots and portals (`ReactRoblox.createRoot`, `ReactRoblox.createPortal`). The Layer package's `Portal` is built on `ReactRoblox.createPortal`.

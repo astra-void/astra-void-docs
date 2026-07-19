@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/avatar"
+  packageName="@lattice-ui/react-avatar"
   status="stable-direction"
   importName="Avatar"
-  dependencies={["@lattice-ui/core"]}
+  dependencies={["@lattice-ui/react-runtime"]}
 />
 
 Avatar represents a player or entity with an image, falling back to placeholder content when there is no source or the image has not loaded. It tracks the load lifecycle of the underlying `ImageLabel` and coordinates when the image versus the fallback is shown, so you never flash a placeholder during a fast load or leave an empty box on a broken asset.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Avatar } from "@lattice-ui/avatar";
+import { Avatar } from "@lattice-ui/react-avatar";
 ```
 
 ## Anatomy
@@ -60,7 +60,7 @@ Compose `Root` around an `Image` and a `Fallback`. The root owns the source and 
 The smallest useful avatar: a source on the root, the default 40x40 circular image, and an initials fallback. The fallback uses `asChild` to render your own label — the default fallback is a placeholder `textlabel` with `"AB"` text, so real content should replace it rather than sit inside it.
 
 ```tsx title="BasicAvatar.tsx"
-import { Avatar } from "@lattice-ui/avatar";
+import { Avatar } from "@lattice-ui/react-avatar";
 
 export function BasicAvatar() {
   return (
@@ -88,7 +88,7 @@ export function BasicAvatar() {
 `delayMs` controls how long a loading avatar stays blank before the fallback appears. The default is `250`, which absorbs most fast loads without a placeholder flash; raise it when your art direction prefers a longer blank window, or set it to `0` to show the fallback the moment loading starts. The delay only applies while loading — an empty or absent `src` skips it and shows the fallback immediately, and an errored load always shows it.
 
 ```tsx title="LoadoutSlotAvatar.tsx"
-import { Avatar } from "@lattice-ui/avatar";
+import { Avatar } from "@lattice-ui/react-avatar";
 
 export function LoadoutSlotAvatar(props: { iconSrc?: string }) {
   return (
@@ -116,7 +116,7 @@ export function LoadoutSlotAvatar(props: { iconSrc?: string }) {
 The most common source in a Roblox game: a `rbxthumb://` headshot URL built from a `UserId`. The engine resolves and caches the thumbnail itself, `Avatar.Image` reports `loaded` once the `ImageLabel` finishes, and the initials cover the gap for players whose thumbnails are slow or unavailable.
 
 ```tsx title="PlayerHeadshot.tsx"
-import { Avatar } from "@lattice-ui/avatar";
+import { Avatar } from "@lattice-ui/react-avatar";
 
 export function PlayerHeadshot(props: { userId: number; displayName: string }) {
   const src = `rbxthumb://type=AvatarHeadShot&id=${props.userId}&w=150&h=150`;
@@ -147,7 +147,7 @@ export function PlayerHeadshot(props: { userId: number; displayName: string }) {
 Presence indicators are app-owned visuals: the primitive handles only the image-versus-fallback handoff, so a status ring is just your own frame composed around it. Because `Avatar.Root` renders no instance, both parts mount straight into the ring frame; `asChild` on the image lets you center it inside the slightly larger wrapper.
 
 ```tsx title="StatusAvatar.tsx"
-import { Avatar } from "@lattice-ui/avatar";
+import { Avatar } from "@lattice-ui/react-avatar";
 
 export function StatusAvatar(props: { userId: number; online: boolean }) {
   const src = `rbxthumb://type=AvatarHeadShot&id=${props.userId}&w=150&h=150`;
@@ -203,7 +203,7 @@ export function StatusAvatar(props: { userId: number; online: boolean }) {
 A party-members row with overlapping avatars. Negative `uilistlayout` padding pulls each wrapper over the previous one, descending `ZIndex` keeps the leftmost member on top, and a stroke in the panel's background color creates the separation cut. Each member gets their own `Avatar.Root`, so slow thumbnails resolve independently.
 
 ```tsx title="PartyStack.tsx"
-import { Avatar } from "@lattice-ui/avatar";
+import { Avatar } from "@lattice-ui/react-avatar";
 
 const PARTY = [
   { userId: 156, initials: "BH" },

@@ -11,20 +11,20 @@ import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
 
 An overlay has a layout problem the moment it is born inside another component. A tooltip rendered inside a scrolling list gets clipped by the list. A dialog rendered deep in a panel inherits that panel's `ZIndex` band and ends up fighting siblings for stacking order. The content needs to *escape* its parent and render at the top of the screen tree — while its trigger stays where it logically belongs.
 
-`@lattice-ui/layer` provides the three pieces that make this work: **Portal** moves content into the right `BasePlayerGui`, **DismissableLayer** gives each surface its own ordered `ScreenGui` and coordinates outside-press dismissal, and **Presence** keeps a node mounted long enough to animate out. Every overlay primitive — Dialog, Popover, Menu, Select, Tooltip — is built on these.
+`@lattice-ui/react-layer` provides the three pieces that make this work: **Portal** moves content into the right `BasePlayerGui`, **DismissableLayer** gives each surface its own ordered `ScreenGui` and coordinates outside-press dismissal, and **Presence** keeps a node mounted long enough to animate out. Every overlay primitive — Dialog, Popover, Menu, Select, Tooltip — is built on these.
 
 ## Install
 
 The shipped components depend on this package already. Install it directly only when building a custom layered surface.
 
-<PackageInstall packageName="@lattice-ui/layer" />
+<PackageInstall packageName="@lattice-ui/react-layer" />
 
 ## Portals: escaping the local tree
 
 `createPortal` (re-exported through `Portal`) renders children into a target `Instance` instead of the position where the element appears in the tree. The trigger stays in your component; the content renders elsewhere.
 
 ```tsx title="Portal escapes clipping and stacking"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function HelpPopover() {
   return (
@@ -53,7 +53,7 @@ The portal target resolves from the nearest `PortalProvider`, or from an explici
 
 ```tsx title="App root"
 import { Players } from "@rbxts/services";
-import { PortalProvider } from "@lattice-ui/layer";
+import { PortalProvider } from "@lattice-ui/react-layer";
 
 const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui") as PlayerGui;
 
@@ -89,7 +89,7 @@ Resolve the `PlayerGui` once and pass the same `container` for the life of the s
 
 ```tsx title="A custom dismissable surface"
 import React from "@rbxts/react";
-import { DismissableLayer } from "@lattice-ui/layer";
+import { DismissableLayer } from "@lattice-ui/react-layer";
 
 function QuickPanel(props: { open: boolean; onClose: () => void }) {
   const boundaryRef = React.useRef<GuiObject>();
@@ -152,7 +152,7 @@ You generally get this for free by composing Lattice primitives. When building c
 When an overlay closes, unmounting it immediately would cut off any exit animation. `Presence` bridges the gap: it keeps the node mounted after `present` flips to `false`, exposes an `isPresent` flag to drive the exit, and only unmounts once the exit completes (or a fallback timeout elapses).
 
 ```tsx title="Presence keeps the node mounted to animate out"
-import { Presence } from "@lattice-ui/layer";
+import { Presence } from "@lattice-ui/react-layer";
 
 <Presence
   present={open}

@@ -9,9 +9,9 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/popper"
+  packageName="@lattice-ui/react-popper"
   status="experimental"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-motion"]}
 />
 
 Popper is the positioning foundation for anchored surfaces — the placement engine behind Popover, Tooltip, Menu, and Select listboxes. Given an anchor `GuiObject` and a content `GuiObject`, it computes where the content should sit, falls back to a better side when the requested one would overflow, and keeps the result in sync as the anchor, content, or viewport changes.
@@ -25,8 +25,8 @@ This package is experimental. The placement-relative offsets and viewport collis
 ## Import
 
 ```ts
-import { computePopper, usePopper } from "@lattice-ui/popper";
-import { subscribeAnchor, subscribeContent, subscribeViewport } from "@lattice-ui/popper";
+import { computePopper, usePopper } from "@lattice-ui/react-popper";
+import { subscribeAnchor, subscribeContent, subscribeViewport } from "@lattice-ui/react-popper";
 ```
 
 ## API reference

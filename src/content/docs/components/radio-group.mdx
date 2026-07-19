@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/radio-group"
+  packageName="@lattice-ui/react-radio-group"
   status="stable-direction"
   importName="RadioGroup"
-  dependencies={["@lattice-ui/core", "@lattice-ui/focus", "@lattice-ui/layer", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
 Radio Group is the primitive for picking exactly one option from a set: difficulty selectors, team pickers, quality settings, and any mutually-exclusive choice. `Root` owns the selected value; `Item` registers itself in the group, reflects whether it is checked, and handles activation and directional navigation; `Indicator` reveals a marker on the selected item.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 ```
 
 ## Anatomy
@@ -61,7 +61,7 @@ Wrap a set of `Item`s in a `Root`. Each `Item` carries a `value` and may contain
 The smallest possible group: uncontrolled state seeded with `defaultValue` and the default item visuals. Each default item is a `textbutton` labeled with its own `value` and tinted by whether it is checked, which makes it useful for wiring things up before you style anything. Because `Root` renders no container, the group borrows the layout of whatever frame it sits in.
 
 ```tsx title="BasicRadioGroup.tsx"
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 export function BasicRadioGroup() {
   return (
@@ -87,7 +87,7 @@ Pass `value` and `onValueChange` when something outside the group needs to read 
 
 ```tsx title="QualitySetting.tsx"
 import { useState } from "@rbxts/react";
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 const QUALITIES = ["Low", "Medium", "High", "Ultra"];
 
@@ -119,7 +119,7 @@ export function QualitySetting(props: { onSave: (quality: string) => void }) {
 
 ```tsx title="TeamPicker.tsx"
 import { useState } from "@rbxts/react";
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 const TEAMS = ["Red", "Blue", "Green"];
 
@@ -150,7 +150,7 @@ Use `asChild` to project the item behavior — activation, gamepad selection, an
 
 ```tsx title="DifficultyCards.tsx"
 import { useState } from "@rbxts/react";
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 const OPTIONS = ["Easy", "Normal", "Hard"];
 
@@ -213,7 +213,7 @@ export function DifficultyCards() {
 
 ```tsx title="GameModePicker.tsx"
 import { useState } from "@rbxts/react";
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 const MODES = [
   { value: "Classic", locked: false },
@@ -244,7 +244,7 @@ Items register with the group on mount and unregister on unmount, and directiona
 
 ```tsx title="LoadoutPicker.tsx"
 import { useState } from "@rbxts/react";
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 export function LoadoutPicker() {
   const [loadouts, setLoadouts] = useState(["Scout", "Tank"]);
@@ -288,7 +288,7 @@ Activating an item calls the group's `setValue` with that item's value. When `Ro
 
 An item selects itself on any of three inputs: `Activated` (click or tap), `Return`/`Space` via `InputBegan`, and `SelectionGained` — meaning that on a gamepad, merely moving selection onto an item commits it. The default item is `Active` and `Selectable` only while enabled, so a disabled item drops out of gamepad selection and cannot fire any of these paths.
 
-With `asChild`, these handlers are merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
+With `asChild`, these handlers are merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Orientation and arrow-key navigation
 
@@ -306,7 +306,7 @@ Without `asChild`, an `Item` renders a 170x34 `textbutton` whose `Text` is the i
 
 ### Indicator presence and motion
 
-`RadioGroup.Indicator` is presence-driven by its parent item's checked state. When the item becomes checked it mounts and runs the default indicator-reveal recipe — growing from zero to a 10x10 size while fading in — then plays the reverse exit and unmounts when another item is chosen. Override the animation with `transition`; the default recipe settles at 10x10, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/motion`) built with its own size. Pass `forceMount` to keep the indicator mounted regardless of checked state, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 10x10 frame and its `Visible` property is bound to the presence state.
+`RadioGroup.Indicator` is presence-driven by its parent item's checked state. When the item becomes checked it mounts and runs the default indicator-reveal recipe — growing from zero to a 10x10 size while fading in — then plays the reverse exit and unmounts when another item is chosen. Override the animation with `transition`; the default recipe settles at 10x10, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/react-motion`) built with its own size. Pass `forceMount` to keep the indicator mounted regardless of checked state, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 10x10 frame and its `Visible` property is bound to the presence state.
 
 ### Root renders no container
 

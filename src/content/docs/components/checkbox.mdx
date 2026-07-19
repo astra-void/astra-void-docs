@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/checkbox"
+  packageName="@lattice-ui/react-checkbox"
   status="stable-direction"
   importName="Checkbox"
-  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
 Checkbox is the primitive for a toggleable on/off control with an optional third `"indeterminate"` state. It owns the checked state, the toggle logic, and the reveal/exit motion of its indicator, so your component only has to render the box and what goes inside it.
@@ -29,7 +29,7 @@ The component running live — the same `@rbxts/react` tree Roblox renders, moun
 ## Import
 
 ```ts
-import { Checkbox } from "@lattice-ui/checkbox";
+import { Checkbox } from "@lattice-ui/react-checkbox";
 ```
 
 ## Anatomy
@@ -54,7 +54,7 @@ Compose `Root` as the toggleable button and place an `Indicator` inside it to sh
 The smallest possible checkbox: uncontrolled state seeded with `defaultChecked`, default visuals. The default root is a `textbutton` whose label reflects the current state (`"Checked"`, `"Unchecked"`, or `"Indeterminate"`), which makes it useful for wiring things up before you style anything.
 
 ```tsx title="BasicCheckbox.tsx"
-import { Checkbox } from "@lattice-ui/checkbox";
+import { Checkbox } from "@lattice-ui/react-checkbox";
 
 export function BasicCheckbox() {
   return (
@@ -74,7 +74,7 @@ Pass `checked` and `onCheckedChange` when something outside the checkbox needs t
 
 ```tsx title="RememberMeCheckbox.tsx"
 import { useState } from "@rbxts/react";
-import { Checkbox } from "@lattice-ui/checkbox";
+import { Checkbox } from "@lattice-ui/react-checkbox";
 
 export function RememberMeCheckbox() {
   const [checked, setChecked] = useState<boolean | "indeterminate">(false);
@@ -93,8 +93,8 @@ Use `asChild` to project the toggle behavior onto your own button, and give the 
 
 ```tsx title="StyledCheckbox.tsx"
 import { useState } from "@rbxts/react";
-import { Checkbox } from "@lattice-ui/checkbox";
-import { createIndicatorRevealRecipe } from "@lattice-ui/motion";
+import { Checkbox } from "@lattice-ui/react-checkbox";
+import { createIndicatorRevealRecipe } from "@lattice-ui/react-motion";
 
 const INDICATOR_REVEAL = createIndicatorRevealRecipe(UDim2.fromOffset(16, 16));
 
@@ -128,7 +128,7 @@ The classic tri-state pattern: a header checkbox derived from a set of row check
 
 ```tsx title="PartyInviteList.tsx"
 import { useState } from "@rbxts/react";
-import { Checkbox } from "@lattice-ui/checkbox";
+import { Checkbox } from "@lattice-ui/react-checkbox";
 
 const MEMBERS = ["Aria", "Bolt", "Cinder"];
 
@@ -200,7 +200,7 @@ A common game-UI pattern: a confirmation checkbox that must be checked before a 
 
 ```tsx title="TradeConfirmation.tsx"
 import { useState } from "@rbxts/react";
-import { Checkbox } from "@lattice-ui/checkbox";
+import { Checkbox } from "@lattice-ui/react-checkbox";
 
 export function TradeConfirmation(props: { onConfirm: () => void }) {
   const [accepted, setAccepted] = useState<boolean | "indeterminate">(false);
@@ -249,7 +249,7 @@ export function TradeConfirmation(props: { onConfirm: () => void }) {
 `disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are dropped — and removes the default button from gamepad selection. Here a premium-only option stays visible but inert.
 
 ```tsx title="PremiumOption.tsx"
-import { Checkbox } from "@lattice-ui/checkbox";
+import { Checkbox } from "@lattice-ui/react-checkbox";
 
 export function PremiumOption(props: { hasPremium: boolean }) {
   return (
@@ -272,7 +272,7 @@ Activating the checkbox runs a toggle: from `"indeterminate"` it goes to `true`,
 
 The default `Checkbox.Root` renders an activatable `textbutton` (160x36, labeled with the current state) that toggles on `Activated`, so click, tap, and gamepad activation all work. It is `Active` and `Selectable` only while enabled, so a disabled checkbox drops out of gamepad selection and dims its label.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
+With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Root color motion
 
@@ -286,7 +286,7 @@ The root animates its `BackgroundColor3` between a fixed accent palette — chec
 
 `Checkbox.Indicator` is presence-driven by the checked state — it is present whenever `checked` is not `false` (so for both `true` and `"indeterminate"`). It mounts and runs the default indicator-reveal recipe when checked — growing from a zero size to 12x12 while fading its background in over 0.1s — then plays the reverse exit and unmounts when unchecked.
 
-Override the animation with `transition`; the default recipe always settles at 12x12, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/motion`) built with its own size. Pass `forceMount` to keep the indicator mounted while unchecked and through its exit, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 12x12 frame and its `Visible` property is bound to the presence state.
+Override the animation with `transition`; the default recipe always settles at 12x12, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/react-motion`) built with its own size. Pass `forceMount` to keep the indicator mounted while unchecked and through its exit, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 12x12 frame and its `Visible` property is bound to the presence state.
 
 <Callout title="Indeterminate is controlled-only">
 Toggling never yields `"indeterminate"` — it maps indeterminate to `true` and otherwise flips the boolean. Provide `"indeterminate"` through the controlled `checked` prop, usually derived from a group of child checkboxes, and resolve it to `true`/`false` in your `onCheckedChange` handler.

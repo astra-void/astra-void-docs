@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/toggle-group"
+  packageName="@lattice-ui/react-toggle-group"
   status="stable-direction"
   importName="ToggleGroup"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-motion"]}
 />
 
 Toggle Group is the primitive for a related set of toggles that share selection state: view switches, filter chips, text-alignment pickers, and difficulty selectors. `Root` owns the selected value and tells each `Item` whether it is pressed, so your items only render their two visual states.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { ToggleGroup } from "@lattice-ui/toggle-group";
+import { ToggleGroup } from "@lattice-ui/react-toggle-group";
 ```
 
 ## Anatomy
@@ -59,7 +59,7 @@ A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the
 The smallest useful group: an uncontrolled single-select mode picker seeded with `defaultValue`. Each default item renders as a `textbutton` labeled with its `value`, which makes it easy to wire the group up before styling anything. In single mode, activating the already-pressed item clears the selection — `onValueChange` then fires with `undefined` — so a toolbar like this can also be fully deselected.
 
 ```tsx title="HotbarModePicker.tsx"
-import { ToggleGroup } from "@lattice-ui/toggle-group";
+import { ToggleGroup } from "@lattice-ui/react-toggle-group";
 
 export function HotbarModePicker() {
   return (
@@ -85,7 +85,7 @@ export function HotbarModePicker() {
 Switch `type` to `"multiple"` and the value becomes a `string[]`: each item toggles independently, and the array preserves the order in which items were selected. `defaultValue` seeds the initial set for uncontrolled usage (it defaults to an empty array), and `onValueChange` receives the full next array on every toggle.
 
 ```tsx title="ItemFilters.tsx"
-import { ToggleGroup } from "@lattice-ui/toggle-group";
+import { ToggleGroup } from "@lattice-ui/react-toggle-group";
 
 export function ItemFilters() {
   return (
@@ -112,7 +112,7 @@ Pass `value` and `onValueChange` when something outside the group reads or sets 
 
 ```tsx title="DifficultyPicker.tsx"
 import { useState } from "@rbxts/react";
-import { ToggleGroup } from "@lattice-ui/toggle-group";
+import { ToggleGroup } from "@lattice-ui/react-toggle-group";
 
 export function DifficultyPicker(props: { onStart: (difficulty: string) => void }) {
   const [difficulty, setDifficulty] = useState<string | undefined>("normal");
@@ -158,7 +158,7 @@ export function DifficultyPicker(props: { onStart: (difficulty: string) => void 
 `disabled` works at two levels. On `Root` it freezes the whole control: every item ignores activation, and `Root`'s toggle logic is short-circuited so nothing can change the value while it is set. On an `Item` it disables just that option while the rest of the group keeps working. Here the loadout is locked during a match, and one class is additionally locked behind premium.
 
 ```tsx title="LoadoutModes.tsx"
-import { ToggleGroup } from "@lattice-ui/toggle-group";
+import { ToggleGroup } from "@lattice-ui/react-toggle-group";
 
 export function LoadoutModes(props: { inMatch: boolean; hasPremium: boolean }) {
   return (
@@ -183,7 +183,7 @@ Use `asChild` on `Root` to replace the default zero-size container with your own
 
 ```tsx title="StyledViewSwitch.tsx"
 import { useState } from "@rbxts/react";
-import { ToggleGroup } from "@lattice-ui/toggle-group";
+import { ToggleGroup } from "@lattice-ui/react-toggle-group";
 
 const VIEWS = ["grid", "list", "detail"];
 
@@ -243,7 +243,7 @@ Because the value type and the `onValueChange` signature are a discriminated uni
 
 `ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` via `InputBegan`, so mouse, touch, keyboard, and gamepad activation all work. The default item renders as a 170x34 `textbutton` whose `Text` is its `value`, with `AutoButtonColor` off so the primitive's own color motion is the only feedback. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, and motion ref win over the child's own props, and event handlers compose (both the primitive's `Activated`/`InputBegan` handlers and any you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
+With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and motion ref win over the child's own props, and event handlers compose (both the primitive's `Activated`/`InputBegan` handlers and any you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Group container
 

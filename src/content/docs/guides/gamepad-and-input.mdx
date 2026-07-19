@@ -34,7 +34,7 @@ return <textbutton Active={!disabled} Selectable={!disabled} Event={eventHandler
 
 ## The ordered-selection model
 
-Composite widgets need "next item" and "previous item" to mean something stable, not "whatever is geometrically nearby". Each item registers an **ordered-selection entry** with its root — `{ id, order, ref, getDisabled?, getVisible? }` — and the root resolves movement with the helpers from `@lattice-ui/focus`:
+Composite widgets need "next item" and "previous item" to mean something stable, not "whatever is geometrically nearby". Each item registers an **ordered-selection entry** with its root — `{ id, order, ref, getDisabled?, getVisible? }` — and the root resolves movement with the helpers from `@lattice-ui/react-focus`:
 
 - `getOrderedSelectionEntries` sorts entries by their `order` field, so movement order is declaration order, not render or array order.
 - An entry is **available** only if its `GuiObject` exists, is not disabled, is `Visible` (and `getVisible()` does not veto), and has `Selectable` set. Unavailable entries are skipped entirely.
@@ -95,7 +95,7 @@ Unlike gamepad movement, keyboard movement goes through the ordered-selection he
 
 ## Pointer and touch
 
-Pointers need the one thing selection does not: **dismissal by pressing elsewhere**. `@lattice-ui/layer`'s dismissable stack listens to `UserInputService.InputBegan` and treats exactly two input types as pointers — `MouseButton1` and `Touch`. A press that is outside the topmost enabled layer's content (hit-tested with `GetGuiObjectsAtPosition`, with inset-compensated sample points) fires `onPointerDownOutside` and `onInteractOutside`, then dismisses the layer unless a handler calls `preventDefault()`. Input the engine already consumed (`gameProcessedEvent`) is ignored, and only the topmost layer reacts — nested surfaces dismiss one at a time.
+Pointers need the one thing selection does not: **dismissal by pressing elsewhere**. `@lattice-ui/react-layer`'s dismissable stack listens to `UserInputService.InputBegan` and treats exactly two input types as pointers — `MouseButton1` and `Touch`. A press that is outside the topmost enabled layer's content (hit-tested with `GetGuiObjectsAtPosition`, with inset-compensated sample points) fires `onPointerDownOutside` and `onInteractOutside`, then dismisses the layer unless a handler calls `preventDefault()`. Input the engine already consumed (`gameProcessedEvent`) is ignored, and only the topmost layer reacts — nested surfaces dismiss one at a time.
 
 ```tsx title="Keeping a surface open on outside press"
 <Popover.Content
@@ -125,7 +125,7 @@ Everything above composes for free — this settings group is fully drivable by 
 
 ```tsx title="QualityPicker.tsx"
 import { React } from "@rbxts/react";
-import { RadioGroup } from "@lattice-ui/radio-group";
+import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 const OPTIONS = ["low", "medium", "high", "ultra"];
 

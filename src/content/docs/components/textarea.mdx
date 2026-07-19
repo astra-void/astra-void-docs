@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/textarea"
+  packageName="@lattice-ui/react-textarea"
   status="stable-direction"
   importName="Textarea"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-motion"]}
 />
 
 Textarea is the primitive for multi-line input: a report description, a tribe message, feedback, or any field where text spans several lines. It wraps a multi-line Roblox `TextBox`, owns the value, splits live changes from commit, and grows its height to fit the content between configurable row bounds.
@@ -29,13 +29,13 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Textarea } from "@lattice-ui/textarea";
+import { Textarea } from "@lattice-ui/react-textarea";
 ```
 
 The package also exports the pure height helper used internally:
 
 ```ts
-import { resolveTextareaHeight } from "@lattice-ui/textarea";
+import { resolveTextareaHeight } from "@lattice-ui/react-textarea";
 ```
 
 ## Anatomy
@@ -70,7 +70,7 @@ Compose `Root` around an `Input`, plus any of the optional text parts. Only `Roo
 An uncontrolled field seeded with `defaultValue`: the Root keeps the value internally and you only hear about it through the callbacks. `Label`, `Input`, and `Description` each take `asChild` to project their behavior onto your own elements — clicking the label captures focus on the input, and the description dims alongside a disabled field. Auto-resize is on by default, so the input's height is driven for you; the `Size` you pass supplies the width and an initial height.
 
 ```tsx title="FeedbackField.tsx"
-import { Textarea } from "@lattice-ui/textarea";
+import { Textarea } from "@lattice-ui/react-textarea";
 
 export function FeedbackField() {
   return (
@@ -118,7 +118,7 @@ export function FeedbackField() {
 `autoResize` is on by default; `minRows` and `maxRows` set the bounds. Here a note composer starts at two rows and grows as the player types — from wrapped lines as well as explicit newlines — until it hits six rows, after which the height stops growing. The primitive only rewrites the height, keeping your width, so give the input a fixed pixel width and let the field own the rest.
 
 ```tsx title="NoteComposer.tsx"
-import { Textarea } from "@lattice-ui/textarea";
+import { Textarea } from "@lattice-ui/react-textarea";
 
 export function NoteComposer() {
   return (
@@ -146,7 +146,7 @@ Put the input in a layout that tolerates height changes — a `uilistlayout` col
 
 ```tsx title="ClanDescriptionField.tsx"
 import { useState } from "@rbxts/react";
-import { Textarea } from "@lattice-ui/textarea";
+import { Textarea } from "@lattice-ui/react-textarea";
 
 export function ClanDescriptionField(props: { onSave: (description: string) => void }) {
   const [draft, setDraft] = useState("A clan for casual raids.");
@@ -196,7 +196,7 @@ Validate on commit rather than every keystroke, then flip `invalid` on the Root.
 
 ```tsx title="ReportField.tsx"
 import { useState } from "@rbxts/react";
-import { Textarea } from "@lattice-ui/textarea";
+import { Textarea } from "@lattice-ui/react-textarea";
 
 export function ReportField() {
   const [text, setText] = useState("");
@@ -268,7 +268,7 @@ For a length-limited field, control the value and truncate in `onValueChange` be
 
 ```tsx title="BioField.tsx"
 import { useState } from "@rbxts/react";
-import { Textarea } from "@lattice-ui/textarea";
+import { Textarea } from "@lattice-ui/react-textarea";
 
 const MAX_BIO = 200;
 

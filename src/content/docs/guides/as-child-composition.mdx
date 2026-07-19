@@ -13,7 +13,7 @@ Every interactive part of a Lattice primitive has to render *something* — a `D
 
 `asChild` flips that around. Instead of rendering its own wrapper, the part takes the single element *you* provide and merges its behavior — event handlers, refs, and selection flags — onto it. Your element becomes the host; the primitive just enhances it. This is how you keep full control of the visual element while still getting the primitive's interaction contract.
 
-Under the hood this is powered by the `Slot` component from `@lattice-ui/core`, which clones your child and composes props onto it.
+Under the hood this is powered by the `Slot` component from `@lattice-ui/react-runtime`, which clones your child and composes props onto it.
 
 ## The problem `asChild` solves
 
@@ -75,7 +75,7 @@ Because `Slot` composes rather than replaces, you can attach your own analytics 
 A trigger that forwards its ref correctly also becomes the focus-restore target and the positioning anchor for free, because the primitive composes its ref onto your element.
 
 ```tsx title="A custom Button as a dialog trigger"
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 import { Button } from "../ui/Button"; // your design-system button
 
 export function SettingsButton() {
@@ -112,4 +112,4 @@ export function SettingsButton() {
 - [Dialog](/lattice-ui/components/dialog/)
 - [Popover](/lattice-ui/components/popover/)
 - [Menu](/lattice-ui/components/menu/)
-- [Core reference](/lattice-ui/reference/core/)
+- [Runtime reference](/lattice-ui/reference/runtime/)

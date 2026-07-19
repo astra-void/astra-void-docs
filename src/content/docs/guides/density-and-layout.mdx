@@ -9,16 +9,16 @@ draft: false
 
 import { Callout } from "@/components/docs/mdx";
 
-`@lattice-ui/style` gives you tokens; `@lattice-ui/system` gives those tokens somewhere to live. It layers the app-level structure on top of the style foundation: one provider that owns theme *and* density, a density system that rescales every spacing, radius, and type token globally, **surface tones** for elevation-consistent panels, and layout primitives (`Stack`, `Row`, `Grid`) that turn Roblox layout instances into token-driven components. This guide walks through how the pieces fit; the [System reference](/lattice-ui/reference/system/) has the full prop tables.
+`@lattice-ui/react-style` gives you tokens; `@lattice-ui/react-system` gives those tokens somewhere to live. It layers the app-level structure on top of the style foundation: one provider that owns theme *and* density, a density system that rescales every spacing, radius, and type token globally, **surface tones** for elevation-consistent panels, and layout primitives (`Stack`, `Row`, `Grid`) that turn Roblox layout instances into token-driven components. This guide walks through how the pieces fit; the [System reference](/lattice-ui/reference/system/) has the full prop tables.
 
 ## One provider for theme and density
 
-`SystemProvider` sits at the root. It owns the **base theme** (the raw token values), wraps a `DensityProvider`, and republishes a *density-resolved* theme through `@lattice-ui/style`'s `ThemeProvider`. Every `useTheme` consumer below — shipped components, your `sx` styles, the layout primitives — sees the scaled theme without doing anything.
+`SystemProvider` sits at the root. It owns the **base theme** (the raw token values), wraps a `DensityProvider`, and republishes a *density-resolved* theme through `@lattice-ui/react-style`'s `ThemeProvider`. Every `useTheme` consumer below — shipped components, your `sx` styles, the layout primitives — sees the scaled theme without doing anything.
 
 ```tsx title="App root"
 import React from "@rbxts/react";
-import { defaultDarkTheme } from "@lattice-ui/style";
-import { SystemProvider } from "@lattice-ui/system";
+import { defaultDarkTheme } from "@lattice-ui/react-style";
+import { SystemProvider } from "@lattice-ui/react-system";
 
 export function App() {
   return (
@@ -33,7 +33,7 @@ Theme and density are each independently controllable in the [standard trio shap
 
 ```tsx title="A density setting backed by useSystemTheme"
 import React from "@rbxts/react";
-import { useSystemTheme } from "@lattice-ui/system";
+import { useSystemTheme } from "@lattice-ui/react-system";
 
 export function DensitySetting() {
   const { density, setDensity } = useSystemTheme();
@@ -70,7 +70,7 @@ Results are rounded and clamped: spacing and radius never go negative, and text 
 
 ```tsx title="One panel, two densities"
 import React from "@rbxts/react";
-import { DensityProvider, Row } from "@lattice-ui/system";
+import { DensityProvider, Row } from "@lattice-ui/react-system";
 import { SettingsPanel } from "./settings-panel";
 
 export function DensityPreview() {
@@ -101,7 +101,7 @@ The `Surface` primitive renders a decorated `frame`: the tone's background, a `u
 
 ```tsx title="An elevation-consistent panel"
 import React from "@rbxts/react";
-import { Stack, Surface } from "@lattice-ui/system";
+import { Stack, Surface } from "@lattice-ui/react-system";
 
 export function QuestPanel() {
   return (
@@ -118,7 +118,7 @@ export function QuestPanel() {
 When you only want the tone's *props* on an element you already have — no extra frame, no `uicorner`/`uistroke` children — use the `surface()` helper. It returns an `sx` value resolving to background, border color, and border size for the token:
 
 ```tsx title="surface() applies a tone as sx props"
-import { surface, Stack } from "@lattice-ui/system";
+import { surface, Stack } from "@lattice-ui/react-system";
 
 <Stack gap={8} padding={12} sx={surface("sunken")} Size={new UDim2(1, 0, 0, 160)} />;
 ```
@@ -133,7 +133,7 @@ Rule of thumb: reach for `Surface` when you want the fully decorated panel look,
 
 ```tsx title="HUD column with Stack"
 import React from "@rbxts/react";
-import { Stack } from "@lattice-ui/system";
+import { Stack } from "@lattice-ui/react-system";
 
 export function HudColumn() {
   return (
@@ -157,7 +157,7 @@ export function HudColumn() {
 
 ```tsx title="Dialog button row"
 import React from "@rbxts/react";
-import { Row } from "@lattice-ui/system";
+import { Row } from "@lattice-ui/react-system";
 
 export function ConfirmButtons(props: { onCancel: () => void; onConfirm: () => void }) {
   return (
@@ -173,7 +173,7 @@ export function ConfirmButtons(props: { onCancel: () => void; onConfirm: () => v
 
 ```tsx title="Inventory grid"
 import React from "@rbxts/react";
-import { Grid } from "@lattice-ui/system";
+import { Grid } from "@lattice-ui/react-system";
 
 export function InventoryGrid(props: { items: Array<Item> }) {
   return (

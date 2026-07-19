@@ -11,7 +11,7 @@ import { Callout, PropTable } from "@/components/docs/mdx";
 
 A `Dialog` has open state. `Tabs` has a selected value. A `Checkbox` has a checked flag. Every stateful primitive in Lattice has to answer one question: *who owns this state — the primitive, or the app?* Rather than forcing one answer, each primitive supports both modes through the same prop shape, so you can start simple and reach for control only when you need it.
 
-This pattern is implemented once, in `useControllableState` from `@lattice-ui/core`, and every primitive root uses it. Learn the shape once and it applies everywhere.
+This pattern is implemented once, in `useControllableState` from `@lattice-ui/react-runtime`, and every primitive root uses it. Learn the shape once and it applies everywhere.
 
 ## The two modes
 
@@ -35,7 +35,7 @@ Some field primitives also expose a commit callback (for example `onValueCommit`
 This is the default, and it is the right choice most of the time. You give an initial value and forget about it.
 
 ```tsx title="Uncontrolled dialog"
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 
 export function HelpDialog() {
   return (
@@ -57,7 +57,7 @@ Pass `open` and `onOpenChange` together when something *outside* the primitive n
 
 ```tsx title="Controlled dialog"
 import { useState } from "@rbxts/react";
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 
 export function ConfirmPurchaseDialog(props: { productId: string }) {
   const [open, setOpen] = useState(false);
@@ -82,7 +82,7 @@ The same shape applies to selection primitives:
 
 ```tsx title="Controlled tabs"
 import { useState } from "@rbxts/react";
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 export function ProfilePanels() {
   const [tab, setTab] = useState("overview");
@@ -138,4 +138,4 @@ Uncontrolled is less code and harder to get wrong. Reach for controlled only whe
 - [Dialog](/lattice-ui/components/dialog/)
 - [Tabs](/lattice-ui/components/tabs/)
 - [Checkbox](/lattice-ui/components/checkbox/)
-- [Core reference](/lattice-ui/reference/core/)
+- [Runtime reference](/lattice-ui/reference/runtime/)

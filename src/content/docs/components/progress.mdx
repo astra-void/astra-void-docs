@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/progress"
+  packageName="@lattice-ui/react-progress"
   status="stable-direction"
   importName="Progress"
-  dependencies={["@lattice-ui/core", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-motion"]}
 />
 
 Progress is the primitive for visualizing how far along a task is: loading bars, download meters, XP bars, and quest trackers. `Root` clamps the value against a maximum and derives a `0..1` ratio; `Indicator` animates a fill to that ratio; and `Spinner` provides a self-rotating element for work that has no measurable progress.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Progress } from "@lattice-ui/progress";
+import { Progress } from "@lattice-ui/react-progress";
 ```
 
 The package also exports the value helpers `clampProgressValue` and `resolveProgressRatio`, so readouts outside the primitive can reuse the exact same math (see [Percent readout](#percent-readout)).
@@ -64,7 +64,7 @@ The core composition: a controlled `value` against a `max`, with the default ind
 
 ```tsx title="DownloadBar.tsx"
 import { useState } from "@rbxts/react";
-import { Progress } from "@lattice-ui/progress";
+import { Progress } from "@lattice-ui/react-progress";
 
 export function DownloadBar() {
   const [percent, setPercent] = useState(20);
@@ -101,7 +101,7 @@ export function DownloadBar() {
 Set `indeterminate` when work is running but has no measurable endpoint — connecting, matchmaking, waiting on a server. The indicator stops tracking the value and renders a fixed partial fill (`0.35` of the track width) that reads as "busy". Flip the prop back off and the same indicator animates to the real ratio, so a single bar can cover both phases of a task.
 
 ```tsx title="MatchmakingBar.tsx"
-import { Progress } from "@lattice-ui/progress";
+import { Progress } from "@lattice-ui/react-progress";
 
 export function MatchmakingBar(props: { searching: boolean; loadPercent: number }) {
   return (
@@ -124,7 +124,7 @@ export function MatchmakingBar(props: { searching: boolean; loadPercent: number 
 `Progress.Spinner` needs no `Root` — drop it anywhere you want a rotating busy glyph. `spinning` starts and stops the rotation loop (and hides the element while stopped), and `speedDegPerSecond` sets how fast it turns. The default render is a 22x22 accent ring with an orbiting dot.
 
 ```tsx title="SaveIndicator.tsx"
-import { Progress } from "@lattice-ui/progress";
+import { Progress } from "@lattice-ui/react-progress";
 
 export function SaveIndicator(props: { saving: boolean }) {
   return (
@@ -152,7 +152,7 @@ export function SaveIndicator(props: { saving: boolean }) {
 A label next to the bar should agree with the fill exactly, including clamping and the `max` floor. Rather than re-deriving `value / max` by hand, use the exported `resolveProgressRatio` helper — it is the same function `Root` uses internally, so an out-of-range value that renders as a full bar also reads as `100%`.
 
 ```tsx title="LevelProgress.tsx"
-import { Progress, resolveProgressRatio } from "@lattice-ui/progress";
+import { Progress, resolveProgressRatio } from "@lattice-ui/react-progress";
 
 export function LevelProgress(props: { xp: number; xpForNextLevel: number }) {
   const ratio = resolveProgressRatio(props.xp, props.xpForNextLevel);
@@ -191,11 +191,11 @@ export function LevelProgress(props: { xp: number; xpForNextLevel: number }) {
 
 ### Custom fill and motion
 
-`transition` overrides how the fill width settles after each value change; `asChild` swaps the default accent frame for your own fill element. The default recipe settles in 0.12s — pass `createProgressResponseRecipe` from `@lattice-ui/motion` with a longer duration for a smoother glide (a good fit for health bars, where a slow drain reads better than a snap), or a shorter one for near-instant tracking.
+`transition` overrides how the fill width settles after each value change; `asChild` swaps the default accent frame for your own fill element. The default recipe settles in 0.12s — pass `createProgressResponseRecipe` from `@lattice-ui/react-motion` with a longer duration for a smoother glide (a good fit for health bars, where a slow drain reads better than a snap), or a shorter one for near-instant tracking.
 
 ```tsx title="HealthBar.tsx"
-import { Progress } from "@lattice-ui/progress";
-import { createProgressResponseRecipe } from "@lattice-ui/motion";
+import { Progress } from "@lattice-ui/react-progress";
+import { createProgressResponseRecipe } from "@lattice-ui/react-motion";
 
 const SMOOTH_DRAIN = createProgressResponseRecipe(0.3);
 
@@ -237,7 +237,7 @@ Set `indeterminate` on `Root` to signal work without a known endpoint. The share
 
 ### Indicator structure and motion
 
-`Progress.Indicator` renders a transparent, clipped (`ClipsDescendants`) window anchored to the left of your track. The window's `Size` animates from `UDim2.fromScale(0, 1)` toward `UDim2.fromScale(ratio, 1)` using the default progress response recipe from `@lattice-ui/motion` — `createProgressResponseRecipe()`, a 0.12s swift layout settle. The fill inside always spans the window at full scale, so the visual effect is a fill growing along the track.
+`Progress.Indicator` renders a transparent, clipped (`ClipsDescendants`) window anchored to the left of your track. The window's `Size` animates from `UDim2.fromScale(0, 1)` toward `UDim2.fromScale(ratio, 1)` using the default progress response recipe from `@lattice-ui/react-motion` — `createProgressResponseRecipe()`, a 0.12s swift layout settle. The fill inside always spans the window at full scale, so the visual effect is a fill growing along the track.
 
 Pass `transition` (a `ResponseMotionConfig`) to override the recipe — rebuild it with `createProgressResponseRecipe(duration)` for a slower or snappier settle, or supply your own `target`/`settle` config. By default the fill is a solid `Color3.fromRGB(102, 156, 255)` frame and any `children` render inside it; with `asChild`, your child element becomes the fill and its `Position` and `Size` are forced to fill the window.
 

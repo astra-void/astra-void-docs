@@ -9,7 +9,7 @@ draft: false
 
 import { Callout } from "@/components/docs/mdx";
 
-Every animatable Lattice part takes a typed `transition` prop — `Dialog.Content`, `Popover.Content`, `Checkbox.Indicator`, `Progress.Indicator`, and friends all expose one. You almost never hand-author the config that goes into it: `@lattice-ui/motion` ships **recipes**, small factory functions that return a tuned config with the correct timing and target contract baked in. This page is the practical catalog — which recipes exist, which parts consume them, and how to override a component's default.
+Every animatable Lattice part takes a typed `transition` prop — `Dialog.Content`, `Popover.Content`, `Checkbox.Indicator`, `Progress.Indicator`, and friends all expose one. You almost never hand-author the config that goes into it: `@lattice-ui/react-motion` ships **recipes**, small factory functions that return a tuned config with the correct timing and target contract baked in. This page is the practical catalog — which recipes exist, which parts consume them, and how to override a component's default.
 
 For the concepts behind all of this — presence vs response vs feedback, target contracts, the hooks themselves — read [Presence and motion](/lattice-ui/guides/presence-and-motion/) first. Full signatures live in the [Motion reference](/lattice-ui/reference/motion/).
 
@@ -55,8 +55,8 @@ Every recipe also sets the right **target contract** — `createOverlayFadeRecip
 Pass a recipe's result straight to `transition`. `Dialog.Content` defaults to `createCanvasGroupRevealRecipe(8, 0.3)`; give it a longer, larger reveal by calling the same factory with different arguments:
 
 ```tsx title="HeroDialog.tsx"
-import { Dialog } from "@lattice-ui/dialog";
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/motion";
+import { Dialog } from "@lattice-ui/react-dialog";
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
 
 export function HeroDialog(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
@@ -77,8 +77,8 @@ export function HeroDialog(props: { open: boolean; onOpenChange: (open: boolean)
 The same pattern works for indicators. `Checkbox.Indicator` defaults to `createIndicatorRevealRecipe(UDim2.fromOffset(12, 12))`; a bigger checkbox wants a matching reveal size:
 
 ```tsx title="LargeCheckbox.tsx"
-import { Checkbox } from "@lattice-ui/checkbox";
-import { createIndicatorRevealRecipe } from "@lattice-ui/motion";
+import { Checkbox } from "@lattice-ui/react-checkbox";
+import { createIndicatorRevealRecipe } from "@lattice-ui/react-motion";
 
 export function LargeCheckbox(props: { checked: boolean; onCheckedChange: (checked: boolean) => void }) {
   return (
@@ -94,8 +94,8 @@ export function LargeCheckbox(props: { checked: boolean; onCheckedChange: (check
 Response-driven parts work the same way, just with a response recipe:
 
 ```tsx title="SlowProgress.tsx"
-import { Progress } from "@lattice-ui/progress";
-import { createProgressResponseRecipe } from "@lattice-ui/motion";
+import { Progress } from "@lattice-ui/react-progress";
+import { createProgressResponseRecipe } from "@lattice-ui/react-motion";
 
 export function SlowProgress(props: { value: number }) {
   return (
@@ -113,7 +113,7 @@ Recipe factories expose the knobs that are safe to turn — an offset or placeme
 When a recipe is almost right, spread its result and override just the step you care about instead of authoring a config from scratch. The recipe's target contract and remaining steps carry over:
 
 ```tsx title="Snappy exit, default entrance"
-import { createCanvasGroupRevealRecipe, type PresenceMotionConfig } from "@lattice-ui/motion";
+import { createCanvasGroupRevealRecipe, type PresenceMotionConfig } from "@lattice-ui/react-motion";
 
 const base = createCanvasGroupRevealRecipe(8, 0.3);
 
@@ -140,7 +140,7 @@ You do not opt recipes into reduced motion — every hook that consumes them rea
 The policy disables motion in two cases: you set it explicitly, or the player has Roblox's system reduced-motion setting enabled. `MotionProvider` respects the system setting by default (`respectSystemReducedMotion` defaults to `true`), and `useSystemReducedMotion` / `useMotionPolicy` let you read the resolved state yourself:
 
 ```tsx title="App.tsx"
-import { MotionProvider, useMotionPolicy } from "@lattice-ui/motion";
+import { MotionProvider, useMotionPolicy } from "@lattice-ui/react-motion";
 
 export function App(props: { forceReducedMotion: boolean; children: React.ReactNode }) {
   return (

@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/accordion"
+  packageName="@lattice-ui/react-accordion"
   status="stable-direction"
   importName="Accordion"
-  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
 Accordion is the primitive for a stack of disclosure sections where each section can expand to reveal content: FAQ lists, settings groups, inventory categories, and quest logs. It owns which items are open, keyed by a string `value`, and handles the reveal/exit motion of each section's content so your component only renders the header, trigger, and body.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Accordion } from "@lattice-ui/accordion";
+import { Accordion } from "@lattice-ui/react-accordion";
 ```
 
 ## Anatomy
@@ -66,7 +66,7 @@ Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wra
 The smallest useful accordion: an uncontrolled `single` root seeded with `defaultValue`, default visuals. The default trigger is a `textbutton` whose label reflects the item's state (`"Expand"` or `"Collapse"`), which makes it useful for wiring things up before you style anything. Because `Root` renders no instance, the item frames sit directly under your layout container.
 
 ```tsx title="FaqAccordion.tsx"
-import { Accordion } from "@lattice-ui/accordion";
+import { Accordion } from "@lattice-ui/react-accordion";
 
 export function FaqAccordion() {
   return (
@@ -115,7 +115,7 @@ export function FaqAccordion() {
 `type="multiple"` switches the value to an array and lets any number of items stay open at once — the right fit for filter panels and stat sheets where sections are independent. Items always toggle closed in this mode; `collapsible` is not needed.
 
 ```tsx title="InventoryFilters.tsx"
-import { Accordion } from "@lattice-ui/accordion";
+import { Accordion } from "@lattice-ui/react-accordion";
 
 export function InventoryFilters() {
   return (
@@ -165,7 +165,7 @@ export function InventoryFilters() {
 By default, `type="single"` keeps one item permanently open — re-activating the open trigger does nothing. Add `collapsible` when every panel should be closable, leaving the accordion fully collapsed. This settings panel starts on the audio section but can be shut entirely.
 
 ```tsx title="SettingsAccordion.tsx"
-import { Accordion } from "@lattice-ui/accordion";
+import { Accordion } from "@lattice-ui/react-accordion";
 
 export function SettingsAccordion() {
   return (
@@ -212,7 +212,7 @@ Pass `value` and `onValueChange` when something outside the accordion needs to o
 
 ```tsx title="QuestLog.tsx"
 import { useState } from "@rbxts/react";
-import { Accordion } from "@lattice-ui/accordion";
+import { Accordion } from "@lattice-ui/react-accordion";
 
 export function QuestLog() {
   const [value, setValue] = useState<string | Array<string>>("");
@@ -269,7 +269,7 @@ Use `asChild` on `Trigger` to project the toggle behavior onto your own button a
 
 ```tsx title="ChevronAccordion.tsx"
 import { useState } from "@rbxts/react";
-import { Accordion } from "@lattice-ui/accordion";
+import { Accordion } from "@lattice-ui/react-accordion";
 
 const SECTIONS = [
   { value: "party", label: "Party", body: "Invite friends and manage your squad." },
@@ -339,8 +339,8 @@ export function ChevronAccordion() {
 `forceMount` keeps the content frame mounted while its item is closed (visibility is still bound to presence), so children keep their state and you can measure or drive motion yourself. Pair it with `transition` to swap the default surface-reveal recipe — here for a deeper 12-pixel rise over 0.2 seconds.
 
 ```tsx title="PatchNotes.tsx"
-import { Accordion } from "@lattice-ui/accordion";
-import { createSurfaceRevealRecipe } from "@lattice-ui/motion";
+import { Accordion } from "@lattice-ui/react-accordion";
+import { createSurfaceRevealRecipe } from "@lattice-ui/react-motion";
 
 const DEEP_REVEAL = createSurfaceRevealRecipe(12, 0.2);
 
@@ -397,7 +397,7 @@ The root normalizes whatever shape it is given: in single mode an array collapse
 
 `Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and also on the `Return` and `Space` keys via `InputBegan`, so gamepad and keyboard activation both work without extra wiring. A disabled item's trigger ignores activation and key input alike, and drops `Active`. The default trigger sets `Selectable={false}` on itself; if you need it reachable by gamepad selection, render your own selectable element through `asChild`.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the core `Slot`: the slot's `Active`, `Selectable`, event handlers, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
+With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, event handlers, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Trigger color motion
 
@@ -407,7 +407,7 @@ The trigger animates its `BackgroundColor3` between a fixed palette — open set
 
 `Accordion.Content` is presence-driven: it mounts when its item opens and runs the default surface-reveal recipe — rising from a 4-pixel offset while its background fades in over 0.12s — then plays the swift reverse exit and unmounts when the item closes. The default frame is an opaque `RGB(35, 41, 54)` surface; note that the recipe animates `BackgroundTransparency`, so a transparent body should fade its children instead or pass its own `transition`.
 
-Override the animation with `transition` (any `PresenceMotionConfig`, such as one built with `createSurfaceRevealRecipe` from `@lattice-ui/motion`), or pass `forceMount` to keep the body mounted while closed and through its exit, bypassing the presence wrapper so you can drive motion or measurement yourself. With `asChild`, your single child element is rendered in place of the default frame and its `Visible` property is bound to the presence state.
+Override the animation with `transition` (any `PresenceMotionConfig`, such as one built with `createSurfaceRevealRecipe` from `@lattice-ui/react-motion`), or pass `forceMount` to keep the body mounted while closed and through its exit, bypassing the presence wrapper so you can drive motion or measurement yourself. With `asChild`, your single child element is rendered in place of the default frame and its `Visible` property is bound to the presence state.
 
 ### Open state stays internal
 
@@ -491,7 +491,7 @@ In addition to the props below, `Accordion.Content` forwards any extra GUI props
 The package also exports the pure functions behind the root's state logic, useful for tests or for deriving the next value outside the component tree.
 
 ```ts
-import { nextAccordionValues, normalizeAccordionValue } from "@lattice-ui/accordion";
+import { nextAccordionValues, normalizeAccordionValue } from "@lattice-ui/react-accordion";
 
 // The normalization Root applies to value/defaultValue for a given type.
 normalizeAccordionValue("single", ["a", "b"]); // ["a"]

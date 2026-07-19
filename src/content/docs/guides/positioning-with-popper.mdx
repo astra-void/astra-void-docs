@@ -11,7 +11,7 @@ import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
 
 Anchored surfaces — popovers, menus, selects, tooltips, comboboxes — all face the same problem: given an anchor somewhere on screen, place a floating panel next to it so it stays on the requested side, lines up the way you asked, and never spills off the viewport. Hand-writing that math per surface means re-deriving `AnchorPoint`, screen-edge clamping, and flip logic every time.
 
-`@lattice-ui/popper` solves it once. It is the positioning engine shared by every anchored primitive in Lattice. You give it an anchor ref, a content ref, and a desired placement; it measures both `GuiObject`s, picks the best side that fits, and hands back a `Position`, an `AnchorPoint`, and the resolved `placement` to apply to your floating frame.
+`@lattice-ui/react-popper` solves it once. It is the positioning engine shared by every anchored primitive in Lattice. You give it an anchor ref, a content ref, and a desired placement; it measures both `GuiObject`s, picks the best side that fits, and hands back a `Position`, an `AnchorPoint`, and the resolved `placement` to apply to your floating frame.
 
 Most of the time you do not touch this package directly — you set `placement`, `sideOffset`, `alignOffset`, and `collisionPadding` on a component like `Popover.Content` and the primitive forwards them. This guide explains what those props mean so you can position surfaces with intent.
 
@@ -19,7 +19,7 @@ Most of the time you do not touch this package directly — you set `placement`,
 
 You only install Popper directly if you are building a custom anchored primitive. The shipped components already depend on it.
 
-<PackageInstall packageName="@lattice-ui/popper" />
+<PackageInstall packageName="@lattice-ui/react-popper" />
 
 ## The positioning model
 
@@ -61,7 +61,7 @@ If nothing fits, Popper clamps the least-bad candidate inside the viewport (resp
 In practice you set these props on the component's content part. Popover is representative; menu, select, tooltip, and combobox expose the same names.
 
 ```tsx title="GuildBadgePopover.tsx"
-import { Popover } from "@lattice-ui/popover";
+import { Popover } from "@lattice-ui/react-popover";
 
 export function GuildBadgePopover() {
   return (
@@ -103,7 +103,7 @@ When you build your own anchored surface, call the `usePopper` hook. Give it sta
 
 ```tsx title="usePopper in a custom surface"
 import React from "@rbxts/react";
-import { usePopper } from "@lattice-ui/popper";
+import { usePopper } from "@lattice-ui/react-popper";
 
 function FloatingCard(props: { anchorRef: React.RefObject<GuiObject>; open: boolean }) {
   const contentRef = React.useRef<GuiObject>();

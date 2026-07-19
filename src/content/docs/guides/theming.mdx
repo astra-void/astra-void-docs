@@ -25,7 +25,7 @@ import {
   defaultDarkTheme,
   type Theme,
   type PartialTheme,
-} from "@lattice-ui/style";
+} from "@lattice-ui/react-style";
 ```
 
 ## The token groups
@@ -46,7 +46,7 @@ The color roles pair up deliberately: `accent` is a fill and `accentContrast` is
 `createTheme(partialTheme)` builds a complete `Theme` by merging your `PartialTheme` over `defaultLightTheme`, group by group. Override only what you need; everything else falls back to the light defaults.
 
 ```ts title="themes.ts"
-import { createTheme, defaultDarkTheme } from "@lattice-ui/style";
+import { createTheme, defaultDarkTheme } from "@lattice-ui/react-style";
 
 export const brandLightTheme = createTheme({
   colors: {
@@ -77,7 +77,7 @@ Each group is spread over the defaults, so `colors: { accent }` keeps the other 
 `ThemeProvider` puts a theme in context. Like every stateful Lattice primitive it supports both ownership modes (see [Controlled and uncontrolled state](/lattice-ui/guides/controlled-state/)): pass `defaultTheme` to let the provider own the theme, or pass `theme` plus `onThemeChange` to own it yourself. With neither prop it defaults to `defaultLightTheme`.
 
 ```tsx title="App.tsx"
-import { ThemeProvider } from "@lattice-ui/style";
+import { ThemeProvider } from "@lattice-ui/react-style";
 import { brandLightTheme } from "./themes";
 
 export function App(props: { children: React.ReactNode }) {
@@ -90,7 +90,7 @@ Inside the tree, `useTheme()` returns `{ theme, setTheme }`, and `useThemeValue(
 Here is a complete themed panel. Note that every visual property is an explicit read — this is what "your components paint" looks like in practice:
 
 ```tsx title="QuestPanel.tsx"
-import { useTheme } from "@lattice-ui/style";
+import { useTheme } from "@lattice-ui/react-style";
 
 export function QuestPanel(props: { title: string; body: string }) {
   const { theme } = useTheme();
@@ -137,7 +137,7 @@ export function QuestPanel(props: { title: string; body: string }) {
 When a component only needs one or two tokens, `useThemeValue` selects them without pulling the whole context value into your render:
 
 ```tsx title="AccentBadge.tsx"
-import { useThemeValue } from "@lattice-ui/style";
+import { useThemeValue } from "@lattice-ui/react-style";
 
 export function AccentBadge(props: { count: number }) {
   const accent = useThemeValue((theme) => theme.colors.accent);
@@ -166,7 +166,7 @@ Because the theme is ordinary React state, switching it is just `setTheme` with 
 
 ```tsx title="DarkModeToggle.tsx"
 import { useState } from "@rbxts/react";
-import { useTheme, defaultLightTheme, defaultDarkTheme } from "@lattice-ui/style";
+import { useTheme, defaultLightTheme, defaultDarkTheme } from "@lattice-ui/react-style";
 
 export function DarkModeToggle() {
   const { setTheme } = useTheme();
@@ -196,7 +196,7 @@ Always pass a new `Theme` object to `setTheme` — the built-ins, or the result 
 
 ## Themes and recipes
 
-Reading `useTheme` in every component works, but it scales poorly once variants appear. The `sx` and recipe layer in `@lattice-ui/style` exists exactly for this — an `sx` value can be a function of the theme, and `createRecipe` resolves variant-driven styles against the current theme for you. See [Styling with recipes](/lattice-ui/guides/styling-with-recipes/) for that workflow.
+Reading `useTheme` in every component works, but it scales poorly once variants appear. The `sx` and recipe layer in `@lattice-ui/react-style` exists exactly for this — an `sx` value can be a function of the theme, and `createRecipe` resolves variant-driven styles against the current theme for you. See [Styling with recipes](/lattice-ui/guides/styling-with-recipes/) for that workflow.
 
 ## Related
 

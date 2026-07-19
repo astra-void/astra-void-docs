@@ -10,10 +10,10 @@ sidebar:
 import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/combobox"
+  packageName="@lattice-ui/react-combobox"
   status="stable-direction"
   importName="Combobox"
-  dependencies={["@lattice-ui/core", "@lattice-ui/layer", "@lattice-ui/motion", "@lattice-ui/popper"]}
+  dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
 Combobox is the primitive for a filterable, single-value picker: searchable selects, command palettes, and autocomplete fields. It coordinates value state, input text, query filtering, item registration, positioning, and dismissal so your component only has to render the field, the listbox, and the items.
@@ -29,7 +29,7 @@ The component running live in the browser — the same `@rbxts/react` tree Roblo
 ## Import
 
 ```ts
-import { Combobox } from "@lattice-ui/combobox";
+import { Combobox } from "@lattice-ui/react-combobox";
 ```
 
 ## Anatomy
@@ -79,7 +79,7 @@ Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the wor
 The smallest useful composition: an uncontrolled root, the default input textbox as the anchor, and bare items on a plain list surface. The default `Combobox.Item` renders a labeled `textbutton` from its `value` (via `textValue`, which defaults to `value`), so display-ready values need no children at all. Typing narrows the list in place — each item hides itself when it stops matching — and selecting an item sets the value, fills the field, and closes the list.
 
 ```tsx title="BiomePicker.tsx"
-import { Combobox } from "@lattice-ui/combobox";
+import { Combobox } from "@lattice-ui/react-combobox";
 
 const BIOMES = ["Ashlands", "Frostpeak", "Gladewood", "Mirelow", "Sunspire"];
 
@@ -113,7 +113,7 @@ Control both trios when something outside the combobox needs to read or drive th
 
 ```tsx title="QuestSearch.tsx"
 import { useState } from "@rbxts/react";
-import { Combobox } from "@lattice-ui/combobox";
+import { Combobox } from "@lattice-ui/react-combobox";
 
 const QUESTS = ["Cinder Trial", "Echo Vault", "Gale Run", "Hollow March"];
 
@@ -170,8 +170,8 @@ Omit `value`/`onValueChange` (and `inputValue`/`open`) and pass `defaultValue`, 
 The root's `filterFn` decides whether each item matches the current query. The default is a case-insensitive substring match; swap it for prefix matching, token search, or locale-aware comparison. Define the function at module scope (or memoize it) so its identity stays stable — it is shared through context, and a new function every render churns every item.
 
 ```tsx title="CommandPalette.tsx"
-import { Combobox } from "@lattice-ui/combobox";
-import type { ComboboxFilterFn } from "@lattice-ui/combobox";
+import { Combobox } from "@lattice-ui/react-combobox";
+import type { ComboboxFilterFn } from "@lattice-ui/react-combobox";
 
 const COMMANDS = ["Teleport", "Trade", "Track quest", "Toggle HUD"];
 
@@ -208,7 +208,7 @@ export function CommandPalette() {
 `Group`, `Label`, and `Separator` structure longer lists. They are purely visual: they do not affect filtering or selection, and a label is not query-aware — it stays visible even when every item under it is filtered out. The default `Group` is a fixed-size frame, so for a growing list give it your own auto-sizing frame with `asChild`.
 
 ```tsx title="ServerRegionPicker.tsx"
-import { Combobox } from "@lattice-ui/combobox";
+import { Combobox } from "@lattice-ui/react-combobox";
 
 const AMERICAS = ["Chicago", "Dallas", "Sao Paulo"];
 const EUROPE = ["Frankfurt", "London", "Warsaw"];
@@ -288,7 +288,7 @@ Filtering hides items one by one — the listbox itself stays open and mounted e
 
 ```tsx title="SpellSearch.tsx"
 import { useState } from "@rbxts/react";
-import { Combobox, filterComboboxOptions } from "@lattice-ui/combobox";
+import { Combobox, filterComboboxOptions } from "@lattice-ui/react-combobox";
 
 const SPELLS = ["Arc Nova", "Ember Coil", "Frost Lattice", "Stone Ward"];
 const SPELL_OPTIONS = SPELLS.map((spell) => ({ value: spell, disabled: false, textValue: spell }));
@@ -333,7 +333,7 @@ export function SpellSearch() {
 Use `asChild` on `Combobox.Input` to project the input behavior onto your own `textbox`. The primitive drives `Text`, `TextEditable`, `PlaceholderText`, `ClearTextOnFocus`, the text-change handler, and the anchor ref onto your element, so keep the `placeholder` prop on the `Combobox.Input` part (the slot's value wins) and put your styling in colors, strokes, corners, and padding.
 
 ```tsx title="StyledCosmeticSearch.tsx"
-import { Combobox } from "@lattice-ui/combobox";
+import { Combobox } from "@lattice-ui/react-combobox";
 
 const COSMETICS = ["Aurora Cape", "Drift Visor", "Ember Trail", "Void Crown"];
 

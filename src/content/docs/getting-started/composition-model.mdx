@@ -17,7 +17,7 @@ This page explains the model itself. The component pages assume you already know
 A primitive is a namespace object. `Root` owns the state and shares it through React context; the parts read from that context instead of holding their own copies. You compose them like nested elements.
 
 ```tsx title="The compound shape"
-import { Dialog } from "@lattice-ui/dialog";
+import { Dialog } from "@lattice-ui/react-dialog";
 
 <Dialog.Root>
   <Dialog.Trigger />
@@ -31,7 +31,7 @@ import { Dialog } from "@lattice-ui/dialog";
 The same shape repeats everywhere — only the part names change to fit the primitive:
 
 ```tsx title="Same model, different primitive"
-import { Tabs } from "@lattice-ui/tabs";
+import { Tabs } from "@lattice-ui/react-tabs";
 
 <Tabs.Root defaultValue="general">
   <Tabs.List>
@@ -47,7 +47,7 @@ Because the parts share one context, a `Tabs.Trigger` knows which panel is activ
 
 ## Controllable state
 
-State-bearing roots are built on the `useControllableState` helper from `@lattice-ui/core`. The result is a consistent contract: pass a controlled value, or pass a default and let the primitive own it.
+State-bearing roots are built on the `useControllableState` helper from `@lattice-ui/react-runtime`. The result is a consistent contract: pass a controlled value, or pass a default and let the primitive own it.
 
 Overlay primitives expose **open** state:
 
@@ -81,7 +81,7 @@ Pass either the controlled prop or the default, not both for the same state. `on
 
 ## asChild
 
-By default, behavior-carrying parts render their own host element (a `textbutton`, for triggers). `asChild` tells the part to merge its behavior onto the single child you provide instead, using the `Slot` utility from `@lattice-ui/core`. Use it when your app already owns the right element and you do not want an extra wrapper.
+By default, behavior-carrying parts render their own host element (a `textbutton`, for triggers). `asChild` tells the part to merge its behavior onto the single child you provide instead, using the `Slot` utility from `@lattice-ui/react-runtime`. Use it when your app already owns the right element and you do not want an extra wrapper.
 
 ```tsx title="Render the part as your own element"
 <Dialog.Trigger asChild>

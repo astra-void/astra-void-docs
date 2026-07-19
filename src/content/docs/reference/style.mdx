@@ -9,22 +9,22 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/style"
+  packageName="@lattice-ui/react-style"
   status="stable-direction"
-  dependencies={["@lattice-ui/core"]}
+  dependencies={["@lattice-ui/react-runtime"]}
 />
 
-Style is the visual foundation: a theme of design tokens, helpers for merging Roblox host props, a recipe system for variant-driven styling, and the `Box`/`Text` primitives that render those props onto host instances. Higher-level packages like `@lattice-ui/system` and the styled components build directly on it.
+Style is the visual foundation: a theme of design tokens, helpers for merging Roblox host props, a recipe system for variant-driven styling, and the `Box`/`Text` primitives that render those props onto host instances. Higher-level packages like `@lattice-ui/react-system` and the styled components build directly on it.
 
 The core idea is the **sx** value — a partial set of host props, or a function from the current `Theme` to host props. Everything in this package either produces, resolves, or merges sx values, then hands the result to a host instance.
 
 ## Import
 
 ```ts
-import { Box, Text } from "@lattice-ui/style";
-import { ThemeProvider, useTheme, useThemeValue } from "@lattice-ui/style";
-import { createTheme, defaultLightTheme, defaultDarkTheme } from "@lattice-ui/style";
-import { createRecipe, mergeSx, resolveSx, mergeGuiProps } from "@lattice-ui/style";
+import { Box, Text } from "@lattice-ui/react-style";
+import { ThemeProvider, useTheme, useThemeValue } from "@lattice-ui/react-style";
+import { createTheme, defaultLightTheme, defaultDarkTheme } from "@lattice-ui/react-style";
+import { createRecipe, mergeSx, resolveSx, mergeGuiProps } from "@lattice-ui/react-style";
 ```
 
 ## API reference
@@ -229,5 +229,5 @@ The low-level merge used everywhere in this package. It shallow-merges up to thr
 ## Related links
 
 - [System](/lattice-ui/reference/system/)
-- [Core](/lattice-ui/reference/core/)
+- [Runtime](/lattice-ui/reference/runtime/)
 - [asChild composition](/lattice-ui/guides/as-child-composition/)

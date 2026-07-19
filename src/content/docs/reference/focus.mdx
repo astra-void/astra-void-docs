@@ -9,9 +9,9 @@ sidebar:
 import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 
 <PackageMeta
-  packageName="@lattice-ui/focus"
+  packageName="@lattice-ui/react-focus"
   status="stable-direction"
-  dependencies={["@lattice-ui/core"]}
+  dependencies={["@lattice-ui/react-runtime"]}
 />
 
 Focus is the selection engine that sits behind every layered Lattice UI primitive. Roblox only exposes a single `GuiService.SelectedObject`, with no concept of focus scopes, traps, or restore targets. Focus builds those concepts on top: it tracks a registry of focusable **nodes** and **scopes**, decides which node should hold selection at any moment, and bridges that decision to and from `GuiService.SelectedObject`.
@@ -33,7 +33,7 @@ import {
   clearFocus,
   getFocusedNode,
   getFocusedGuiObject,
-} from "@lattice-ui/focus";
+} from "@lattice-ui/react-focus";
 ```
 
 ## API reference
