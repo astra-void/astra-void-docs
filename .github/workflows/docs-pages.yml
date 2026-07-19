@@ -23,6 +23,9 @@ jobs:
       # Where the preview-build step finds the sibling sources (checked out below).
       LOOM_REPO: ${{ github.workspace }}/.preview-src/loom
       LATTICE_PREVIEW_APP: ${{ github.workspace }}/.preview-src/lattice-ui/apps/loom-preview
+      # Deploys must include previews: a missing/empty checkout should fail the
+      # build loudly rather than silently skip (the local default is a soft skip).
+      PREVIEW_BUILD_STRICT: "1"
     steps:
       - name: Checkout docs
         uses: actions/checkout@v6
@@ -79,9 +82,8 @@ jobs:
         working-directory: .preview-src/lattice-ui
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Build interactive previews
-        run: pnpm preview:build
-
+      # `pnpm build` now runs `preview:build` first (chained in package.json),
+      # so the previews are regenerated as part of the docs build.
       - name: Build docs
         run: pnpm build
 

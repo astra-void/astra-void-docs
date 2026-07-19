@@ -14,7 +14,9 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const docsRoot = resolve(here, "..");
-const workspace = resolve(docsRoot, "../../..");
+// docsRoot lives at <workspace>/astro/astra-void-docs, so the shared workspace
+// root is two levels up. Sibling checkouts (loom-rewrite, lattice-ui) hang off it.
+const workspace = resolve(docsRoot, "../..");
 
 const loomRepo =
   process.env.LOOM_REPO ?? resolve(workspace, "typescript/loom-rewrite");
@@ -23,16 +25,25 @@ const latticeApp =
   resolve(workspace, "rojo/lattice-ui/apps/loom-preview");
 const outDir = resolve(docsRoot, "public/loom-preview");
 
+// Chained ahead of `dev`/`build`, so a missing sibling checkout (CI, a fresh
+// clone) must be a graceful skip rather than a hard failure — the docs still
+// build, just without regenerated previews. Pass PREVIEW_BUILD_STRICT=1 to make
+// a missing checkout fatal (e.g. a release build that must include previews).
+const strict = process.env.PREVIEW_BUILD_STRICT === "1";
 for (const [label, path] of [
   ["Loom repo", loomRepo],
   ["lattice preview app", latticeApp],
 ]) {
   if (!existsSync(path)) {
-    console.error(
+    const message =
       `[preview:build] ${label} not found at ${path}.\n` +
-        "Set LOOM_REPO / LATTICE_PREVIEW_APP env vars to your checkout paths.",
-    );
-    process.exit(1);
+      "Set LOOM_REPO / LATTICE_PREVIEW_APP env vars to your checkout paths.";
+    if (strict) {
+      console.error(message);
+      process.exit(1);
+    }
+    console.warn(`${message}\n[preview:build] skipping preview build.`);
+    process.exit(0);
   }
 }
 
