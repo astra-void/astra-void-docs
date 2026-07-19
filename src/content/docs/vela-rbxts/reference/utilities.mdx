@@ -21,10 +21,9 @@ somewhere to live. The helper instances are `UIPadding`, `UIListLayout`, `UICorn
 `UIFlexItem`. One helper of each kind is created per element and all utilities that target it write
 into the same instance, so `p-4 px-8` produces a single `UIPadding`.
 
-## Supported host elements
+## Supported elements
 
-Vela only looks at these eight intrinsic elements. Any other JSX element — including your own
-components — is skipped entirely, and a `className` on it is left untouched.
+Vela lowers `className` on these eight intrinsic elements, and on components.
 
 | Element | Notes |
 |---|---|
@@ -36,6 +35,11 @@ components — is skipped entirely, and a `className` on it is left untouched.
 | `textbox` | Text properties allowed, plus `placeholder-*` |
 | `imagelabel` | `image-*` allowed |
 | `imagebutton` | `image-*` allowed |
+| Any component | An uppercase tag (`<Panel />`) or a member expression (`<Switch.Root />`). Every utility is allowed |
+
+Any other JSX element — a lowercase intrinsic that is not on this list, such as `screengui` — is
+skipped, its `className` is left in the output untouched, and the compiler reports
+`classname-on-unsupported-host`.
 
 Text utilities (`text-*` color and size, `font-*`, `text-{left,center,right}`, `align-*`,
 `text-wrap`, `truncate`) are only meaningful on `textlabel`, `textbutton`, and `textbox`; `image-*`
@@ -43,6 +47,12 @@ only on `imagelabel` and `imagebutton`; `placeholder-*` only on `textbox`. Those
 enforced **only by the editor**. The compiler does not check them, so
 `<frame className="text-red-500" />` builds without complaint and emits a `TextColor3` assignment on
 a Frame that has no such property.
+
+On a component the restrictions do not apply at all: the host element it renders is unknown, so
+every utility is offered and `unsupported-host-utility` is never raised. Whether the props land is
+up to the component, which must forward the props and children it does not consume down to a host
+element — nothing checks that it does. See
+[How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
 
 ## Color
 

@@ -34,11 +34,14 @@ diagnostic is silently discarded and your build looks clean while classes go mis
 never seen a Vela warning, verify with a deliberately broken class such as `className="bg-nope-500"`
 before concluding your code is clean.
 
-**The reported span is often in the wrong place.** The span is computed as the first textual
-occurrence of the offending token anywhere in the file. It is not the actual JSX attribute. If
-`p-0.25` appears in three components, all three diagnostics point at the first one — and if the token
-also appears in a comment or a string above the real usage, the squiggle lands there instead. Read
-the message, not the underline.
+**Some spans are still guessed.** A diagnostic now carries a real source range whenever the compiler
+could anchor it, which covers every token inside a static string `className` — those squiggles land
+on the class you actually wrote, even if the same token appears elsewhere in the file. When there is
+no range, the host adapter falls back to the first textual occurrence of the token anywhere in the
+file. That fallback is what you get for diagnostics the compiler could not anchor: dynamic
+`className` expressions, `tsx-parse-failed`, and anything the adapter synthesizes itself. In those
+cases the underline can land on an unrelated comment or string, so read the message rather than the
+underline.
 </Callout>
 
 ## Code table
@@ -71,17 +74,30 @@ Every code is a warning unless marked otherwise.
 | `unsupported-color-key` | Warning | `current` or `inherit`, or `transparent` on a property with no transparency channel |
 | `color-missing-shade` | Warning | A palette family referenced without a shade |
 | `color-invalid-shade` | Warning | A literal given a shade, or a palette missing that shade |
+| `classname-on-unsupported-host` | Warning | `className` sits on a JSX element that is neither a supported host element nor a component |
 | `unsupported-host-utility` | Warning, **editor only** | The utility is not allowed on that host element tag |
 | `tsx-parse-failed` | **Error** | The file failed to parse, or parsed with recovered errors |
 | `tsx-emit-failed` | **Error** | Code generation failed after a successful transform |
 | `compiler-invocation-failed` | **Error** | The native compiler call threw; synthesized by the host adapter |
+
+`classname-on-unsupported-host` is the one that tells you nothing happened. Vela lowers `className`
+on the eight supported host elements and on components; on anything else — a lowercase intrinsic it
+does not implement, such as `screengui` — it leaves the attribute in the output exactly as written
+and warns:
+
+```tsx title="Warns, and the className survives untouched"
+<screengui className="bg-slate-700" />
+```
+
+Move the classes onto a `frame` inside the `screengui`, or onto a component that forwards them.
 
 `unsupported-host-utility` never appears in a build. The per-element restrictions it reports —
 text properties only on `textlabel`/`textbutton`/`textbox`, `image-*` only on
 `imagelabel`/`imagebutton`, `placeholder-*` only on `textbox` — are checked by the editor surface
 alone. The transform pipeline never consults them, so `<frame className="text-red-500" />` compiles
 and emits a `TextColor3` assignment on a Frame with no complaint at all. Treat this one as a lint
-rule you only get in the editor.
+rule you only get in the editor. It is also never raised on a component: the host element behind
+`<Panel />` is unknown, so every utility is allowed inside its `className`.
 
 The three errors are structural rather than about your classes.
 

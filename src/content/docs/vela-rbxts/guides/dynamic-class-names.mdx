@@ -119,6 +119,14 @@ It is more verbose, and the duplication is real. That is the trade: two literal 
 
 There is no diagnostic and no flag, so check the emitted Luau or the intermediate roblox-ts output. A static-path element keeps its original tag and gains plain props plus helper children. A runtime-path element is rendered as `VelaRuntimeHost` and carries `__velaTag` and, if variants are involved, `__velaRules`. If you see `VelaRuntimeHost` on an element you expected to be static, something in its `className` did not collapse.
 
+## Components take the same two paths
+
+Everything on this page applies to `className` on your own components too — `<Panel className={classes} />` is lowered exactly like `<frame className={classes} />`, with the same fifteen-prefix runtime resolver and the same silent drops.
+
+The one visible difference is the tag. On the runtime path the component is swapped for `VelaRuntimeHost` as usual, but `__velaTag` carries a live reference rather than a string: `__velaTag={Panel}`, or `__velaTag={Switch.Root}` for a member expression. The helper then renders your component with the resolved props and the helper children.
+
+Which means the component has to forward what it does not consume, or none of it lands. That is the trap worth internalizing before you reach for a computed `className` on a component — it is described in full in [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components), and there is no diagnostic for getting it wrong.
+
 The other way onto the runtime path is variants — a single `sm:` or `touch:` prefix, even in a plain literal, is enough. That case is covered in [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/). Note that variant-prefixed tokens are analyzed statically and serialized as rules, so they keep the full utility set; it is the *dynamic className* case specifically that narrows to fifteen prefixes.
 
 ## See also

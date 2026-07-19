@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements, and a TypeScript transformer rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
+Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements and on your own components, and a TypeScript transformer rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
 
 Nothing about Vela is a runtime library you render. It is a transformer you register in `tsconfig.json`, plus a config file it reads from disk. This page gets both in place.
 
@@ -63,6 +63,8 @@ Vela runs as a roblox-ts transformer plugin. Add one entry to `compilerOptions.p
   }
 }
 ```
+
+Two entries in there are easy to get wrong and neither is Vela-specific. `tsBuildInfoFile` requires `incremental: true` — set one without the other and TypeScript fails the build with TS5069 before Vela is ever loaded. And `typeRoots` must list **every** non-`@rbxts` scope you import types from, not just `@rbxts`; if your project pulls in a scoped package of your own, add it: `"typeRoots": ["node_modules/@rbxts", "node_modules/@your-scope"]`.
 
 `vela-rbxts/transformer` is a separate export from the package root. The root export (`vela-rbxts`) gives you `defineConfig` and types; the `/transformer` subpath is the callable roblox-ts consumes. Do not swap one for the other.
 

@@ -61,6 +61,8 @@ Text synchronization is incremental and the position encoding is UTF-16.
 
 <Callout title="unsupported-host-utility is editor-only">
 The rule that `text-*` belongs on `textlabel`/`textbutton`/`textbox`, `image-*` on `imagelabel`/`imagebutton`, and `placeholder-*` on `textbox` is enforced **only** in the editor. The transform pipeline never consults it. `<frame className="text-red-500" />` shows a squiggle in VS Code and compiles without complaint, emitting `TextColor3` onto a Frame. Treat that diagnostic as a lint, and do not expect a build to catch it.
+
+Inside a component's `className` the rule is dropped rather than merely unenforced. The editor cannot know which host element `<Panel />` renders, so it completes and hovers the full utility set there and never raises `unsupported-host-utility`.
 </Callout>
 
 The editor also suppresses `unknown-theme-key` while the text after the first `-` is three characters or shorter, so partially typed color names do not flash warnings at you mid-keystroke.

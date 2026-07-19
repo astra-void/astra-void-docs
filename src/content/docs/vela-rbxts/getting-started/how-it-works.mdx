@@ -35,13 +35,39 @@ Config resolution runs **per file**, so `vela.config.ts` is re-read, re-transpil
 
 **The output is re-parsed and re-injected.** Vela does not perform AST node surgery on TypeScript's tree. It takes the emitted text, parses it into a fresh `SourceFile`, and substitutes that. If the compiler reports no change, this step is skipped entirely. Diagnostics are handed back through roblox-ts's `addDiagnostic` — and if the version of roblox-ts in use does not expose that hook, they are dropped silently.
 
-## Only eight tags are touched
+## What gets touched
+
+An element is lowered if it is either a supported host element or a component.
 
 Vela recognizes exactly eight Roblox host elements:
 
 `frame`, `scrollingframe`, `canvasgroup`, `textlabel`, `textbutton`, `textbox`, `imagelabel`, `imagebutton`
 
-Every other JSX element is skipped outright. That includes your own components. Putting `className` on `<Panel />` does nothing at all — no lowering, no diagnostic, no error. If you want a component to take utility classes, accept a prop and forward it to a host element inside.
+A component is anything whose tag name starts with an uppercase letter — `<Panel />` — or any member expression — `<Switch.Root />`, at any depth. A namespaced tag such as `<svg:rect />` is never a component.
+
+Anything that is neither — a lowercase intrinsic tag Vela does not implement, like `<screengui className="bg-slate-700" />` — is skipped, its `className` is left in the output untouched, and you get a `classname-on-unsupported-host` warning naming the element.
+
+### `className` on components
+
+`<Panel className="p-4 bg-slate-800" />` is lowered the same way a host element is. On the static path the resolved props are emitted as ordinary JSX attributes on the component — no `as any` cast — the `className` attribute is removed, and any helper instances are prepended as the component's children. A self-closing component that needs helpers is de-self-closed and given a closing tag:
+
+```tsx title="In"
+<Box className="bg-slate-700 rounded-md" />
+```
+
+```tsx title="Out (shape, not verbatim)"
+<Box BackgroundColor3={Color3.fromRGB(49, 65, 88)}>
+  <uicorner CornerRadius={new UDim(0, 6)} />
+</Box>
+```
+
+<Callout title="The component has to forward what it does not consume">
+Vela hands the component props and children. It cannot make the component do anything with them. If `Box` does not spread its unrecognized props onto a Roblox host element and render its children, the styling is simply lost — and **there is no diagnostic for that**, at compile time or in the editor.
+
+This is exactly how `className` behaves on the web: it only works because the component passes it down to a DOM node. Write your components to spread the rest of their props and render `children`, or the classes on them do nothing.
+</Callout>
+
+Because the eventual host element is unknown at the point Vela sees the component, the per-element utility restrictions do not apply inside a component's `className`. The editor offers the full utility set there — including `text-*`, `image-*` and `placeholder-*` on any component — and never raises `unsupported-host-utility`. Whether `text-lg` actually means anything depends on which host element your component ends up rendering, and nothing checks that for you.
 
 ## The two lowering paths
 
@@ -56,6 +82,8 @@ This path supports the full utility set.
 ### The runtime path
 
 When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted as `as any` casts, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`.
+
+For a host element `__velaTag` is the tag string — `__velaTag="frame"`. For a component it is a live reference to the component itself — `__velaTag={Box}`, or `__velaTag={Switch.Root}` for a member expression — so the runtime helper renders your component rather than an intrinsic. Its tag type is `SupportedHostElementTag | ((props: never) => unknown)` accordingly.
 
 At runtime that component normalizes the theme strings into `Color3` and `UDim` values, reads the environment, applies whichever rules match, tokenizes the dynamic `className` and applies whichever utilities it understands, strips the internal props, and calls `React.createElement` with the original tag and the helper children.
 

@@ -31,6 +31,16 @@ The utility-per-host rules — text utilities on `textlabel`/`textbutton`/`textb
 Roblox ignores an unknown property assignment on the instance, so nothing crashes; the class simply does nothing and you get no signal outside the editor. If you build in CI without the LSP, these mistakes ship silently. Use [editor setup](/vela-rbxts/guides/editor-setup/) to get the warning where it is useful.
 </Callout>
 
+### The restriction does not apply to components
+
+`className` also works on your own components, and there the rule is not merely unenforced — it does not exist. Vela has no idea which host element `<Title />` eventually renders, so it treats every utility as allowed: the editor completes and hovers the full set inside a component's `className`, including `text-*`, `image-*` and `placeholder-*`, and `unsupported-host-utility` is never reported there.
+
+```tsx title="No warning anywhere, in the editor or the build"
+<Title className="text-2xl font-semibold" Text="Match found" />
+```
+
+Whether that `text-2xl` reaches a `TextSize` depends entirely on your component forwarding the props it does not consume down to a `textlabel`, `textbutton` or `textbox`. See [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
+
 ## How `text-*` is disambiguated
 
 `text-` is the most overloaded prefix in the whole system. One rule, applied in order, decides what a given `text-*` class means:

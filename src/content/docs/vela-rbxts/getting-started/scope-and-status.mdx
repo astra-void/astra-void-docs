@@ -19,7 +19,9 @@ Utilities apply to exactly eight host elements:
 
 `frame`, `scrollingframe`, `canvasgroup`, `textlabel`, `textbutton`, `textbox`, `imagelabel`, `imagebutton`
 
-Any other JSX element — including every component you write — is skipped entirely, with no diagnostic. Within those eight, the covered ground is colors and gradients, borders and strokes, corner radius, padding, gap, sizing and min/max constraints, position and anchor point, z-index, rotation, scale, opacity, aspect ratio, shadows, flex layout and flex items, typography, visibility and overflow. The [utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it.
+They also apply to **components** — any tag starting with an uppercase letter, or any member expression such as `<Switch.Root />`. A `className` there is lowered into props and helper children on the component itself, which only reaches the screen if the component forwards the props and children it does not consume down to a host element. See [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
+
+Anything that is neither — a lowercase intrinsic Vela does not implement, such as `screengui` — is skipped, keeps its `className` verbatim, and reports `classname-on-unsupported-host`. Within those eight, the covered ground is colors and gradients, borders and strokes, corner radius, padding, gap, sizing and min/max constraints, position and anchor point, z-index, rotation, scale, opacity, aspect ratio, shadows, flex layout and flex items, typography, visibility and overflow. The [utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it.
 
 ## What is absent
 
@@ -37,14 +39,18 @@ These are whole Tailwind families with no Vela equivalent. They are not silently
 | Case transforms — `uppercase`, `lowercase`, `capitalize` | Transform the string in TypeScript instead. |
 | Transitions, animations, `translate-*`, `skew-*` | Vela emits static properties; there is no tween layer. `rotate-*` and `scale-*` do exist. |
 
-## Two silent gaps
+## Three silent gaps
 
-Most of Vela's edges announce themselves. Two do not, and both are worth reading twice.
+Most of Vela's edges announce themselves. Three do not, and all three are worth reading twice.
 
 <Callout title="Host-element restrictions are editor-only">
 Vela knows which utilities make sense on which tag — `text-*`, `font-*` and the text alignment families belong on `textlabel`, `textbutton` and `textbox`; `image-*` on `imagelabel` and `imagebutton`; `placeholder-*` on `textbox` alone. That table drives completions, hover, and the `unsupported-host-utility` diagnostic in the language server. **The transform pipeline never consults it.** So `<frame className="text-red-500" />` compiles clean, emits `TextColor3` on a Frame, and produces no compile-time warning at all. The Frame simply ignores the property at runtime. Install the [editor tooling](/vela-rbxts/guides/editor-setup/) if you want this caught — the compiler will not catch it for you.
 
-The second gap is the runtime subset. When a `className` is a dynamic expression, only `border`, `border-*`, `bg-*`, `rounded-*`, the padding family, `gap-`, `w-`, `h-` and `size-` are resolved. Every other utility in that expression is **dropped with no diagnostic** — no warning, no error, just a property that never appears. A `flex-col` that works in a string literal vanishes when you move it into a ternary. [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence, including where runtime and static behavior differ for utilities both of them support.
+The restrictions do not apply to components at all. Vela cannot know which host element `<Panel />` eventually renders, so every utility stays available inside its `className` and `unsupported-host-utility` is never raised there — even for `placeholder-*` on a component that renders a `frame`.
+
+The second gap is components that drop what they are handed. Vela emits the resolved props on the component and prepends helper instances as its children; if the component does not forward its unrecognized props to a host element and render `children`, all of that vanishes. Nothing warns you, in the editor or in the build.
+
+The third gap is the runtime subset. When a `className` is a dynamic expression, only `border`, `border-*`, `bg-*`, `rounded-*`, the padding family, `gap-`, `w-`, `h-` and `size-` are resolved. Every other utility in that expression is **dropped with no diagnostic** — no warning, no error, just a property that never appears. A `flex-col` that works in a string literal vanishes when you move it into a ternary. [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence, including where runtime and static behavior differ for utilities both of them support.
 </Callout>
 
 ## Release state

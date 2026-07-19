@@ -119,7 +119,7 @@ Colors have their own failure mode. Every palette in the theme is a set of shade
 ```
 
 <Callout title="Where the squiggle lands">
-The host adapter locates a diagnostic by searching for the first textual occurrence of the offending token anywhere in the file, not by the actual JSX attribute position. If the same token appears earlier in a comment or another string, the underline will point at that instead. The message and code are still correct.
+For a static string `className` like both of these, the compiler anchors each diagnostic to the offending token's real position, so the underline lands on the class you actually wrote. That is not true everywhere: when the compiler cannot anchor a diagnostic — a computed `className`, a parse failure — the host adapter falls back to searching for the first textual occurrence of the token anywhere in the file, and the underline can land on an earlier comment or string. The message and code are always correct.
 </Callout>
 
 The full list of codes, and what each one means, is in the [diagnostics reference](/vela-rbxts/reference/diagnostics/).
