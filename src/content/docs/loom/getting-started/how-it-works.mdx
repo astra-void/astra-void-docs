@@ -1,0 +1,128 @@
+---
+title: How it works
+description: The path from a roblox-ts component to DOM nodes — Scene IR, the WASM layout engine, the incremental renderer, and the four things the Vite plugin rewrites.
+product: loom
+section: getting-started
+sidebar:
+  order: 30
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Understanding the pipeline is the difference between debugging loom and guessing at it. There are
+four stages, and each has one job.
+
+```text
+ @rbxts/react ─┐
+   vide        ├─►  Frontend adapter  ─►  Scene IR  ─►  Layout engine  ─►  DOM renderer  ─►  Browser DOM
+   luau (later)┘       (TypeScript)      (contract)     (Rust → WASM)         (TypeScript)
+```
+
+The Scene IR in the middle is the whole design. It is a framework-agnostic description of a Roblox
+GUI instance tree, mirrored byte-for-byte between a Rust crate (`loom-scene`) and a TypeScript
+package (`@loom-dev/scene`). Because the layout engine and the renderer only ever see the IR, neither
+one knows React exists — which is how a `vide` adapter was added without touching either.
+
+## 1. The frontend adapter
+
+`@loom-dev/react` is a custom `react-reconciler` host config. It does not produce DOM. It creates and
+mutates **live loom instances** — an in-browser model of Roblox's `Instance` tree with real
+properties, children, and signals — exactly as `@rbxts/react-roblox` would in Studio. Your component
+code cannot tell the difference: `useState` schedules a re-render, the reconciler diffs, the instance
+tree mutates.
+
+The `vide` adapter does the same job with fine-grained signals and no reconciler, and lands on the
+same IR.
+
+## 2. Scene IR
+
+The instance tree is serialized into plain, untagged data: `UDim`, `UDim2`, `Vector2`, `Color3`
+(0–1 channels, not 0–255), enum items as `{ enumType, name }`. Nothing is a class, nothing carries
+identity, everything crosses the WASM boundary cleanly.
+
+## 3. Layout
+
+`@loom-dev/layout` is a thin async wrapper over `loom-layout-wasm`:
+
+```ts
+await initLayout();                        // load the wasm module once (idempotent)
+const result = computeLayout(scene, viewport);   // synchronous after that
+```
+
+The Rust engine implements Roblox's own layout rules, not CSS's: `UIListLayout` and `UIGridLayout`
+flow, `UIPadding`, `UISizeConstraint` and `UIAspectRatioConstraint`, `AutomaticSize`, anchor points,
+scale-plus-offset sizing, and text measurement. It computes an absolute rect for every node.
+
+This is the reason loom exists. Approximating `UIListLayout` with flexbox gets you close enough to be
+misleading; running the real algorithm gets you a preview you can trust for layout.
+
+<Callout title="Layout is a build artifact">
+The engine is Rust compiled to WebAssembly and shipped prebuilt. If you develop loom itself and
+change anything under `crates/loom-layout`, the browser keeps using the old binary until you run
+`pnpm build:native`.
+</Callout>
+
+## 4. DOM rendering
+
+`@loom-dev/renderer` walks the IR alongside the layout result and emits nested,
+absolutely-positioned `<div>`s. It reproduces the layout engine's id scheme exactly — a positional
+path (`"0"`, `"0/0"`, …) counting only layout-participating children — so nodes and rects line up
+without a side channel.
+
+Two entry points share the per-node CSS mapping:
+
+- **`renderScene`** — one-shot full rebuild via `replaceChildren`. Used by the vide adapter and
+  anything that only needs a static picture.
+- **`createDomSession`** — keyed incremental patching plus pointer-input delegation. Elements persist
+  across frames, so listeners and focus survive a re-render. This is the React path.
+
+Roblox fidelity rules the renderer honors: the layout root and any `LayerCollector` (`ScreenGui`,
+`SurfaceGui`, `BillboardGui`) are transparent containers and never painted; `Visible = false` hides
+via CSS while the node keeps its computed rect; text is painted in an aligned overlay layer;
+`UICorner` and `UIStroke` become `border-radius` and `box-shadow`.
+
+## Input
+
+Events do not go to your React handlers directly. The renderer hit-tests the DOM event, maps it back
+to a live `LoomInstance` through a `data-loom-id` attribute, and dispatches through the instance's
+signals — so `Activated`, `InputBegan`, and `UserInputService` all fire the way they do in Roblox.
+
+Pointer capture mirrors Roblox's input sinking rather than the DOM's: only `TextButton`,
+`ImageButton`, `TextBox`, `ScrollingFrame`, and GuiObjects with `Active = true` receive pointer
+events. Plain frames, labels, `CanvasGroup`s and `LayerCollector`s are click-through. A transparent
+full-screen positioning frame therefore does not swallow clicks meant for the control underneath it,
+which is exactly the Roblox behavior — and modal blocking still works, because a modal scrim in
+practice is a `TextButton`, which does sink.
+
+## What the Vite plugin does
+
+None of the above runs without the specifiers being rewritten first. `loomPreview()` performs four
+distinct jobs:
+
+1. **Aliasing.** `@rbxts/react-roblox` → the browser client (`createRoot`, `createPortal`);
+   `@rbxts/services` → service singletons backed by `game.GetService`; `@rbxts/react` → a shim over
+   React that adds the `React.Event` / `React.Change` keyed-prop namespaces; `@rbxts/vide` → the vide
+   adapter. Bare `react` and both JSX runtimes are pinned to one absolute path so exactly one React
+   instance exists.
+
+2. **Globals injection.** `installGlobals()` runs before your entry, defining `UDim2`, `Color3`,
+   `Enum`, `game`, `task` and the rest — because roblox-ts code references them with no import. Under
+   the dev server this is a script tag injected into `<head>`; under `vite build` it is
+   [your responsibility](/loom/guides/vite-integration/).
+
+3. **Import-equals rewriting.** roblox-ts sources use TypeScript's `import X = require("m")`, which
+   esbuild lowers to a bare `require()` call that throws in a browser. A pre-transform rewrites it to
+   `import * as X from "m"` so the graph stays ESM. It runs in both serve and build.
+
+4. **Luau-main fallback.** A roblox-ts package points `"main"` at compiled Luau (`out/init.luau`).
+   The plugin redirects such packages to their `src/index.ts(x)` instead — before resolution, so it
+   works even when the package was never compiled. That is what lets loom consume a source-only
+   roblox-ts workspace with no build step.
+
+What it does *not* do is compile roblox-ts. esbuild transpiles the TSX and discards types; there is
+no `rbxtsc` in the loop and no Luau anywhere in the browser.
+
+## Next step
+
+[Scope and status](/loom/getting-started/scope-and-status/) — what this pipeline covers today, and
+what it does not.

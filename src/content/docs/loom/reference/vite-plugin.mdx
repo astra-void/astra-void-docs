@@ -1,0 +1,159 @@
+---
+title: Vite plugin
+description: Everything loomPreview() contributes — the three plugins it returns, every alias, the config it merges, and which hooks run in serve versus build.
+product: loom
+section: reference
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+```ts
+import { loomPreview } from "@loom-dev/preview/vite";
+
+loomPreview(): Plugin[]
+```
+
+Takes no options. Returns three plugins, which you spread into `plugins` as a single array entry —
+Vite flattens nested plugin arrays.
+
+## The three plugins
+
+| Name | `enforce` | `apply` | Job |
+| --- | --- | --- | --- |
+| `loom-preview:import-equals` | `pre` | both | Rewrites roblox-ts `import X = require("m")` to `import * as X from "m"`. |
+| `loom-preview` | `pre` | both | Resolution (`.luau`-main fallback) and the `config` hook. |
+| `loom-preview:serve-globals` | `pre` | `serve` | Injects the Roblox globals script into `<head>`. |
+
+`enforce: "pre"` on the resolver is load-bearing: Vite's core `vite:resolve` runs ahead of *normal*
+user plugins, so a normal-phase `resolveId` would never see the bare specifiers whose package `main`
+points at Luau.
+
+## Config contributions
+
+The `config` hook returns this object, which Vite deep-merges with — and lets you override — your own
+config.
+
+```ts
+{
+  esbuild: { jsx: "automatic" },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@loom-dev/preview > @loom-dev/react > react-reconciler",
+      "@loom-dev/preview > @loom-dev/react > react-reconciler/constants",
+    ],
+    exclude: [
+      "@loom-dev/preview", "@loom-dev/react", "@loom-dev/vide",
+      "@loom-dev/runtime", "@loom-dev/renderer",
+      "@loom-dev/scene", "@loom-dev/layout",
+    ],
+  },
+  resolve: { alias: [ /* see below */ ] },
+  server: { fs: { allow: [<loom package root>, searchForWorkspaceRoot(projectRoot)] } },
+}
+```
+
+- **`esbuild.jsx: "automatic"`** — roblox-ts source never imports React, so the classic transform
+  would throw `React is not defined`.
+- **`optimizeDeps.exclude`** — the loom packages own the WASM engine; pre-bundling would break their
+  `new URL(...wasm)` references.
+- **`optimizeDeps.include`** — `react-reconciler` is CommonJS and imported by an *excluded*,
+  workspace-linked package, so it must be pre-bundled explicitly. The nested `a > b > c` form is how
+  Vite resolves it through the link chain. It fails to resolve when the previewed project has no
+  `@loom-dev/*` in its own `node_modules`; the resulting warnings are harmless.
+- **`optimizeDeps` and `server.fs`** are dev-only. The aliases and `esbuild.jsx` drive both modes.
+
+## Alias table
+
+Order matters; more specific patterns come first.
+
+| Pattern | Resolves to |
+| --- | --- |
+| `@rbxts/react-roblox` (and any subpath) | The preview client — `createRoot`, `createPortal`, `setPreviewTheme`. |
+| `@rbxts/services` | Service singletons backed by `getService`. |
+| `@rbxts/react/jsx-runtime` | React's JSX runtime (absolute path). |
+| `@rbxts/react/jsx-dev-runtime` | React's dev JSX runtime (absolute path). |
+| `@rbxts/react` | A shim: React plus `React.Event` / `React.Change` keyed-prop namespaces. |
+| `react/jsx-runtime` | Same absolute path as above. |
+| `react/jsx-dev-runtime` | Same absolute path as above. |
+| `react` | One absolute React path, resolved from the preview package. |
+| `@rbxts/vide` | `@loom-dev/vide`. |
+
+All targets are **absolute paths**, resolved as `../src` relative to the executing plugin module — so
+they work whether loom is installed in the project, linked from a checkout, or pointed at a foreign
+workspace by the CLI.
+
+<Callout title="The React aliases are not scoped to Roblox code">
+`react`, `react/jsx-runtime` and `react/jsx-dev-runtime` are rewritten for *every* module in the
+config, and `esbuild.jsx: "automatic"` applies globally too. Adding `loomPreview()` to an existing
+React web app's Vite config replaces that app's React. Keep the preview in its own Vite project.
+
+Absolute-path aliases are used rather than `resolve.dedupe` on purpose: dedupe would re-anchor React
+at *your* project root, which may hoist a different major, and the aliased `@rbxts/react` and the
+reconciler's React must be the same instance or hooks dispatch breaks.
+</Callout>
+
+## Resolution
+
+`resolveId` handles bare specifiers only — anything starting with `.`, `/`, `\0`, or containing `:`
+(so `node:`, `virtual:`, `data:`, `http:`) falls through untouched. Scoped packages and subpaths never
+contain a colon, so the check is safe.
+
+For a bare specifier from a real importer:
+
+1. **Source-first redirect.** Unless the specifier starts with `@rbxts/`, walk up from the importer
+   looking for `node_modules/<pkg>/package.json`. If that package's `"main"` ends in `.lua`/`.luau`,
+   resolve to its `src/index.ts` or `src/index.tsx` instead. This runs *before* Vite resolves
+   anything, so it works even when the package was never compiled and `out/` does not exist.
+   `@rbxts/*` is excluded because those must go through the alias table, not to their own source.
+2. **Normal resolution**, wrapped in a `try` — a package whose `"main"` points at a missing file can
+   make `this.resolve` throw, and that is treated as unresolved so Vite reports it rather than
+   crashing the plugin.
+3. **Post-resolution fallback.** If the result is a `.luau`/`.lua` file, walk up to the nearest
+   `package.json` and retry that package's `src/index.ts(x)`.
+
+Verdicts are memoized per specifier. A `false` verdict means "not Luau — let normal resolution
+handle it", which is why the memo can be keyed on the specifier alone.
+
+## Globals injection
+
+Under `serve`, the plugin registers a virtual module `virtual:loom-globals` and injects it into
+`<head>` as a real script tag:
+
+```html
+<script type="module" src="/@id/__x00__virtual:loom-globals"></script>
+```
+
+A `<script src>` rather than an inline bare import, so it resolves whether the `index.html` is a real
+file or served by the CLI's middleware. The virtual module body imports the globals installer by
+absolute path — a bare `@loom-dev/preview/globals` would resolve from the (possibly foreign) project
+root and fail.
+
+Under `build` this plugin is inert. Supplying the import is the caller's job: `loom build` generates
+an entry that does it, and a hand-rolled `vite build` must do it manually.
+
+## The import-equals transform
+
+Applies to any `.ts`/`.tsx` file outside `node_modules` (previewed workspace sources typically resolve
+through symlinks to real paths outside `node_modules`, so the exclusion is safe).
+
+The regex is anchored to line starts, so `const x = require(...)` and commented-out forms never
+match, and the quote character is backreferenced so mixed quotes inside a specifier cannot
+false-positive. Files with no occurrence of the substring `require` short-circuit immediately. The
+rewrite is idempotent — its output no longer matches.
+
+It runs in both serve and build, because esbuild lowers import-equals identically in either mode.
+
+## Other exports
+
+| Specifier | Contents |
+| --- | --- |
+| `@loom-dev/preview` | `createRoot`, `LoomReactRoot`, `loomPreview`. |
+| `@loom-dev/preview/vite` | `loomPreview`. |
+| `@loom-dev/preview/client` | `createRoot`, `createPortal`, `setPreviewTheme`, `PreviewTheme`. |
+| `@loom-dev/preview/globals` | Side-effecting: installs the globals, declares their ambient types. |
+| `@loom-dev/preview/services` | The service singletons `@rbxts/services` is aliased to. |

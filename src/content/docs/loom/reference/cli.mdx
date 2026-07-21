@@ -1,0 +1,124 @@
+---
+title: CLI
+description: Complete reference for loom preview and loom build — every flag, its parsing rules, config precedence, and exit behavior.
+product: loom
+section: reference
+sidebar:
+  order: 10
+---
+
+```text
+loom — Roblox UI preview
+
+Usage:
+  loom preview [dir] [--port <n>] [--host] [--targets [glob]]
+  loom build   [dir] --targets [glob] [--out <dir>] [--base <path>]
+```
+
+Any other first argument (including none) prints this usage text and exits `0`.
+
+## `loom preview`
+
+Starts a Vite dev server with `loomPreview()` pre-applied and `configFile: false` — the project's own
+`vite.config.ts`, if it has one, is deliberately ignored.
+
+| Argument | Default | Rules |
+| --- | --- | --- |
+| `dir` | `.` | Positional. Resolved against the current working directory. A missing directory exits `1` with `loom: directory not found: <path>`. |
+| `--port <n>` | `5173` | Must be all digits, else exits `1` with `loom: --port requires a numeric value`. Left unset when absent so `loom.config.ts` can supply it. |
+| `--host [addr]` | `false` | Boolean (binds all interfaces) unless followed by a value not starting with `-`, which is used as the bind address. |
+| `--targets [glob]` | — | Presence switches to gallery mode. A following value not starting with `-` is used as the glob; otherwise the default `**/*.loom.tsx` applies. |
+
+### Mode selection
+
+1. `--targets` present, or `loom.config.ts` supplies `targets` → **gallery mode**. The CLI serves its
+   own `index.html` (sidebar + stage + `#loom-root`) and mounts targets itself. No client entry is
+   needed, and a project's own `index.html` is overridden.
+2. Otherwise, if the project has an `index.html` → it is used as-is.
+3. Otherwise → the CLI generates an `index.html` in memory with a full-viewport `#loom-root` and a
+   module script pointing at the first matching entry:
+
+   ```text
+   src/main.client.tsx
+   src/main.client.ts
+   src/client/main.client.tsx
+   src/client/main.client.ts
+   src/main.tsx
+   src/main.ts
+   src/index.tsx
+   src/client.tsx
+   ```
+
+4. If none of those exist → exit `1` listing the candidates.
+
+### File-system access
+
+`server.fs.allow` is the union of: the project directory, the nearest ancestor containing a
+`pnpm-workspace.yaml` (if any), and the directory containing the installed `@loom-dev/preview`
+sources. `.git` alone is not treated as a workspace marker — it would over-widen access to, say, a
+home-directory repository.
+
+## `loom build`
+
+Runs `vite build` programmatically over the same gallery and writes a self-contained, client-only SPA.
+
+| Argument | Default | Rules |
+| --- | --- | --- |
+| `dir` | `.` | Positional, resolved against the working directory. |
+| `--targets [glob]` | **required** | Same parsing as `preview`. Absent → exit `1`: `loom: build requires --targets [glob] (the static gallery is target-driven)`. |
+| `--out <dir>` | `dist-preview` | Resolved against the **working directory**, not `dir`. Emptied before writing. |
+| `--base <path>` | `./` | Vite's public base path. The relative default keeps assets host-agnostic. |
+
+`build` does **not** read `loom.config.ts`. If no file matches the glob it throws
+`no targets matched <patterns> under <root> — nothing to build` and exits non-zero.
+
+On success it prints the resolved output directory:
+
+```text
+  loom build → /Users/you/code/my-ui/dist-preview
+```
+
+## `loom.config.ts`
+
+Read only by `preview`, from `<dir>/loom.config.ts`. Imported through `tsx`; an import failure prints
+a warning and is otherwise ignored.
+
+```ts title="loom.config.ts"
+export default {
+  targets: "src/scenes",   // string | string[]
+  port: 5204,              // number
+};
+```
+
+Precedence and validation:
+
+- CLI flags always win over the file.
+- `targets` must be a string, or a non-empty array of strings. Anything else makes the field invalid.
+- `port` is honored **only when `targets` is valid**. A config whose `targets` is missing or malformed
+  is skipped in full, port included, with a hint on stderr.
+
+## Glob semantics
+
+`--targets` normalization:
+
+| Input | Pattern used |
+| --- | --- |
+| flag with no value | `**/*.loom.tsx` |
+| `.` or an empty string | `**/*.loom.tsx` |
+| a value containing `*` | used verbatim |
+| any other value (a directory) | `<value>/**/*.loom.tsx` |
+
+Leading `./` and trailing slashes are stripped first. The matcher supports exactly three
+constructs — `**/` (any depth including none), `**` (anything), `*` (anything but `/`) — and treats
+every other character literally. There is no brace expansion, no `?`, no negation, no extglob.
+
+Discovery walks the project directory recursively, skipping `node_modules` and any entry whose name
+starts with `.`, and returns sorted POSIX-style relative paths. Unreadable directories are skipped
+rather than fatal.
+
+## Live target discovery
+
+Under the dev server, adding or deleting a `*.loom.tsx` file invalidates the virtual target module
+and triggers a full page reload — the sidebar is rebuilt from the import map, so a reload is the
+simplest correct signal. The URL hash survives it, keeping the selected target selected. Editing a
+target's contents is ordinary HMR.

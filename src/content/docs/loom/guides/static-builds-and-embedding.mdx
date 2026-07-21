@@ -1,0 +1,144 @@
+---
+title: Static builds and embedding
+description: Bundle a gallery into a hostable SPA with loom build, then deep-link one scene per iframe using the target/chrome/theme URL contract.
+product: loom
+section: guides
+sidebar:
+  order: 30
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+`loom build` runs Vite's production build over the same gallery the dev server shows, and emits a
+self-contained client-only SPA. Nothing on the server side is required to host it. Its reason for
+existing is embedding: a docs site can iframe a single scene, and the reader gets a real interactive
+Roblox UI instead of a screenshot.
+
+```bash title="Build a gallery"
+pnpm exec loom build ~/code/my-ui --targets src/scenes --out dist-preview --base ./
+```
+
+## Flags
+
+```text
+loom build [dir] --targets [glob] [--out <dir>] [--base <path>]
+```
+
+| Flag | Default | Notes |
+| --- | --- | --- |
+| `--targets` | **required** | Same semantics as `preview`. Without it the command exits: `loom: build requires --targets [glob] (the static gallery is target-driven)`. |
+| `--out` | `dist-preview` | Resolved against the current working directory, not the project dir. |
+| `--base` | `./` | Public path. The relative default is what makes the output host-anywhere. |
+
+Unlike `preview`, `build` does **not** read `loom.config.ts`. Pass `--targets` explicitly every time.
+
+<Callout title="`--out` is emptied before writing">
+The build runs with `emptyOutDir: true`, because the output directory normally sits outside Vite's
+root and Vite would otherwise refuse to clear it. Point `--out` at a directory that belongs to loom
+and nothing else. Aiming it at, say, your site's whole `public/` would delete the rest of that
+directory's contents.
+</Callout>
+
+## What comes out
+
+```text title="dist-preview/"
+index.html
+assets/index-<hash>.js          # shell + runtime + adapter
+assets/index-<hash>.css         # gallery chrome
+assets/loom_layout_wasm_bg-<hash>.wasm
+assets/CardScene.loom-<hash>.js     # one async chunk per target
+assets/CounterScene.loom-<hash>.js
+```
+
+Each target becomes its own lazily-imported chunk, so a gallery with fifty scenes still loads one
+scene's code per view. The `.wasm` binary dominates the transfer size — about 178 kB, roughly 68 kB
+gzipped, from the `wasm-opt`-processed build published packages ship — and it is fetched once and
+cached. A binary built locally with the default `dev` profile skips `wasm-opt` and is roughly four
+times larger.
+
+Under the hood, the build writes three real files into a scratch directory (an `index.html`, an
+`entry.ts`, and a generated `targets.ts`) so Rollup can follow a genuine module graph rather than the
+dev server's virtual modules. That entry imports the globals installer *first*, which is why a
+CLI-built gallery never needs the manual globals import a hand-rolled [`vite
+build`](/loom/guides/vite-integration/#5-vite-build-needs-the-globals-import) does. The scratch
+directory is removed afterwards.
+
+## The URL contract
+
+The built page reads three query parameters. This is the whole embedding API.
+
+| Parameter | Values | Effect |
+| --- | --- | --- |
+| `target` | a target's relative path, URL-encoded | Selects and mounts that target on load, without a hash. |
+| `chrome` | `none` | Hides the sidebar and renders one target full-bleed. Any other value (or absent) keeps the full chrome. |
+| `theme` | `light` \| `dark` | Sets the stage background and seeds `PlayerGui.LoomTheme`. Anything other than `light` is treated as `dark`. |
+
+```text title="Deep-link one scene, chromeless, light"
+/loom-preview/index.html?target=src%2Fscenes%2FCounter.loom.tsx&chrome=none&theme=light
+```
+
+In chromeless mode there is no hash routing — the mount is fixed to `?target=`. In full-chrome mode
+the shell uses `#/<relPath>` and `?target=` only seeds the initial selection.
+
+## Live theme switching
+
+A host page can flip an already-loaded frame's theme without reloading it, by posting a message:
+
+```js title="From the embedding page"
+frame.contentWindow.postMessage({ type: "loom-theme", theme: "dark" }, "*");
+```
+
+The shell listens for exactly `{ type: "loom-theme", theme: "light" | "dark" }` and ignores
+everything else. Applying a theme does two things: it toggles a class on the gallery's root element,
+and it writes `LoomTheme` onto `Players.LocalPlayer.PlayerGui`. That second part is the useful one —
+a scene can read the host page's theme through plain Roblox APIs, including
+`GetPropertyChangedSignal("LoomTheme")`, with no DOM access from roblox-ts code.
+
+```tsx title="A scene that follows the host page's theme"
+const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
+const [theme, setTheme] = useState(playerGui.LoomTheme ?? "dark");
+
+useEffect(() => {
+  const conn = playerGui
+    .GetPropertyChangedSignal("LoomTheme")
+    .Connect(() => setTheme(playerGui.LoomTheme));
+  return () => conn.Disconnect();
+}, []);
+```
+
+## A working embed pipeline
+
+These docs embed previews this way. A build script shells out to `loom build`, pointed at a sibling
+checkout of the component library, and writes into the site's `public/` directory:
+
+```js title="scripts/build-loom-previews.mjs (abridged)"
+execFileSync(
+  "pnpm",
+  ["exec", "loom", "build", latticeApp,
+   "--targets", "src/preview-targets",
+   "--out", outDir,          // <site>/public/loom-preview
+   "--base", "./"],
+  { stdio: "inherit" },
+);
+```
+
+Three details are worth stealing:
+
+- **Chain it ahead of `dev` and `build`** (`"dev": "pnpm preview:build && astro dev"`) so previews
+  regenerate from the latest library checkout instead of drifting.
+- **Make a missing checkout a graceful skip**, not a hard failure — CI and fresh clones should still
+  build the site, just without regenerated previews. Gate strictness behind an env var for release
+  builds.
+- **Keep the output gitignored.** It is generated, it contains a WASM binary, and it changes on
+  every library edit.
+
+The component that renders each frame sets `src` lazily through an `IntersectionObserver` (a gallery
+page can hold a dozen frames), appends `&theme=` from the site's current theme at load, and pushes
+later theme toggles into loaded frames with the `postMessage` above.
+
+## Error containment survives the build
+
+The per-target error boundary is part of the shell, not the dev server. A target that throws in a
+built, deployed gallery still renders an inline error panel with its stack while the rest of the page
+keeps working — which is what you want in a docs site, where one broken example should not take down
+the page it lives on.

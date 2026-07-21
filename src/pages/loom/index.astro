@@ -1,0 +1,184 @@
+---
+import { getCollection, render } from "astro:content"
+import { Code } from "astro-expressive-code/components"
+import DocsCard from "@/components/docs/DocsCard.astro"
+import DocsLayout from "@/layouts/DocsLayout.astro"
+import { getDocPathFromId, getDocs, getProductIndexId } from "@/lib/docs"
+
+const PRODUCT_ID = "loom" as const
+
+const docs = await getCollection("docs")
+const entry = docs.find((doc) => doc.id === getProductIndexId(PRODUCT_ID))
+
+if (!entry) {
+  throw new Error("Missing Loom docs home entry.")
+}
+
+const { Content } = await render(entry)
+const currentPath = getDocPathFromId(entry.id, PRODUCT_ID)
+
+const navDocs = await getDocs(PRODUCT_ID)
+
+const guides = navDocs.filter((doc) => doc.section === "guides")
+const reference = navDocs.filter((doc) => doc.section === "reference")
+
+const installationHref = getDocPathFromId(
+  "getting-started/installation",
+  PRODUCT_ID,
+)
+
+const viteHref = getDocPathFromId("guides/vite-integration", PRODUCT_ID)
+
+const scopeHref = getDocPathFromId("getting-started/scope-and-status", PRODUCT_ID)
+
+const heroCode = `import { loomPreview } from "@loom-dev/preview/vite";
+import { defineConfig } from "vite";
+
+// Aliases @rbxts/react, @rbxts/react-roblox and @rbxts/services onto the
+// loom adapters, installs the Roblox globals, and sets the automatic JSX
+// runtime — a roblox-ts source tree then runs unmodified in the browser.
+export default defineConfig({
+  plugins: [loomPreview()],
+});`
+
+const pillars = [
+  {
+    title: "Your source, unmodified",
+    description:
+      "No roblox-ts compile step. esbuild transpiles the same TSX Studio gets, and a Vite plugin swaps @rbxts/* for browser adapters.",
+  },
+  {
+    title: "Roblox-accurate layout",
+    description:
+      "UIListLayout, constraints, AutomaticSize and text measurement run in a Rust layout engine compiled to WASM — not in CSS flexbox.",
+  },
+  {
+    title: "One contract, any frontend",
+    description:
+      "@rbxts/react and vide both lower to the same Scene IR, so the layout engine and DOM renderer never learn about a framework.",
+  },
+] as const
+---
+
+<DocsLayout
+  currentPath={currentPath}
+  description={entry.data.description}
+  productId={PRODUCT_ID}
+  title={entry.data.title}
+>
+  <div class="relative">
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-72 w-[36rem] -translate-x-1/2 opacity-25 blur-3xl dark:opacity-15"
+      style="background:
+        radial-gradient(24rem 14rem at 30% 40%, #3a74eb 0%, transparent 70%),
+        radial-gradient(22rem 13rem at 70% 35%, #00dfd8 0%, transparent 70%),
+        radial-gradient(20rem 12rem at 55% 75%, #7928ca 0%, transparent 70%);"
+    >
+    </div>
+
+    <a
+      class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+      href={scopeHref}
+    >
+      <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-[#f5a623]"></span>
+      loom · v0.1.0 · pre-1.0
+    </a>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a
+        class="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
+        href={installationHref}
+      >
+        Get started
+      </a>
+      <a
+        class="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-muted"
+        href={viteHref}
+      >
+        Vite integration
+      </a>
+    </div>
+
+    {/* .docs-prose only spaces its direct children, and Content is nested here. */}
+    <div class="mt-10 space-y-4">
+      <Content />
+    </div>
+
+    <div class="mt-8">
+      <Code
+        code={heroCode}
+        lang="ts"
+        title="vite.config.ts — the whole integration"
+      />
+    </div>
+  </div>
+
+  <div class="mt-10 grid gap-3 sm:grid-cols-3">
+    {pillars.map((pillar) => (
+      <DocsCard title={pillar.title} description={pillar.description} />
+    ))}
+  </div>
+
+  <section class="mt-14">
+    <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+      Guides
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+      Wire it into a project.
+    </h2>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+      {guides.map((guide) => (
+        <DocsCard
+          description={guide.description}
+          href={guide.url}
+          title={guide.title}
+        />
+      ))}
+    </div>
+  </section>
+
+  <section class="mt-14">
+    <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+      Reference
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+      Every flag, alias, and export.
+    </h2>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+      {reference.map((item) => (
+        <DocsCard
+          description={item.description}
+          href={item.url}
+          title={item.title}
+        />
+      ))}
+    </div>
+  </section>
+
+  <section class="mt-14 rounded-xl border border-border bg-card p-6 shadow-card">
+    <h2 class="text-lg font-semibold tracking-[-0.02em] text-foreground">
+      A preview tool, not a runtime.
+    </h2>
+    <p class="mt-2 text-sm leading-6 text-muted-foreground">
+      Nothing loom produces ships to Roblox. It renders your UI tree in a browser
+      so you can iterate without a Studio round-trip, and its fidelity is
+      deliberately partial — <code
+        class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.8em]"
+        >ImageLabel</code
+      > sources, <code
+        class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.8em]"
+        >UIPageLayout</code
+      > and <code
+        class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.8em]"
+        >UITableLayout</code
+      > are not implemented. Read the scope before you trust a preview as ground truth.
+    </p>
+    <a
+      class="mt-4 inline-flex text-sm font-medium text-link underline decoration-link/40 underline-offset-4 hover:decoration-link"
+      href={scopeHref}
+    >
+      Scope and status →
+    </a>
+  </section>
+</DocsLayout>

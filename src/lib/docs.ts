@@ -1,6 +1,6 @@
 import { getCollection, type CollectionEntry } from "astro:content"
 
-export type DocsProductId = "lattice-ui" | "vela-rbxts"
+export type DocsProductId = "lattice-ui" | "vela-rbxts" | "loom"
 
 export type DocsProduct = {
   id: DocsProductId
@@ -29,11 +29,21 @@ export const DOCS_PRODUCTS = {
     href: "/vela-rbxts/",
     githubUrl: "https://github.com/astra-void/vela-rbxts",
   },
+  loom: {
+    id: "loom",
+    title: "Loom",
+    shortTitle: "Loom",
+    description:
+      "Render a roblox-ts UI tree as a live web DOM preview, driven by Vite.",
+    href: "/loom/",
+    githubUrl: "https://github.com/astra-void/loom",
+  },
 } as const satisfies Record<DocsProductId, DocsProduct>
 
 export const DOCS_PRODUCT_ORDER = [
   "lattice-ui",
   "vela-rbxts",
+  "loom",
 ] as const satisfies readonly DocsProductId[]
 
 export const DEFAULT_DOCS_PRODUCT = DOCS_PRODUCTS["lattice-ui"]

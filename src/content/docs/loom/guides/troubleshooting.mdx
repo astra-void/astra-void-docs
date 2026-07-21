@@ -1,0 +1,166 @@
+---
+title: Troubleshooting
+description: The failures you will actually hit — blank previews, missing globals, React duplication, resolution errors — and what each one really means.
+product: loom
+section: guides
+sidebar:
+  order: 50
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Every symptom below was reproduced on a real project. They are ordered roughly by how often they
+come up.
+
+## Blank page, `nothing mounted into #loom-root after 2s`
+
+```text
+[loom] nothing mounted into #loom-root after 2s — does your entry call
+createRoot().render(<App />) at the top level?
+```
+
+The globals installer sets a two-second timer and checks whether `#loom-root` has any children. This
+warning means loom loaded fine and your entry did not mount anything.
+
+Almost always the entry exports a component instead of rendering one. Loom never calls your component
+for you:
+
+```tsx title="src/main.client.tsx"
+import { createRoot } from "@rbxts/react-roblox";
+import { App } from "./App";
+
+createRoot().render(<App />);   // this line is the whole contract
+```
+
+The other cause is the CLI picking a different entry than you expected. It takes the *first* match
+from a fixed candidate list, so a project with both `src/main.client.tsx` and `src/main.tsx` uses the
+former. Check the `<script src>` in the served page.
+
+## `ReferenceError: UDim2 is not defined`
+
+The Roblox datatype globals were never installed. Under the dev server a plugin injects them as a
+script tag; that plugin is `apply: "serve"` and does nothing during `vite build`.
+
+If this happens in a page **you built with your own `vite build`**, add the globals import as the
+first import of your entry:
+
+```tsx
+import "@loom-dev/preview/globals";
+```
+
+If it happens under the **dev server**, something is loading before the injected script — most likely
+an inline `<script type="module">` in your `index.html` that runs ahead of the injected head script.
+Move that logic into the entry module.
+
+Galleries built with `loom build` never hit this: the CLI generates an entry whose first statement is
+the globals import.
+
+## `Warning: Invalid hook call` / "more than one copy of React"
+
+Two React instances are in the graph. The plugin works hard to prevent this — it aliases bare `react`
+and both JSX runtimes to one absolute path so the adapter, the reconciler and your components
+converge — so when it happens, one of three things is true:
+
+1. **A stale optimizer cache.** Observed once immediately after a dependency change, where Vite
+   re-optimized mid-session and served a mix of old and new pre-bundles. Fix:
+
+   ```bash
+   rm -rf node_modules/.vite
+   ```
+
+   Restart the server. This resolved it completely and it did not recur.
+
+2. **React 19 is installed.** The adapter's `react-reconciler@0.29` reads React 18 internals that
+   React 19 renamed. Pin React 18 in the preview project.
+
+3. **You merged `loomPreview()` into an app that has its own React.** The React aliases are global to
+   the Vite config. Give the preview its own Vite project — see [Vite
+   integration](/loom/guides/vite-integration/).
+
+## `Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler`
+
+```text
+Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler,
+  present in client 'optimizeDeps.include'
+Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler/constants,
+  present in client 'optimizeDeps.include'
+```
+
+Harmless. These are `optimizeDeps.include` hints written in Vite's nested-specifier form, which
+cannot resolve when the previewed project has no `@loom-dev/*` packages in its own `node_modules` —
+the normal situation when the CLI is pointed at an outside directory. Vite still discovers
+`react-reconciler` while scanning the entry graph and pre-bundles it. Previews render and behave
+correctly with these warnings present.
+
+## `Failed to resolve entry for package "@loom-dev/layout"`
+
+```text
+[commonjs--resolver] Failed to resolve entry for package "@loom-dev/layout".
+The package may have incorrect main/module/exports specified in its package.json.
+```
+
+You imported the plugin by file path instead of by bare specifier. The plugin resolves the modules it
+aliases relative to its own location; bundling it into your project's config moves that anchor.
+
+```ts
+import { loomPreview } from "@loom-dev/preview/vite";   // always this
+```
+
+## The config fails to load with `Cannot find module '.../dist/vite.js'`
+
+A `link:`ed source checkout that has never been built. Run `pnpm build:packages` in the checkout. If
+you need to work against unbuilt sources, `vite --configLoader runner` can load the config through
+Vite's module runner instead of pre-bundling it.
+
+## `loom: no index.html and no client entry found`
+
+```text
+loom: no index.html and no client entry found in /Users/you/code/my-game
+      looked for: src/main.client.tsx, src/main.client.ts, src/client/main.client.tsx, ...
+      (or pass --targets to browse *.loom.tsx files as a gallery)
+```
+
+The directory you pointed at has neither an `index.html` nor any of the eight recognized entry paths.
+Usually you aimed at a workspace root rather than an app. Either point deeper, or use `--targets` to
+browse scenes instead of mounting an entry.
+
+## `loom.config.ts found, but its default export has no targets field`
+
+```text
+loom: loom.config.ts found, but its default export has no `targets` field — skipping it
+(legacy config?). Use `--targets [glob]` or export
+`{ targets: string | string[], port?: number }` to enable gallery mode.
+```
+
+The current CLI reads exactly two fields, `targets` and `port`. A config in an older shape — nested
+`server.port`, a `targetDiscovery` object, `projectName` — is ignored *in full*, including its port.
+Rewrite it:
+
+```ts title="loom.config.ts"
+export default { targets: "src/scenes", port: 5204 };
+```
+
+## `no targets matched ... — nothing to build`
+
+`loom build` found no files matching the glob. Remember that a bare directory is expanded to
+`<dir>/**/*.loom.tsx`, and that the matcher supports only `**`, `**/` and `*` — no braces, no `?`, no
+negation. Check the glob against the actual filenames, and remember the walk skips `node_modules` and
+dot-directories.
+
+## A scene renders but looks wrong
+
+Before assuming a loom bug, check the [scope](/loom/getting-started/scope-and-status/). Images are
+not implemented, and `UIPageLayout` / `UITableLayout` are recognized but do nothing. A preview is a
+high-fidelity approximation, not a Studio replacement — verify final visuals in Studio.
+
+<Callout title="Layout changes need a WASM rebuild">
+If you are developing loom itself and edit anything under `crates/loom-layout`, the browser keeps
+using the previously built binary until you run `pnpm build:native`. A layout fix that "did nothing"
+is usually a missing rebuild.
+</Callout>
+
+## A target throws and the page still works
+
+That is by design, not a bug. The gallery shell is plain DOM with a React error boundary around each
+target, so import failures, bad `preview` exports and render throws each land in an inline red panel
+with a stack while the sidebar stays usable. Switching targets clears it.

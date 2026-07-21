@@ -1,0 +1,213 @@
+---
+title: Vite integration
+description: Add loomPreview() to your own Vite project — config, the HTML contract, globals under vite build, React aliasing, and the traps in between.
+product: loom
+section: guides
+sidebar:
+  order: 10
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+The `loom` CLI is a thin wrapper: it constructs a Vite server with `configFile: false` and a single
+plugin. Everything it does is available to your own `vite.config.ts` by calling that plugin yourself.
+Doing so is the right move when you want your own `index.html`, your own dev-server options, or a
+production `vite build` of the preview.
+
+Everything below was verified end to end against Vite 6.4.3 and pnpm 11, on a project sitting outside
+loom's own workspace.
+
+## 1. Dependencies
+
+```json title="package.json"
+{
+  "name": "my-game-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@loom-dev/preview": "^0.1.0",
+    "react": "^18.3.1",
+    "vite": "^6.0.0"
+  }
+}
+```
+
+React and Vite are peers of `@loom-dev/preview`, so they are yours to install. Pin React 18 — the
+adapter's `react-reconciler@0.29` targets it, whatever the wider peer range says. See
+[Installation](/loom/getting-started/installation/) for the reasoning.
+
+## 2. The config
+
+```ts title="vite.config.ts"
+import { loomPreview } from "@loom-dev/preview/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [loomPreview()],
+});
+```
+
+That is genuinely the whole config. `loomPreview()` returns an array of three plugins and contributes
+its own `esbuild`, `optimizeDeps`, `resolve.alias` and `server.fs.allow` through the `config` hook,
+deep-merged with — and overridable by — whatever you write. See the [plugin
+reference](/loom/reference/vite-plugin/) for the exact contributions.
+
+## 3. Always import the plugin by its bare specifier
+
+`loomPreview()` locates the modules it aliases — the `@rbxts/react-roblox` client shim, the
+`@rbxts/services` shim, the globals installer, the React shim — **relative to its own file**, as
+`../src` from the module that is executing. That is what lets it hand Vite absolute paths that work
+whether loom is installed in your project, linked from a checkout, or pointed at a completely
+different workspace by the CLI.
+
+It also means the import specifier you write is load-bearing. Import
+`@loom-dev/preview/vite` and nothing else:
+
+```ts
+// correct
+import { loomPreview } from "@loom-dev/preview/vite";
+
+// broken — do not do this
+import { loomPreview } from "../loom/packages/preview/src/vite.ts";
+```
+
+A path import lets Vite's config bundler inline the plugin into a temporary file inside *your*
+project, which moves the anchor. The config then loads fine and the failure surfaces much later,
+during the build, as something that looks unrelated:
+
+```text
+[commonjs--resolver] Failed to resolve entry for package "@loom-dev/layout".
+The package may have incorrect main/module/exports specified in its package.json.
+```
+
+<Callout title="Consuming an unbuilt checkout">
+If you `link:` a loom checkout and have not run `pnpm build:packages` there, the package's `exports`
+point at `dist/` files that do not exist yet, and Vite's default config loader — which externalizes
+the package and hands it to Node — cannot load the plugin at all.
+
+Building the checkout is the real fix. Failing that, `vite --configLoader runner` (and
+`vite build --configLoader runner`) processes the config through Vite's module runner instead of
+pre-bundling it, which can resolve TypeScript sources directly. It is marked experimental in Vite's
+CLI help but has been reliable across dev and build.
+</Callout>
+
+## 4. The HTML entry
+
+Your `index.html` needs one thing loom cares about: an element with `id="loom-root"`. If it is
+missing, `createRoot()` creates one and appends it to `<body>`, but then it is unstyled and the
+preview will not fill the viewport.
+
+```html title="index.html"
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>my-game-ui preview</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #14161a; }
+      #loom-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="loom-root"></div>
+    <script type="module" src="/src/main.client.tsx"></script>
+  </body>
+</html>
+```
+
+The entry itself is an ordinary roblox-ts client entry — see [Your first
+preview](/loom/getting-started/first-preview/). At this point `vite` serves an interactive preview:
+state updates, `Activated` handlers and text input all work.
+
+## 5. `vite build` needs the globals import
+
+This is the sharpest edge in the whole integration, and it is silent until you open the built page.
+
+Under the dev server, the Roblox datatype globals are installed by a plugin that injects a
+`<script type="module" src="/@id/__x00__virtual:loom-globals">` into `<head>`. That plugin is
+`apply: "serve"`. Under `vite build` it does nothing, because there is no dev-server URL space to
+point a script tag at. So a stock production build compiles cleanly, ships, and then throws on first
+render:
+
+```text title="Console output from a build with no globals import"
+ReferenceError: UDim2 is not defined
+```
+
+The fix is to import the globals module **first** in your entry:
+
+```tsx title="src/main.client.tsx"
+// Must be the first import: it installs UDim2, Color3, Enum, game and the Luau
+// globals before any module that references them evaluates.
+import "@loom-dev/preview/globals";
+import { createRoot } from "@rbxts/react-roblox";
+import { App } from "./App";
+
+createRoot().render(<App />);
+```
+
+ESM evaluates imported modules depth-first in source order, so putting it first is a guarantee, not a
+convention. Keeping it in the entry is also harmless under the dev server — the globals installer
+runs twice and the second run is a no-op overwrite.
+
+<Callout title="Why the CLI does not need this">
+`loom build` sidesteps the problem by generating its own entry module in a scratch directory, whose
+first statement is an import of the resolved `@loom-dev/preview/globals` path. If you use the CLI for
+both preview and static builds, you never write this import. It is only your own `vite build` that
+needs it. See [Static builds and embedding](/loom/guides/static-builds-and-embedding/).
+</Callout>
+
+Rebuild after adding the import and the bundled page renders identically to the dev server.
+
+## 6. Don't merge this into an app that also uses React
+
+`loomPreview()` aliases bare `react`, `react/jsx-runtime` and `react/jsx-dev-runtime` to loom's own
+React 18 copy, and sets `esbuild.jsx: "automatic"` globally. Those are not scoped to Roblox files —
+they apply to every module Vite processes in that config.
+
+So if you drop `loomPreview()` into the Vite config of an existing React web app, that app's React
+gets replaced with loom's React 18 too. If the app is on React 19, it breaks. If it also runs
+`@vitejs/plugin-react`, you now have two JSX transforms fighting.
+
+Keep the preview in its own Vite project. Two arrangements work well:
+
+- **A dedicated preview app** in your workspace (`apps/preview/`) with its own `vite.config.ts`, its
+  own dependencies, and its own `index.html`. This is what loom's `apps/playground` is.
+- **No Vite project at all** — use `loom preview` and `loom build`, pointed at your source directory.
+  The CLI runs with `configFile: false`, so it cannot collide with your project's own Vite config
+  even if one exists.
+
+For embedding previews into a docs site, the second option is what these docs themselves use: a build
+script shells out to `loom build` and the resulting static bundle is iframed per scene.
+
+## 7. Expected noise
+
+Two warnings appear on startup when the previewed project has no `@loom-dev/*` packages in its own
+`node_modules` — which is normal whenever the CLI is pointed at an outside directory:
+
+```text
+Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler,
+  present in client 'optimizeDeps.include'
+Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler/constants,
+  present in client 'optimizeDeps.include'
+```
+
+These are `optimizeDeps.include` hints that could not be resolved through the nested-specifier form.
+Vite still discovers `react-reconciler` while scanning the entry graph and pre-bundles it. Previews
+render and behave correctly with these warnings present; they are safe to ignore.
+
+## Checklist
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Failed to resolve entry for package "@loom-dev/layout"` | Plugin imported by file path, not bare specifier | Import `@loom-dev/preview/vite` |
+| `Cannot find module '.../dist/vite.js'` when loading the config | `link:`ed checkout that was never built | `pnpm build:packages` in the checkout |
+| `ReferenceError: UDim2 is not defined` in a built page | Globals are dev-server-only | `import "@loom-dev/preview/globals"` first in the entry |
+| Blank page, `[loom] nothing mounted into #loom-root after 2s` | Entry exports instead of mounting | Call `createRoot().render(...)` at top level |
+| `Invalid hook call` / two React copies | Stale optimizer cache | Delete `node_modules/.vite` and restart |
+
+More cases, with the reasoning behind each, are in
+[Troubleshooting](/loom/guides/troubleshooting/).

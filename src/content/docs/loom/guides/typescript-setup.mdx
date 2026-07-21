@@ -1,0 +1,111 @@
+---
+title: TypeScript setup
+description: Make the editor happy without breaking your roblox-ts build — ambient globals, JSX intrinsics, path mappings, and why none of it affects what renders.
+product: loom
+section: guides
+sidebar:
+  order: 40
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Nothing on this page changes what loom renders. Vite hands your `.tsx` to esbuild, which strips types
+and never reads a `tsconfig.json` for anything but a couple of transform flags. TypeScript is purely
+an editor and CI concern here.
+
+That distinction matters because it tells you where the work goes: you are making a *second*
+typecheck configuration for browser previewing, not modifying the one that produces Luau.
+
+<Callout title="Never point your roblox-ts tsconfig at loom">
+A roblox-ts project's `tsconfig.json` is consumed by `rbxtsc` and must keep describing the Roblox
+environment: `@rbxts/compiler-types`, `@rbxts/types`, `jsxFactory`, `typeRoots`, the whole thing. If
+you rewrite it to make the preview typecheck, you break the build that actually ships. Add a separate
+config for the preview surface instead.
+</Callout>
+
+## The ambient globals
+
+roblox-ts code calls `UDim2.new(...)`, `Color3.fromRGB(...)`, `Enum.Font.GothamBold` and
+`game.GetService(...)` with no import. At runtime the preview installs those as real globals. For
+types, one side-effect import pulls in both the ambient global declarations and the JSX intrinsics:
+
+```ts title="src/loom-env.d.ts"
+import "@loom-dev/preview/globals";
+```
+
+Keep the file inside the directory your preview tsconfig includes. That single import declares
+`UDim`, `UDim2`, `Vector2`, `Vector3`, `Color3`, `ColorSequence`, `ColorSequenceKeypoint`, `Rect`,
+`CFrame`, `TweenInfo`, `Enum`, `Instance`, `game`, and the Luau environment: `task`, `tick`, `math`,
+`string`, `os`, `coroutine`, `typeIs`, `typeOf`, `pcall`, `xpcall`, `pairs`, `ipairs`, `tostring`,
+`tonumber`, `error`, `warn`.
+
+Two omissions are deliberate:
+
+- **`print` is not declared.** `lib.dom` already declares `function print(): void`, and redeclaring
+  it is a compile error. The runtime still overwrites the *value* at install time, so `print(...)`
+  works — it just types as the DOM's zero-argument version.
+- **`string` shadows the TypeScript `string` type name.** The declaration introduces a global
+  *value* called `string` (Luau's string library), which is legal and does not affect the type. If
+  you see something strange around `string`, that is why.
+
+A real roblox-ts project gets equivalent declarations from `@rbxts/compiler-types` instead. You do
+not want both in the same program.
+
+## JSX intrinsics
+
+`<screengui>`, `<frame>`, `<uilistlayout>` and friends come from a `declare global { namespace JSX }`
+block in `@loom-dev/react`, reached transitively through that same globals import. The set is exactly
+what the renderer implements:
+
+```text
+screengui  surfacegui  billboardgui
+frame  scrollingframe  canvasgroup  viewportframe  videoframe
+textlabel  textbutton  textbox
+imagelabel  imagebutton
+uilistlayout  uigridlayout  uipadding  uicorner  uistroke  uiscale  uigradient
+uiaspectratioconstraint  uisizeconstraint  uiflexitem
+```
+
+An element outside that list is a type error and will also not render. `uipagelayout` and
+`uitablelayout` are recognized by the layout engine but unimplemented, and are absent here — see
+[Scope and status](/loom/getting-started/scope-and-status/).
+
+## Path mappings
+
+For the editor to follow `@rbxts/react` and `@rbxts/react-roblox` to something real, mirror the
+plugin's runtime aliases as `paths`:
+
+```json title="tsconfig.json for a preview app"
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client", "react"],
+    "baseUrl": ".",
+    "paths": {
+      "@rbxts/react": ["./node_modules/@types/react"],
+      "@rbxts/react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
+      "@rbxts/react-roblox": ["./node_modules/@loom-dev/preview/src/client.ts"]
+    }
+  },
+  "include": ["src"]
+}
+```
+
+`jsx: "react-jsx"` matches the `esbuild.jsx: "automatic"` the plugin sets, so the editor and the
+bundler agree that no `React` import is needed. `@rbxts/react` maps to `@types/react` because the
+runtime alias resolves to React itself — the roblox-only extras (`React.Event`, `React.Change`) are
+added by a shim and are not in those types, so a keyed-prop namespace will type as an error even
+though it works. Using the `Event={{ Activated: fn }}` prop form instead avoids that.
+
+If your preview app is a separate package that imports your UI library by workspace name, no
+`paths` entry is needed for the library itself — loom resolves roblox-ts packages to their
+TypeScript source at *runtime*, and TypeScript resolves them through the workspace link at *check*
+time. The two paths agree.
+
+## Typechecking is optional
+
+Since esbuild ignores types entirely, a preview app that never runs `tsc` still renders. Whether to
+wire `tsc --noEmit` into CI for the preview surface is a judgment call: it catches genuinely broken
+scenes early, and it costs you a second tsconfig to maintain. Loom's own repo does typecheck every
+app, which is a reasonable default for a component library whose previews double as documentation.

@@ -1,0 +1,71 @@
+---
+title: Scope and status
+description: What loom renders faithfully, what it recognizes but ignores, and what it will never be — read this before trusting a preview.
+product: loom
+section: getting-started
+sidebar:
+  order: 40
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Loom is a development tool. It renders your UI tree in a browser so you can iterate without a Studio
+round-trip. Nothing it produces ships to Roblox, and its fidelity is deliberately partial.
+
+<Callout title="Studio is still the source of truth">
+A preview is a high-fidelity approximation of Roblox layout and painting, not a reimplementation of
+the engine. Use it to iterate on structure, sizing, state and interaction. Verify final visuals in
+Studio before shipping.
+</Callout>
+
+## Implemented
+
+| Area | Status |
+| --- | --- |
+| Scene IR + WASM layout + DOM renderer | Complete — the vertical slice all frontends share. |
+| Roblox datatypes, `Instance` model, signals, services, scheduler, Luau globals | Complete enough to run real component libraries. |
+| `@rbxts/react` adapter | Complete: a custom `react-reconciler` host config driving live loom instances. |
+| Layout: list, grid, padding, constraints, `AutomaticSize`, text measurement | Complete. |
+| Visuals: text, `UICorner`, `UIStroke`, gradients, clipping, transparency, rotation, scrolling frames | Complete. |
+| Pointer and keyboard input, focus, `UserInputService` | Complete, with Roblox input-sinking semantics. |
+| Dev loop: Vite plugin, HMR, `loom preview`, `loom build` | Complete. |
+| `vide` adapter | Shipped, on the same Scene IR. |
+
+The practical proof point: a full headless component library — dialogs, popovers, comboboxes,
+selects, tabs, sliders, focus scopes, portals and layers — renders and behaves correctly under `loom
+preview`, across more than fifty scenes, without a single source change on the library's side.
+
+## Not implemented
+
+**Images.** `ImageLabel` and `ImageButton` exist as JSX intrinsics and lay out correctly, but no
+image source is fetched or painted. Anything that reads as an icon or a texture in Studio renders as
+an empty rect.
+
+**`UIPageLayout` and `UITableLayout`.** Both are recognized by the layout engine — they will not
+crash — but neither does anything. Children of a `UIPageLayout` will not page.
+
+**A roblox-ts compiler transform.** The preview path deliberately skips `rbxtsc` and lets esbuild
+transpile. A standalone transform, which would let loom consume compiled output rather than source,
+is still open.
+
+**A Luau adapter.** The IR was designed so a Luau frontend can be added. It has not been.
+
+## Things that are true, not bugs
+
+- **No typechecking.** esbuild strips types; a preview renders whether or not your project typechecks.
+  See [TypeScript setup](/loom/guides/typescript-setup/).
+- **`print` types oddly.** The globals declaration deliberately omits `print` because `lib.dom`
+  already declares one and redeclaring is a compile error. The runtime still overwrites the value.
+- **Unknown services are stubs.** `@rbxts/services` is aliased to a module exporting only the
+  services the runtime actually implements — `ContextActionService`, `GuiService`, `Players`,
+  `RunService`, `UserInputService`, `Workspace`. Importing anything else is a build error rather than
+  a silent stub, which is the intended trade.
+- **The React version is pinned in effect.** The adapter's reconciler targets React 18; the plugin
+  aliases bare `react` to one absolute path to guarantee a single instance.
+
+## Versioning
+
+All `@loom-dev/*` packages release in lockstep — the changesets configuration marks them `fixed`, so
+a bump to one bumps them all. Mismatched versions across the scope are never a supported combination.
+The project is pre-1.0: expect the plugin's config contributions and the gallery URL contract to be
+the stable-ish parts, and internal package boundaries to move.

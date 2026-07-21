@@ -1,0 +1,141 @@
+---
+title: Installation
+description: Add loom to a project — the two packages, their peer requirements, the WASM layout engine, and what a source checkout needs instead.
+product: loom
+section: getting-started
+sidebar:
+  order: 10
+---
+
+import { Callout, PackageInstall } from "@/components/docs/mdx";
+
+Loom ships as two packages. Most projects want both, but they are independent: the plugin is the
+whole integration, and the CLI is a zero-config wrapper around it.
+
+| Package | What it is | Bin |
+| --- | --- | --- |
+| `@loom-dev/preview` | The Vite plugin (`loomPreview()`), the `@rbxts/react-roblox` / `@rbxts/services` browser shims, and the Roblox globals installer. | — |
+| `loom-dev` | The `loom preview` / `loom build` CLI: a Vite server with the plugin pre-applied, plus gallery mode. | `loom` |
+
+<PackageInstall packageName="-D @loom-dev/preview loom-dev" />
+
+Both are ESM-only (`"type": "module"`) and published under the MIT license. All `@loom-dev/*`
+packages are versioned in lockstep — the changesets config marks them `fixed`, so a bump to one bumps
+them all. Mixing versions across `@loom-dev/*` is never a supported combination.
+
+## Peer requirements
+
+`@loom-dev/preview` declares two peers:
+
+```json title="From @loom-dev/preview's package.json"
+{
+  "peerDependencies": {
+    "react": "^18.3.1 || ^19.0.0",
+    "vite": "^6.0.0 || ^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": { "optional": true }
+  }
+}
+```
+
+`vite` is optional because the package's non-Vite entry points (`/client`, `/globals`, `/services`)
+are useful without it — but `loomPreview()` obviously is not, so install Vite if you are using the
+plugin. The CLI brings its own.
+
+<Callout title="Install React 18, despite the peer range">
+The React adapter drives `react-reconciler@^0.29.2`, which targets React 18. React 19 renamed the
+internals that reconciler reads at evaluation time. The declared peer range is wider than what the
+reconciler actually supports, so pin React 18 in the project you preview from:
+
+```bash
+pnpm add -D react@^18.3.1 @types/react@^18.3.12
+```
+
+This is also why the plugin aliases bare `react` by absolute path rather than using
+`resolve.dedupe` — dedupe would re-anchor React at your project root and could pick a different
+major. If you see `Warning: Invalid hook call` with a "more than one copy of React" hint, a React
+version mismatch is the first thing to check.
+</Callout>
+
+Node 24 or newer is expected (`engines: { node: ">=24" }`).
+
+## What you do *not* install
+
+There is no roblox-ts compile step in the preview loop, and no separate layout dependency. The Rust
+layout engine is compiled to WebAssembly and shipped inside `@loom-dev/layout` as a prebuilt
+`.wasm` — you never need a Rust toolchain to *consume* loom, only to develop it.
+
+Published packages ship the `wasm-opt`-processed binary — about 178 kB, roughly 68 kB gzipped.
+Irrelevant for local previewing, worth knowing if you [ship a static gallery
+build](/loom/guides/static-builds-and-embedding/).
+
+<Callout title="Pre-release today">
+`0.1.0` is not out yet. What is on npm right now is the `alpha` dist-tag — install it explicitly
+until the stable release lands:
+
+```bash
+pnpm add -D @loom-dev/preview@alpha loom-dev@alpha
+```
+
+Note that the `latest` tag currently points at an older alpha than the `alpha` tag does, so a bare
+`pnpm add @loom-dev/preview` does not give you the newest pre-release.
+</Callout>
+
+## Verify
+
+```bash title="Smoke test"
+pnpm exec loom preview .
+```
+
+Pointed at a roblox-ts project with a client entry, that serves an interactive preview on port 5173.
+If you get a dark page with your UI on it, the WASM engine, the runtime, the adapter, the renderer,
+and the plugin are all working. If you get a blank page, check the console — see [Your first
+preview](/loom/getting-started/first-preview/).
+
+## Working from a source checkout
+
+Contributing to loom, or tracking `main` ahead of a release, means consuming the repo instead of the
+registry. Two things differ.
+
+**The toolchain widens.** The layout engine is built from source, so you need Rust via **rustup**
+with the `wasm32-unknown-unknown` target (pinned in `rust-toolchain.toml`) and `wasm-pack`, alongside
+Node 24 and pnpm 11.
+
+```bash title="Set up a checkout"
+git clone https://github.com/astra-void/loom.git
+cd loom
+pnpm install        # a prepare hook runs build:native
+```
+
+`pnpm install` builds the WASM engine through `scripts/build-wasm.sh`, emitting into
+`packages/layout/pkg/`. Rebuild it with `pnpm build:native`, or
+`pnpm build:native:release` for the `wasm-opt`-processed binary the release workflow ships. `pnpm
+build:packages` then builds the TypeScript packages with `tsdown`.
+
+<Callout title="On macOS, rustup — not Homebrew — must win">
+Homebrew's `rustc` ships no `wasm32-unknown-unknown` standard library, and Homebrew's bin directory
+usually sits ahead of rustup's in `PATH`. `scripts/build-wasm.sh` compensates by prepending
+`$HOME/.cargo/bin` to `PATH` itself, so the build works on a machine with both. If you invoke
+`wasm-pack` by hand, you have to do that yourself.
+</Callout>
+
+**Linking differs.** To point an outside project at the checkout, use pnpm's `link:` protocol:
+
+```json title="package.json in your project"
+{
+  "dependencies": {
+    "@loom-dev/preview": "link:../loom/packages/preview"
+  }
+}
+```
+
+`link:` symlinks rather than copies, so the package's own `workspace:*` dependencies resolve through
+the real path from the checkout's `node_modules` — you never install loom's dependency tree into your
+project. Importing the plugin from an *unbuilt* checkout has one extra wrinkle, covered in
+[Vite integration](/loom/guides/vite-integration/#consuming-an-unbuilt-checkout).
+
+## Next step
+
+Point loom at a project and get a preview on screen: [Your first
+preview](/loom/getting-started/first-preview/).

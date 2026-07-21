@@ -1,0 +1,74 @@
+---
+title: Packages
+description: The @loom-dev scope — what each package owns, which ones you install, and the boundaries between them.
+product: loom
+section: reference
+sidebar:
+  order: 30
+---
+
+Loom is a pnpm workspace with a Rust half and a TypeScript half. Only two packages are things you
+install directly; the rest are internal boundaries that happen to be published so the dependency
+graph resolves.
+
+## What you install
+
+| Package | Role |
+| --- | --- |
+| `@loom-dev/preview` | The Vite plugin plus the browser stand-ins for `@rbxts/react-roblox` and `@rbxts/services`, and the globals installer. |
+| `loom-dev` | The `loom` CLI: `preview` and `build`, gallery discovery, the gallery shell. |
+
+## The rest of the scope
+
+| Package | Owns |
+| --- | --- |
+| `@loom-dev/scene` | The Scene IR types — the contract every other package is written against. Mirrors the `loom-scene` Rust crate. |
+| `@loom-dev/layout` | A typed async wrapper over the WASM layout engine: `initLayout()`, `computeLayout(scene, viewport)`. |
+| `@loom-dev/runtime` | Roblox datatypes, the `Instance` model, signals, services, the scheduler, and the Luau globals. |
+| `@loom-dev/renderer` | Scene IR → DOM, plus the incremental patching session with pointer and keyboard input delegation. |
+| `@loom-dev/react` | The `@rbxts/react` adapter — a custom `react-reconciler` host config driving live loom instances. |
+| `@loom-dev/vide` | The `vide` signals adapter, on the same Scene IR. |
+
+## The Rust half
+
+| Crate | Owns |
+| --- | --- |
+| `loom-scene` | Scene IR types and schema — the single source of truth `@loom-dev/scene` mirrors. |
+| `loom-layout` | The layout engine. |
+| `loom-layout-wasm` | A `wasm-bindgen` wrapper around `loom-layout`, built with `wasm-pack --target web`. |
+
+The build emits into `packages/layout/pkg/`, which `@loom-dev/layout` imports directly. Consumers
+receive that binary prebuilt and never need a Rust toolchain.
+
+## Dependency direction
+
+```text
+loom-dev ──► @loom-dev/preview ──► @loom-dev/react ──► @loom-dev/renderer ──► @loom-dev/scene
+                                          │                    │
+                                          └──► @loom-dev/runtime└──► @loom-dev/layout ──► pkg/*.wasm
+```
+
+Nothing below `@loom-dev/react` knows a frontend framework exists. That is what let the `vide`
+adapter drop in beside the React one without changes to the layout engine or the renderer, and it is
+the intended extension point for a future Luau frontend.
+
+The gallery shell lives in `loom-dev` rather than `@loom-dev/preview` deliberately, so the preview
+package's public surface stays a Vite plugin plus three shims.
+
+## Versioning
+
+All published `@loom-dev/*` packages move together — changesets marks them `fixed`, so a bump to one
+bumps them all. The workspace is a single coherent runtime, and mismatched versions across the scope
+are never a supported combination.
+
+## Example apps in the repo
+
+Useful as copy-paste references when integrating:
+
+| App | Shows |
+| --- | --- |
+| `apps/example` | The minimal roblox-ts client entry the CLI auto-detects. |
+| `apps/playground` | A hand-written `vite.config.ts` using `loomPreview()`, with its own `index.html`. |
+| `apps/gallery-demo` | `*.loom.tsx` targets, including one that throws on purpose to exercise error containment. |
+| `apps/interactive` | Input and signal wiring against the runtime directly. |
+| `apps/vide-example` | The same pipeline driven by `vide` instead of React. |

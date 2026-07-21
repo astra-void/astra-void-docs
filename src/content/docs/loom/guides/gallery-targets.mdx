@@ -1,0 +1,149 @@
+---
+title: Gallery targets
+description: Browse many scenes at once with *.loom.tsx targets — the preview export contract, discovery globs, loom.config.ts, and per-target error containment.
+product: loom
+section: guides
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+A single-entry preview shows one tree. Gallery mode shows a sidebar of every scene in the project and
+mounts one at a time, each in its own root with its own error boundary. It is the mode you want while
+building a component library, and it is the only mode `loom build` supports.
+
+```bash title="Enable gallery mode"
+pnpm exec loom preview ~/code/my-ui --targets
+```
+
+With `--targets` present, the CLI stops looking for a client entry entirely — the gallery shell does
+the mounting — and serves its own `index.html` even if the project ships one.
+
+## The target contract
+
+A target is any file matching the discovery glob that exports a `preview` object:
+
+```tsx title="src/scenes/Counter.loom.tsx"
+import { useState } from "@rbxts/react";
+
+function CounterScene() {
+  const [count, setCount] = useState(0);
+  return (
+    <screengui Name="CounterScene">
+      <frame
+        Size={UDim2.fromOffset(280, 0)}
+        AutomaticSize={Enum.AutomaticSize.Y}
+        Position={UDim2.fromScale(0.5, 0.5)}
+        AnchorPoint={Vector2.new(0.5, 0.5)}
+        BackgroundColor3={Color3.fromRGB(28, 32, 38)}
+      >
+        <uicorner CornerRadius={UDim.new(0, 12)} />
+        <uilistlayout Padding={UDim.new(0, 12)} />
+        <textlabel Text={`count: ${count}`} /* ... */ />
+        <textbutton
+          Text="click me"
+          Event={{ Activated: () => setCount((c) => c + 1) }}
+          /* ... */
+        />
+      </frame>
+    </screengui>
+  );
+}
+
+export const preview = {
+  render: () => <CounterScene />,
+  title: "Counter (Activated)",
+} as const;
+```
+
+Two fields matter:
+
+| Field | Required | Behavior |
+| --- | --- | --- |
+| `render` | yes | Must be a function returning a React element. The shell renders it *as a function component* (`React.createElement(preview.render)`), so hooks inside it work and React re-renders it on its own schedule. |
+| `title` | no | A non-empty string replaces the sidebar's relative-path label. Titles are loaded lazily on idle, so the sidebar shows paths first and upgrades in place. |
+
+Anything else — a default export, a bare component export, `preview` without a callable `render` —
+produces an inline error panel rather than a broken page:
+
+```text
+invalid preview export in src/scenes/Counter.loom.tsx
+target must export `const preview = { render: () => <.../>, title: "..." } as const`
+```
+
+<Callout title="`render` is called as a component, not invoked once">
+Because the shell passes `preview.render` to `React.createElement`, a render function that closes over
+mutable module state will re-run whenever React re-renders. Put stateful logic in hooks inside the
+scene component, not in the `render` thunk.
+</Callout>
+
+## Discovery
+
+`--targets` accepts three shapes:
+
+| Invocation | Resulting glob |
+| --- | --- |
+| `--targets` (no value) | `**/*.loom.tsx` |
+| `--targets src/scenes` (no `*`) | `src/scenes/**/*.loom.tsx` |
+| `--targets "apps/*/src/**/*.scene.tsx"` | used verbatim |
+
+The matcher is a small purpose-built one, not `picomatch`: `**/` matches any depth *including none*,
+`**` matches anything, `*` matches anything except `/`, and every other character is literal. There is
+no brace expansion, no `?`, no negation, no extglob. The walk skips `node_modules` and any directory
+starting with `.`, and results are sorted, so sidebar order is stable and path-alphabetical.
+
+Discovery re-runs on the fly: adding or deleting a `*.loom.tsx` file invalidates the virtual module
+and triggers a full page reload. The URL hash survives that reload, so the selected target stays
+selected. Editing a target's *contents* is ordinary HMR.
+
+## `loom.config.ts`
+
+When you get tired of typing flags, drop a config file in the project root:
+
+```ts title="loom.config.ts"
+export default {
+  targets: "src/scenes",
+  port: 5204,
+};
+```
+
+Only two fields are read: `targets` (a string or non-empty string array) and `port` (a number). CLI
+flags always win over the file. The file is imported through `tsx`, so TypeScript and ESM both work,
+and an import failure is downgraded to a warning rather than aborting the preview.
+
+<Callout title="A config without `targets` is skipped whole">
+The CLI validates that `targets` is present and well-typed before honoring anything in the file. A
+config that has, say, a `server.port` and a `targetDiscovery` object — the shape an older loom used —
+is ignored entirely, including its port, and you get:
+
+```text
+loom: loom.config.ts found, but its default export has no `targets` field — skipping it
+(legacy config?). Use `--targets [glob]` or export
+`{ targets: string | string[], port?: number }` to enable gallery mode.
+```
+
+This is a hint, not an error: the preview continues in single-entry mode. If you see it, the file is
+doing nothing.
+</Callout>
+
+## Error containment
+
+The gallery chrome is deliberately plain DOM — no React outside a single error boundary — so a target
+that explodes cannot white-screen the page. Three failure classes are caught separately and rendered
+into an inline red panel with the stack, while the sidebar stays interactive:
+
+- **Import failure** — `failed to import <path>` (a syntax error, a missing module).
+- **Bad contract** — `invalid preview export in <path>`.
+- **Render throw** — `render error in <path>`, caught by the boundary around the target.
+
+Switching to another target clears the panel. A target that throws on purpose is a reasonable thing
+to keep in a gallery as a regression check for exactly this behavior.
+
+## Routing
+
+In full-chrome mode the shell uses hash routing: selecting a target sets `#/<relPath>`, and the hash
+is the source of truth across reloads. An initial `?target=<relPath>` seeds the selection on first
+load without a hash — that is the deep-link contract the static build and docs-site iframes use, and
+it is documented in [Static builds and
+embedding](/loom/guides/static-builds-and-embedding/).

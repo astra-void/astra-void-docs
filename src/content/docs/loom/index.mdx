@@ -1,0 +1,20 @@
+---
+title: Loom
+description: Render a roblox-ts UI tree as a live web DOM preview, driven by Vite.
+product: loom
+section: home
+---
+
+Loom takes the `@rbxts/react` (or `vide`) UI tree you already ship to Roblox and renders it in a
+browser, with Roblox layout semantics rather than CSS ones. `UIListLayout`, `UIPadding`,
+`AutomaticSize`, `UISizeConstraint` and text measurement are computed by a Rust layout engine
+compiled to WASM; the result is painted into plain DOM nodes. Clicks, keyboard input and hover
+route back through `UserInputService` and instance signals, so a preview is interactive, not a
+screenshot.
+
+The delivery mechanism is Vite. A single plugin — `loomPreview()` — aliases `@rbxts/react`,
+`@rbxts/react-roblox` and `@rbxts/services` onto browser adapters, installs the Roblox datatype
+globals (`UDim2`, `Color3`, `Enum`, `game`) before your entry evaluates, rewrites roblox-ts
+`import X = require(...)` statements to ESM, and resolves roblox-ts packages whose `main` points at
+uncompiled Luau straight to their TypeScript source. There is no roblox-ts build step in the loop:
+esbuild transpiles the same TSX, and HMR works.

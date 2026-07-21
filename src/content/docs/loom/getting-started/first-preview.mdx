@@ -1,0 +1,114 @@
+---
+title: Your first preview
+description: Point the loom CLI at a roblox-ts project with no config, and understand what it generates.
+product: loom
+section: getting-started
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+The lowest-friction way to see your UI in a browser adds nothing to the previewed project itself: no
+`vite.config.ts`, no `index.html`, no entry rewrite. You run the CLI and hand it a directory.
+
+```bash title="Preview a project"
+pnpm exec loom preview ~/code/my-game
+```
+
+The directory does not have to be the one `loom-dev` is installed in, and it does not need a
+`node_modules` of its own. The plugin aliases `@rbxts/react` and friends to **absolute paths** inside
+the installed `@loom-dev/preview` package precisely so a foreign tree resolves; `server.fs.allow` is
+widened to cover both that package's directory and the previewed project's workspace root.
+
+## What the CLI looks for
+
+With no `index.html` in the project root, the CLI generates one in memory and serves it from
+middleware. That generated page is minimal — a full-viewport `#loom-root` mount point on a
+`#14161a` background, plus a module script pointing at your entry. To find the entry it walks this
+list in order and takes the first hit:
+
+```text title="Entry candidates, in priority order"
+src/main.client.tsx
+src/main.client.ts
+src/client/main.client.tsx
+src/client/main.client.ts
+src/main.tsx
+src/main.ts
+src/index.tsx
+src/client.tsx
+```
+
+These are roblox-ts client-entry conventions, so a normal project already satisfies one. If your
+project has its own `index.html`, the CLI leaves it alone and Vite serves it as the entry document —
+in that case the `<script type="module">` inside it decides what loads.
+
+When neither exists, the CLI exits with the full candidate list rather than serving a blank page:
+
+```text title="No entry found"
+loom: no index.html and no client entry found in /Users/you/code/my-game
+      looked for: src/main.client.tsx, src/main.client.ts, src/client/main.client.tsx, ...
+      (or pass --targets to browse *.loom.tsx files as a gallery)
+```
+
+## The entry must mount itself
+
+Loom does not call your component for you. The entry has to mount at module top level, exactly the
+way a roblox-ts client script does:
+
+```tsx title="src/main.client.tsx"
+import { createRoot } from "@rbxts/react-roblox";
+import { App } from "./App";
+
+createRoot().render(<App />);
+```
+
+`@rbxts/react-roblox` is aliased to loom's browser client, whose `createRoot()` ignores the Roblox
+target instance you would normally pass and creates its own absolutely-positioned container under
+`#loom-root`. Passing `Players.LocalPlayer.WaitForChild("PlayerGui")` is harmless — the argument is
+accepted and discarded — so you do not have to fork your entry for the preview.
+
+<Callout title="A blank preview usually means the entry only exports">
+Two seconds after load, if `#loom-root` still has no child elements, loom logs:
+
+`[loom] nothing mounted into #loom-root after 2s — does your entry call createRoot().render(<App />) at the top level?`
+
+That is the single most common first-run problem: an entry file that exports a component instead of
+rendering one. Check the browser console before assuming the layout engine failed.
+</Callout>
+
+For `vide` the same rule applies with `mount`:
+
+```ts title="src/main.client.ts (vide)"
+import { mount } from "@rbxts/vide";
+import { App } from "./App";
+
+mount(App);
+```
+
+## Flags
+
+```text
+loom preview [dir] [--port <n>] [--host] [--targets [glob]]
+```
+
+`dir` defaults to `.`. `--port` takes a number and errors out if it is not numeric. `--host` is a
+boolean that binds all interfaces, unless it is followed by a non-flag value, which is then used as
+the bind address. `--targets` switches to gallery mode, covered in [Gallery
+targets](/loom/guides/gallery-targets/).
+
+An optional `<dir>/loom.config.ts` supplies `targets` and `port` when the flags are absent; CLI flags
+always win. See the [CLI reference](/loom/reference/cli/) for the exact precedence rules.
+
+## What you get
+
+Standard Vite dev-server behavior, because it *is* a Vite dev server: HMR on save, source maps, and
+esbuild-speed TSX transpilation. Nothing runs `rbxtsc`. Input works — clicks reach `Activated`,
+typing reaches `TextBox`, and `UserInputService` fires — so state-driven UI can be exercised in the
+browser rather than in Studio.
+
+## Next step
+
+The CLI is a convenience wrapper around one Vite plugin. When you want the preview to live inside
+your own project — your `vite.config.ts`, your `index.html`, your build — read [Vite
+integration](/loom/guides/vite-integration/).
