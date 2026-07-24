@@ -158,8 +158,10 @@ Three details are worth stealing:
 - **Make a missing checkout a graceful skip**, not a hard failure — CI and fresh clones should still
   build the site, just without previews. `findGalleryTargets()` answers "is there anything to serve?"
   without starting anything. Gate strictness behind an env var for deploy builds.
-- **Pin the checkout path.** These docs link the component library and Loom into `.preview-src/`,
-  which is also where CI checks them out, so one path convention covers local and CI alike.
+- **Pin the checkout path.** These docs link the component library into `.preview-src/`, which is
+  also where CI checks it out, so one path convention covers local and CI alike. (Loom itself is an
+  ordinary dependency — `@loom-dev/layout` ships its wasm engine prebuilt, so the host needs no Rust
+  toolchain.)
 
 The component that renders each frame sets `src` lazily through an `IntersectionObserver` (a gallery
 page can hold a dozen frames), appends `&theme=` from the site's current theme at load, and pushes

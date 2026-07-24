@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCS_SITE_URL: ${{ vars.DOCS_SITE_URL }}
-      # The sibling sources are checked out at `.preview-src/*` below — the same
-      # paths `pnpm link:preview-src` links locally, so the `loom-dev` dependency
-      # and the scene lookup resolve here with no extra configuration.
+      # The scenes are checked out at `.preview-src/lattice-ui` below — the same
+      # path `pnpm link:preview-src` links locally, so the scene lookup resolves
+      # here with no extra configuration.
       #
       # Deploys must include previews: a missing/empty checkout should fail the
       # build loudly rather than silently skip (the local default is a soft skip).
@@ -31,15 +31,9 @@ jobs:
       - name: Checkout docs
         uses: actions/checkout@v6
 
-      # The interactive component previews are rendered by Loom (a sibling
-      # roblox-ts → browser renderer) from the lattice-ui preview targets. Both
-      # are public repos, so no token is needed.
-      - name: Checkout Loom
-        uses: actions/checkout@v6
-        with:
-          repository: astra-void/loom
-          path: .preview-src/loom
-
+      # The interactive component previews are rendered by Loom (`loom-dev`, an
+      # ordinary dependency, wasm engine prebuilt in the tarball) from the
+      # lattice-ui preview targets. lattice-ui is public, so no token is needed.
       - name: Checkout lattice-ui
         uses: actions/checkout@v6
         with:
@@ -55,26 +49,7 @@ jobs:
           node-version: 24
           cache: pnpm
 
-      # Loom's layout engine is Rust compiled to WebAssembly; its `prepare`
-      # script builds it via wasm-pack on install.
-      - name: Setup Rust (wasm32)
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: .preview-src/loom
-
-      - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-
       - name: Install docs dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Loom dependencies (builds the layout WASM)
-        working-directory: .preview-src/loom
         run: pnpm install --frozen-lockfile
 
       # lattice-ui is consumed from source by Loom, so only the workspace links
@@ -84,7 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       # The `loom-preview` Astro integration emits dist/loom-preview/ as part of
-      # the build, so the previews always match the checkouts installed above.
+      # the build, so the previews always match the checkout installed above.
       - name: Build docs
         run: pnpm build
 

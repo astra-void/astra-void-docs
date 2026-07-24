@@ -1,13 +1,12 @@
-// Links the sibling checkouts the Loom previews are built from into
-// `.preview-src/`, so local development and CI share one path convention:
+// Links the component library whose scenes the Loom previews render into
+// `.preview-src/lattice-ui`, so local development and CI share one path
+// convention — CI checks the real repo out at exactly that path (see
+// .github/workflows). Locally it is a symlink to your workspace checkout;
+// override the source with the LATTICE_REPO env var.
 //
-//   .preview-src/loom        → the loom monorepo (provides `loom-dev/embed`)
-//   .preview-src/lattice-ui  → the component library whose scenes are previewed
-//
-// CI checks both repos out at exactly these paths (see .github/workflows), so
-// package.json can depend on `loom-dev` through a stable `link:` path. Locally
-// they are symlinks to your workspace checkouts; override the sources with the
-// LOOM_REPO / LATTICE_REPO env vars.
+// Loom itself is an ordinary npm dependency (`loom-dev`), so no checkout of it
+// is needed — and no Rust toolchain either: the published @loom-dev/layout
+// ships its wasm engine prebuilt.
 //
 // Idempotent and never fatal: a missing checkout is a warning, and the docs
 // still build (without the interactive previews).
@@ -22,10 +21,6 @@ const workspace = resolve(docsRoot, "../..")
 const previewSrc = resolve(docsRoot, ".preview-src")
 
 const links = [
-  {
-    name: "loom",
-    source: process.env.LOOM_REPO ?? resolve(workspace, "typescript/loom-rewrite"),
-  },
   {
     name: "lattice-ui",
     source: process.env.LATTICE_REPO ?? resolve(workspace, "rojo/lattice-ui"),

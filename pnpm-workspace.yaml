@@ -7,10 +7,10 @@ allowBuilds:
   msw: true
   sharp: true
 minimumReleaseAgeExclude:
-  - '@loom-dev/layout@0.2.0'
-  - '@loom-dev/preview@0.2.0'
-  - '@loom-dev/react@0.2.0'
-  - '@loom-dev/renderer@0.2.0'
-  - '@loom-dev/runtime@0.2.0'
-  - '@loom-dev/scene@0.2.0'
-  - loom-dev@0.2.0
+  - '@loom-dev/layout@0.2.0 || 0.2.1'
+  - '@loom-dev/preview@0.2.0 || 0.2.1'
+  - '@loom-dev/react@0.2.0 || 0.2.1'
+  - '@loom-dev/renderer@0.2.0 || 0.2.1'
+  - '@loom-dev/runtime@0.2.0 || 0.2.1'
+  - '@loom-dev/scene@0.2.0 || 0.2.1'
+  - loom-dev@0.2.0 || 0.2.1
