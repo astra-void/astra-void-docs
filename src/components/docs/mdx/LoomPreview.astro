@@ -4,15 +4,16 @@
  * the real Roblox `@rbxts/react` component tree in the browser, so the preview
  * is fully interactive (click, type, drag) — not a screenshot.
  *
- * The bundle is produced by `pnpm preview:build` into `public/loom-preview/`
- * and served statically; the iframe deep-links one target with `chrome=none`.
+ * The gallery is served by the `loom-preview` integration — Loom's own Vite
+ * server in dev, a static bundle in `dist/loom-preview/` after a build — and the
+ * iframe deep-links one target with `chrome=none`.
  * The iframe `src` is set lazily (IntersectionObserver) and carries the docs
  * site's current theme (`&theme=light|dark`); later toggles are pushed into
  * loaded frames via `postMessage({type:"loom-theme"})`.
  *
  * A "Code" tab shows the example scene's source, read at build time from the
- * lattice checkout (same path convention as scripts/build-loom-previews.mjs,
- * override with LATTICE_PREVIEW_APP). Docs-infra boilerplate (the
+ * same lattice checkout the gallery renders (override with
+ * LATTICE_PREVIEW_APP). Docs-infra boilerplate (the
  * DocExampleShell import and the `preview` export) is stripped for display.
  */
 import { Code } from "astro-expressive-code/components"

@@ -7,6 +7,8 @@ sidebar:
   order: 10
 ---
 
+import { Callout } from "@/components/docs/mdx";
+
 ```text
 loom — Roblox UI preview
 
@@ -122,3 +124,61 @@ Under the dev server, adding or deleting a `*.loom.tsx` file invalidates the vir
 and triggers a full page reload — the sidebar is rebuilt from the import map, so a reload is the
 simplest correct signal. The URL hash survives it, keeping the selected target selected. Editing a
 target's contents is ordinary HMR.
+
+## `loom-dev/embed` — the programmatic API
+
+Both commands own the process: `preview` binds a port, `build` owns an output directory. A host
+application — a docs site, a design-system portal — owns both already. `loom-dev/embed` exposes the
+same two pipelines as functions so the host can mount them:
+
+```ts title="Mount the gallery on a host dev server"
+import { createGalleryServer, buildGallery } from "loom-dev/embed";
+
+const gallery = await createGalleryServer({
+  root: "/path/to/my-ui",       // project the targets live in
+  targets: "src/scenes",        // same semantics as --targets
+  base: "/loom-preview/",       // public path it answers under
+});
+
+hostServer.middlewares.use(gallery.middleware);
+// …and on shutdown:
+await gallery.close();
+```
+
+```ts title="Emit the static gallery from a host build"
+await buildGallery({
+  root: "/path/to/my-ui",
+  targets: "src/scenes",
+  outDir: "dist/loom-preview",  // --out
+  // base defaults to "./" — relative assets, hostable anywhere
+});
+```
+
+| Export | What it does |
+| --- | --- |
+| `createGalleryServer(options)` | Gallery Vite server in middleware mode; resolves to `{ base, middleware, vite, close() }` |
+| `buildGallery(options)` | Static gallery build; resolves to the resolved output directory |
+| `findGalleryTargets(root, targets?)` | The relative target paths that would be served — for skipping cleanly when a checkout is absent |
+| `isGalleryRequest(url, base)` | Whether a URL belongs to a gallery mounted at `base` |
+| `normalizeGalleryBase(base?)` | Forces the leading and trailing slash Vite's `base` wants |
+| `DEFAULT_GALLERY_BASE` | `"/loom-preview/"` |
+
+`createGalleryServer` also takes `hmrPort`. Middleware mode has no HTTP server of its own to upgrade,
+so Vite always puts HMR on a standalone port — and its default (24678) is the first port every other
+Vite dev server grabs. A collision is not fatal but it is quiet: Vite logs `Port 24678 is already in
+use` and previews then never hot-reload. Left unset, loom picks a free port per server; pass a number
+to pin one, or `false` to run without HMR.
+
+<Callout type="note" title="It runs its own Vite">
+`createGalleryServer` starts a **separate** Vite instance and the host only forwards HTTP to it. That
+is deliberate: the loom plugin rewrites `react` and `@rbxts/*` for the whole config it lives in (see
+[Vite integration](/loom/guides/vite-integration/)), so dropping it into a host app's config would
+hijack the host's own React. The one thing that is not proxied is Vite's HMR WebSocket — middleware
+mode always gives it a port of its own (see `hmrPort` above).
+</Callout>
+
+`middleware` answers only under `base` — including the bare `/loom-preview`, which it redirects to
+the trailing-slash form — and calls `next()` for everything else, so it is safe to register ahead of
+the host's own routes. Everything else is identical to the CLI: the same target discovery, the same
+`?target=`/`?chrome=`/`?theme=` [URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract),
+the same per-target error containment.

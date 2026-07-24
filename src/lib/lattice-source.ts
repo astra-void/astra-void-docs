@@ -3,9 +3,9 @@
  *
  * The scene sources are the docs' single source of truth for example code:
  * `LoomPreview` shows them in its Code tab, and `/playground` seeds its editor
- * from them. Both read the same sibling checkout the preview bundle is built
- * from (see scripts/build-loom-previews.mjs); a missing checkout is never fatal
- * — callers fall back to shipping without source.
+ * from them. Both read the same sibling checkout the gallery itself is served
+ * from (see src/integrations/loom-preview.ts); a missing checkout is never
+ * fatal — callers fall back to shipping without source.
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { resolve } from "node:path"
@@ -15,6 +15,9 @@ const docsRoot = resolve(import.meta.dirname ?? ".", "../..")
 
 const APP_CANDIDATES = [
   process.env.LATTICE_PREVIEW_APP,
+  // The linked/checked-out sibling (`pnpm link:preview-src`) — the path the
+  // Loom preview integration and CI both use.
+  resolve(docsRoot, ".preview-src/lattice-ui/apps/loom-preview"),
   resolve(docsRoot, "../../rojo/lattice-ui/apps/loom-preview"),
   resolve(docsRoot, "../../../rojo/lattice-ui/apps/loom-preview"),
 ].filter((candidate): candidate is string => Boolean(candidate))

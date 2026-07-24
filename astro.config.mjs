@@ -1,5 +1,6 @@
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
+import loomPreview from "./src/integrations/loom-preview";
 import astroExpressiveCode from "astro-expressive-code";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
@@ -32,6 +33,9 @@ export default defineConfig({
     astroExpressiveCode(),
     mdx(),
     react(),
+    // Mounts Loom's own Vite server for the interactive component previews in
+    // dev, and emits the static gallery into dist/loom-preview/ on build.
+    loomPreview(),
   ],
   vite: {
     resolve: {

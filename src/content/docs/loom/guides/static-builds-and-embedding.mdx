@@ -108,33 +108,68 @@ useEffect(() => {
 
 ## A working embed pipeline
 
-These docs embed previews this way. A build script shells out to `loom build`, pointed at a sibling
-checkout of the component library, and writes into the site's `public/` directory:
+Shelling out to `loom build` before every site build works, but it buys a generated artifact that
+goes stale the moment a scene changes, and no HMR while you edit one. If the host is a Vite-based
+framework, mount the gallery instead: [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api)
+exposes both pipelines as functions — a middleware-mode server for dev, a static build for the
+output directory.
 
-```js title="scripts/build-loom-previews.mjs (abridged)"
-execFileSync(
-  "pnpm",
-  ["exec", "loom", "build", latticeApp,
-   "--targets", "src/preview-targets",
-   "--out", outDir,          // <site>/public/loom-preview
-   "--base", "./"],
-  { stdio: "inherit" },
-);
+These docs do exactly that, from a ~40-line Astro integration:
+
+```ts title="src/integrations/loom-preview.ts (abridged)"
+import { buildGallery, createGalleryServer, findGalleryTargets } from "loom-dev/embed";
+
+export default function loomPreview(): AstroIntegration {
+  let gallery;
+  return {
+    name: "loom-preview",
+    hooks: {
+      // Dev: Loom's own Vite server, mounted under the site's base.
+      "astro:server:setup": async ({ server }) => {
+        gallery = await createGalleryServer({
+          root: latticeApp,
+          targets: "src/preview-targets",
+          base: "/loom-preview/",
+        });
+        server.middlewares.use(gallery.middleware);
+      },
+      "astro:server:done": async () => await gallery?.close(),
+
+      // Build: the same gallery, emitted next to the site's own output.
+      "astro:build:done": async ({ dir }) => {
+        await buildGallery({
+          root: latticeApp,
+          targets: "src/preview-targets",
+          outDir: fileURLToPath(new URL("loom-preview/", dir)),
+        });
+      },
+    },
+  };
+}
 ```
+
+Editing a scene in the library checkout now hot-reloads the frame in the docs page — no regeneration
+step, nothing to keep in sync, and no generated bundle in the repo.
 
 Three details are worth stealing:
 
-- **Chain it ahead of `dev` and `build`** (`"dev": "pnpm preview:build && astro dev"`) so previews
-  regenerate from the latest library checkout instead of drifting.
+- **Mount under the host's own base**, not a hard-coded `/loom-preview/`, so the previews travel with
+  the site when it moves to a subpath.
 - **Make a missing checkout a graceful skip**, not a hard failure — CI and fresh clones should still
-  build the site, just without regenerated previews. Gate strictness behind an env var for release
-  builds.
-- **Keep the output gitignored.** It is generated, it contains a WASM binary, and it changes on
-  every library edit.
+  build the site, just without previews. `findGalleryTargets()` answers "is there anything to serve?"
+  without starting anything. Gate strictness behind an env var for deploy builds.
+- **Pin the checkout path.** These docs link the component library and Loom into `.preview-src/`,
+  which is also where CI checks them out, so one path convention covers local and CI alike.
 
 The component that renders each frame sets `src` lazily through an `IntersectionObserver` (a gallery
 page can hold a dozen frames), appends `&theme=` from the site's current theme at load, and pushes
 later theme toggles into loaded frames with the `postMessage` above.
+
+<Callout type="note" title="Non-Vite hosts">
+`loom build` is still the right tool when the host isn't a Vite app (a Hugo/Jekyll site, a CI job
+that publishes the gallery on its own). The output is identical — `buildGallery()` is the same
+pipeline behind a function call.
+</Callout>
 
 ## Error containment survives the build
 

@@ -172,16 +172,21 @@ So if you drop `loomPreview()` into the Vite config of an existing React web app
 gets replaced with loom's React 18 too. If the app is on React 19, it breaks. If it also runs
 `@vitejs/plugin-react`, you now have two JSX transforms fighting.
 
-Keep the preview in its own Vite project. Two arrangements work well:
+Keep the preview in its own Vite project. Three arrangements work well:
 
 - **A dedicated preview app** in your workspace (`apps/preview/`) with its own `vite.config.ts`, its
   own dependencies, and its own `index.html`. This is what loom's `apps/playground` is.
 - **No Vite project at all** — use `loom preview` and `loom build`, pointed at your source directory.
   The CLI runs with `configFile: false`, so it cannot collide with your project's own Vite config
   even if one exists.
+- **Mounted inside your app's dev server**, via
+  [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api). The gallery still gets
+  its own Vite instance — your app just forwards requests under a base path to it, so the two module
+  graphs never meet.
 
-For embedding previews into a docs site, the second option is what these docs themselves use: a build
-script shells out to `loom build` and the resulting static bundle is iframed per scene.
+The third is what these docs themselves use: an Astro integration mounts the gallery in dev and emits
+the static bundle at build, and each scene is iframed per preview. See
+[Static builds and embedding](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline).
 
 ## 7. Expected noise
 

@@ -9,5 +9,6 @@ node_modules
 digest.txt
 .serena/
 
-# Generated Loom preview bundles (pnpm preview:build)
-public/loom-preview
+# Sibling checkouts the Loom previews are built from (pnpm link:preview-src;
+# CI checks the real repos out here).
+.preview-src
