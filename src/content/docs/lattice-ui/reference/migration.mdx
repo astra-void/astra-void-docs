@@ -1,0 +1,211 @@
+---
+title: Migration
+description: Upgrading between breaking Lattice UI releases, with the exact code changes each one requires.
+section: reference
+sidebar:
+  order: 85
+---
+
+import { Callout } from "@/components/docs/mdx";
+import { LATTICE_VERSION } from "@/lib/lattice-version";
+
+Lattice UI is pre-1.0, so `0.x` minors may break. This page carries the code changes each breaking release needs; [Releases](/lattice-ui/reference/releases/) carries the summaries and the reasoning.
+
+## 0.6.x → 0.7.0
+
+0.7.0 is the largest breaking release so far. It strips every primitive down to behavior: colors, fixed sizes, font sizes, literal text and decorative children are gone. In exchange, any prop the underlying instance accepts now forwards straight through, so styling no longer requires `asChild`.
+
+<Callout title="Expect a visual diff, not a broken build">
+Most of this release does not fail to compile — it renders differently. A dialog that looked finished on 0.6 comes up as an invisible overlay and an unstyled panel on 0.7, because the appearance it was relying on came from the primitive. Budget a pass over every surface, not just the ones the compiler flags.
+</Callout>
+
+### 1. Every primitive renders unstyled
+
+Primitives now set behavior plus the minimum needed to neutralize Roblox's own instance defaults — a bare `textbutton` renders an opaque grey box labelled "Button", so parts still set `BackgroundTransparency = 1`, `BorderSizePixel = 0`, `Text = ""` and friends. Everything past that is yours.
+
+Geometry the primitive *computes from state* is still owned by the primitive: progress fill ratios, slider thumb travel, popper-driven position, scroll thumb size, and the full-screen sizing that makes an overlay actually cover the screen.
+
+Because props now forward, the fix is usually to move styling onto the part itself rather than reach for `asChild`:
+
+```tsx title="0.6 — appearance came from the primitive"
+<Dialog.Overlay />
+```
+
+```tsx title="0.7 — pass the appearance you want"
+<Dialog.Overlay
+  BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+  BackgroundTransparency={0.5}
+/>
+```
+
+`asChild` is still there, and still the right tool when you need a *different instance class* than the part renders, or when the element comes from elsewhere.
+
+### 2. Forwarded props are type-checked
+
+Each part checks forwarded props against the instance it actually renders. Passing a prop that instance does not accept is now a compile error instead of being silently dropped.
+
+That means you need to know what each part renders. `Dialog.Overlay` is a `textbutton`, `Dialog.Content` is a `canvasgroup`, `Toast.Viewport` and `Menu.Group` are `frame`s. Passing `TextColor3` to a `frame` will not compile.
+
+### 3. Motion no longer has defaults
+
+No **presence** motion runs unless you ask for it. Presence timing is unchanged — content still stays mounted until an exit transition finishes — but with no `transition` the transition is instant.
+
+Motion that follows a value the primitive computes is unaffected: `Progress.Indicator` still settles its fill by default, and the slider thumb, slider range and switch thumb still follow their values. That motion is behavior, not decoration, so it stayed.
+
+```tsx title="0.6 — animated with no configuration"
+<Dialog.Content>{/* ... */}</Dialog.Content>
+```
+
+```tsx title="0.7 — pass the transition you want"
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+
+<Dialog.Content transition={createCanvasGroupRevealRecipe()}>
+  {/* ... */}
+</Dialog.Content>
+```
+
+The recipes that used to be applied for you are all still exported from `@lattice-ui/react-motion`, unchanged. Passing one back explicitly reproduces the old feel exactly:
+
+| Part | Recipe that used to be its default |
+| --- | --- |
+| `Dialog.Content` | `createCanvasGroupRevealRecipe()` |
+| `Menu.Content`, `ContextMenu.Content`, `Combobox.Content`, `Tooltip.Content` | `createCanvasGroupPopperEntranceRecipe(placement)` |
+| `Popover.Content`, `Select.Content` | `createCanvasGroupPopperEntranceRecipe(placement)`, or `createPopperEntranceRecipe(placement)` under `asChild` |
+| `Accordion.Content`, `Tabs.Content` | `createSurfaceRevealRecipe()` |
+| `Checkbox.Indicator`, `RadioGroup.Indicator` | `createIndicatorRevealRecipe(size)` |
+| `Toast.Root` | `createToastRevealRecipe()` |
+
+The popper recipes took the **resolved** placement, so the motion originated from the side the surface actually landed on after any flip. Read it from `usePopper` if you want that behavior back; passing no placement animates from a fixed side.
+
+Prefer these over a hand-written config. Each one declares the correct **target contract** — which properties motion is allowed to own — so it cannot fight your layout. A `PresenceMotionConfig` written by hand needs `reveal`/`exit` as `{ values, intent }`, not bare properties:
+
+```tsx title="The config shape, if you do write one"
+transition={{
+  initial: { GroupTransparency: 1 },
+  reveal: { values: { GroupTransparency: 0 }, intent: { duration: 0.12 } },
+  exit: { values: { GroupTransparency: 1 }, intent: { duration: 0.096 } },
+}}
+```
+
+See [Presence and motion](/lattice-ui/guides/presence-and-motion/) for which parts take a `PresenceMotionConfig` and which take a `ResponseMotionConfig`, and [Motion recipes](/lattice-ui/guides/motion-recipes/) for the full catalog.
+
+<Callout title="Overlays animate through their own element">
+`Dialog.Overlay` does not accept `transition` — an unstyled overlay has nothing to fade. It still owns presence timing, so to animate a dim, put an element inside it (or use `asChild`) and animate that.
+</Callout>
+
+### 4. Props removed
+
+| Part | Removed | Do this instead |
+| --- | --- | --- |
+| `Switch.Root` | `trackColorMode`, `trackOnColor`, `trackOffColor`, `disabledTrackColor` | Style the track yourself; read state from `Switch` context |
+| `RadioGroup.Item` | `transition` | Nothing — it only fed the removed color animation |
+| `ToggleGroup.Item` | `transition` | Nothing — same |
+
+The `SwitchTrackColorMode` type is gone with them.
+
+### 5. Contract changes per primitive
+
+**`Select.Item` and `Combobox.Item`** no longer render `textValue` as their label. Supply the label as a child. `textValue` still drives `Select.Value` and combobox filtering, so keep passing it when the label is not a plain string.
+
+```tsx title="0.6"
+<Select.Item value="apple" textValue="Apple" />
+```
+
+```tsx title="0.7"
+<Select.Item value="apple" textValue="Apple">
+  <textlabel
+    BackgroundTransparency={1}
+    Size={UDim2.fromOffset(200, 32)}
+    Text="Apple"
+    TextColor3={Color3.fromRGB(240, 244, 250)}
+    TextXAlignment={Enum.TextXAlignment.Left}
+  />
+</Select.Item>
+```
+
+**`Toast.Viewport`** renders its children instead of the toast queue markup it used to hardcode. Map over `useToast().visibleToasts` yourself — the same shape the `asChild` path already required:
+
+```tsx title="0.7"
+const toast = useToast();
+
+<Toast.Viewport>
+  <uilistlayout Padding={new UDim(0, 8)} SortOrder={Enum.SortOrder.LayoutOrder} />
+  {toast.visibleToasts.map((record) => (
+    <Toast.Root
+      key={record.id}
+      onExitComplete={() => toast.finalize(record.id)}
+      visible={!record.exiting}
+    >
+      <Toast.Title>
+        <textlabel
+          BackgroundTransparency={1}
+          Size={UDim2.fromOffset(300, 20)}
+          Text={record.title ?? ""}
+          TextColor3={Color3.fromRGB(240, 244, 250)}
+          TextXAlignment={Enum.TextXAlignment.Left}
+        />
+      </Toast.Title>
+    </Toast.Root>
+  ))}
+</Toast.Viewport>
+```
+
+**`Menu.Group` and `ContextMenu.Group`** no longer render a vertical `UIListLayout` or force `AutomaticSize`. They were the last primitives holding an opinion about how their children lay out. Supply the layout yourself, as `Select.Group` and `Combobox.Group` already required:
+
+```tsx title="0.7"
+<Menu.Group>
+  <uilistlayout FillDirection={Enum.FillDirection.Vertical} />
+  {/* items */}
+</Menu.Group>
+```
+
+### 6. Things that got easier
+
+Not everything here is work. Three fixes remove workarounds you may currently be carrying:
+
+- **16 leaf parts now render `children`.** Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay` previously dropped children unless `asChild` was set, so attaching a `UICorner` or `UIPadding` silently did nothing. Delete any `asChild` you added only to work around that.
+- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform emits — is now re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error.
+- **Highlight state is readable.** `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext` return `{ highlighted, disabled }`. `highlighted` reports hover *or* managed focus, which is what you need to render the highlight the primitive used to draw.
+
+### 7. Focus additions
+
+Two new `useFocusNode` options matter if you render your own focus highlights:
+
+- `onFocusChange` fires when managed focus enters or leaves a node — including when the focused node unmounts, so a highlight cannot outlive its widget. Nodes that never become `GuiService.SelectedObject` (`syncToRoblox: false`, or a non-`Selectable` object) previously had no way to know.
+- `onActivate` routes activation to the focused node. While a `FocusScope` is active the navigation controller binds `Return`, `KeypadEnter`, `Space` and `ButtonA` and runs the focused node's activation. Opting out leaves the engine's own `Activated` path untouched. `activateFocusedNode()` drives the same path directly.
+
+See [Focus](/lattice-ui/reference/focus/) for the full API.
+
+### Upgrade checklist
+
+1. `npx lattice-ui upgrade` to move every `@lattice-ui/*` package to {LATTICE_VERSION}.
+2. Typecheck. Fix the forwarded-prop errors — those are props landing on an instance that does not accept them.
+3. Remove `trackColorMode` / `trackOnColor` / `trackOffColor` / `disabledTrackColor` from `Switch.Root`, and `transition` from `RadioGroup.Item` and `ToggleGroup.Item`.
+4. Give `Select.Item` and `Combobox.Item` children, render the toast queue inside `Toast.Viewport`, and add layouts to `Menu.Group` and `ContextMenu.Group`.
+5. Run each surface and restyle what went flat. Overlays, menu item highlights and switch tracks are the usual casualties.
+6. Add `transition` wherever you want motion back.
+
+## 0.6.0 → 0.6.1
+
+A rename only — no runtime behavior, exports or APIs changed.
+
+- Add the `react-` prefix to every import: `@lattice-ui/<name>` → `@lattice-ui/react-<name>`.
+- `@lattice-ui/core` → `@lattice-ui/react-runtime`.
+- Update `package.json` dependency entries before upgrading. Leaving both the old and new name listed makes two copies resolve side by side, which npm rejects.
+- `npx lattice-ui init` rewrites the old names for you.
+- If you pin CLI registry keys, `core` is now `runtime`. Other component keys are unchanged.
+
+## 0.5.x → 0.6.0
+
+- `Toast.Root`'s `transition` now takes a `PresenceMotionConfig` (`initial`/`reveal`/`exit`) instead of a `ResponseMotionConfig`.
+
+## 0.4.x → 0.5.0
+
+- Import focus and motion helpers from `@lattice-ui/focus` and `@lattice-ui/motion` rather than `@lattice-ui/core`.
+
+## Related
+
+- [Releases](/lattice-ui/reference/releases/)
+- [Package stability](/lattice-ui/getting-started/package-stability/)
+- [Styling with recipes](/lattice-ui/guides/styling-with-recipes/)
+- [Presence and motion](/lattice-ui/guides/presence-and-motion/)

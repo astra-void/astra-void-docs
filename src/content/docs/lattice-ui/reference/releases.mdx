@@ -8,7 +8,7 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-All `@lattice-ui/*` packages version in lockstep, so a single release number describes the whole library. This page summarizes each release and its migration steps; the full entry-by-entry history lives in the repository's [CHANGELOG.md](https://github.com/astra-void/lattice-ui/blob/main/CHANGELOG.md).
+All `@lattice-ui/*` packages version in lockstep, so a single release number describes the whole library. This page summarizes each release and its migration steps; the exact code changes live in [Migration](/lattice-ui/reference/migration/), and the full entry-by-entry history in the repository's [CHANGELOG.md](https://github.com/astra-void/lattice-ui/blob/main/CHANGELOG.md).
 
 <Callout title="Pre-1.0 versioning">
   Lattice UI is pre-1.0: minor releases (`0.x`) may include breaking changes,
@@ -17,9 +17,46 @@ All `@lattice-ui/*` packages version in lockstep, so a single release number des
   per-package stability tiers before upgrading.
 </Callout>
 
+## 0.7.0
+
+The current stable release, and the largest breaking one so far. It strips every primitive down to behavior and rebuilds the CLI around the same idea.
+
+**Migration** — see [Migration](/lattice-ui/reference/migration/) for the full walkthrough. In short:
+
+- Every primitive renders unstyled. Pass the appearance you want directly to the part — props now forward onto the instance it renders — or use `asChild`.
+- Motion has no defaults. Pass `transition` to anything that should animate; presence timing and exit-before-unmount are unchanged.
+- Drop `trackColorMode`, `trackOnColor`, `trackOffColor` and `disabledTrackColor` from `Switch.Root`, and `transition` from `RadioGroup.Item` and `ToggleGroup.Item`.
+- Supply labels as children on `Select.Item` and `Combobox.Item`; `textValue` no longer renders.
+- Render the toast queue yourself inside `Toast.Viewport`, and supply the layout for `Menu.Group` and `ContextMenu.Group`.
+
+<Callout title="This release mostly does not fail to compile">
+  It renders differently. Surfaces that looked finished on 0.6 come up flat on
+  0.7, because the appearance came from the primitive. Plan a visual pass, not
+  just a typecheck.
+</Callout>
+
+**Highlights**
+
+- Primitives now set behavior plus the minimum needed to neutralize Roblox's own instance defaults. Geometry computed from state — progress fill ratios, slider thumb travel, popper position, scroll thumb size — stays owned by the primitive.
+- Unknown props forward from every part onto the instance it renders, so styling no longer requires `asChild`. Consumer props override the neutral defaults but never the behavior props, consumer event handlers compose with the primitive's rather than replacing them, and refs compose too.
+- Forwarded props are type-checked against that instance, so a prop the element does not accept is a compile error instead of being silently absorbed.
+- Highlight state is readable through `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext`, which return `{ highlighted, disabled }` — `highlighted` covers hover *or* managed focus.
+- `useFocusNode` gains `onFocusChange` and `onActivate`, so a node that never becomes `GuiService.SelectedObject` can still render a focus highlight and take activation. `activateFocusedNode()` drives the same path directly.
+- The CLI gains per-command help pages, did-you-mean suggestions, keyboard-driven selection prompts, `NO_COLOR`/`FORCE_COLOR`, OSC 8 hyperlinks, a working `--verbose`, and a single connected run of output. See the [CLI reference](/lattice-ui/reference/cli/).
+
+**Fixes**
+
+- 16 leaf parts render `children` again — both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay`. Attaching a `UICorner` or `UIPadding` to one of these previously did nothing.
+- `asChild` accepts Roblox UI modifiers as siblings of the child element, which is the shape a Tailwind-style `className` transform emits.
+- `Menu.Trigger` no longer runs its activation twice, and `Menu.Item` fires `onSelect` exactly once per activation.
+- A menu item stays highlighted while it holds keyboard focus.
+- The switch thumb is centered in its track, and its travel derives from `AnchorPoint` and `Position` rather than a declared `Size`.
+- `lattice add context-menu` and `lattice add motion` resolve instead of failing with "Unknown component".
+- `--dry-run` reports what it *would* do instead of claiming it ran.
+
 ## 0.6.2
 
-The current stable release. It changes no primitive behavior — every fix is in the `lattice` CLI, and most of them are about making a scaffolded project install and type-check cleanly on npm, where a peer conflict is a hard error rather than a warning.
+A CLI-only patch. It changes no primitive behavior — every fix is about making a scaffolded project install and type-check cleanly on npm, where a peer conflict is a hard error rather than a warning.
 
 **Migration**
 
@@ -114,6 +151,7 @@ The 0.4 line narrowed the workspace to the maintained UI surface and introduced 
 
 ## Related
 
+- [Migration](/lattice-ui/reference/migration/)
 - [Package stability](/lattice-ui/getting-started/package-stability/)
 - [CLI](/lattice-ui/reference/cli/)
 - [Installation](/lattice-ui/getting-started/installation/)

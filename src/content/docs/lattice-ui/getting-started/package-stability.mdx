@@ -7,6 +7,7 @@ sidebar:
 ---
 
 import { StatusBadge, Callout } from "@/components/docs/mdx";
+import { LATTICE_MINOR, LATTICE_VERSION } from "@/lib/lattice-version";
 
 Lattice UI is in the `0.x` phase. The whole workspace shares one **lockedstep** version, so the number bumps together across every package — but that single number is not a maturity guarantee. Some packages are on a clear path to `v1.0`; others are available today while their APIs are still settling. This page tells you which is which so you can pick packages with the right expectations.
 
@@ -48,7 +49,9 @@ Crucially, reaching `v1` for the main UI layer does **not** automatically stabil
 
 ## What is coming
 
-The `v0.6.x` line focuses on hardening: more reliable layered and composite primitives, steadier motion and exit transitions, a real keyboard-navigation foundation rather than leaning on Roblox default selection, stronger focus restoration and trapping, and wider regression coverage for the stable-direction surface — while keeping the feature-limited packages flexible.
+The current release is `v{LATTICE_VERSION}`. The `v{LATTICE_MINOR}.x` line drew the line between behavior and appearance: every primitive now ships unstyled, props forward onto the instance a part renders and are type-checked against it, and motion only runs when you pass a `transition`. That settles the question each primitive's API was previously answering inconsistently — how much of the look belongs to the library — and it is what the stable-direction surface will carry into `v1.0`. See [Migration](/lattice-ui/reference/migration/) if you are coming from `0.6`.
+
+The `v0.6.x` line before it focused on hardening: more reliable layered and composite primitives, steadier motion and exit transitions, a real keyboard-navigation foundation rather than leaning on Roblox default selection, stronger focus restoration and trapping, and wider regression coverage.
 
 After `v1.0`, the feature-limited packages continue maturing independently and are promoted to stable versioning only once their APIs and behavior are ready.
 
