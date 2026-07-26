@@ -9,6 +9,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { resolve } from "node:path"
+import { LATTICE_VERSION } from "./lattice-version"
 
 // This file lives at <docs root>/src/lib/.
 const docsRoot = resolve(import.meta.dirname ?? ".", "../..")
@@ -25,6 +26,47 @@ const APP_CANDIDATES = [
 /** The lattice loom-preview app directory, if a checkout is present. */
 export function getLatticePreviewApp() {
   return APP_CANDIDATES.find((candidate) => existsSync(candidate))
+}
+
+/**
+ * The version the sibling checkout is actually on, read from any lockstep
+ * package. Undefined when no checkout is present.
+ */
+function readCheckoutVersion() {
+  const app = getLatticePreviewApp()
+  if (!app) {
+    return undefined
+  }
+
+  // <checkout>/apps/loom-preview → <checkout>/packages/react/runtime.
+  const manifest = resolve(app, "../../packages/react/runtime/package.json")
+  if (!existsSync(manifest)) {
+    return undefined
+  }
+
+  try {
+    return (JSON.parse(readFileSync(manifest, "utf8")) as { version?: string }).version
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Warn when the checkout has moved past the version the docs describe. Called
+ * from the Loom preview integration, which already runs at build start against
+ * this same checkout. Deliberately a warning and not a thrown error: a version
+ * bump in the library should surface loudly here, but should not be able to
+ * break a docs build on its own.
+ */
+export function checkLatticeVersion() {
+  const checkout = readCheckoutVersion()
+  if (checkout && checkout !== LATTICE_VERSION) {
+    console.warn(
+      `[lattice-version] checkout is on ${checkout}, docs are written against ${LATTICE_VERSION}.\n` +
+        `  Once the ${checkout} changes are documented, bump LATTICE_VERSION in src/lib/lattice-version.ts ` +
+        `and add the release to reference/releases.mdx and reference/migration.mdx.`,
+    )
+  }
 }
 
 /** Relative target path for a scene, as the gallery's `?target=` expects it. */

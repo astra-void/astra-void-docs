@@ -28,7 +28,7 @@ import type { AstroIntegration } from "astro"
 import { buildGallery, createGalleryServer, findGalleryTargets } from "loom-dev/embed"
 // Relative, not the `@/` alias: this module is loaded while astro.config is
 // being evaluated, before that alias exists.
-import { getLatticePreviewApp } from "../lib/lattice-source"
+import { checkLatticeVersion, getLatticePreviewApp } from "../lib/lattice-source"
 
 /** Where the scenes are, relative to the lattice preview app. */
 const TARGETS = "src/preview-targets"
@@ -79,6 +79,9 @@ export default function loomPreview(): AstroIntegration {
     hooks: {
       "astro:config:done": ({ config }) => {
         base = config.base.endsWith("/") ? config.base : `${config.base}/`
+        // Same checkout this integration previews from, so this is the cheapest
+        // place to notice the docs have fallen behind the library.
+        checkLatticeVersion()
       },
 
       "astro:server:setup": async ({ server, logger }) => {

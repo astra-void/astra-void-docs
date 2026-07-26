@@ -11,6 +11,7 @@ import {
   getDocs,
   getProductIndexId,
 } from "@/lib/docs"
+import { LATTICE_VERSION_LABEL } from "@/lib/lattice-version"
 
 const docs = await getCollection("docs")
 const entry = docs.find((doc) => doc.id === getProductIndexId("lattice-ui"))
@@ -106,7 +107,7 @@ const pillars = [
         class="h-1.5 w-1.5 rounded-full bg-[#f5a623]"
       >
       </span>
-      @lattice-ui · v0.6.0 · pre-1.0
+      {LATTICE_VERSION_LABEL}
     </a>
 
     <div class="mt-6 flex flex-wrap gap-3">
