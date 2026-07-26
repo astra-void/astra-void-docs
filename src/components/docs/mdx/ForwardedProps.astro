@@ -1,0 +1,44 @@
+---
+/**
+ * States which Roblox instance a part renders, and which of its properties the
+ * primitive keeps for itself.
+ *
+ * Since 0.7.0 every part forwards unknown props onto the instance it renders and
+ * type-checks them against that class, so "what does this part render?" became a
+ * question every component page has to answer per part. This keeps that answer
+ * in one consistent shape instead of 21 pages of bespoke prose.
+ */
+interface Props {
+  /** Roblox class the part renders, e.g. "TextButton". */
+  instance: string
+  /** Properties the primitive drives; consumer values for these are ignored. */
+  owns?: string[]
+  /** Why those properties are owned, e.g. "from presence" or "from the resolved placement". */
+  ownedBecause?: string
+}
+
+const { instance, owns = [], ownedBecause } = Astro.props as Props
+
+const list = owns.map((name, index) => ({
+  name,
+  separator: index === 0 ? "" : index === owns.length - 1 ? " and " : ", ",
+}))
+---
+
+<p class="not-prose my-4 rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-sm text-foreground/80">
+  Renders a <code class="font-mono text-xs text-foreground">{instance}</code>.
+  Unknown props forward onto it and are type-checked against it, so a prop{" "}
+  <code class="font-mono text-xs text-foreground">{instance}</code> does not accept is a compile error.
+  {owns.length > 0 ? (
+    <>
+      {" "}The primitive owns{" "}
+      {list.map((entry) => (
+        <>
+          {entry.separator}
+          <code class="font-mono text-xs text-foreground">{entry.name}</code>
+        </>
+      ))}
+      {ownedBecause ? ` ${ownedBecause}` : ""}, so values you pass for {owns.length === 1 ? "it" : "those"} are ignored.
+    </>
+  ) : null}
+</p>
