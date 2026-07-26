@@ -12,6 +12,20 @@ import { Callout } from "@/components/docs/mdx";
 Every symptom below was reproduced on a real project. They are ordered roughly by how often they
 come up.
 
+## Quick index
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Blank page, `[loom] nothing mounted into #loom-root after 2s` | Entry exports instead of mounting | Call `createRoot().render(...)` at top level |
+| `ReferenceError: UDim2 is not defined` in a built page | A pre-0.3.0 build, or a page whose entry the plugin could not see | Upgrade; or `import "@loom-dev/preview/globals"` first in the entry |
+| `Invalid hook call` / two React copies | Stale optimizer cache, or React 19 installed | `rm -rf node_modules/.vite`; pin React 18 |
+| `Failed to resolve entry for package "@loom-dev/layout"` | Plugin imported by file path, not bare specifier | Import `@loom-dev/preview/vite` |
+| `Cannot find module '.../dist/vite.js'` when loading the config | `link:`ed checkout that was never built | `pnpm build:packages` in the checkout |
+| `no index.html and no client entry found` | Neither a conventional entry nor an `index.html` under the root | Pass `entry`, or `targets` for a gallery |
+| `loom.config.ts found, but its default export has no targets field` | A config in the pre-0.3.0 shape | Export `{ targets, port? }` |
+| `no targets matched … — nothing to build` | Glob missed, or unsupported glob syntax | Only `**`, `**/` and `*` are supported |
+| Renders, but looks wrong | Unimplemented property | Check [Supported instances and properties](/loom/reference/supported-properties/) |
+
 ## Blank page, `nothing mounted into #loom-root after 2s`
 
 ```text
@@ -154,9 +168,14 @@ dot-directories.
 
 ## A scene renders but looks wrong
 
-Before assuming a loom bug, check the [scope](/loom/getting-started/scope-and-status/). Images are
-not implemented, and `UIPageLayout` / `UITableLayout` are recognized but do nothing. A preview is a
-high-fidelity approximation, not a Studio replacement — verify final visuals in Studio.
+Before assuming a loom bug, check the property you are relying on against [Supported instances and
+properties](/loom/reference/supported-properties/). A surprising number of "wrong render" reports are
+a prop that is typed, settable, and read by nothing — `TextScaled`, `UIScale.Scale`,
+`UIGradient.Offset`, `ScrollBarThickness`. Images are not implemented either, and `UIPageLayout` /
+`UITableLayout` are recognized but do nothing.
+
+A preview is a high-fidelity approximation, not a Studio replacement — verify final visuals in
+Studio.
 
 <Callout title="Layout changes need a WASM rebuild">
 If you are developing loom itself and edit anything under `crates/loom-layout`, the browser keeps
