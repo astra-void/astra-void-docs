@@ -70,33 +70,68 @@ An element outside that list is a type error and will also not render. `uipagela
 `uitablelayout` are recognized by the layout engine but unimplemented, and are absent here — see
 [Scope and status](/loom/getting-started/scope-and-status/).
 
-## Path mappings
+## Teaching the editor about `@rbxts/*`
 
 For the editor to follow `@rbxts/react` and `@rbxts/react-roblox` to something real, mirror the
-plugin's runtime aliases as `paths`:
+plugin's runtime aliases in types. Do it with ambient module declarations rather than `paths` — they
+resolve through the package's own `exports` map, so they do not care how your package manager laid
+out `node_modules`:
+
+```ts title="src/loom-aliases.d.ts"
+declare module "@rbxts/react" {
+  export * from "react";
+  export { default } from "react";
+}
+
+declare module "@rbxts/react/jsx-runtime" {
+  export * from "react/jsx-runtime";
+}
+
+declare module "@rbxts/react-roblox" {
+  export * from "@loom-dev/preview/client";
+}
+```
+
+Keep this in its own file with **no top-level `import` or `export`**. A `.d.ts` that has one is a
+module, and `declare module` inside a module is an *augmentation* — which errors on a module that
+does not already exist. That is why the globals import above lives in a separate `loom-env.d.ts`.
+
+The matching compiler options:
 
 ```json title="tsconfig.json for a preview app"
 {
   "compilerOptions": {
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "react"],
-    "baseUrl": ".",
-    "paths": {
-      "@rbxts/react": ["./node_modules/@types/react"],
-      "@rbxts/react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
-      "@rbxts/react-roblox": ["./node_modules/@loom-dev/preview/src/client.ts"]
-    }
+    "moduleResolution": "bundler",
+    "types": ["vite/client", "react"]
   },
   "include": ["src"]
 }
 ```
 
 `jsx: "react-jsx"` matches the `esbuild.jsx: "automatic"` the plugin sets, so the editor and the
-bundler agree that no `React` import is needed. `@rbxts/react` maps to `@types/react` because the
-runtime alias resolves to React itself — the roblox-only extras (`React.Event`, `React.Change`) are
-added by a shim and are not in those types, so a keyed-prop namespace will type as an error even
+bundler agree that no `React` import is needed. `@rbxts/react` re-exports React itself because that
+is what the runtime alias resolves to — the roblox-only extras (`React.Event`, `React.Change`) are
+added by a shim and are not in React's types, so a keyed-prop namespace will type as an error even
 though it works. Using the `Event={{ Activated: fn }}` prop form instead avoids that.
+
+<Callout title="If you prefer `paths`">
+Path mappings work too, and were what these docs recommended before:
+
+```json
+"baseUrl": ".",
+"paths": {
+  "@rbxts/react": ["./node_modules/@types/react"],
+  "@rbxts/react-roblox": ["./node_modules/@loom-dev/preview/src/client.ts"]
+}
+```
+
+They are more fragile in two ways: they hard-code a `node_modules` layout (fine for a direct
+dependency under pnpm, not guaranteed in general), and reaching into `src/client.ts` bypasses the
+package's `exports` map, which is where the published type entry points actually live. Prefer the
+`declare module` form unless you need a mapping the exports map cannot express.
+</Callout>
 
 If your preview app is a separate package that imports your UI library by workspace name, no
 `paths` entry is needed for the library itself — loom resolves roblox-ts packages to their
