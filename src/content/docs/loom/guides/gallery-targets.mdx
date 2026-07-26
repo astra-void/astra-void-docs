@@ -17,8 +17,19 @@ building a component library, and it is the only mode `loom build` supports.
 pnpm exec loom preview ~/code/my-ui --targets
 ```
 
-With `--targets` present, the CLI stops looking for a client entry entirely — the gallery shell does
-the mounting — and serves its own `index.html` even if the project ships one.
+With `--targets` present, loom stops looking for a client entry entirely — the gallery shell does the
+mounting — and serves its own generated page even if the project ships an `index.html`.
+
+The same mode is one option away in a project that owns its Vite config:
+
+```ts title="vite.config.ts"
+export default defineConfig({
+  plugins: [loomPreview({ targets: "src/scenes" })],
+});
+```
+
+`vite` then serves the gallery and `vite build` emits it as a static site — the same pipeline `loom
+preview --targets` and `loom build` run.
 
 ## The target contract
 
@@ -80,13 +91,15 @@ scene component, not in the `render` thunk.
 
 ## Discovery
 
-`--targets` accepts three shapes:
+`--targets` (and the plugin's `targets` option) accepts three shapes:
 
 | Invocation | Resulting glob |
 | --- | --- |
-| `--targets` (no value) | `**/*.loom.tsx` |
+| `--targets` (no value), or `targets: true` | `**/*.loom.tsx` |
 | `--targets src/scenes` (no `*`) | `src/scenes/**/*.loom.tsx` |
 | `--targets "apps/*/src/**/*.scene.tsx"` | used verbatim |
+
+The option also takes an array of either shape; the CLI flag does not.
 
 The matcher is a small purpose-built one, not `picomatch`: `**/` matches any depth *including none*,
 `**` matches anything, `*` matches anything except `/`, and every other character is literal. There is

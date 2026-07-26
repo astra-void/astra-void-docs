@@ -18,3 +18,16 @@ globals (`UDim2`, `Color3`, `Enum`, `game`) before your entry evaluates, rewrite
 `import X = require(...)` statements to ESM, and resolves roblox-ts packages whose `main` points at
 uncompiled Luau straight to their TypeScript source. There is no roblox-ts build step in the loop:
 esbuild transpiles the same TSX, and HMR works.
+
+Two lines is the whole setup — the plugin generates the page too, so a roblox-ts source tree needs no
+`index.html` and no entry wiring:
+
+```ts title="vite.config.ts"
+import { loomPreview } from "@loom-dev/preview/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [loomPreview()] });
+```
+
+Or skip the config file entirely with `loom preview .` — the CLI is the same plugin with a server
+around it.

@@ -18,6 +18,13 @@ Roblox UI instead of a screenshot.
 pnpm exec loom build ~/code/my-ui --targets src/scenes --out dist-preview --base ./
 ```
 
+<Callout title="Or plain `vite build`">
+The command is `loomPreview({ targets })` under `vite build` and nothing else. A project whose
+`vite.config.ts` passes `targets` gets the identical bundle from `pnpm vite build`, with `outDir` and
+`base` coming from its own config. See [Vite
+integration](/loom/guides/vite-integration/#6-gallery-mode-from-the-plugin).
+</Callout>
+
 ## Flags
 
 ```text
@@ -56,12 +63,10 @@ gzipped, from the `wasm-opt`-processed build published packages ship — and it 
 cached. A binary built locally with the default `dev` profile skips `wasm-opt` and is roughly four
 times larger.
 
-Under the hood, the build writes three real files into a scratch directory (an `index.html`, an
-`entry.ts`, and a generated `targets.ts`) so Rollup can follow a genuine module graph rather than the
-dev server's virtual modules. That entry imports the globals installer *first*, which is why a
-CLI-built gallery never needs the manual globals import a hand-rolled [`vite
-build`](/loom/guides/vite-integration/#5-vite-build-needs-the-globals-import) does. The scratch
-directory is removed afterwards.
+Under the hood the plugin hands Rollup a genuine module graph rather than the dev server's virtual
+modules: a generated `index.html` as the build input, whose script is a generated entry that imports
+the globals installer *first*, then a generated target map of relative `import()`s — one async chunk
+each — then the shell. Globals-first is why a built gallery never throws `UDim2 is not defined`.
 
 ## The URL contract
 

@@ -32,28 +32,31 @@ import { App } from "./App";
 createRoot().render(<App />);   // this line is the whole contract
 ```
 
-The other cause is the CLI picking a different entry than you expected. It takes the *first* match
-from a fixed candidate list, so a project with both `src/main.client.tsx` and `src/main.tsx` uses the
-former. Check the `<script src>` in the served page.
+The other cause is loom picking a different entry than you expected. It takes the *first* match from a
+fixed candidate list, so a project with both `src/main.client.tsx` and `src/main.tsx` uses the former.
+Check the `<script src>` in the served page, and pass `loomPreview({ entry })` to override it.
 
 ## `ReferenceError: UDim2 is not defined`
 
 The Roblox datatype globals were never installed. Under the dev server a plugin injects them as a
-script tag; that plugin is `apply: "serve"` and does nothing during `vite build`.
+script tag; under `vite build` the plugin prepends the globals import to the page's entry modules
+instead, because a tag injected by `transformIndexHtml` never joins the bundle.
 
-If this happens in a page **you built with your own `vite build`**, add the globals import as the
-first import of your entry:
+If this happens in a page **you built** with loom **0.3.0 or newer**, the plugin could not see your
+entry — the likely cause is a `build.rollupOptions.input` of your own, or an entry pulled in by
+something other than a `<script type="module" src>` in the page. Add the import yourself as the first
+import of the entry:
 
 ```tsx
 import "@loom-dev/preview/globals";
 ```
 
+That import was **required** on every hand-rolled `vite build` before 0.3.0. It is idempotent, so
+keeping it costs nothing after upgrading.
+
 If it happens under the **dev server**, something is loading before the injected script — most likely
 an inline `<script type="module">` in your `index.html` that runs ahead of the injected head script.
 Move that logic into the entry module.
-
-Galleries built with `loom build` never hit this: the CLI generates an entry whose first statement is
-the globals import.
 
 ## `Warning: Invalid hook call` / "more than one copy of React"
 
@@ -77,20 +80,21 @@ converge — so when it happens, one of three things is true:
    the Vite config. Give the preview its own Vite project — see [Vite
    integration](/loom/guides/vite-integration/).
 
-## `Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler`
+## `does not provide an export named 'DefaultEventPriority'`
 
 ```text
-Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler,
-  present in client 'optimizeDeps.include'
-Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler/constants,
-  present in client 'optimizeDeps.include'
+SyntaxError: The requested module '/node_modules/.../react-reconciler/index.js'
+does not provide an export named 'DefaultEventPriority'
 ```
 
-Harmless. These are `optimizeDeps.include` hints written in Vite's nested-specifier form, which
-cannot resolve when the previewed project has no `@loom-dev/*` packages in its own `node_modules` —
-the normal situation when the CLI is pointed at an outside directory. Vite still discovers
-`react-reconciler` while scanning the entry graph and pre-bundles it. Previews render and behave
-correctly with these warnings present.
+An installed `@loom-dev/react` whose CommonJS `react-reconciler` was served raw instead of
+pre-bundled. Loom 0.2.1 fixed this by pre-bundling the adapter (and aliasing every id involved to an
+absolute path, since Vite resolves `optimizeDeps` entries from *your* project root). Upgrade, and
+delete `node_modules/.vite` so the optimizer re-runs.
+
+Earlier versions also logged `Failed to resolve dependency: @loom-dev/preview > @loom-dev/react >
+react-reconciler, present in client 'optimizeDeps.include'` on startup. Those nested-specifier hints
+are gone; if you still see them, you are on an older version.
 
 ## `Failed to resolve entry for package "@loom-dev/layout"`
 
@@ -120,9 +124,10 @@ loom: no index.html and no client entry found in /Users/you/code/my-game
       (or pass --targets to browse *.loom.tsx files as a gallery)
 ```
 
-The directory you pointed at has neither an `index.html` nor any of the eight recognized entry paths.
-Usually you aimed at a workspace root rather than an app. Either point deeper, or use `--targets` to
-browse scenes instead of mounting an entry.
+The directory has neither an `index.html` nor any of the eight recognized entry paths. Usually you
+aimed at a workspace root rather than an app. Either point deeper, name the entry
+(`loomPreview({ entry })`, since the CLI has no flag for it), or switch to gallery mode with
+`--targets` / `loomPreview({ targets })`.
 
 ## `loom.config.ts found, but its default export has no targets field`
 

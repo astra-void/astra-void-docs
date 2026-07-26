@@ -97,7 +97,9 @@ practice is a `TextButton`, which does sink.
 ## What the Vite plugin does
 
 None of the above runs without the specifiers being rewritten first. `loomPreview()` performs four
-distinct jobs:
+distinct jobs — plus a fifth, the page itself: with no `index.html` in the project it generates one
+around the detected client entry (or, with `targets`, around the gallery shell), in serve and build
+alike, which is what makes the plugin a complete `vite.config.ts` on its own.
 
 1. **Aliasing.** `@rbxts/react-roblox` → the browser client (`createRoot`, `createPortal`);
    `@rbxts/services` → service singletons backed by `game.GetService`; `@rbxts/react` → a shim over
@@ -107,8 +109,9 @@ distinct jobs:
 
 2. **Globals injection.** `installGlobals()` runs before your entry, defining `UDim2`, `Color3`,
    `Enum`, `game`, `task` and the rest — because roblox-ts code references them with no import. Under
-   the dev server this is a script tag injected into `<head>`; under `vite build` it is
-   [your responsibility](/loom/guides/vite-integration/).
+   the dev server this is a script tag injected into `<head>`; under `vite build` the import is
+   [prepended to the page's entry modules](/loom/guides/vite-integration/#5-vite-build-produces-a-static-preview),
+   since a tag injected after bundling would never join the graph.
 
 3. **Import-equals rewriting.** roblox-ts sources use TypeScript's `import X = require("m")`, which
    esbuild lowers to a bare `require()` call that throws in a browser. A pre-transform rewrites it to

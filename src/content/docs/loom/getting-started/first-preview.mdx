@@ -21,12 +21,27 @@ The directory does not have to be the one `loom-dev` is installed in, and it doe
 the installed `@loom-dev/preview` package precisely so a foreign tree resolves; `server.fs.allow` is
 widened to cover both that package's directory and the previewed project's workspace root.
 
-## What the CLI looks for
+<Callout title="The same thing from a vite.config.ts">
+If the project would rather own its Vite config, a config containing nothing but the plugin gets you
+exactly this — including the generated page and the entry detection below:
 
-With no `index.html` in the project root, the CLI generates one in memory and serves it from
-middleware. That generated page is minimal — a full-viewport `#loom-root` mount point on a
-`#14161a` background, plus a module script pointing at your entry. To find the entry it walks this
-list in order and takes the first hit:
+```ts title="vite.config.ts"
+import { loomPreview } from "@loom-dev/preview/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [loomPreview()] });
+```
+
+`vite` then serves the preview and `vite build` bundles it. See [Vite
+integration](/loom/guides/vite-integration/).
+</Callout>
+
+## What the plugin looks for
+
+With no `index.html` in the project root, the plugin generates one and serves it from middleware.
+That generated page is minimal — a full-viewport `#loom-root` mount point on a `#14161a` background,
+plus a module script pointing at your entry. To find the entry it walks this list in order and takes
+the first hit:
 
 ```text title="Entry candidates, in priority order"
 src/main.client.tsx
@@ -39,9 +54,10 @@ src/index.tsx
 src/client.tsx
 ```
 
-These are roblox-ts client-entry conventions, so a normal project already satisfies one. If your
-project has its own `index.html`, the CLI leaves it alone and Vite serves it as the entry document —
-in that case the `<script type="module">` inside it decides what loads.
+These are roblox-ts client-entry conventions, so a normal project already satisfies one — and an
+entry that follows none of them can be named explicitly with the plugin's `entry` option. If your
+project has its own `index.html`, the plugin leaves it alone and Vite serves it as the entry
+document — in that case the `<script type="module">` inside it decides what loads.
 
 When neither exists, the CLI exits with the full candidate list rather than serving a blank page:
 
@@ -110,5 +126,5 @@ browser rather than in Studio.
 ## Next step
 
 The CLI is a convenience wrapper around one Vite plugin. When you want the preview to live inside
-your own project — your `vite.config.ts`, your `index.html`, your build — read [Vite
+your own project — your `vite.config.ts`, your dev-server options, your `vite build` — read [Vite
 integration](/loom/guides/vite-integration/).

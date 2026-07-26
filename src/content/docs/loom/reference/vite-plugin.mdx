@@ -1,6 +1,6 @@
 ---
 title: Vite plugin
-description: Everything loomPreview() contributes — the three plugins it returns, every alias, the config it merges, and which hooks run in serve versus build.
+description: Everything loomPreview() contributes — its options, the plugins it returns, every alias, the config it merges, the page it generates, and which hooks run in serve versus build.
 product: loom
 section: reference
 sidebar:
@@ -12,19 +12,39 @@ import { Callout } from "@/components/docs/mdx";
 ```ts
 import { loomPreview } from "@loom-dev/preview/vite";
 
-loomPreview(): Plugin[]
+loomPreview(options?: LoomPreviewOptions): Plugin[]
 ```
 
-Takes no options. Returns three plugins, which you spread into `plugins` as a single array entry —
-Vite flattens nested plugin arrays.
+Returns an array of plugins, which you spread into `plugins` as a single array entry — Vite flattens
+nested plugin arrays.
 
-## The three plugins
+## Options
+
+```ts
+interface LoomPreviewOptions {
+  entry?: string;
+  targets?: string | string[] | true;
+  title?: string;
+  html?: boolean;
+}
+```
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `entry` | auto-detected | Client entry, root-relative (`/src/boot.tsx`) or relative to the project root. A leading `./` is stripped; a value without a leading slash gets one. |
+| `targets` | — | Gallery mode. Normalized exactly like the CLI's `--targets`: `true` → `**/*.loom.tsx`, a value containing `*` used verbatim, anything else treated as a directory and expanded to `<value>/**/*.loom.tsx`. |
+| `title` | `"loom preview"`, or `"loom gallery"` with `targets` | `<title>` of the generated page. |
+| `html` | `true` | `false` removes the HTML plugin: no generated page, no entry detection, no Rollup input. |
+
+## The plugins
 
 | Name | `enforce` | `apply` | Job |
 | --- | --- | --- | --- |
 | `loom-preview:import-equals` | `pre` | both | Rewrites roblox-ts `import X = require("m")` to `import * as X from "m"`. |
 | `loom-preview` | `pre` | both | Resolution (`.luau`-main fallback) and the `config` hook. |
 | `loom-preview:serve-globals` | `pre` | `serve` | Injects the Roblox globals script into `<head>`. |
+| `loom-preview:gallery-targets` | — | `serve` | Only with `targets`: serves and watches the `virtual:loom-targets` import map. |
+| `loom-preview:index-html` | `pre` | both | Unless `html: false`: the generated page, in serve and build. |
 
 `enforce: "pre"` on the resolver is load-bearing: Vite's core `vite:resolve` runs ahead of *normal*
 user plugins, so a normal-phase `resolveId` would never see the bare specifiers whose package `main`
@@ -40,31 +60,31 @@ config.
   esbuild: { jsx: "automatic" },
   optimizeDeps: {
     include: [
-      "react",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "@loom-dev/preview > @loom-dev/react > react-reconciler",
-      "@loom-dev/preview > @loom-dev/react > react-reconciler/constants",
+      "react", "react/jsx-runtime", "react/jsx-dev-runtime",
+      // …plus, when loom is installed under node_modules:
+      "@loom-dev/react", "react-reconciler", "react-reconciler/constants",
     ],
     exclude: [
-      "@loom-dev/preview", "@loom-dev/react", "@loom-dev/vide",
-      "@loom-dev/runtime", "@loom-dev/renderer",
-      "@loom-dev/scene", "@loom-dev/layout",
+      "@loom-dev/preview", "@loom-dev/vide", "@loom-dev/runtime",
+      "@loom-dev/renderer", "@loom-dev/scene", "@loom-dev/layout",
+      // …plus "@loom-dev/react" when loom resolves to a source checkout.
     ],
   },
   resolve: { alias: [ /* see below */ ] },
-  server: { fs: { allow: [<loom package root>, searchForWorkspaceRoot(projectRoot)] } },
+  server: { fs: { allow: [<loom package roots>, searchForWorkspaceRoot(projectRoot)] } },
 }
 ```
 
 - **`esbuild.jsx: "automatic"`** — roblox-ts source never imports React, so the classic transform
   would throw `React is not defined`.
 - **`optimizeDeps.exclude`** — the loom packages own the WASM engine; pre-bundling would break their
-  `new URL(...wasm)` references.
-- **`optimizeDeps.include`** — `react-reconciler` is CommonJS and imported by an *excluded*,
-  workspace-linked package, so it must be pre-bundled explicitly. The nested `a > b > c` form is how
-  Vite resolves it through the link chain. It fails to resolve when the previewed project has no
-  `@loom-dev/*` in its own `node_modules`; the resulting warnings are harmless.
+  `new URL(...wasm)` references, and several hold module state that must exist exactly once.
+- **`optimizeDeps.include`** — an *installed* `@loom-dev/react` is the exception: it imports the
+  CommonJS `react-reconciler`, and Vite serves an excluded dep's imports raw, which in a published
+  install dies on `does not provide an export named 'DefaultEventPriority'`. Pre-bundling the adapter
+  folds the reconciler into its chunk. Every included id is also aliased to an absolute path, because
+  Vite resolves `optimizeDeps` entries from *your* project root, which has no `@loom-dev/*` in it.
+  A source checkout is left unbundled, so developing loom keeps its HMR.
 - **`optimizeDeps` and `server.fs`** are dev-only. The aliases and `esbuild.jsx` drive both modes.
 
 ## Alias table
@@ -81,6 +101,7 @@ Order matters; more specific patterns come first.
 | `react/jsx-runtime` | Same absolute path as above. |
 | `react/jsx-dev-runtime` | Same absolute path as above. |
 | `react` | One absolute React path, resolved from the preview package. |
+| `react-reconciler`, `react-reconciler/constants`, `@loom-dev/react`, and the loom packages it imports | Absolute paths — added only for an installed loom, so the pre-bundled adapter chunk can find them from `node_modules/.vite/deps`. |
 | `@rbxts/vide` | `@loom-dev/vide`. |
 
 All targets are **absolute paths**, resolved as `../src` relative to the executing plugin module — so
@@ -96,6 +117,59 @@ Absolute-path aliases are used rather than `resolve.dedupe` on purpose: dedupe w
 at *your* project root, which may hoist a different major, and the aliased `@rbxts/react` and the
 reconciler's React must be the same instance or hooks dispatch breaks.
 </Callout>
+
+## The generated page
+
+Unless `html: false`, the plugin owns the entry document.
+
+**Serve.** A middleware answers `/` and `/index.html` with the generated document, run through
+`transformIndexHtml` so Vite's own injections (the HMR client, the globals script) still apply. It
+is base-aware, so an embedded gallery mounted under `/loom-preview/` answers there.
+
+- Without `targets`, it registers *after* Vite's own middlewares and only when the project root has
+  no `index.html` — a project that ships one keeps it.
+- With `targets`, it registers *ahead* of them and always wins: the gallery page (sidebar + stage +
+  `#loom-root`) is what `targets` asked for. Its module script points at the shell through a
+  `/@fs/` URL, and the shell pulls the target map from `virtual:loom-targets`.
+
+**Build.** There is no dev-server URL space, so the same document is served as a *virtual*
+`<root>/index.html` and wired up as the Rollup input — which is what makes `vite build` work in a
+project with no HTML file at all. An explicit `build.rollupOptions.input` is left alone. In gallery
+mode the page's script is a generated entry module that imports the globals, then a generated target
+map of relative `import()`s Rollup code-splits per target, then the shell.
+
+<Callout title="Entry detection">
+With no `entry` option, the first existing path wins:
+
+```text
+src/main.client.tsx   src/main.client.ts
+src/client/main.client.tsx   src/client/main.client.ts
+src/main.tsx   src/main.ts   src/index.tsx   src/client.tsx
+```
+
+None of them and no `index.html` (and no `targets`) is an error naming the candidates, raised when
+the page is first requested or when the build starts.
+</Callout>
+
+## Globals injection
+
+Under `serve`, the plugin registers a virtual module `virtual:loom-globals` and injects it into
+`<head>` as a real script tag:
+
+```html
+<script type="module" src="/@id/__x00__virtual:loom-globals"></script>
+```
+
+A `<script src>` rather than an inline bare import, so it resolves whether the `index.html` is a real
+file or generated by the middleware. The virtual module body imports the globals installer by
+absolute path — a bare `@loom-dev/preview/globals` would resolve from the (possibly foreign) project
+root and fail.
+
+Under `build` that mechanism is unavailable: `transformIndexHtml` runs *after* bundling, so an
+injected `src` never joins the module graph. Instead the HTML plugin collects the page's entry
+modules — from the generated document, or by reading the `<script type="module">` tags out of your
+own `index.html` — and prepends `import ".../globals.ts"` to each. ESM evaluates imports depth-first
+in source order, so a prepended import runs before anything else the entry pulls in.
 
 ## Resolution
 
@@ -119,23 +193,6 @@ For a bare specifier from a real importer:
 Verdicts are memoized per specifier. A `false` verdict means "not Luau — let normal resolution
 handle it", which is why the memo can be keyed on the specifier alone.
 
-## Globals injection
-
-Under `serve`, the plugin registers a virtual module `virtual:loom-globals` and injects it into
-`<head>` as a real script tag:
-
-```html
-<script type="module" src="/@id/__x00__virtual:loom-globals"></script>
-```
-
-A `<script src>` rather than an inline bare import, so it resolves whether the `index.html` is a real
-file or served by the CLI's middleware. The virtual module body imports the globals installer by
-absolute path — a bare `@loom-dev/preview/globals` would resolve from the (possibly foreign) project
-root and fail.
-
-Under `build` this plugin is inert. Supplying the import is the caller's job: `loom build` generates
-an entry that does it, and a hand-rolled `vite build` must do it manually.
-
 ## The import-equals transform
 
 Applies to any `.ts`/`.tsx` file outside `node_modules` (previewed workspace sources typically resolve
@@ -152,8 +209,9 @@ It runs in both serve and build, because esbuild lowers import-equals identicall
 
 | Specifier | Contents |
 | --- | --- |
-| `@loom-dev/preview` | `createRoot`, `LoomReactRoot`, `loomPreview`. |
-| `@loom-dev/preview/vite` | `loomPreview`. |
+| `@loom-dev/preview` | `createRoot`, `LoomReactRoot`, `loomPreview`, `LoomPreviewOptions`. |
+| `@loom-dev/preview/vite` | `loomPreview`, plus `findEntry` / `ENTRY_CANDIDATES` (the entry lookup, for pre-flighting it yourself). |
 | `@loom-dev/preview/client` | `createRoot`, `createPortal`, `setPreviewTheme`, `PreviewTheme`. |
 | `@loom-dev/preview/globals` | Side-effecting: installs the globals, declares their ambient types. |
 | `@loom-dev/preview/services` | The service singletons `@rbxts/services` is aliased to. |
+| `@loom-dev/preview/gallery` | Node-side gallery pieces: `findLoomTargets`, `normalizeTargetsPatterns`, `parseGalleryParams`, the codegen helpers, and the package path constants. What `loom-dev` builds on. |

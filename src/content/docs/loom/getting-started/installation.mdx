@@ -14,8 +14,12 @@ whole integration, and the CLI is a zero-config wrapper around it.
 
 | Package | What it is | Bin |
 | --- | --- | --- |
-| `@loom-dev/preview` | The Vite plugin (`loomPreview()`), the `@rbxts/react-roblox` / `@rbxts/services` browser shims, and the Roblox globals installer. | — |
-| `loom-dev` | The `loom preview` / `loom build` CLI: a Vite server with the plugin pre-applied, plus gallery mode. | `loom` |
+| `@loom-dev/preview` | The Vite plugin (`loomPreview()`) — generated page, entry detection, gallery mode — the `@rbxts/react-roblox` / `@rbxts/services` browser shims, and the Roblox globals installer. | — |
+| `loom-dev` | The `loom preview` / `loom build` CLI: the plugin with a Vite server around it, no config file needed. | `loom` |
+
+Install only `@loom-dev/preview` if you keep a `vite.config.ts` — `plugins: [loomPreview()]` is the
+entire integration, and `vite` / `vite build` do the rest. Install `loom-dev` too if you would rather
+have no Vite project at all.
 
 <PackageInstall packageName="-D @loom-dev/preview loom-dev" />
 
@@ -70,16 +74,11 @@ Published packages ship the `wasm-opt`-processed binary — about 178 kB, roughl
 Irrelevant for local previewing, worth knowing if you [ship a static gallery
 build](/loom/guides/static-builds-and-embedding/).
 
-<Callout title="Pre-release today">
-`0.1.0` is not out yet. What is on npm right now is the `alpha` dist-tag — install it explicitly
-until the stable release lands:
-
-```bash
-pnpm add -D @loom-dev/preview@alpha loom-dev@alpha
-```
-
-Note that the `latest` tag currently points at an older alpha than the `alpha` tag does, so a bare
-`pnpm add @loom-dev/preview` does not give you the newest pre-release.
+<Callout title="Pre-1.0">
+Loom is published from `latest` and versioned in lockstep across the scope, but it is still pre-1.0:
+minor bumps carry behavior changes. `0.3.0` is the first release where the plugin owns the whole
+preview — the generated page, entry detection and gallery mode — so anything written against `0.2.x`
+that hand-rolled an `index.html` or a globals import still works, but no longer has to.
 </Callout>
 
 ## Verify

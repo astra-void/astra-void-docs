@@ -15,8 +15,8 @@ graph resolves.
 
 | Package | Role |
 | --- | --- |
-| `@loom-dev/preview` | The Vite plugin plus the browser stand-ins for `@rbxts/react-roblox` and `@rbxts/services`, and the globals installer. |
-| `loom-dev` | The `loom` CLI: `preview` and `build`, gallery discovery, the gallery shell. |
+| `@loom-dev/preview` | The Vite plugin — including the generated page, entry detection, gallery discovery and the gallery shell — plus the browser stand-ins for `@rbxts/react-roblox` and `@rbxts/services`, and the globals installer. |
+| `loom-dev` | The `loom` CLI: `preview` and `build`, flag/`loom.config.ts` handling, and the `loom-dev/embed` API. A wrapper over the plugin. |
 
 ## The rest of the scope
 
@@ -52,8 +52,9 @@ Nothing below `@loom-dev/react` knows a frontend framework exists. That is what 
 adapter drop in beside the React one without changes to the layout engine or the renderer, and it is
 the intended extension point for a future Luau frontend.
 
-The gallery shell lives in `loom-dev` rather than `@loom-dev/preview` deliberately, so the preview
-package's public surface stays a Vite plugin plus three shims.
+The gallery shell lives in `@loom-dev/preview`, not the CLI: gallery mode is a plugin option
+(`loomPreview({ targets })`), and the CLI is one of its callers rather than its owner. `loom-dev`
+keeps only what is genuinely command-shaped — argument parsing, `loom.config.ts`, and the embed API.
 
 ## Versioning
 
@@ -67,8 +68,8 @@ Useful as copy-paste references when integrating:
 
 | App | Shows |
 | --- | --- |
-| `apps/example` | The minimal roblox-ts client entry the CLI auto-detects. |
-| `apps/playground` | A hand-written `vite.config.ts` using `loomPreview()`, with its own `index.html`. |
-| `apps/gallery-demo` | `*.loom.tsx` targets, including one that throws on purpose to exercise error containment. |
-| `apps/interactive` | Input and signal wiring against the runtime directly. |
+| `apps/example` | The minimal roblox-ts client entry the CLI auto-detects — no config of any kind. |
+| `apps/interactive` | A `vite.config.ts` holding nothing but `loomPreview()`, and no `index.html`: the plugin-only path, plus input and signal wiring. |
+| `apps/gallery-demo` | `loomPreview({ targets })` over `*.loom.tsx` scenes, including one that throws on purpose to exercise error containment. |
+| `apps/playground` | The same plugin with a hand-written `index.html` of its own. |
 | `apps/vide-example` | The same pipeline driven by `vide` instead of React. |

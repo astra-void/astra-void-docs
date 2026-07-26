@@ -1,6 +1,6 @@
 ---
 title: Vite integration
-description: Add loomPreview() to your own Vite project — config, the HTML contract, globals under vite build, React aliasing, and the traps in between.
+description: Add loomPreview() to your own Vite project — the zero-config default, the options, what it generates, and the traps in between.
 product: loom
 section: guides
 sidebar:
@@ -9,10 +9,10 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-The `loom` CLI is a thin wrapper: it constructs a Vite server with `configFile: false` and a single
-plugin. Everything it does is available to your own `vite.config.ts` by calling that plugin yourself.
-Doing so is the right move when you want your own `index.html`, your own dev-server options, or a
-production `vite build` of the preview.
+`loomPreview()` is the whole product. The `loom` CLI is a thin wrapper around it — a Vite server with
+`configFile: false` and this one plugin — so anything the CLI does, your own `vite.config.ts` gets by
+calling the plugin yourself, including the parts that used to be CLI-only: the generated page, the
+client-entry detection, and gallery mode.
 
 Everything below was verified end to end against Vite 6.4.3 and pnpm 11, on a project sitting outside
 loom's own workspace.
@@ -29,7 +29,7 @@ loom's own workspace.
     "build": "vite build"
   },
   "devDependencies": {
-    "@loom-dev/preview": "^0.1.0",
+    "@loom-dev/preview": "^0.3.0",
     "react": "^18.3.1",
     "vite": "^6.0.0"
   }
@@ -51,18 +51,119 @@ export default defineConfig({
 });
 ```
 
-That is genuinely the whole config. `loomPreview()` returns an array of three plugins and contributes
-its own `esbuild`, `optimizeDeps`, `resolve.alias` and `server.fs.allow` through the `config` hook,
-deep-merged with — and overridable by — whatever you write. See the [plugin
-reference](/loom/reference/vite-plugin/) for the exact contributions.
+That is genuinely the whole config, and there is **no `index.html` to write either**. `vite` and
+`vite build` now work against a roblox-ts source tree as-is:
 
-## 3. Always import the plugin by its bare specifier
+- `loomPreview()` returns an array of plugins and contributes its own `esbuild`, `optimizeDeps`,
+  `resolve.alias` and `server.fs.allow` through the `config` hook, deep-merged with — and overridable
+  by — whatever you write.
+- With no `index.html` in the project root, it generates one: a full-viewport `#loom-root` on a
+  `#14161a` background plus a module script pointing at your client entry, which it finds by walking
+  the roblox-ts conventions (`src/main.client.tsx` first — the [full
+  list](/loom/getting-started/first-preview/#what-the-plugin-looks-for) is in Your first preview).
+
+See the [plugin reference](/loom/reference/vite-plugin/) for the exact contributions.
+
+## 3. Options
+
+Every option is optional; the defaults are what the CLI uses.
+
+```ts title="vite.config.ts"
+loomPreview({
+  entry: "src/ui/boot.tsx",   // only if your entry isn't a conventional name
+  targets: "src/scenes",      // gallery mode: glob, directory, list, or true
+  title: "my-game-ui",        // <title> of the generated page
+  html: false,                // opt out of the generated page entirely
+})
+```
+
+| Option | Type | Default | Effect |
+| --- | --- | --- | --- |
+| `entry` | `string` | auto-detected | The client entry, root-relative (`/src/boot.tsx`) or relative to the project root. Only needed when none of the conventional names fit. |
+| `targets` | `string \| string[] \| true` | — | Gallery mode. Same semantics as the CLI's `--targets`: a glob, a directory (expanded to `<dir>/**/*.loom.tsx`), a list, or `true` for the default glob. No client entry is needed. |
+| `title` | `string` | `"loom preview"` / `"loom gallery"` | `<title>` of the generated page. |
+| `html` | `boolean` | `true` | `false` keeps the plugin out of the HTML business entirely — no generated page, no entry detection, no Rollup input. Only the module plumbing stays. |
+
+<Callout title="Your own index.html still wins">
+The generated page only fills in when the project root has no `index.html`. If it has one, Vite
+serves it as usual and the plugin stays out of the way — in that case the `#loom-root` element is
+yours to provide (see below). Gallery mode is the one exception: `targets` means you asked for the
+sidebar shell, so its page wins over a project `index.html`.
+</Callout>
+
+## 4. Writing your own HTML entry
+
+If you do keep an `index.html`, it needs one thing loom cares about: an element with
+`id="loom-root"`. If it is missing, `createRoot()` creates one and appends it to `<body>`, but then
+it is unstyled and the preview will not fill the viewport.
+
+```html title="index.html"
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>my-game-ui preview</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #14161a; }
+      #loom-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="loom-root"></div>
+    <script type="module" src="/src/main.client.tsx"></script>
+  </body>
+</html>
+```
+
+That is exactly what the plugin generates, so the reason to write it yourself is wanting something
+else in the document — a font link, a wrapper element, your own background.
+
+The entry itself is an ordinary roblox-ts client entry — see [Your first
+preview](/loom/getting-started/first-preview/). At this point `vite` serves an interactive preview:
+state updates, `Activated` handlers and text input all work.
+
+## 5. `vite build` produces a static preview
+
+```bash
+pnpm vite build     # → dist/
+```
+
+The build emits a self-contained client-only SPA: your entry, the adapter, the renderer and the WASM
+layout binary, hostable anywhere. The Roblox datatype globals are part of the bundle — the plugin
+prepends `import ".../globals.ts"` to the page's entry modules, so `installGlobals()` runs before any
+module that touches `UDim2` evaluates. That applies to the generated page *and* to your own
+`index.html`, whose module scripts it reads out of the file.
+
+<Callout title="Older versions needed a manual globals import">
+Before 0.3.0 the globals were dev-server-only: a stock `vite build` compiled cleanly, shipped, and
+then threw `ReferenceError: UDim2 is not defined` on first render unless you wrote
+`import "@loom-dev/preview/globals";` as the first import of your entry. That import is now
+unnecessary — and still harmless if you keep it, since the installer is idempotent.
+</Callout>
+
+## 6. Gallery mode from the plugin
+
+Pass `targets` and the same `*.loom.tsx` gallery the CLI serves comes up under `vite`, and
+`vite build` emits it as a static, deep-linkable site:
+
+```ts title="vite.config.ts"
+export default defineConfig({
+  plugins: [loomPreview({ targets: "src/scenes" })],
+});
+```
+
+Each target becomes its own async chunk, and the built page honors the same
+[`?target=` / `?chrome=` / `?theme=` URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract)
+`loom build` produces — they are the same code path. The target contract itself is covered in
+[Gallery targets](/loom/guides/gallery-targets/).
+
+## 7. Always import the plugin by its bare specifier
 
 `loomPreview()` locates the modules it aliases — the `@rbxts/react-roblox` client shim, the
-`@rbxts/services` shim, the globals installer, the React shim — **relative to its own file**, as
-`../src` from the module that is executing. That is what lets it hand Vite absolute paths that work
-whether loom is installed in your project, linked from a checkout, or pointed at a completely
-different workspace by the CLI.
+`@rbxts/services` shim, the globals installer, the React shim, the gallery shell — **relative to its
+own file**, as `../src` from the module that is executing. That is what lets it hand Vite absolute
+paths that work whether loom is installed in your project, linked from a checkout, or pointed at a
+completely different workspace by the CLI.
 
 It also means the import specifier you write is load-bearing. Import
 `@loom-dev/preview/vite` and nothing else:
@@ -95,74 +196,7 @@ pre-bundling it, which can resolve TypeScript sources directly. It is marked exp
 CLI help but has been reliable across dev and build.
 </Callout>
 
-## 4. The HTML entry
-
-Your `index.html` needs one thing loom cares about: an element with `id="loom-root"`. If it is
-missing, `createRoot()` creates one and appends it to `<body>`, but then it is unstyled and the
-preview will not fill the viewport.
-
-```html title="index.html"
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>my-game-ui preview</title>
-    <style>
-      html, body { margin: 0; height: 100%; background: #14161a; }
-      #loom-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-    </style>
-  </head>
-  <body>
-    <div id="loom-root"></div>
-    <script type="module" src="/src/main.client.tsx"></script>
-  </body>
-</html>
-```
-
-The entry itself is an ordinary roblox-ts client entry — see [Your first
-preview](/loom/getting-started/first-preview/). At this point `vite` serves an interactive preview:
-state updates, `Activated` handlers and text input all work.
-
-## 5. `vite build` needs the globals import
-
-This is the sharpest edge in the whole integration, and it is silent until you open the built page.
-
-Under the dev server, the Roblox datatype globals are installed by a plugin that injects a
-`<script type="module" src="/@id/__x00__virtual:loom-globals">` into `<head>`. That plugin is
-`apply: "serve"`. Under `vite build` it does nothing, because there is no dev-server URL space to
-point a script tag at. So a stock production build compiles cleanly, ships, and then throws on first
-render:
-
-```text title="Console output from a build with no globals import"
-ReferenceError: UDim2 is not defined
-```
-
-The fix is to import the globals module **first** in your entry:
-
-```tsx title="src/main.client.tsx"
-// Must be the first import: it installs UDim2, Color3, Enum, game and the Luau
-// globals before any module that references them evaluates.
-import "@loom-dev/preview/globals";
-import { createRoot } from "@rbxts/react-roblox";
-import { App } from "./App";
-
-createRoot().render(<App />);
-```
-
-ESM evaluates imported modules depth-first in source order, so putting it first is a guarantee, not a
-convention. Keeping it in the entry is also harmless under the dev server — the globals installer
-runs twice and the second run is a no-op overwrite.
-
-<Callout title="Why the CLI does not need this">
-`loom build` sidesteps the problem by generating its own entry module in a scratch directory, whose
-first statement is an import of the resolved `@loom-dev/preview/globals` path. If you use the CLI for
-both preview and static builds, you never write this import. It is only your own `vite build` that
-needs it. See [Static builds and embedding](/loom/guides/static-builds-and-embedding/).
-</Callout>
-
-Rebuild after adding the import and the bundled page renders identically to the dev server.
-
-## 6. Don't merge this into an app that also uses React
+## 8. Don't merge this into an app that also uses React
 
 `loomPreview()` aliases bare `react`, `react/jsx-runtime` and `react/jsx-dev-runtime` to loom's own
 React 18 copy, and sets `esbuild.jsx: "automatic"` globally. Those are not scoped to Roblox files —
@@ -174,8 +208,9 @@ gets replaced with loom's React 18 too. If the app is on React 19, it breaks. If
 
 Keep the preview in its own Vite project. Three arrangements work well:
 
-- **A dedicated preview app** in your workspace (`apps/preview/`) with its own `vite.config.ts`, its
-  own dependencies, and its own `index.html`. This is what loom's `apps/playground` is.
+- **A dedicated preview app** in your workspace (`apps/preview/`) with its own `vite.config.ts` and
+  its own dependencies — a `vite.config.ts` holding nothing but `loomPreview()` is enough. This is
+  what loom's `apps/interactive` and `apps/gallery-demo` are.
 - **No Vite project at all** — use `loom preview` and `loom build`, pointed at your source directory.
   The CLI runs with `configFile: false`, so it cannot collide with your project's own Vite config
   even if one exists.
@@ -188,29 +223,14 @@ The third is what these docs themselves use: an Astro integration mounts the gal
 the static bundle at build, and each scene is iframed per preview. See
 [Static builds and embedding](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline).
 
-## 7. Expected noise
-
-Two warnings appear on startup when the previewed project has no `@loom-dev/*` packages in its own
-`node_modules` — which is normal whenever the CLI is pointed at an outside directory:
-
-```text
-Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler,
-  present in client 'optimizeDeps.include'
-Failed to resolve dependency: @loom-dev/preview > @loom-dev/react > react-reconciler/constants,
-  present in client 'optimizeDeps.include'
-```
-
-These are `optimizeDeps.include` hints that could not be resolved through the nested-specifier form.
-Vite still discovers `react-reconciler` while scanning the entry graph and pre-bundles it. Previews
-render and behave correctly with these warnings present; they are safe to ignore.
-
 ## Checklist
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | `Failed to resolve entry for package "@loom-dev/layout"` | Plugin imported by file path, not bare specifier | Import `@loom-dev/preview/vite` |
 | `Cannot find module '.../dist/vite.js'` when loading the config | `link:`ed checkout that was never built | `pnpm build:packages` in the checkout |
-| `ReferenceError: UDim2 is not defined` in a built page | Globals are dev-server-only | `import "@loom-dev/preview/globals"` first in the entry |
+| `no index.html and no client entry found` | Neither a conventional entry nor an `index.html` under the root | Pass `entry`, or `targets` for a gallery |
+| `ReferenceError: UDim2 is not defined` in a built page | A pre-0.3.0 build, or a page whose entry the plugin could not see | Upgrade; or `import "@loom-dev/preview/globals"` first in the entry |
 | Blank page, `[loom] nothing mounted into #loom-root after 2s` | Entry exports instead of mounting | Call `createRoot().render(...)` at top level |
 | `Invalid hook call` / two React copies | Stale optimizer cache | Delete `node_modules/.vite` and restart |
 

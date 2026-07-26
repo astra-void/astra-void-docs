@@ -33,12 +33,17 @@ Starts a Vite dev server with `loomPreview()` pre-applied and `configFile: false
 
 ### Mode selection
 
-1. `--targets` present, or `loom.config.ts` supplies `targets` → **gallery mode**. The CLI serves its
-   own `index.html` (sidebar + stage + `#loom-root`) and mounts targets itself. No client entry is
-   needed, and a project's own `index.html` is overridden.
+The CLI decides between gallery and single-entry mode and hands the result to `loomPreview()` as its
+`targets` option; the plugin does the serving either way, so
+[`loomPreview({ targets })`](/loom/reference/vite-plugin/#the-generated-page) in your own
+`vite.config.ts` behaves identically.
+
+1. `--targets` present, or `loom.config.ts` supplies `targets` → **gallery mode**. The generated page
+   (sidebar + stage + `#loom-root`) mounts targets itself. No client entry is needed, and a project's
+   own `index.html` is overridden.
 2. Otherwise, if the project has an `index.html` → it is used as-is.
-3. Otherwise → the CLI generates an `index.html` in memory with a full-viewport `#loom-root` and a
-   module script pointing at the first matching entry:
+3. Otherwise → a page is generated with a full-viewport `#loom-root` and a module script pointing at
+   the first matching entry:
 
    ```text
    src/main.client.tsx
@@ -51,7 +56,8 @@ Starts a Vite dev server with `loomPreview()` pre-applied and `configFile: false
    src/client.tsx
    ```
 
-4. If none of those exist → exit `1` listing the candidates.
+4. If none of those exist → exit `1` listing the candidates. (The CLI pre-flights the same lookup the
+   plugin would do, so this is a clean exit rather than a server that fails on first request.)
 
 ### File-system access
 
@@ -63,6 +69,8 @@ home-directory repository.
 ## `loom build`
 
 Runs `vite build` programmatically over the same gallery and writes a self-contained, client-only SPA.
+It is `loomPreview({ targets })` under `vite build` with `configFile: false` and nothing else, so
+`vite build` in a project whose `vite.config.ts` passes `targets` emits the same output.
 
 | Argument | Default | Rules |
 | --- | --- | --- |
