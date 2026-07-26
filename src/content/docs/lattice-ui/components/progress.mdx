@@ -191,7 +191,9 @@ export function LevelProgress(props: { xp: number; xpForNextLevel: number }) {
 
 ### Custom fill and motion
 
-`transition` overrides how the fill width settles after each value change; `asChild` swaps the default accent frame for your own fill element. The default recipe settles in 0.12s — pass `createProgressResponseRecipe` from `@lattice-ui/react-motion` with a longer duration for a smoother glide (a good fit for health bars, where a slow drain reads better than a snap), or a shorter one for near-instant tracking.
+`transition` overrides how the fill width settles after each value change; `asChild` swaps the frame the indicator renders for your own fill element. The default recipe settles in 0.12s — pass `createProgressResponseRecipe` from `@lattice-ui/react-motion` with a longer duration for a smoother glide (a good fit for health bars, where a slow drain reads better than a snap), or a shorter one for near-instant tracking.
+
+This is one of the few transitions that still has a default in 0.7.0: the fill is geometry the primitive computes from `value`, so the motion that follows that value stays part of the primitive's behavior rather than decoration.
 
 ```tsx title="HealthBar.tsx"
 import { Progress } from "@lattice-ui/react-progress";

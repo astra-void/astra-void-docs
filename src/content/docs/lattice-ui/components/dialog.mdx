@@ -7,7 +7,7 @@ sidebar:
   group: Overlays
 ---
 
-import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from "@/components/docs/mdx";
+import { PackageMeta, PropTable, Callout, PrimitiveAnatomy, ForwardedProps, LoomPreview } from "@/components/docs/mdx";
 
 <PackageMeta
   packageName="@lattice-ui/react-dialog"
@@ -54,7 +54,7 @@ Compose the full set of parts. `Trigger`, `Overlay`, and `Close` are optional de
 | `Dialog.Trigger` | no | A button that opens the dialog and is the default focus-restore target. |
 | `Dialog.Portal` | yes | Renders the surface into a `ScreenGui` outside the local tree. |
 | `Dialog.Overlay` | no | A full-screen backdrop behind the content that closes the dialog on press. |
-| `Dialog.Content` | yes | The focus-trapped, dismissable, motion-driven surface. |
+| `Dialog.Content` | yes | The focus-trapped, dismissable surface. |
 | `Dialog.Close` | no | A button that closes the dialog from inside the content. |
 
 </PrimitiveAnatomy>
@@ -63,7 +63,9 @@ Compose the full set of parts. `Trigger`, `Overlay`, and `Close` are optional de
 
 ### Basic usage
 
-The smallest useful dialog: uncontrolled state seeded with `defaultOpen`, a trigger that opens it, the default overlay, and a close button inside the content. The default `Dialog.Overlay` renders its own full-screen dark backdrop and dismisses the dialog on press, so a self-closing `<Dialog.Overlay />` is all you need to start.
+Uncontrolled state seeded with `defaultOpen`, a trigger that opens it, a dimmed overlay, and a close button inside the content.
+
+`Dialog.Overlay` covers the screen and dismisses the dialog on press whether or not you style it — but it draws nothing until you give it a color, so pass `BackgroundColor3` and `BackgroundTransparency` for a visible dim.
 
 ```tsx title="QuestDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -76,7 +78,10 @@ export function QuestDialog() {
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay />
+        <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
         <Dialog.Content>
           <frame
             AnchorPoint={new Vector2(0.5, 0.5)}
@@ -141,7 +146,10 @@ export function TradeRequestDialog(props: {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
-        <Dialog.Overlay />
+        <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
         <Dialog.Content restoreFocus={false}>
           <frame
             AnchorPoint={new Vector2(0.5, 0.5)}
@@ -183,7 +191,7 @@ export function TradeRequestDialog(props: {
 
 ### Custom overlay and content transition
 
-Use `asChild` on `Dialog.Overlay` to supply your own backdrop element, and pass `transition` on `Dialog.Content` to change the entrance. Two things to design around: the overlay always runs the fixed overlay-fade recipe, which animates **your element's** `BackgroundTransparency` from 1 to 0.5 — so set the color and let the primitive own the transparency — and the overlay closes the dialog on press, so keep the child an activatable button class. The content's `transition` is deep-merged over the default recipe (see [Motion and presence](#motion-and-presence)); here `createCanvasGroupRevealRecipe` builds a full replacement with a taller 24px rise.
+Use `asChild` on `Dialog.Overlay` when you need a different element class for the backdrop, and pass `transition` on `Dialog.Content` for the entrance. Two things to design around: the overlay runs no motion of its own and owns no color, so both the dim and any fade are yours; and it closes the dialog on press, so keep the child an activatable button class. The content's `transition` is used as-is (see [Motion and presence](#motion-and-presence)) — here `createCanvasGroupRevealRecipe` with a taller 24px rise.
 
 ```tsx title="StoreDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -317,7 +325,10 @@ export function ResetSettingsDialog() {
       </Dialog.Trigger>
 
       <Dialog.Portal displayOrderBase={1000}>
-        <Dialog.Overlay />
+        <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
         <Dialog.Content>
           <frame
             AnchorPoint={new Vector2(0.5, 0.5)}
@@ -349,7 +360,10 @@ export function ResetSettingsDialog() {
 
       <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
         <Dialog.Portal displayOrderBase={2000}>
-          <Dialog.Overlay />
+          <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
           <Dialog.Content>
             <frame
               AnchorPoint={new Vector2(0.5, 0.5)}
@@ -408,7 +422,10 @@ export function MatchResultsDialog(props: {
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay />
+        <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
         <Dialog.Content forceMount transition={RESULTS_TRANSITION} restoreFocus={false}>
           <frame
             AnchorPoint={new Vector2(0.5, 0.5)}
@@ -467,12 +484,22 @@ A force-mounted dialog that has never opened renders with its exit values pre-ap
 
 ### Motion and presence
 
-`Dialog.Content` renders your children inside a full-screen `CanvasGroup` and runs a default canvas-group reveal/exit recipe — an 8px rise with a `GroupTransparency` fade over 0.3s — so it animates in and out without setup. A `transition` you pass is **deep-merged over that default**: `target`, `initial`, `reveal`, and `exit` are combined field by field, so a config that only sets `exit` keeps the default reveal. Pass a complete recipe (for example from `createCanvasGroupRevealRecipe`) to replace it wholesale.
+`Dialog.Content` renders your children inside a full-screen `CanvasGroup`, but runs **no motion of its own**. Pass a `transition` to animate it; the config you pass is used as-is, with nothing underneath to merge with. `createCanvasGroupRevealRecipe()` from `@lattice-ui/react-motion` is the natural fit, since it animates `GroupTransparency` and so fades the panel as one surface:
 
-`Dialog.Overlay` runs a fixed overlay-fade recipe — `BackgroundTransparency` from 1 to 0.5 on reveal and back to 1 on exit — and exposes no `transition` prop. `forceMount` on either part keeps it mounted while closed and lets exit motion run outside the presence wrapper's bounded unmount window.
+```tsx title="Opting into the reveal"
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
 
-<Callout title="The default overlay ignores children">
-Without `asChild`, `Dialog.Overlay` renders its own full-screen dark `textbutton` and does not render anything you nest inside it. To style the backdrop, pass `asChild` with a single activatable element — the primitive binds visibility, the press-to-close handler, and the transparency fade onto it. Set the color; the recipe owns `BackgroundTransparency`.
+<Dialog.Content transition={createCanvasGroupRevealRecipe()}>
+  {/* your panel */}
+</Dialog.Content>
+```
+
+Presence timing is independent of that: with or without a `transition`, the content stays mounted until its exit resolves, so an exit animation is never cut off. `forceMount` on either part keeps it mounted while closed and lets long exits run outside the presence wrapper's bounded unmount window.
+
+`Dialog.Overlay` exposes no `transition` prop — an unstyled overlay has nothing to fade. It still owns presence timing. To animate a dim, render an element inside the overlay (or pass `asChild`) and animate that element yourself; `createOverlayFadeRecipe()` describes the fade the primitive used to run.
+
+<Callout title="An unstyled overlay is invisible, not absent">
+`Dialog.Overlay` renders a fully transparent full-screen `textbutton`. It still covers the screen and still swallows presses — which is how press-to-close and modal blocking work — but it draws nothing until you give it a color. Pass `BackgroundColor3` and `BackgroundTransparency` directly; it also renders children, so a `uigradient` or nested frame works too.
 </Callout>
 
 <Callout title="Make your panel the first child of Content">
@@ -501,7 +528,7 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of the textbutton the part renders. The child must be an activatable button." },
     { name: "disabled", type: "boolean", description: "Prevents the trigger from opening the dialog and removes it from focus registration." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -519,11 +546,18 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
 
 ### Dialog.Overlay
 
+<ForwardedProps
+  instance="TextButton"
+  owns={["Visible", "Active", "Selectable", "Size"]}
+  ownedBecause="from presence and full-screen hit-testing"
+/>
+
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge overlay behavior onto the single child element instead of the default full-screen dark textbutton. Use an activatable button class so press-to-close keeps working; the fade recipe drives the child's BackgroundTransparency." },
-    { name: "forceMount", type: "boolean", description: "Keeps the overlay mounted while closed and through its exit fade, bypassing the presence wrapper." },
-    { name: "children", type: "React.ReactElement", description: "The backdrop element to render. Only used with asChild; the default overlay renders its own backdrop." },
+    { name: "asChild", type: "boolean", description: "Merge overlay behavior onto the single child element instead of the textbutton the part renders. Use an activatable button class so press-to-close keeps working." },
+    { name: "forceMount", type: "boolean", description: "Keeps the overlay mounted while closed and through its exit, bypassing the presence wrapper." },
+    { name: "children", type: "React.ReactNode", description: "Rendered inside the overlay. With asChild, the single element the behavior merges onto instead." },
+    { name: "…TextButton props", type: "Partial<WritableInstanceProperties<TextButton>>", description: "Forwarded onto the rendered textbutton and type-checked against it. Pass BackgroundColor3 and BackgroundTransparency here for a visible dim. Visible and Active are owned by the primitive." },
   ]}
 />
 
@@ -534,7 +568,7 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
     { name: "trapFocus", type: "boolean", description: "Traps focus and selection inside the content while open. Defaults to true." },
     { name: "restoreFocus", type: "boolean", description: "Restores focus to the previously focused element on close — the trigger, when one opened the dialog. Defaults to true." },
     { name: "forceMount", type: "boolean", description: "Bypasses the presence wrapper: the content stays mounted while closed, long exits run to completion, and child state persists between opens." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Deep-merged over the default canvas-group reveal recipe (8px rise, 0.3s), so partial configs override only the fields they set." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. Used as-is — there is no default underneath, so a partial config animates only the steps it defines. Omit it for no animation." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press lands outside the content, before dismissal. Call event.preventDefault() to keep the dialog open." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called after onPointerDownOutside for the same outside interaction, before dismissal. Call event.preventDefault() to keep the dialog open." },
     { name: "children", type: "React.ReactNode", description: "The surface contents. The first direct host element is the outside-press hit-test boundary." },
@@ -545,7 +579,7 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of the textbutton the part renders. The child must be an activatable button." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

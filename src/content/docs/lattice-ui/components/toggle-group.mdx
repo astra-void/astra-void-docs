@@ -48,7 +48,7 @@ A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the
 | Part | Required | Responsibility |
 | --- | --- | --- |
 | `ToggleGroup.Root` | yes | Owns the selected value(s), the select mode, and group-wide disabled state. |
-| `ToggleGroup.Item` | yes | One toggle; reads its pressed state from `Root` and animates between states. |
+| `ToggleGroup.Item` | yes | One toggle; reads its pressed state from `Root`. |
 
 </PrimitiveAnatomy>
 
@@ -179,7 +179,7 @@ A disabled item is marked inactive (`Active={false}`) but still renders its pres
 
 ### Custom pressed visuals with asChild
 
-Use `asChild` on `Root` to replace the default zero-size container with your own sized frame, and on each `Item` to project the toggle behavior onto your own button. The primitive still drives each item's `BackgroundColor3` and `TextColor3` between its fixed active and inactive palettes (see [How it behaves](#motion-and-item-colors)), so express your own styling through corners, strokes, and children rather than hand-set colors.
+Use `asChild` on `Root` when you need a different container class, and on each `Item` to project the toggle behavior onto your own button. Since 0.7.0 the primitive never writes an item's colors, so read the pressed state from `Root` and set `BackgroundColor3` and `TextColor3` yourself (see [How it behaves](#item-colors)).
 
 ```tsx title="StyledViewSwitch.tsx"
 import { useState } from "@rbxts/react";
@@ -222,7 +222,7 @@ export function StyledViewSwitch() {
 }
 ```
 
-`Item` also takes a `transition` prop (a `ResponseMotionConfig`) that swaps the pressed/unpressed response recipe per item — omit it and the item animates with the default selection response recipe (a 0.1s settle). It shapes the motion only; the pressed/unpressed palettes stay primitive-owned (see the callout below).
+`ToggleGroup.Item` no longer accepts a `transition` as of 0.7.0 — the prop existed only to time the color animation that has been removed. Animate your own colors if you want the change to ease.
 
 ## How it behaves
 
@@ -241,32 +241,32 @@ Because the value type and the `onValueChange` signature are a discriminated uni
 
 ### Activation and selection
 
-`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` via `InputBegan`, so mouse, touch, keyboard, and gamepad activation all work. The default item renders as a 170x34 `textbutton` whose `Text` is its `value`, with `AutoButtonColor` off so the primitive's own color motion is the only feedback. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
+`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` via `InputBegan`, so mouse, touch, keyboard, and gamepad activation all work. It renders an unstyled `textbutton` with `AutoButtonColor` off, and does **not** render `value` as its text — pass a `Text` of your own. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
 
 With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and motion ref win over the child's own props, and event handlers compose (both the primitive's `Activated`/`InputBegan` handlers and any you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Group container
 
-The default `Root` renders a transparent, borderless frame with a **zero offset size** — it is purely a context boundary, not a laid-out surface. Put a `uilistlayout` (or your own positioning) inside it to arrange the items, and when the group participates in a flow layout, use `asChild` to substitute your own sized container, as in the [asChild example](#custom-pressed-visuals-with-aschild).
+`Root` renders a transparent, borderless frame with no size of its own — it is a context boundary, not a laid-out surface. Put a `uilistlayout` (or your own positioning) inside it to arrange the items, and pass a `Size` so it reserves space in a flow layout.
 
 ### Disabled state
 
 `disabled` on `Root` disables the entire group; `disabled` on an `Item` disables just that one. A disabled item ignores both activation and keyboard toggles and is marked inactive (`Active={false}`), but keeps rendering its pressed visuals. Group-level disabled additionally short-circuits `Root`'s toggle logic, so no value change can get through while it is set — including from an item that missed the flag.
 
-### Motion and item colors
+### Item colors
 
-Each `Item` animates between a fixed active palette (`BackgroundColor3` `RGB(88, 142, 255)`, `TextColor3` `RGB(236, 241, 249)`) and inactive palette (`RGB(47, 53, 68)` / `RGB(139, 146, 160)`) using the selection response recipe (a 0.1s settle) — or the recipe you pass as `transition` — driven by its pressed state. The motion ref applies to your own element under `asChild` too, so the primitive owns both colors either way — style custom items with strokes, corners, and children instead.
+An item's `BackgroundColor3` and `TextColor3` are entirely yours as of 0.7.0. Each item used to animate between fixed active and inactive palettes with no way to opt out; the primitive now writes neither, in either mode. Read the pressed state from `ToggleGroup.Root` and branch on it, adding your own response motion if you want the change to ease rather than snap.
 
 <Callout title="Single mode can clear to undefined">
 Activating the pressed item in a single-select group deselects it; there is no built-in "always keep one selected" mode. If your UI requires a selection, run controlled and ignore the clear: `onValueChange={(next) => next !== undefined && setValue(next)}`.
 </Callout>
 
-<Callout title="The default container has no size">
-The default `Root` frame is transparent and zero-sized, so it reserves no space in a `uilistlayout` or `uigridlayout` parent. Give the group real dimensions by passing `asChild` with your own sized frame whenever it sits in a flow layout.
+<Callout title="The container has no size of its own">
+The `Root` frame is transparent and unsized, so it reserves no space in a `uilistlayout` or `uigridlayout` parent. Pass a `Size` — or `asChild` with your own container — whenever the group sits in a flow layout.
 </Callout>
 
-<Callout title="Item transition shapes motion, not colors">
-`ToggleGroup.Item` applies the `transition` (`ResponseMotionConfig`) you pass to its pressed/unpressed response motion (as of 0.5.0; earlier releases ignored it). It changes the timing and feel only — the fixed active/inactive palettes still cannot be overridden, so design custom items around the primitive-driven colors.
+<Callout title="Removed in 0.7.0">
+Before 0.7.0 `ToggleGroup.Item` animated fixed active/inactive palettes that could not be overridden, and took a `transition` to time them. Both are gone — the item writes no colors and accepts no `transition`. Colors you set stay exactly as you set them.
 </Callout>
 
 ## API reference
@@ -282,7 +282,7 @@ The default `Root` frame is transparent and zero-sized, so it reserves no space 
     { name: "defaultValue", type: "string | string[]", description: "Initial selection for uncontrolled usage. string in single mode; string[] (default []) in multiple mode." },
     { name: "onValueChange", type: "(value: string | undefined) => void | (value: string[]) => void", description: "Called on every selection change, controlled or not. Receives string | undefined in single mode and the full next string[] in multiple mode." },
     { name: "disabled", type: "boolean", description: "Disables every item and short-circuits the group's toggle logic so no value change gets through. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Render the single child element as the group container instead of the default zero-size transparent frame." },
+    { name: "asChild", type: "boolean", description: "Render the single child element as the group container instead of the frame the part renders." },
     { name: "children", type: "React.ReactNode", description: "The toggle items and any layout. Must be a single valid element when asChild is set." },
   ]}
 />
@@ -291,11 +291,10 @@ The default `Root` frame is transparent and zero-sized, so it reserves no space 
 
 <PropTable
   rows={[
-    { name: "value", type: "string", description: "Required. Identifies this item within the group; also the default button text." },
+    { name: "value", type: "string", description: "Required. Identifies this item within the group. Since 0.7.0 it is not rendered as the button's text — pass Text yourself." },
     { name: "disabled", type: "boolean", description: "Disables just this item — activation and keyboard toggles are ignored and the button is marked inactive. Defaults to false." },
-    { name: "transition", type: "ResponseMotionConfig", description: "Overrides the pressed/unpressed response recipe for this item. Defaults to the selection response recipe (0.1s settle). Motion only — the fixed active/inactive palettes still apply." },
-    { name: "asChild", type: "boolean", description: "Merge the toggle behavior and motion ref onto the single child element instead of the default textbutton. The primitive still drives the child's BackgroundColor3 and TextColor3." },
-    { name: "children", type: "React.ReactElement", description: "Rendered inside the default textbutton, or the element to project onto. Required when asChild is set." },
+    { name: "asChild", type: "boolean", description: "Merge the toggle behavior onto the single child element instead of the textbutton the part renders. The child must be an activatable button." },
+    { name: "children", type: "React.ReactNode", description: "Rendered inside the item button, or the element to project onto. Must be a single element when asChild is set." },
   ]}
 />
 

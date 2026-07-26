@@ -74,19 +74,33 @@ import { Select } from "@lattice-ui/react-select";
 
 ### Basic select
 
-The smallest useful composition: a controlled root, the default trigger button with a `Value` label inside, and a handful of items on a plain list surface. `textValue` defaults to `value`, so items whose values are already display-ready need nothing else — and because the trigger label resolves through the item registry (see [How it behaves](#the-value-label)), display-ready values also keep the closed trigger label clean.
+A controlled root, a trigger button with a `Value` label inside, and a handful of items on a plain list surface.
+
+Two things this example has to supply that older versions did for you: each `Select.Item` needs its **label as a child** — `textValue` no longer renders — and every part needs its own styling. `textValue` still matters, but only for what `Select.Value` shows in the closed trigger (see [How it behaves](#the-value-label)); it draws nothing in the list.
 
 ```tsx title="RegionSelect.tsx"
 import { useState } from "@rbxts/react";
 import { Select } from "@lattice-ui/react-select";
+
+const REGIONS = ["NA East", "NA West", "Europe", "Asia"];
 
 export function RegionSelect() {
   const [region, setRegion] = useState<string>();
 
   return (
     <Select.Root value={region} onValueChange={setRegion}>
-      <Select.Trigger>
-        <Select.Value placeholder="Select a region" />
+      <Select.Trigger
+        BackgroundColor3={Color3.fromRGB(32, 36, 46)}
+        Size={UDim2.fromOffset(220, 36)}
+      >
+        <uicorner CornerRadius={new UDim(0, 6)} />
+        <uipadding PaddingLeft={new UDim(0, 10)} />
+        <Select.Value
+          placeholder="Select a region"
+          Size={UDim2.fromScale(1, 1)}
+          TextColor3={region ? Color3.fromRGB(236, 241, 249) : Color3.fromRGB(140, 148, 166)}
+          TextXAlignment={Enum.TextXAlignment.Left}
+        />
       </Select.Trigger>
 
       <Select.Portal>
@@ -98,10 +112,19 @@ export function RegionSelect() {
             Size={UDim2.fromOffset(220, 0)}
           >
             <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
-            <Select.Item value="NA East" />
-            <Select.Item value="NA West" />
-            <Select.Item value="Europe" />
-            <Select.Item value="Asia" />
+
+            {REGIONS.map((value) => (
+              <Select.Item
+                key={value}
+                Size={UDim2.fromOffset(220, 32)}
+                Text={value}
+                TextColor3={Color3.fromRGB(236, 241, 249)}
+                TextXAlignment={Enum.TextXAlignment.Left}
+                value={value}
+              >
+                <uipadding PaddingLeft={new UDim(0, 10)} />
+              </Select.Item>
+            ))}
           </frame>
         </Select.Content>
       </Select.Portal>
@@ -148,7 +171,7 @@ export function GraphicsQualitySelect(props: {
           >
             <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
             {QUALITY_LEVELS.map((level) => (
-              <Select.Item key={level} value={level} />
+              <Select.Item key={level} Text={level} value={level} />
             ))}
           </frame>
         </Select.Content>
@@ -160,7 +183,7 @@ export function GraphicsQualitySelect(props: {
 
 ### Grouped options
 
-`Group`, `Label`, and `Separator` structure a longer list. Groups are purely visual — item registration order and value resolution ignore them. The default `Group` container is a fixed 220x108 frame with no layout, so under a `uilistlayout` project it onto your own auto-sized frame with `asChild`; the same goes for `Label`, whose default renders the literal text `"Label"`.
+`Group`, `Label`, and `Separator` structure a longer list. Groups are purely visual — item registration order and value resolution ignore them. All three render unstyled: `Group` is a bare frame with no layout of its own, `Label` renders no copy (pass `Text`), and `Separator` draws nothing until you give it a `Size` and `BackgroundColor3`.
 
 ```tsx title="SortSelect.tsx"
 import { useState } from "@rbxts/react";
@@ -202,8 +225,8 @@ export function SortSelect() {
                     TextXAlignment={Enum.TextXAlignment.Left}
                   />
                 </Select.Label>
-                <Select.Item value="Newest" />
-                <Select.Item value="Oldest" />
+                <Select.Item Text="Newest" value="Newest" />
+                <Select.Item Text="Oldest" value="Oldest" />
               </frame>
             </Select.Group>
 
@@ -226,8 +249,8 @@ export function SortSelect() {
                     TextXAlignment={Enum.TextXAlignment.Left}
                   />
                 </Select.Label>
-                <Select.Item value="Rarest first" />
-                <Select.Item value="Common first" />
+                <Select.Item Text="Rarest first" value="Rarest first" />
+                <Select.Item Text="Common first" value="Common first" />
               </frame>
             </Select.Group>
           </frame>
@@ -264,12 +287,13 @@ export function ServerTierSelect(props: { hasPremium: boolean }) {
             Size={UDim2.fromOffset(220, 0)}
           >
             <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
-            <Select.Item value="Standard" />
-            <Select.Item value="Large" />
+            <Select.Item Text="Standard" value="Standard" />
+            <Select.Item Text="Large" value="Large" />
             <Select.Item
-              value="Premium"
-              textValue="Premium (pass required)"
               disabled={!props.hasPremium}
+              Text="Premium (pass required)"
+              textValue="Premium (pass required)"
+              value="Premium"
             />
           </frame>
         </Select.Content>
@@ -325,9 +349,9 @@ export function LoadoutSelect() {
             Size={UDim2.fromOffset(240, 0)}
           >
             <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
-            <Select.Item value="Assault" />
-            <Select.Item value="Recon" />
-            <Select.Item value="Support" />
+            <Select.Item Text="Assault" value="Assault" />
+            <Select.Item Text="Recon" value="Recon" />
+            <Select.Item Text="Support" value="Support" />
           </frame>
         </Select.Content>
       </Select.Portal>
@@ -362,9 +386,9 @@ export function HudSortSelect() {
             Size={UDim2.fromOffset(220, 0)}
           >
             <uilistlayout SortOrder={Enum.SortOrder.LayoutOrder} />
-            <Select.Item value="Rarity" />
-            <Select.Item value="Power" />
-            <Select.Item value="Newest" />
+            <Select.Item Text="Rarity" value="Rarity" />
+            <Select.Item Text="Power" value="Power" />
+            <Select.Item Text="Newest" value="Newest" />
           </frame>
         </Select.Content>
       </Select.Portal>
@@ -383,7 +407,7 @@ This release of Select is **single-value only**. There is no multi-select mode, 
 
 `Select.Root` is controllable. Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled (defaults to `false`). `Select.Trigger` toggles open on activation and on `Return`/`Space`, and selecting an item closes it. A disabled root blocks *opening* only — an already-open content can still close, so dismissal keeps working if you disable the select while it is open. `Select.Trigger` also takes its own `disabled` prop, which combines with the root's.
 
-The default trigger is a 220x36 `textbutton`; with `asChild`, the slot merges `Active`, the `Activated` and `InputBegan` handlers, and its ref onto your single child element, so use an activatable button class.
+The trigger renders an unstyled `textbutton` — give it a size and colors. With `asChild`, the slot merges `Active`, the `Activated` and `InputBegan` handlers, and its ref onto your single child element, so use an activatable button class.
 
 ### Value and selection
 
@@ -400,7 +424,7 @@ Item registration is tied to component lifetime, and items live inside `Select.C
 
 ### The value label
 
-`Select.Value` resolves its text through a chain: the registered item's `textValue`, then the raw value string, then `placeholder` (default `""`) when no value is selected. The default `textlabel` dims its color while showing the placeholder. With `asChild`, the slot drives your child's `Text` property with the resolved string, so pass a text-bearing element and style it however you like.
+`Select.Value` resolves its text through a chain: the registered item's `textValue`, then the raw value string, then `placeholder` (default `""`) when no value is selected. Writing `Text` *is* this part's behavior, so it owns that property in both modes — but only that one. It no longer dims its color while showing the placeholder; branch on your own state if you want a muted placeholder. With `asChild`, the slot drives your child's `Text`, so pass a text-bearing element.
 
 ### Positioning
 
@@ -412,12 +436,12 @@ Item registration is tied to component lifetime, and items live inside `Select.C
 
 ### Motion and presence
 
-`Select.Content` runs a default popper entrance/exit recipe that travels 10 pixels from the placement side: a canvas-group reveal by default, or a transform-based reveal (0.16s) when `asChild` is set, since your own element replaces the default `canvasgroup`. Override either with `transition`, and pass `forceMount` to keep the content mounted while closed and through its exit animation.
+`Select.Content` runs no motion of its own. Pass a `transition` to animate it: `createCanvasGroupPopperEntranceRecipe(placement)` matches the `canvasgroup` the content renders, and `createPopperEntranceRecipe(placement)` suits the `asChild` path where your own element replaces it. Both travel from the resolved placement side. `forceMount` keeps the content mounted while closed and through its exit.
 
 Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `SelectionGained`/`SelectionLost` drive a background-color settle using the selection response recipe, skipped while the item is disabled. With `asChild` on an item, the slot merges `Active`, the activation and hover handlers, and its ref onto your child element.
 
 <Callout title="Roblox gotchas">
-`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state, but Select does **not** install Roblox native directional selection or keyboard navigation between items — the default trigger and items render with `Selectable` set to `false` (the `asChild` slot pins it too), so build gamepad list traversal with your own selectable elements around the primitive if you need it.
+`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state, but Select does **not** install Roblox native directional selection or keyboard navigation between items — the trigger and items render with `Selectable` set to `false` (the `asChild` slot pins it too), so build gamepad list traversal with your own selectable elements around the primitive if you need it.
 </Callout>
 
 ## API reference
@@ -442,9 +466,9 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge trigger behavior (Active, Activated/InputBegan handlers, ref) onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior (Active, Activated/InputBegan handlers, ref) onto the single child element instead of the textbutton the part renders. The child must be an activatable button." },
     { name: "disabled", type: "boolean", description: "Prevents this trigger from opening the select, in addition to the root's disabled state. Defaults to false." },
-    { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set; otherwise rendered inside the default button (e.g. a Select.Value)." },
+    { name: "children", type: "React.ReactNode", description: "Rendered inside the trigger button (typically a Select.Value). Must be a single element when asChild is set." },
   ]}
 />
 
@@ -452,7 +476,7 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Drive the single child element's Text property with the resolved label instead of rendering the default textlabel. The child must be a text-bearing element." },
+    { name: "asChild", type: "boolean", description: "Drive the single child element's Text property with the resolved label instead of the textlabel the part renders. The child must be a text-bearing element." },
     { name: "placeholder", type: "string", description: "Text shown when no value is selected. Defaults to an empty string." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -476,9 +500,9 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
     { name: "sideOffset", type: "number", description: "Gap in pixels between the trigger and the content along the placement axis. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Offset in pixels along the cross axis from the aligned edge. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the viewport edges when repositioning. Defaults to 8." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default popper reveal/exit recipe (10px travel from the placement side)." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; createCanvasGroupPopperEntranceRecipe(placement) matches the canvasgroup the content renders, or createPopperEntranceRecipe(placement) under asChild." },
     { name: "forceMount", type: "boolean", description: "Keeps the content — and therefore the item registry — mounted while closed and through exit motion." },
-    { name: "asChild", type: "boolean", description: "Render onto the single child element instead of the default canvasgroup; also switches the default recipe to a transform-based reveal." },
+    { name: "asChild", type: "boolean", description: "Render onto the single child element instead of the canvasgroup the part renders. Pair it with createPopperEntranceRecipe rather than the canvas-group variant." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
     { name: "children", type: "React.ReactNode", description: "The list surface contents." },
@@ -490,9 +514,9 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
 <PropTable
   rows={[
     { name: "value", type: "string", required: true, description: "The value this item selects when activated." },
-    { name: "textValue", type: "string", description: "Text used for the value label and the default item button. Defaults to value. Resolves only while the item is mounted." },
+    { name: "textValue", type: "string", description: "Text Select.Value shows when this item is selected. Defaults to value. Resolves only while the item is mounted. Since 0.7.0 it does not render as the item's own label — supply that as a child." },
     { name: "disabled", type: "boolean", description: "Prevents selection and removes the item from value resolution; a value pointing at a disabled item re-resolves to the first enabled item. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Merge item behavior (Active, activation and hover handlers, ref) onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior (Active, activation and hover handlers, ref) onto the single child element instead of the textbutton the part renders." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -501,7 +525,7 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default fixed-size 220x108 frame container." },
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of the frame the part renders." },
     { name: "children", type: "React.ReactElement", description: "The grouped items (and optional label)." },
   ]}
 />
@@ -510,7 +534,7 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default textlabel." },
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of the textlabel the part renders." },
     { name: "children", type: "React.ReactElement", description: "The label element to render. Required when asChild is set." },
   ]}
 />
@@ -519,7 +543,7 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of rendering the default 1px divider frame." },
+    { name: "asChild", type: "boolean", description: "Merge onto the single child element instead of the frame the part renders." },
     { name: "children", type: "React.ReactElement", description: "The divider element to render. Required when asChild is set." },
   ]}
 />

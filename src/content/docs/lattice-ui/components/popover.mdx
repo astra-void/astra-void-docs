@@ -97,7 +97,7 @@ export function EmoteInfoPopover() {
 
 ### Detached anchor
 
-Add a `Popover.Anchor` when the surface should point at something other than the button that opens it. Here a help button in a toolbar opens a callout that annotates the quest tracker HUD frame instead of the button itself. A mounted anchor always wins over the trigger as the positioning reference, and with `asChild` it tracks your element directly instead of rendering its default zero-size frame.
+Add a `Popover.Anchor` when the surface should point at something other than the button that opens it. Here a help button in a toolbar opens a callout that annotates the quest tracker HUD frame instead of the button itself. A mounted anchor always wins over the trigger as the positioning reference, and with `asChild` it tracks your element directly instead of the frame it renders.
 
 ```tsx title="QuestTrackerCallout.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -264,7 +264,7 @@ export function LoadoutSavePopover(props: { onSave: () => void }) {
 
 ### Custom exit motion
 
-`Popover.Content` runs a placement-aware reveal/exit recipe by default. Override it with `transition`, and pass `forceMount` when the node should stay mounted instead of unmounting after the exit finishes — useful when you drive motion yourself or need the instance to persist. The default (non-`asChild`) wrapper is a `canvasgroup`, so build custom recipes with `createCanvasGroupPopperEntranceRecipe` to keep the `GroupTransparency` fade.
+`Popover.Content` runs no motion of its own. Pass a `transition` to animate it, and `forceMount` when the node should stay mounted instead of unmounting after the exit finishes — useful when you drive motion yourself or need the instance to persist. The non-`asChild` wrapper is a `canvasgroup`, so `createCanvasGroupPopperEntranceRecipe` is the recipe that keeps the `GroupTransparency` fade.
 
 ```tsx title="SlowRevealPopover.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -322,7 +322,7 @@ Until the first measurement resolves, the surface is parked far offscreen and th
 
 ### Motion and presence
 
-`Popover.Content` runs a placement-aware reveal/exit recipe with no setup: the surface slides in 10 pixels from the resolved placement side while fading in, then plays the reverse on exit at 0.8x the reveal duration. The default wrapper is a `canvasgroup` animated through `GroupTransparency` (0.12s reveal); with `asChild` the recipe is applied to your element directly, animating `BackgroundTransparency` and position (0.16s reveal). Override either with `transition` — `createCanvasGroupPopperEntranceRecipe` and `createPopperEntranceRecipe` from `@lattice-ui/react-motion` build placement-aware variants with your own distance and duration.
+`Popover.Content` runs no motion unless you pass a `transition`. The placement-aware recipes in `@lattice-ui/react-motion` are what it used to apply: `createCanvasGroupPopperEntranceRecipe(placement)` slides the surface 10 pixels in from the resolved placement side while fading `GroupTransparency`, which matches the `canvasgroup` wrapper; `createPopperEntranceRecipe(placement)` does the same through `BackgroundTransparency` for the `asChild` path, where your element replaces that wrapper. Both take their own distance and duration, and exit at 0.8x the reveal.
 
 Without `forceMount`, the content mounts when the popover opens and unmounts after the exit motion completes. Pass `forceMount` to skip the presence wrapper entirely: the node stays mounted while closed with its `Visible` driven by the motion controller, which is useful when you drive motion yourself or need the instance to persist across open cycles.
 
@@ -356,7 +356,7 @@ The default content wrapper is a `canvasgroup`, which fades via `GroupTransparen
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge toggle behavior, focus tracking, and the anchor ref onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge toggle behavior, focus tracking, and the anchor ref onto the single child element instead of the textbutton the part renders." },
     { name: "disabled", type: "boolean", description: "Prevents the trigger from toggling the popover and removes it from focus tracking." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -366,7 +366,7 @@ The default content wrapper is a `canvasgroup`, which fades via `GroupTransparen
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Track the single child element's geometry instead of rendering the default zero-size frame. A mounted anchor takes positioning precedence over the trigger." },
+    { name: "asChild", type: "boolean", description: "Track the single child element's geometry instead of the frame the part renders. A mounted anchor takes positioning precedence over the trigger." },
     { name: "children", type: "React.ReactElement", description: "The element to anchor against. Required when asChild is set." },
   ]}
 />
@@ -389,9 +389,9 @@ The default content wrapper is a `canvasgroup`, which fades via `GroupTransparen
     { name: "sideOffset", type: "number", description: "Gap in pixels between the anchor and the content. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the anchor's cross axis. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
-    { name: "asChild", type: "boolean", description: "Position and animate the single child element instead of rendering the default auto-sized canvasgroup wrapper. Switches the default recipe to the transform variant." },
+    { name: "asChild", type: "boolean", description: "Position and animate the single child element instead of the auto-sized canvasgroup wrapper the part renders. Pair it with createPopperEntranceRecipe rather than the canvas-group variant." },
     { name: "forceMount", type: "boolean", description: "Keeps the content mounted while closed and through exit motion, with Visible driven by the motion controller, instead of unmounting after exit." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default placement-aware reveal/exit recipe. Build variants with createCanvasGroupPopperEntranceRecipe or createPopperEntranceRecipe from @lattice-ui/react-motion." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; createCanvasGroupPopperEntranceRecipe(placement) matches the canvasgroup the content renders, createPopperEntranceRecipe(placement) suits the asChild path." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
     { name: "children", type: "React.ReactNode", description: "The surface contents. Must be a single valid element when asChild is set." },
@@ -402,7 +402,7 @@ The default content wrapper is a `canvasgroup`, which fades via `GroupTransparen
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of rendering the default textbutton. Event handlers compose, so the child's own Activated handler still runs." },
+    { name: "asChild", type: "boolean", description: "Merge close behavior onto the single child element instead of the textbutton the part renders. Event handlers compose, so the child's own Activated handler still runs." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

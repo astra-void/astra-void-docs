@@ -252,7 +252,7 @@ export function ChatLog(props: { messages: string[] }) {
 
 ### Custom track and thumb with asChild
 
-Use `asChild` on `Scrollbar` and `Thumb` to replace the default visuals entirely. The scrollbar's Slot projects visibility and track-press handling onto your track element; the thumb's Slot projects its computed `Position` and `Size` (both scale-based) plus drag handling onto your handle. Do not set `Position` or `Size` on the thumb element — the primitive owns them — and style it with corners, strokes, and colors instead. Keep the `Thumb` a direct child of the track element: the thumb measures its parent to map drags to canvas positions.
+Use `asChild` on `Scrollbar` and `Thumb` when you need a different element class than the frames they render. The scrollbar's Slot projects visibility and track-press handling onto your track element; the thumb's Slot projects its computed `Position` and `Size` (both scale-based) plus drag handling onto your handle. Do not set `Position` or `Size` on the thumb element — the primitive owns them — and style it with corners, strokes, and colors instead. Keep the `Thumb` a direct child of the track element: the thumb measures its parent to map drags to canvas positions.
 
 ```tsx title="QuestLog.tsx"
 import { ScrollArea } from "@lattice-ui/react-scroll-area";

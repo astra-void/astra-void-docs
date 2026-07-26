@@ -347,10 +347,12 @@ The height math is exposed as the pure function `resolveTextareaHeight(text, opt
 
 ### Input focus motion
 
-The `Input` tracks focus and animates its `BackgroundColor3` with the field response recipe — settling on the focused accent while the field is focused and editable, and back to the resting tone otherwise. Focus while `disabled` or `readOnly` does not count as active, so a read-only field never lights up as editable. This motion is driven through the input's ref, so it applies to your own `textbox` under `asChild` too: design around a primitive-driven background color and put your styling in strokes, corners, padding, and text properties.
+The `Input` tracks focus and exposes it through context, but no longer paints it. It used to animate its `BackgroundColor3` toward a focused accent with the field response recipe; as of 0.7.0 the primitive writes no color, in either mode. Focus while `disabled` or `readOnly` still does not count as active, so a read-only field should not light up as editable — branch on the state yourself, and add a `createFieldResponseRecipe()` response motion if you want the change to ease.
 
 <Callout title="Default text and visuals">
-Each part renders sensible defaults when used without `asChild`: the `Input` is a 240x68 multi-line `textbox` with a `"Type..."` placeholder and built-in padding (10 horizontal, 7 vertical), and `Label`, `Description`, and `Message` render the literal text `"Label"`, `"Description"`, and `"Message"`. Pass `asChild` with your own element (as in the examples) to supply real copy and styling while keeping the auto-resize and state wiring intact — under `asChild` the parts leave your element's `Text` alone (as of 0.5.0; earlier releases overwrote it with the placeholder text).
+Every part renders unstyled, and none of them carry copy. `Input` is a multi-line `textbox` with no size, placeholder, or padding of its own; `Label`, `Description`, and `Message` used to render the literal text `"Label"`, `"Description"`, and `"Message"`, and as of 0.7.0 render nothing until you supply it.
+
+Pass the copy and styling as props — they forward onto the instance each part renders — or use `asChild` when you need a different element class. The auto-resize and state wiring are unaffected either way, and all four parts render children, so a `uipadding` attaches directly.
 </Callout>
 
 <Callout title="Auto-resize owns the height">
@@ -403,7 +405,7 @@ With `asChild`, the `Input` merges its `Text` binding, `MultiLine`/`TextWrapped`
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge label behavior (focus-on-activate, disabled state) onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge label behavior (focus-on-activate, disabled state) onto the single child element instead of the textbutton the part renders." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -412,7 +414,7 @@ With `asChild`, the `Input` merges its `Text` binding, `MultiLine`/`TextWrapped`
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the description onto the single child element instead of rendering the default textlabel." },
+    { name: "asChild", type: "boolean", description: "Merge the description onto the single child element instead of the textlabel the part renders. Pass Text — the part renders no copy of its own." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
@@ -421,7 +423,7 @@ With `asChild`, the `Input` merges its `Text` binding, `MultiLine`/`TextWrapped`
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the message onto the single child element instead of rendering the default textlabel." },
+    { name: "asChild", type: "boolean", description: "Merge the message onto the single child element instead of the textlabel the part renders. Pass Text — the part renders no copy of its own." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />

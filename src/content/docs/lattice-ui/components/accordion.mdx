@@ -55,7 +55,7 @@ Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wra
 | `Accordion.Item` | yes | Declares one section by `value`; derives its own open state from the root. |
 | `Accordion.Header` | no | A transparent layout frame for the trigger; purely structural. |
 | `Accordion.Trigger` | yes | A button that toggles its item open or closed. |
-| `Accordion.Content` | yes | The body that mounts and animates in while the item is open. |
+| `Accordion.Content` | yes | The body that mounts while the item is open. Animates if given a `transition`. |
 
 </PrimitiveAnatomy>
 
@@ -63,7 +63,7 @@ Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wra
 
 ### Basic accordion
 
-The smallest useful accordion: an uncontrolled `single` root seeded with `defaultValue`, default visuals. The default trigger is a `textbutton` whose label reflects the item's state (`"Expand"` or `"Collapse"`), which makes it useful for wiring things up before you style anything. Because `Root` renders no instance, the item frames sit directly under your layout container.
+An uncontrolled `single` root seeded with `defaultValue`. Every part renders unstyled — the trigger is a `textbutton` with no label of its own, so pass `Text` and a size or you will have a working accordion you cannot see. Because `Root` renders no instance, the item frames sit directly under your layout container.
 
 ```tsx title="FaqAccordion.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -265,7 +265,7 @@ export function QuestLog() {
 
 ### Rotating chevron trigger
 
-Use `asChild` on `Trigger` to project the toggle behavior onto your own button and add a chevron that flips when the section opens. Item open state is not exposed to your components (see [How it behaves](#open-state-stays-internal)), so control the root and derive `open` from your own value. The primitive still animates the trigger's `BackgroundColor3` between its open/closed palette — even under `asChild` — so keep your styling in strokes, padding, and children.
+Use `asChild` on `Trigger` to project the toggle behavior onto your own button and add a chevron that flips when the section opens. Item open state is not exposed to your components (see [How it behaves](#open-state-stays-internal)), so control the root and derive `open` from your own value — which is also what you branch on for the trigger's colors, since the primitive no longer writes them.
 
 ```tsx title="ChevronAccordion.tsx"
 import { useState } from "@rbxts/react";
@@ -336,7 +336,7 @@ export function ChevronAccordion() {
 
 ### Keeping content mounted
 
-`forceMount` keeps the content frame mounted while its item is closed (visibility is still bound to presence), so children keep their state and you can measure or drive motion yourself. Pair it with `transition` to swap the default surface-reveal recipe — here for a deeper 12-pixel rise over 0.2 seconds.
+`forceMount` keeps the content frame mounted while its item is closed (visibility is still bound to presence), so children keep their state and you can measure or drive motion yourself. Pair it with `transition` to give the body a reveal — here `createSurfaceRevealRecipe` for a 12-pixel rise over 0.2 seconds.
 
 ```tsx title="PatchNotes.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -391,23 +391,23 @@ The root normalizes whatever shape it is given: in single mode an array collapse
 
 ### Structure and layout
 
-`Accordion.Root` renders no instance of its own — only a context provider — so item frames become direct children of whatever container you render around the accordion, and a `uilistlayout` on that container stacks them. Each `Accordion.Item` renders a transparent 260x80 frame (or your own element via `asChild`), and `Accordion.Header` a transparent 260x34 frame. `Accordion.Content` forwards extra GUI props onto its frame; position it below the header yourself (the default frames do not auto-flow inside an item).
+`Accordion.Root` renders no instance of its own — only a context provider — so item frames become direct children of whatever container you render around the accordion, and a `uilistlayout` on that container stacks them. `Accordion.Item` and `Accordion.Header` each render a transparent frame with no size of its own (or your element via `asChild`). Every part forwards GUI props onto the instance it renders, so size and position them yourself — nothing auto-flows inside an item.
 
 ### Focus and selection
 
-`Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and also on the `Return` and `Space` keys via `InputBegan`, so gamepad and keyboard activation both work without extra wiring. A disabled item's trigger ignores activation and key input alike, and drops `Active`. The default trigger sets `Selectable={false}` on itself; if you need it reachable by gamepad selection, render your own selectable element through `asChild`.
+`Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and also on the `Return` and `Space` keys via `InputBegan`, so gamepad and keyboard activation both work without extra wiring. A disabled item's trigger ignores activation and key input alike, and drops `Active`. The trigger sets `Selectable={false}` on itself; if you need it reachable by gamepad selection, render your own selectable element through `asChild`.
 
 With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, event handlers, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Trigger color motion
 
-The trigger animates its `BackgroundColor3` between a fixed palette — open settles on `RGB(59, 66, 84)` and closed on `RGB(41, 48, 63)` — using the selection response recipe over 0.15s. This applies to your own element under `asChild` too; there is no opt-out prop, so design your trigger around a primitive-driven background color and put your own styling in strokes, corners, padding, and children.
+The trigger's `BackgroundColor3` is yours as of 0.7.0. It used to animate between a fixed open/closed palette with no opt-out; the primitive now writes no color at all, in either mode. Derive it from the value you control on the root.
 
 ### Content presence and motion
 
-`Accordion.Content` is presence-driven: it mounts when its item opens and runs the default surface-reveal recipe — rising from a 4-pixel offset while its background fades in over 0.12s — then plays the swift reverse exit and unmounts when the item closes. The default frame is an opaque `RGB(35, 41, 54)` surface; note that the recipe animates `BackgroundTransparency`, so a transparent body should fade its children instead or pass its own `transition`.
+`Accordion.Content` is presence-driven: it mounts when its item opens and unmounts when it closes, holding through any exit transition first. It runs no motion of its own and renders an unstyled frame.
 
-Override the animation with `transition` (any `PresenceMotionConfig`, such as one built with `createSurfaceRevealRecipe` from `@lattice-ui/react-motion`), or pass `forceMount` to keep the body mounted while closed and through its exit, bypassing the presence wrapper so you can drive motion or measurement yourself. With `asChild`, your single child element is rendered in place of the default frame and its `Visible` property is bound to the presence state.
+To animate it, pass a `PresenceMotionConfig` as `transition` — `createSurfaceRevealRecipe()` from `@lattice-ui/react-motion` gives the rise-and-fade this part used to run. That recipe animates `BackgroundTransparency`, so give the body a background or animate its children instead. Pass `forceMount` to keep it mounted while closed and through its exit, bypassing the presence wrapper so you can drive motion or measurement yourself. With `asChild`, your single child element is rendered in place of the frame the part renders and its `Visible` is bound to the presence state.
 
 ### Open state stays internal
 
@@ -422,11 +422,11 @@ Match the shape of `value`/`defaultValue` to `type`. With `type="single"` pass a
 </Callout>
 
 <Callout title="The primitive owns the trigger background">
-Even with `asChild`, the trigger drives your element's `BackgroundColor3` between the fixed open and closed accents. Style your trigger with strokes, corners, and child elements rather than a hand-set background color.
+Before 0.7.0 the trigger drove your element's `BackgroundColor3` between fixed open and closed accents, with no opt-out. It no longer writes color in either mode, so a background you set stays put.
 </Callout>
 
 <Callout title="Default trigger label vs children">
-The default trigger already renders `"Expand"`/`"Collapse"` as its own `Text`, and children are placed inside the same button. For a custom label, prefer `asChild` with your own `textbutton` over layering a `textlabel` on top of the built-in text.
+The trigger renders no text of its own as of 0.7.0 — it used to label itself `"Expand"`/`"Collapse"`. Pass a `Text` prop, which forwards onto the `textbutton`, or render children inside it.
 </Callout>
 
 ## API reference
@@ -450,7 +450,7 @@ The default trigger already renders `"Expand"`/`"Collapse"` as its own `Text`, a
   rows={[
     { name: "value", type: "string", description: "Unique key identifying this item. Determines whether the item is open based on the root's open value(s)." },
     { name: "disabled", type: "boolean", description: "Prevents the item's trigger from toggling. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Merge item layout onto the single child element instead of rendering the default transparent 260x80 frame." },
+    { name: "asChild", type: "boolean", description: "Merge item layout onto the single child element instead of the frame the part renders." },
     { name: "children", type: "React.ReactNode", description: "The header/trigger and content for this item." },
   ]}
 />
@@ -468,7 +468,7 @@ The default trigger already renders `"Expand"`/`"Collapse"` as its own `Text`, a
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "asChild", type: "boolean", description: "Merge trigger behavior onto the single child element instead of the textbutton the part renders. The child must be an activatable button." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set; otherwise rendered inside the default button." },
   ]}
 />
@@ -480,7 +480,7 @@ In addition to the props below, `Accordion.Content` forwards any extra GUI props
 <PropTable
   rows={[
     { name: "forceMount", type: "boolean", description: "Keeps the content mounted while closed and through its exit motion, instead of unmounting when the item closes." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default surface-reveal/exit recipe." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createSurfaceRevealRecipe() for a rise-and-fade." },
     { name: "asChild", type: "boolean", description: "Merge content behavior onto the single child element instead of rendering the default frame. The child's Visible property is bound to presence." },
     { name: "children", type: "React.ReactNode", description: "The body contents shown while the item is open." },
   ]}

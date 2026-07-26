@@ -146,7 +146,7 @@ export function TeamPicker() {
 
 ### Card-style items with asChild
 
-Use `asChild` to project the item behavior — activation, gamepad selection, and the arrow-key wiring — onto your own button, and place an `Indicator` inside it as the selection dot. The primitive still animates the item's `BackgroundColor3` between its accent palette (see [How it behaves](#default-item-rendering-and-color-motion)), so put your own styling in strokes, corners, and children. The default indicator reveal settles at 10x10; this dot matches that size, so no custom `transition` is needed.
+Use `asChild` to project the item behavior — activation, gamepad selection, and the arrow-key wiring — onto your own button, and place an `Indicator` inside it as the selection dot. The item no longer touches your element's color, so branch on the checked state yourself. The indicator only animates if you give it a `transition`.
 
 ```tsx title="DifficultyCards.tsx"
 import { useState } from "@rbxts/react";
@@ -286,7 +286,7 @@ Activating an item calls the group's `setValue` with that item's value. When `Ro
 
 ### Activation
 
-An item selects itself on any of three inputs: `Activated` (click or tap), `Return`/`Space` via `InputBegan`, and `SelectionGained` — meaning that on a gamepad, merely moving selection onto an item commits it. The default item is `Active` and `Selectable` only while enabled, so a disabled item drops out of gamepad selection and cannot fire any of these paths.
+An item selects itself on any of three inputs: `Activated` (click or tap), `Return`/`Space` via `InputBegan`, and `SelectionGained` — meaning that on a gamepad, merely moving selection onto an item commits it. The item is `Active` and `Selectable` only while enabled, so a disabled item drops out of gamepad selection and cannot fire any of these paths.
 
 With `asChild`, these handlers are merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
@@ -300,13 +300,15 @@ Movement is computed over **available** entries only — an entry is skipped if 
 
 Items register themselves with `Root` on mount and unregister on unmount, each stamped with a monotonically increasing `order` on its first render. An item keeps its order for its whole lifetime; remounting assigns a fresh, higher one. Directional navigation sorts the registry by this order, so navigation tracks **mount order rather than visual position**. Keep the two aligned: render items from one array, append new entries at the end, and lay them out with a `uilistlayout` whose `SortOrder` follows the same sequence.
 
-### Default item rendering and color motion
+### Item rendering and color
 
-Without `asChild`, an `Item` renders a 170x34 `textbutton` whose `Text` is the item's `value`, dimming its label while disabled. The primitive animates the item's `BackgroundColor3` between a fixed accent palette — checked settles on `RGB(88, 142, 255)` and unchecked on `RGB(47, 53, 68)` — using the selection response recipe (a quick settle; override the timing with `transition`). This applies to your own element under `asChild` too: there is no opt-out prop, so design your item around a primitive-driven background color and put your own styling in strokes, corners, and children.
+An `Item` renders an unstyled `textbutton` — no size, no label, no colors. It does not render `value` as its text; pass a `Text` of your own, or children.
+
+Its `BackgroundColor3` is yours as of 0.7.0. The item used to animate between a fixed accent palette with no opt-out, which is also why `RadioGroup.Item` no longer accepts a `transition` — that prop existed only to time the removed color animation. Derive the color from the checked state and animate it yourself if you want it to ease.
 
 ### Indicator presence and motion
 
-`RadioGroup.Indicator` is presence-driven by its parent item's checked state. When the item becomes checked it mounts and runs the default indicator-reveal recipe — growing from zero to a 10x10 size while fading in — then plays the reverse exit and unmounts when another item is chosen. Override the animation with `transition`; the default recipe settles at 10x10, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/react-motion`) built with its own size. Pass `forceMount` to keep the indicator mounted regardless of checked state, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 10x10 frame and its `Visible` property is bound to the presence state.
+`RadioGroup.Indicator` is presence-driven by its parent item's checked state: it mounts when the item becomes checked and unmounts when another item is chosen, holding through any exit transition first. It runs no motion of its own — pass `createIndicatorRevealRecipe(size)` from `@lattice-ui/react-motion` as `transition`, built at the size your dot settles at, to grow it from zero while fading in. Pass `forceMount` to keep the indicator mounted regardless of checked state, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the frame the part renders and its `Visible` property is bound to the presence state.
 
 ### Root renders no container
 
@@ -321,7 +323,7 @@ Directional movement clamps to the first and last available items instead of wra
 </Callout>
 
 <Callout title="The primitive tints the item">
-Even with `asChild`, the item drives your element's `BackgroundColor3` between the fixed checked and unchecked accents — `transition` changes the motion, not the colors. Style your item with strokes, corners, and child elements rather than a hand-set background color.
+Before 0.7.0 the item drove your element's `BackgroundColor3` between fixed checked and unchecked accents, and `transition` timed that animation. Both are gone: the item never writes color, and `RadioGroup.Item` no longer accepts `transition`. A background you set stays put.
 </Callout>
 
 ## API reference
@@ -346,9 +348,8 @@ Even with `asChild`, the item drives your element's `BackgroundColor3` between t
   rows={[
     { name: "value", type: "string", description: "The value this item represents. Required; compared against the group value to determine checked state." },
     { name: "disabled", type: "boolean", description: "Disables this item; it cannot be selected and is skipped by arrow and gamepad navigation. Defaults to false." },
-    { name: "transition", type: "ResponseMotionConfig", description: "Overrides the selection response recipe that animates the item's background between the checked and unchecked accents." },
-    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element via Slot instead of rendering the default textbutton. The child must be an activatable button." },
-    { name: "children", type: "React.ReactElement", description: "The element to render (with asChild) or content placed inside the default button, such as an Indicator." },
+    { name: "asChild", type: "boolean", description: "Merge item behavior onto the single child element via Slot instead of the textbutton the part renders. The child must be an activatable button." },
+    { name: "children", type: "React.ReactNode", description: "Content placed inside the item button, such as an Indicator. Must be a single element when asChild is set." },
   ]}
 />
 
@@ -356,9 +357,9 @@ Even with `asChild`, the item drives your element's `BackgroundColor3` between t
 
 <PropTable
   rows={[
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default indicator-reveal/exit recipe. The default settles at a 10x10 offset size; pass your own recipe for other sizes." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createIndicatorRevealRecipe(size) built at the size your indicator settles at." },
     { name: "forceMount", type: "boolean", description: "Keeps the indicator mounted regardless of checked state, bypassing the presence wrapper so you drive visibility yourself. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Render your own marker element instead of the default 10x10 frame. The child's Visible property is bound to presence." },
+    { name: "asChild", type: "boolean", description: "Render your own marker element instead of the frame the part renders. The child's Visible property is bound to presence." },
     { name: "children", type: "React.ReactNode", description: "The marker content shown while the item is checked." },
   ]}
 />

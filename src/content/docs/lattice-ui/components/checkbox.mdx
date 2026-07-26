@@ -45,13 +45,13 @@ Compose `Root` as the toggleable button and place an `Indicator` inside it to sh
 | Part | Required | Responsibility |
 | --- | --- | --- |
 | `Checkbox.Root` | yes | Owns the checked state, handles toggling, and renders the activatable button. |
-| `Checkbox.Indicator` | no | Mounts and animates in while the box is checked or indeterminate. |
+| `Checkbox.Indicator` | no | Mounts while the box is checked or indeterminate. Animates if given a `transition`. |
 
 ## Examples
 
 ### Basic usage
 
-The smallest possible checkbox: uncontrolled state seeded with `defaultChecked`, default visuals. The default root is a `textbutton` whose label reflects the current state (`"Checked"`, `"Unchecked"`, or `"Indeterminate"`), which makes it useful for wiring things up before you style anything.
+Uncontrolled state seeded with `defaultChecked`. The root renders an unstyled `textbutton` with no label of its own, so give it a size and colors — the state below is wired up correctly either way, but nothing is drawn until you say what it should look like.
 
 ```tsx title="BasicCheckbox.tsx"
 import { Checkbox } from "@lattice-ui/react-checkbox";
@@ -89,7 +89,7 @@ export function RememberMeCheckbox() {
 
 ### Custom box with asChild
 
-Use `asChild` to project the toggle behavior onto your own button, and give the indicator a glyph. The primitive still animates the box's `BackgroundColor3` between its accent palette, so design around that (see [How it behaves](#root-color-motion)). Because the default indicator recipe reveals to a fixed 12x12 size, pass a `transition` built for your indicator's actual size.
+Use `asChild` to project the toggle behavior onto your own button, and give the indicator a glyph. The root no longer touches your box's color, so branch on the checked state yourself. If you want the indicator to animate in, pass a `transition` built with `createIndicatorRevealRecipe` at your indicator's actual size.
 
 ```tsx title="StyledCheckbox.tsx"
 import { useState } from "@rbxts/react";
@@ -246,7 +246,7 @@ export function TradeConfirmation(props: { onConfirm: () => void }) {
 
 ### Disabled state
 
-`disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are dropped — and removes the default button from gamepad selection. Here a premium-only option stays visible but inert.
+`disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are dropped — and removes the button from gamepad selection. Here a premium-only option stays visible but inert.
 
 ```tsx title="PremiumOption.tsx"
 import { Checkbox } from "@lattice-ui/react-checkbox";
@@ -270,30 +270,30 @@ Activating the checkbox runs a toggle: from `"indeterminate"` it goes to `true`,
 
 ### Activation and selection
 
-The default `Checkbox.Root` renders an activatable `textbutton` (160x36, labeled with the current state) that toggles on `Activated`, so click, tap, and gamepad activation all work. It is `Active` and `Selectable` only while enabled, so a disabled checkbox drops out of gamepad selection and dims its label.
+`Checkbox.Root` renders an unstyled activatable `textbutton` that toggles on `Activated`, so click, tap, and gamepad activation all work. Give it a size and colors. It is `Active` and `Selectable` only while enabled, so a disabled checkbox drops out of gamepad selection.
 
 With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
 
-### Root color motion
+### Root color is yours
 
-The root animates its `BackgroundColor3` between a fixed accent palette — checked/indeterminate settles on `RGB(88, 142, 255)` and unchecked on `RGB(59, 66, 84)` — using the selection response recipe (a 0.1s settle). This applies to your own element under `asChild` too; there is no opt-out prop on Root, so design your box around a primitive-driven background color and put your own styling in strokes, corners, and children.
+The root's `BackgroundColor3` is entirely yours as of 0.7.0. It used to animate between a fixed accent palette with no opt-out; now it is never written by the primitive. Branch on the checked state you already have, and add a response motion of your own if you want the change to ease rather than snap.
 
 ### Disabled and required
 
-`disabled` (default `false`) blocks both the toggle and direct state changes, and the default button removes itself from gamepad selection and dims its text while disabled. `required` (default `false`) is exposed on context for your own form/validation wiring and submission logic; it does not change interaction behavior on its own.
+`disabled` (default `false`) blocks both the toggle and direct state changes, and the button removes itself from gamepad selection while disabled. `required` (default `false`) is exposed on context for your own form/validation wiring and submission logic; it does not change interaction behavior on its own.
 
 ### Indicator presence and motion
 
-`Checkbox.Indicator` is presence-driven by the checked state — it is present whenever `checked` is not `false` (so for both `true` and `"indeterminate"`). It mounts and runs the default indicator-reveal recipe when checked — growing from a zero size to 12x12 while fading its background in over 0.1s — then plays the reverse exit and unmounts when unchecked.
+`Checkbox.Indicator` is presence-driven by the checked state — it is present whenever `checked` is not `false` (so for both `true` and `"indeterminate"`). It mounts when checked and unmounts when unchecked, holding through any exit transition first. It runs no motion of its own.
 
-Override the animation with `transition`; the default recipe always settles at 12x12, so an indicator of any other size should pass `createIndicatorRevealRecipe` (from `@lattice-ui/react-motion`) built with its own size. Pass `forceMount` to keep the indicator mounted while unchecked and through its exit, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the default 12x12 frame and its `Visible` property is bound to the presence state.
+To animate it, pass `createIndicatorRevealRecipe(size)` from `@lattice-ui/react-motion` as `transition`, built with the size your indicator actually settles at — the recipe grows from zero to that size while fading in. Pass `forceMount` to keep the indicator mounted while unchecked and through its exit, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the frame the part renders and its `Visible` property is bound to the presence state.
 
 <Callout title="Indeterminate is controlled-only">
 Toggling never yields `"indeterminate"` — it maps indeterminate to `true` and otherwise flips the boolean. Provide `"indeterminate"` through the controlled `checked` prop, usually derived from a group of child checkboxes, and resolve it to `true`/`false` in your `onCheckedChange` handler.
 </Callout>
 
 <Callout title="The primitive owns the box color">
-Unlike Switch's `trackColorMode`, Checkbox has no consumer-color mode: even with `asChild`, the root drives your element's `BackgroundColor3` between the fixed checked and unchecked accents. Style your box with strokes, corners, and child elements rather than a hand-set background color.
+Before 0.7.0 the root drove your element's `BackgroundColor3` between fixed checked and unchecked accents, with no way to opt out. It no longer writes color at all — in either mode — so a background you set stays exactly as you set it.
 </Callout>
 
 <Callout title="Indicator shows for any non-false state">
@@ -309,9 +309,9 @@ The indicator is visible for both `true` and `"indeterminate"`. If you need a di
     { name: "checked", type: 'boolean | "indeterminate"', description: "Controlled checked state. Pair with onCheckedChange." },
     { name: "defaultChecked", type: 'boolean | "indeterminate"', description: "Initial checked state for uncontrolled usage. Defaults to false." },
     { name: "onCheckedChange", type: '(checked: boolean | "indeterminate") => void', description: "Called whenever the checked state changes." },
-    { name: "disabled", type: "boolean", description: "Prevents toggling and removes the default button from gamepad selection. Defaults to false." },
+    { name: "disabled", type: "boolean", description: "Prevents toggling and removes the button from gamepad selection. Defaults to false." },
     { name: "required", type: "boolean", description: "Marks the checkbox as required for your own form/validation wiring. Exposed on context; does not change interaction on its own. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Merge checkbox behavior onto the single child element instead of rendering the default textbutton. The child must be an activatable button." },
+    { name: "asChild", type: "boolean", description: "Merge checkbox behavior onto the single child element instead of the textbutton the part renders. The child must be an activatable button." },
     { name: "children", type: "React.ReactNode", description: "The checkbox contents, typically a Checkbox.Indicator. Must be a single valid element when asChild is set." },
   ]}
 />
@@ -320,9 +320,9 @@ The indicator is visible for both `true` and `"indeterminate"`. If you need a di
 
 <PropTable
   rows={[
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default indicator-reveal/exit recipe. The default settles at a 12x12 offset size; pass your own recipe for other sizes." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createIndicatorRevealRecipe(size) built at the size your indicator settles at." },
     { name: "forceMount", type: "boolean", description: "Keeps the indicator mounted while unchecked and through its exit motion, instead of unmounting when unchecked. Defaults to false." },
-    { name: "asChild", type: "boolean", description: "Merge indicator behavior onto the single child element instead of rendering the default 12x12 frame. The child's Visible property is bound to presence." },
+    { name: "asChild", type: "boolean", description: "Merge indicator behavior onto the single child element instead of the frame the part renders. The child's Visible property is bound to presence." },
     { name: "children", type: "React.ReactNode", description: "The indicator contents shown while checked, such as a checkmark glyph." },
   ]}
 />

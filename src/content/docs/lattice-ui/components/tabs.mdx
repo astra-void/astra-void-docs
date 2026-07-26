@@ -18,7 +18,7 @@ import { PackageMeta, PropTable, Callout , LoomPreview } from "@/components/docs
 
 Tabs is the primitive for switching between mutually exclusive views: settings categories, inventory sections, shop pages, or any place where one panel is visible at a time. It owns the active value, keeps its triggers ordered, handles arrow-key movement between them, and mounts the matching panel with presence motion.
 
-Reach for Tabs when a set of triggers should drive **value-based selection** — exactly one active at a time — with **keyboard and gamepad movement** across the list and **panels that animate in and out** as the value changes.
+Reach for Tabs when a set of triggers should drive **value-based selection** — exactly one active at a time — with **keyboard and gamepad movement** across the list and **panels that mount and unmount** as the value changes.
 
 ## Preview
 
@@ -437,7 +437,7 @@ The built-in `Tabs.Trigger` renders a 132x34 `textbutton` whose `Text` is its `v
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge the list onto the single child element instead of rendering the default zero-size frame." },
+    { name: "asChild", type: "boolean", description: "Merge the list onto the single child element instead of the frame the part renders." },
     { name: "children", type: "React.ReactNode", description: "The trigger elements. Required as a single element when asChild is set." },
   ]}
 />
@@ -447,7 +447,7 @@ The built-in `Tabs.Trigger` renders a 132x34 `textbutton` whose `Text` is its `v
 <PropTable
   rows={[
     { name: "value", type: "string", required: true, description: "The value this trigger selects when activated." },
-    { name: "asChild", type: "boolean", description: "Merge selection behavior onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge selection behavior onto the single child element instead of the textbutton the part renders." },
     { name: "disabled", type: "boolean", description: "Removes the trigger from selection and movement and prevents it from becoming active. Defaults to false." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
@@ -458,9 +458,9 @@ The built-in `Tabs.Trigger` renders a 132x34 `textbutton` whose `Text` is its `v
 <PropTable
   rows={[
     { name: "value", type: "string", required: true, description: "The value this panel is shown for." },
-    { name: "asChild", type: "boolean", description: "Merge the panel onto the single child element instead of rendering the default zero-size frame." },
+    { name: "asChild", type: "boolean", description: "Merge the panel onto the single child element instead of the frame the part renders." },
     { name: "forceMount", type: "boolean", description: "Keeps the panel mounted at all times and toggles visibility instead of unmounting on exit." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Overrides the default surface-reveal recipe." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createSurfaceRevealRecipe() for a rise-and-fade." },
     { name: "children", type: "React.ReactNode", description: "The panel contents." },
   ]}
 />

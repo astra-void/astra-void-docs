@@ -64,7 +64,7 @@ This release of Slider is **single-thumb only**. There is no range/dual-thumb mo
 
 ### Basic volume slider
 
-The smallest useful slider: uncontrolled state seeded with `defaultValue`, default visuals for every part (a 260x10 dark track, a blue fill, a 16x16 light thumb). `onValueChange` would fire on every drag tick, but for a "save on release" control you only need `onValueCommit` — it fires once when the interaction ends, which is the right moment to persist the setting or send it over the network.
+Uncontrolled state seeded with `defaultValue`. Every part renders unstyled, so the track, range and thumb below each carry their own size and color — the primitive owns only the geometry it computes from the value. `onValueChange` would fire on every drag tick, but for a "save on release" control you only need `onValueCommit` — it fires once when the interaction ends, which is the right moment to persist the setting or send it over the network.
 
 ```tsx title="VolumeSlider.tsx"
 import { Slider } from "@lattice-ui/react-slider";
@@ -374,7 +374,7 @@ Arrow, page, and `Home`/`End` presses call `onValueCommit` as well as `onValueCh
 
 <PropTable
   rows={[
-    { name: "asChild", type: "boolean", description: "Merge thumb behavior (drag start, keyboard handling, ref, selection, centered AnchorPoint) onto the single child element instead of rendering the default textbutton." },
+    { name: "asChild", type: "boolean", description: "Merge thumb behavior (drag start, keyboard handling, ref, selection, centered AnchorPoint) onto the single child element instead of the textbutton the part renders." },
     { name: "children", type: "React.ReactElement", description: "The element to render. Required when asChild is set." },
   ]}
 />
