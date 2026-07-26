@@ -220,8 +220,8 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
       </div>
 
       <p class="mt-3 text-xs text-muted-foreground">
-        Imports resolve to the published <code class="font-mono">@lattice-ui/*</code>
-        packages plus <code class="font-mono">./DocExampleShell</code>. Export
+        Imports resolve to the published <code class="font-mono">@lattice-ui/*</code>{" "}
+        packages plus <code class="font-mono">./DocExampleShell</code>. Export{" "}
         <code class="font-mono">preview = &#123; render &#125;</code> or a default component.
       </p>
     </main>
@@ -258,6 +258,11 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         const dirtyEl = root.querySelector<HTMLElement>("[data-playground-dirty]")!
 
         const isDark = () => document.documentElement.classList.contains("dark")
+        const currentTheme = () => (isDark() ? "dark" : "light")
+
+        // The gallery is served by this site's own origin (see the
+        // `loom-preview` integration), so both directions can name it.
+        const frameOrigin = location.origin
 
         // --- editor ---------------------------------------------------------
         const themeCompartment = new Compartment()
@@ -267,6 +272,11 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         ])
 
         // What "Reset" goes back to; re-pointed whenever a template is picked.
+        // `baselineFromLink` records that it arrived as a `#code=` fragment
+        // rather than a template, so the share hash is preserved instead of
+        // being cleared as redundant.
+        let baselineFromLink = false
+        let sharedSource: string | undefined
         let baseline = initialCode()
 
         const view = new EditorView({
@@ -299,6 +309,8 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
             custom.value = "__custom"
             select.prepend(custom)
             select.value = "__custom"
+            baselineFromLink = true
+            sharedSource = shared
             return shared
           }
 
@@ -332,7 +344,7 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           window.clearTimeout(debounce)
           dirtyEl.hidden = true
           const source = view.state.doc.toString()
-          writeShareHash(source)
+          syncShareHash(source)
 
           let compiled: string
           try {
@@ -361,7 +373,14 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           setStatus("running…")
           frame.contentWindow?.postMessage(
             { type: "loom-playground-run", code: compiled, version },
-            "*",
+            frameOrigin,
+          )
+        }
+
+        function sendTheme() {
+          frame.contentWindow?.postMessage(
+            { type: "loom-theme", theme: currentTheme() },
+            frameOrigin,
           )
         }
 
@@ -381,15 +400,48 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         }
 
         // --- share links ------------------------------------------------------
-        function writeShareHash(source: string) {
+        function encodeSource(source: string) {
           const bytes = new TextEncoder().encode(source)
           let binary = ""
           for (const byte of bytes) binary += String.fromCharCode(byte)
-          history.replaceState(
-            null,
-            "",
-            `#code=${encodeURIComponent(btoa(binary))}`,
-          )
+          return encodeURIComponent(btoa(binary))
+        }
+
+        /** True when the editor holds something no `?example=` can reproduce. */
+        function isCustom(source: string) {
+          return source !== baseline || baselineFromLink
+        }
+
+        /**
+         * Keep the URL in step with the editor, so a reload restores what is on
+         * screen. An untouched template needs no fragment — writing one anyway
+         * would shadow `?example=` and relabel the picker "Custom" on reload.
+         */
+        function syncShareHash(source: string) {
+          if (!isCustom(source)) {
+            if (location.hash) {
+              history.replaceState(null, "", location.pathname + location.search)
+            }
+            return
+          }
+          history.replaceState(null, "", `#code=${encodeSource(source)}`)
+        }
+
+        /**
+         * The URL to hand someone else. Pristine templates travel as the short
+         * `?example=` form; edited source has to carry the whole snippet.
+         */
+        function shareUrl(source: string) {
+          const url = new URL(location.href)
+          if (isCustom(source)) {
+            url.hash = `code=${encodeSource(source)}`
+            return url.href
+          }
+          url.hash = ""
+          if (select.value !== "__custom") {
+            url.searchParams.set("example", select.value)
+          }
+          return url.href
         }
 
         function decodeShared(hash: string) {
@@ -410,9 +462,14 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
             | { type?: string; ok?: boolean; message?: string; version?: number }
             | undefined
           if (!data || event.source !== frame.contentWindow) return
+          if (event.origin !== frameOrigin) return
 
           if (data.type === "loom-playground-ready") {
             frameReady = true
+            // The gallery only starts listening once its bundle boots, so any
+            // theme change during that window was dropped — resend it now that
+            // the scene is up.
+            sendTheme()
             const compiled = pending
             pending = undefined
             if (compiled) send(compiled)
@@ -421,6 +478,9 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           }
 
           if (data.type === "loom-playground-result") {
+            // A slow run finishing after a newer one must not overwrite its
+            // verdict.
+            if (data.version !== version) return
             if (data.ok) clearError()
             else showError(data.message ?? "Unknown error.")
           }
@@ -434,9 +494,20 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         }
 
         select.addEventListener("change", () => {
+          // "Custom" is only present when the page arrived with a `#code=`
+          // link; picking it again returns to that snippet.
+          if (select.value === "__custom") {
+            if (sharedSource === undefined) return
+            baseline = sharedSource
+            baselineFromLink = true
+            replaceDoc(sharedSource)
+            return
+          }
+
           const template = templates.find((item) => item.scene === select.value)
           if (!template) return
           baseline = template.source
+          baselineFromLink = false
           replaceDoc(template.source)
         })
 
@@ -451,10 +522,21 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         root
           .querySelector("[data-playground-share]")
           ?.addEventListener("click", async (event) => {
-            writeShareHash(view.state.doc.toString())
             const button = event.currentTarget as HTMLButtonElement
-            await navigator.clipboard.writeText(location.href)
-            button.textContent = "Copied"
+            const url = shareUrl(view.state.doc.toString())
+
+            let copied = true
+            try {
+              await navigator.clipboard.writeText(url)
+            } catch {
+              // Denied permission, or no clipboard at all. Put the link in the
+              // address bar so it is still reachable by hand rather than
+              // failing silently.
+              copied = false
+              history.replaceState(null, "", url)
+            }
+
+            button.textContent = copied ? "Copied" : "Link in address bar"
             window.setTimeout(() => {
               button.textContent = "Copy link"
             }, 1500)
@@ -462,20 +544,16 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
 
         // Keep the preview and the editor on the docs site's theme.
         new MutationObserver(() => {
-          const dark = isDark()
           view.dispatch({
-            effects: themeCompartment.reconfigure(dark ? [oneDark] : []),
+            effects: themeCompartment.reconfigure(isDark() ? [oneDark] : []),
           })
-          frame.contentWindow?.postMessage(
-            { type: "loom-theme", theme: dark ? "dark" : "light" },
-            "*",
-          )
+          sendTheme()
         }).observe(document.documentElement, {
           attributeFilter: ["class"],
           attributes: true,
         })
 
-        frame.src = `${root.dataset.previewSrc}&theme=${isDark() ? "dark" : "light"}`
+        frame.src = `${root.dataset.previewSrc}&theme=${currentTheme()}`
       }
     </script>
   </body>
