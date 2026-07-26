@@ -1,6 +1,6 @@
 ---
 title: asChild composition
-description: Merge primitive behavior onto your own host element with asChild and the Slot component, instead of accepting the primitive's default wrapper.
+description: Merge primitive behavior onto your own host element with asChild and the Slot component, when forwarding props onto the part's own element is not enough.
 section: guides
 sidebar:
   order: 30
@@ -9,23 +9,27 @@ draft: false
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Every interactive part of a Lattice primitive has to render *something* — a `Dialog.Trigger` needs a button to click, a `Menu.Item` needs a row to select. By default each part renders a sensible host element (usually a `textbutton`) and wires its behavior onto it. That is convenient, but it is also opinionated: you inherit the primitive's element type and base props.
+Every interactive part of a Lattice primitive has to render *something* — a `Dialog.Trigger` needs a button to click, a `Menu.Item` needs a row to select. Each part renders a host element of a fixed class (usually a `textbutton`) with its behavior wired onto it.
 
-`asChild` flips that around. Instead of rendering its own wrapper, the part takes the single element *you* provide and merges its behavior — event handlers, refs, and selection flags — onto it. Your element becomes the host; the primitive just enhances it. This is how you keep full control of the visual element while still getting the primitive's interaction contract.
+`asChild` flips that around. Instead of rendering its own host, the part takes the element *you* provide and merges its behavior — event handlers, refs, and selection flags — onto it. Your element becomes the host; the primitive just enhances it.
 
 Under the hood this is powered by the `Slot` component from `@lattice-ui/react-runtime`, which clones your child and composes props onto it.
 
+<Callout title="You no longer need asChild just to style a part">
+Since 0.7.0 every part forwards unknown props onto the instance it renders, so `<Dialog.Overlay BackgroundColor3={...} />` works directly. Reach for `asChild` when you need a **different element class** than the part renders, or when the element comes from somewhere else — not merely to change how it looks.
+</Callout>
+
 ## The problem `asChild` solves
 
-Without `asChild`, a trigger renders the primitive's default element:
+Each part renders one specific instance class. `Popover.Trigger` renders a `textbutton`:
 
-```tsx title="Default host element"
-<Popover.Trigger>
-  {/* renders a Lattice <textbutton> with default styling */}
+```tsx title="The part's own host element"
+<Popover.Trigger Size={UDim2.fromOffset(48, 48)}>
+  {/* a textbutton — styled by the props you pass, but still a textbutton */}
 </Popover.Trigger>
 ```
 
-That `textbutton` is the primitive's choice, not yours. If your design system already has a `Button` component, or you want an `imagebutton`, or a frame styled exactly your way, you would otherwise be fighting the wrapper.
+That class is the primitive's choice, not yours. If your design system already has a `Button` component, or you want an `imagebutton`, no amount of forwarded props will get you there — forwarded props are type-checked against the instance the part renders, so `Image` on a `textbutton` is a compile error.
 
 With `asChild`, you hand the part your element and it merges behavior onto it:
 
@@ -59,8 +63,24 @@ When a part is in `asChild` mode it renders through `Slot`. `Slot` takes exactly
 
 Because `Slot` composes rather than replaces, you can attach your own analytics or sound effects to the same event the primitive uses for its behavior.
 
-<Callout title="asChild requires exactly one element child">
-`Slot` clones a single child. Pass exactly one `GuiObject` element — not a string, not a fragment, not multiple siblings. Parts like `Popover.Trigger` and `PopoverContent` call `error("... `asChild` requires a child element.")` when the child is missing or invalid, so a wrong shape fails loudly rather than silently dropping behavior.
+<Callout title="asChild takes exactly one GuiObject — plus modifiers">
+`Slot` clones a single child, so the subtree must resolve to exactly one `GuiObject` element. Parts call ``error("... `asChild` requires a child element.")`` when it does not, so a wrong shape fails loudly rather than silently dropping behavior.
+
+Two things do **not** count against that one-element budget, as of 0.7.0:
+
+- **Fragments are looked through.** A fragment wrapping a single element resolves to that element.
+- **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uigradient`, `uiscale`, the constraints, and the rest of the `UIBase` classes are re-parented under the element the props land on instead of competing to be the target.
+
+That second rule exists because Roblox attaches modifiers as *children* rather than properties, which is exactly the shape a Tailwind-style `className` transform emits when it lowers `rounded-md` or `p-2` at the call site:
+
+```tsx title="A modifier sibling is re-parented, not cloned"
+<Dialog.Trigger asChild>
+  <textbutton Text="Open" Size={UDim2.fromOffset(120, 36)} />
+  <uicorner CornerRadius={new UDim(0, 8)} />
+</Dialog.Trigger>
+```
+
+Two real `GuiObject` candidates are still an error — the primitive cannot know which one to enhance.
 </Callout>
 
 ## Where you'll use it
@@ -96,14 +116,16 @@ export function SettingsButton() {
 
 ## When to use it
 
+- You need a **different instance class** than the part renders — an `imagebutton` where it renders a `textbutton`, a `canvasgroup` where it renders a `frame`.
 - Your app **already has the right visual element** — a design-system button, a styled frame — and you only want the behavior.
-- You want a **native-looking host** (`imagebutton`, custom frame) but still need primitive-driven interaction.
+- You need to **size a `Content` part**, whose geometry the primitive otherwise owns.
 - You want to **attach your own handlers** to the same event the primitive uses, without losing either.
 
 ## When not to use it
 
+- **You only want to restyle the part.** Pass the props directly; they forward onto the rendered instance and are type-checked against it.
 - The part needs to **render multiple internal nodes** to do its job. `Slot` clones one child only; let the part render its own structure.
-- You would have to **spread the merged behavior across several siblings**. That is a sign the default host is the right contract.
+- You would have to **spread the merged behavior across several siblings**. That is a sign the part's own host is the right contract.
 - The **host element is part of the package contract** (some parts deliberately render a specific structure). Overriding it can break the primitive's assumptions.
 
 ## Related

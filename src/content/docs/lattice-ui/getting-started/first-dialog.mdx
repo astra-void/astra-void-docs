@@ -39,6 +39,8 @@ export function ConfirmDialog() {
 
 `Root`, `Portal`, and `Content` are the minimum useful surface; `Trigger`, `Overlay`, and `Close` are there to drive and dress it.
 
+This sketch compiles, but it renders nothing you can see — every part is unstyled until you say otherwise. That is the anatomy, not a working dialog; the next steps fill it in.
+
 ## Step 2 — Add a trigger
 
 `Dialog.Trigger` is the button that opens the surface. Use `asChild` so your own `textbutton` becomes the trigger instead of rendering a default one — the trigger behavior merges onto the element you provide.
@@ -58,17 +60,16 @@ The trigger also registers itself as the focus-restore target, so when the dialo
 
 `Dialog.Portal` renders the surface into a `ScreenGui` above your game UI, `Dialog.Overlay` is the backdrop, and `Dialog.Content` is the focus-trapped, dismissable panel. The visuals are entirely yours — Lattice only owns the behavior.
 
+That is literal: an overlay you do not style is fully transparent. It still covers the screen and still swallows clicks (which is how outside-press dismissal works), but it draws nothing. Give it a color to get a visible dim. Because props forward onto the instance each part renders, you can style the overlay directly rather than nesting a frame inside it:
+
 ```tsx title="Overlay and content"
 <Dialog.Portal>
-  <Dialog.Overlay>
-    <frame
-      BackgroundColor3={Color3.fromRGB(0, 0, 0)}
-      BackgroundTransparency={0.5}
-      Size={UDim2.fromScale(1, 1)}
-    />
-  </Dialog.Overlay>
+  <Dialog.Overlay
+    BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+    BackgroundTransparency={0.5}
+  />
 
-  <Dialog.Content>
+  <Dialog.Content transition={createCanvasGroupRevealRecipe()}>
     <frame
       AnchorPoint={new Vector2(0.5, 0.5)}
       BackgroundColor3={Color3.fromRGB(24, 26, 32)}
@@ -86,7 +87,19 @@ The trigger also registers itself as the focus-restore target, so when the dialo
 </Dialog.Portal>
 ```
 
-By default `Dialog.Content` traps focus while open, restores focus on close, and runs a canvas-group reveal/exit animation — you get all of that without configuring anything.
+`Dialog.Content` traps focus while open and restores it on close without any configuration. Motion is opt-in: leave `transition` off and the dialog still opens and closes correctly, just instantly.
+
+`createCanvasGroupRevealRecipe` comes from `@lattice-ui/react-motion`, alongside the rest of the [motion recipes](/lattice-ui/guides/motion-recipes/):
+
+```tsx title="The motion import"
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+```
+
+Prefer a recipe over a hand-written config. `Dialog.Content` renders a `CanvasGroup`, and this recipe animates `GroupTransparency` with an 8-pixel rise, so the whole panel fades as one surface instead of each child fading separately. Recipes also declare the right target contract, which is what keeps motion from fighting your layout.
+
+<Callout title="Presence timing is separate from motion">
+Even with no `transition`, content stays mounted until its exit finishes, so an exit animation can never be cut off mid-way. The transition decides what animates; presence decides when the tree unmounts.
+</Callout>
 
 ## Step 4 — Add a close action
 
@@ -110,6 +123,7 @@ So far the dialog runs uncontrolled: the trigger and close button drive it throu
 ```tsx title="ConfirmDialog.tsx"
 import React, { useState } from "@rbxts/react";
 import { Dialog } from "@lattice-ui/react-dialog";
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
 
 export function ConfirmDialog() {
   const [open, setOpen] = useState(false);
@@ -121,15 +135,12 @@ export function ConfirmDialog() {
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay>
-          <frame
-            BackgroundColor3={Color3.fromRGB(0, 0, 0)}
-            BackgroundTransparency={0.5}
-            Size={UDim2.fromScale(1, 1)}
-          />
-        </Dialog.Overlay>
+        <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
 
-        <Dialog.Content>
+        <Dialog.Content transition={createCanvasGroupRevealRecipe()}>
           <frame
             AnchorPoint={new Vector2(0.5, 0.5)}
             BackgroundColor3={Color3.fromRGB(24, 26, 32)}
@@ -162,8 +173,9 @@ Reach for `open`/`onOpenChange` only when an outside actor needs to drive the di
 ## Recap
 
 - `Dialog.Root` owns the open state; every part reads it through context.
+- Primitives ship unstyled: pass appearance props straight to a part, or use `asChild` when you need a different instance class.
 - `asChild` lets your own `textbutton` become the trigger and close button.
-- `Dialog.Content` traps and restores focus and animates in and out for free.
+- `Dialog.Content` traps and restores focus for free; motion is opt-in through `transition`.
 - A modal dialog dismisses on an outside press, not just the close button.
 
 ## Next step

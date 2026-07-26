@@ -217,7 +217,9 @@ Because disabled motion still applies the final values and still fires `onExitCo
 
 ## How primitives wire all of this
 
-The layered primitives accept a `transition` prop that is exactly a `PresenceMotionConfig`. They default to the right recipe — `Dialog.Content` runs a canvas-group reveal, `Popover` a popper entrance — and pass `forceMount` through so you can keep content mounted while you drive motion yourself. Overriding `transition` is how you customize their entrance and exit without rebuilding the lifecycle.
+The layered primitives accept a `transition` prop that is exactly a `PresenceMotionConfig`, and pass `forceMount` through so you can keep content mounted while you drive motion yourself. Passing `transition` is how you give them an entrance and exit without rebuilding the lifecycle.
+
+They ship none by default. The lifecycle above runs either way — a part with no `transition` still mounts, still stays mounted until its exit resolves, and still fires `onExitComplete` — so adding a transition later never changes when things unmount, only what happens in between. [Motion recipes](/lattice-ui/guides/motion-recipes/) lists the recipe that suits each part.
 
 ```tsx
 import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";

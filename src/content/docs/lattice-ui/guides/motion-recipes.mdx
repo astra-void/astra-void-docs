@@ -9,7 +9,13 @@ draft: false
 
 import { Callout } from "@/components/docs/mdx";
 
-Every animatable Lattice part takes a typed `transition` prop — `Dialog.Content`, `Popover.Content`, `Checkbox.Indicator`, `Progress.Indicator`, and friends all expose one. You almost never hand-author the config that goes into it: `@lattice-ui/react-motion` ships **recipes**, small factory functions that return a tuned config with the correct timing and target contract baked in. This page is the practical catalog — which recipes exist, which parts consume them, and how to override a component's default.
+Every animatable Lattice part takes a typed `transition` prop — `Dialog.Content`, `Popover.Content`, `Checkbox.Indicator`, `Progress.Indicator`, and friends all expose one. You almost never hand-author the config that goes into it: `@lattice-ui/react-motion` ships **recipes**, small factory functions that return a tuned config with the correct timing and target contract baked in. This page is the practical catalog — which recipes exist, which parts they suit, and how to tune one.
+
+<Callout title="Presence motion is opt-in">
+Since 0.7.0 no primitive ships default **presence** motion. A `Content` or `Indicator` part with no `transition` still mounts, unmounts and holds its content until an exit finishes — it just does so instantly.
+
+**Response** motion that follows a computed value is the exception, because there the motion *is* the behavior: `Progress.Indicator` still settles its fill over 0.12s by default, and the slider thumb, slider range and switch thumb follow their values with recipes you cannot replace. For those, `transition` overrides a default; everywhere else it supplies one.
+</Callout>
 
 For the concepts behind all of this — presence vs response vs feedback, target contracts, the hooks themselves — read [Presence and motion](/lattice-ui/guides/presence-and-motion/) first. Full signatures live in the [Motion reference](/lattice-ui/reference/motion/).
 
@@ -22,21 +28,21 @@ The `transition` prop's type tells you what kind of motion the part runs:
 
 The rule of thumb: if the part appears and disappears, it wants a presence config; if it slides or recolors between values while staying on screen, it wants a response config. Passing the wrong kind is a type error, so you cannot mix them up silently.
 
-<Callout title="Not every animated part is overridable">
-Some parts animate internally without exposing a `transition` prop — `Dialog.Overlay` always runs its backdrop fade, for example. If a part's props do not list `transition`, its motion is considered part of the component's contract.
+<Callout title="Not every part takes a transition">
+Some parts own presence timing without exposing a `transition` prop. `Dialog.Overlay` is the one you are most likely to hit: an unstyled overlay has nothing to fade, so it takes no transition at all. To animate a dim, style an element inside the overlay (or pass `asChild`) and animate that element yourself.
 </Callout>
 
 ## Recipe catalog
 
 Presence recipes return a `PresenceMotionConfig`; response recipes return a `ResponseMotionConfig`; feedback recipes return a `FeedbackEffectConfig` for [`useFeedbackEffect`](/lattice-ui/reference/motion/) in custom components.
 
-| Recipe | Animates | Typical consumer |
+| Recipe | Animates | Pair it with |
 | --- | --- | --- |
 | `createSurfaceRevealRecipe(offsetY?, duration?)` | Upward slide + `BackgroundTransparency` fade | `Tabs.Content`, `Accordion.Content` |
 | `createCanvasGroupRevealRecipe(offsetY?, duration?)` | Upward slide + `GroupTransparency` fade | `Dialog.Content` |
-| `createOverlayFadeRecipe(duration?)` | Backdrop fade to half transparency | `Dialog.Overlay` (internal) |
-| `createPopperEntranceRecipe(placement?, distance?, duration?)` | Directional slide-in from the anchor side + fade | `Popover.Content` |
-| `createCanvasGroupPopperEntranceRecipe(placement?, distance?, duration?)` | Same, via `GroupTransparency` | `Tooltip.Content`, `Menu.Content` |
+| `createOverlayFadeRecipe(duration?)` | Backdrop fade to half transparency | Your own element inside `Dialog.Overlay` |
+| `createPopperEntranceRecipe(placement?, distance?, duration?)` | Directional slide-in from the anchor side + fade | `Popover.Content`/`Select.Content` under `asChild` |
+| `createCanvasGroupPopperEntranceRecipe(placement?, distance?, duration?)` | Same, via `GroupTransparency` | `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`, `Combobox.Content`, and `Popover`/`Select` content wrappers |
 | `createIndicatorRevealRecipe(size, duration?)` | Grow from zero to `size` + fade | `Checkbox.Indicator`, `RadioGroup.Indicator` |
 | `createIndicatorSettleRecipe(duration?)` | Size settling on an indicator wrapper | Custom selection indicators |
 | `createSliderThumbResponseRecipe(isDragging, duration?)` | Thumb position — instant while dragging, eased on release | Slider thumb |
@@ -50,9 +56,9 @@ Presence recipes return a `PresenceMotionConfig`; response recipes return a `Res
 
 Every recipe also sets the right **target contract** — `createOverlayFadeRecipe` uses an `appearance` target, the reveal and popper recipes use an `offset-wrapper`, `createIndicatorRevealRecipe` a `size-wrapper`. That is a large part of why you should prefer a recipe over a hand-written config: the ownership boundary comes for free.
 
-## Overriding a component transition
+## Giving a component a transition
 
-Pass a recipe's result straight to `transition`. `Dialog.Content` defaults to `createCanvasGroupRevealRecipe(8, 0.3)`; give it a longer, larger reveal by calling the same factory with different arguments:
+Pass a recipe's result straight to `transition`. Called with no arguments a recipe uses the house tokens — an 8-pixel rise over a 0.12s reveal, with the exit at 0.8x that. Call the same factory with arguments for a longer, larger reveal:
 
 ```tsx title="HeroDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -62,7 +68,10 @@ export function HeroDialog(props: { open: boolean; onOpenChange: (open: boolean)
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay />
+        <Dialog.Overlay
+          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
+          BackgroundTransparency={0.5}
+        />
         <Dialog.Content transition={createCanvasGroupRevealRecipe(16, 0.45)}>
           <textlabel Text="Welcome" Size={UDim2.fromOffset(320, 40)} />
         </Dialog.Content>
@@ -72,9 +81,9 @@ export function HeroDialog(props: { open: boolean; onOpenChange: (open: boolean)
 }
 ```
 
-`Dialog.Content` merges your config field-by-field over its default — `target`, `initial`, `reveal`, and `exit` each fall back to the default when your override omits them — so a partial config that only replaces `exit` is valid there. Most other parts replace the default wholesale (`props.transition ?? defaultTransition`), so pass a complete config unless the component's docs say otherwise.
+Every part uses the config you pass **as-is**. Nothing is merged underneath it, so a partial config animates only the steps it defines — and where a part does have a default (`Progress.Indicator`), your config replaces it wholesale rather than layering over it. To vary one step of a recipe, spread it and replace that step; see [Tuning beyond the factory arguments](#tuning-beyond-the-factory-arguments) below.
 
-The same pattern works for indicators. `Checkbox.Indicator` defaults to `createIndicatorRevealRecipe(UDim2.fromOffset(12, 12))`; a bigger checkbox wants a matching reveal size:
+The same pattern works for indicators. `createIndicatorRevealRecipe` takes the size the indicator should settle at, so it has to match the box you are rendering:
 
 ```tsx title="LargeCheckbox.tsx"
 import { Checkbox } from "@lattice-ui/react-checkbox";
@@ -112,7 +121,7 @@ Recipe factories expose the knobs that are safe to turn — an offset or placeme
 
 When a recipe is almost right, spread its result and override just the step you care about instead of authoring a config from scratch. The recipe's target contract and remaining steps carry over:
 
-```tsx title="Snappy exit, default entrance"
+```tsx title="Snappy exit, recipe entrance"
 import { createCanvasGroupRevealRecipe, type PresenceMotionConfig } from "@lattice-ui/react-motion";
 
 const base = createCanvasGroupRevealRecipe(8, 0.3);
