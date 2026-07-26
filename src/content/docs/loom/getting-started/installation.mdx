@@ -9,27 +9,37 @@ sidebar:
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Loom ships as two packages. Most projects want both, but they are independent: the plugin is the
-whole integration, and the CLI is a zero-config wrapper around it.
+Loom ships as two packages, and **you rarely need both**:
 
 | Package | What it is | Bin |
 | --- | --- | --- |
 | `@loom-dev/preview` | The Vite plugin (`loomPreview()`) — generated page, entry detection, gallery mode — the `@rbxts/react-roblox` / `@rbxts/services` browser shims, and the Roblox globals installer. | — |
 | `loom-dev` | The `loom preview` / `loom build` CLI: the plugin with a Vite server around it, no config file needed. | `loom` |
 
-Install only `@loom-dev/preview` if you keep a `vite.config.ts` — `plugins: [loomPreview()]` is the
-entire integration, and `vite` / `vite build` do the rest. Install `loom-dev` too if you would rather
-have no Vite project at all.
+`loom-dev` depends on `@loom-dev/preview`, React and Vite outright — not as peers — so the CLI is
+self-contained. Pick the row that matches how you want to run the preview:
 
-<PackageInstall packageName="-D @loom-dev/preview loom-dev" />
+| How you want to run it | Install |
+| --- | --- |
+| **CLI only** — `loom preview` / `loom build`, no Vite project of your own | `loom-dev` |
+| **Plugin only** — `loomPreview()` in your own `vite.config.ts` | `@loom-dev/preview` + `react@18` + `vite` |
+| **Both** — the CLI *and* your own Vite config | all of the above |
 
-Both are ESM-only (`"type": "module"`) and published under the MIT license. All `@loom-dev/*`
-packages are versioned in lockstep — the changesets config marks them `fixed`, so a bump to one bumps
-them all. Mixing versions across `@loom-dev/*` is never a supported combination.
+Most projects start on the first row. It is one dependency and no config file:
+
+<PackageInstall packageName="-D loom-dev" />
+
+Adding the plugin to a Vite project you already own means installing its peers yourself:
+
+<PackageInstall packageName="-D @loom-dev/preview react@^18.3.1 vite" />
+
+Both packages are ESM-only (`"type": "module"`) and published under the MIT license. All
+`@loom-dev/*` packages are versioned in lockstep — the changesets config marks them `fixed`, so a
+bump to one bumps them all. Mixing versions across `@loom-dev/*` is never a supported combination.
 
 ## Peer requirements
 
-`@loom-dev/preview` declares two peers:
+Only the plugin has peers; the CLI vendors its own copies. `@loom-dev/preview` declares two:
 
 ```json title="From @loom-dev/preview's package.json"
 {
@@ -47,10 +57,10 @@ them all. Mixing versions across `@loom-dev/*` is never a supported combination.
 are useful without it — but `loomPreview()` obviously is not, so install Vite if you are using the
 plugin. The CLI brings its own.
 
-<Callout title="Install React 18, despite the peer range">
-The React adapter drives `react-reconciler@^0.29.2`, which targets React 18. React 19 renamed the
-internals that reconciler reads at evaluation time. The declared peer range is wider than what the
-reconciler actually supports, so pin React 18 in the project you preview from:
+<Callout title="The React peer range is wrong — install React 18">
+`|| ^19.0.0` in that range is a packaging bug, not an option. The React adapter drives
+`react-reconciler@^0.29.2`, which reads React 18 internals that React 19 renamed, so a React 19
+install fails at evaluation time. Until the range is narrowed, treat it as `^18.3.1`:
 
 ```bash
 pnpm add -D react@^18.3.1 @types/react@^18.3.12
