@@ -11,9 +11,12 @@ import {
 
 type ThemePreference = "theme-light" | "dark" | "system"
 
+// No stored preference means "follow the OS" — the same default ThemeScript
+// applies before paint. Returning a concrete theme here instead would make
+// hydration re-apply it and strip the class ThemeScript just set.
 function getStoredTheme(): ThemePreference {
   if (typeof window === "undefined") {
-    return "theme-light"
+    return "system"
   }
 
   const stored = window.localStorage.getItem("theme")
@@ -22,7 +25,7 @@ function getStoredTheme(): ThemePreference {
     return stored
   }
 
-  return "theme-light"
+  return "system"
 }
 
 function applyTheme(theme: ThemePreference) {
@@ -35,7 +38,7 @@ function applyTheme(theme: ThemePreference) {
 }
 
 export function ModeToggle() {
-  const [theme, setTheme] = React.useState<ThemePreference>("theme-light")
+  const [theme, setTheme] = React.useState<ThemePreference>("system")
 
   React.useEffect(() => {
     const storedTheme = getStoredTheme()
