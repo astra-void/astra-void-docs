@@ -59,8 +59,8 @@ importers:
         specifier: ^6.0.2
         version: 6.0.2
       loom-dev:
-        specifier: ^0.2.1
-        version: 0.2.1(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+        specifier: ^0.3.0
+        version: 0.3.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
       lucide-react:
         specifier: ^1.16.0
         version: 1.16.0(react@19.2.6)
@@ -1090,11 +1090,11 @@ packages:
   '@lezer/lr@1.4.10':
     resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
 
-  '@loom-dev/layout@0.2.1':
-    resolution: {integrity: sha512-oAf0IKXFCjykPwre1fP3AEx3vPT6yqKpesaI0Pnjt7n3trK6sYJIKQuRIuf2Y1YW5NK6uypd7zRv7lRUPXNSuw==}
+  '@loom-dev/layout@0.3.0':
+    resolution: {integrity: sha512-Isre+HlA7M11LHdwk+Wgl/ELog69HygAOmwmkUf4t9DCHLPJd1Pa2dXE4juw4pcxlFxQNeFfkDxXlLETvEEvvg==}
 
-  '@loom-dev/preview@0.2.1':
-    resolution: {integrity: sha512-xiftMcTMmLG3v4t80W3tlxiFrniM8uS/sMvrhFr5J6r/KdElGbIqovwchbRr7qi6GEYYAyBbba3puIMUp2fGGg==}
+  '@loom-dev/preview@0.3.0':
+    resolution: {integrity: sha512-d4YEP6PUWY90n1Zhtw9hIKElgDJSRmLa1IrDVbjh7vZZkcbolSNYh3yDlzmGLb++W6yxJaR0we4LcrFPE6d7KA==}
     peerDependencies:
       react: ^18.3.1 || ^19.0.0
       vite: ^6.0.0 || ^7.0.0
@@ -1102,19 +1102,19 @@ packages:
       vite:
         optional: true
 
-  '@loom-dev/react@0.2.1':
-    resolution: {integrity: sha512-gC5DhXP+x4RzRMdrK8oJnBzPejwqOOqBKUne2trGWdY9FoT9/PmxHaFSIgkmqdOqOvIzwVfrR8igzAVSiP4tqA==}
+  '@loom-dev/react@0.3.0':
+    resolution: {integrity: sha512-xcKwhkkpWubz4siWP3OmwLESe85mGBynvWOGu5i9e/tTNsq7VyIc4BASMTgFCidtZSTIqTMbGBJk7dHi6BmxqQ==}
     peerDependencies:
       react: ^18.3.1 || ^19.0.0
 
-  '@loom-dev/renderer@0.2.1':
-    resolution: {integrity: sha512-3mAiCrjtD0RXGHgf6fsvGxD4kpoa5hwBscTYdeFbEDOfgfsP1/kV6LlhNs3I9wfqQhgSmjHIrNXqA0jIYP2IAw==}
+  '@loom-dev/renderer@0.3.0':
+    resolution: {integrity: sha512-okO7NdBuMxoB7b3hivZwXfc5F5y0yCU2P4kNGoTzsEXbjxw2QSf/+Z5ITEo2DgOgz3YLY0fooJzxHkDTdRhizw==}
 
-  '@loom-dev/runtime@0.2.1':
-    resolution: {integrity: sha512-4B4Og0NPiRq8kx+4QoF4OKpNCBz2osEW+8OT5w+ELl1E28pSDt/iRxRrzLXCCob80Qfkj8/37ThHYypUF6RLOg==}
+  '@loom-dev/runtime@0.3.0':
+    resolution: {integrity: sha512-bF/i527o2dZ3iLHxmtTr7M/Hb8wZNNDN3wQ93Byf9MsumT+/IxPuxrFPUborZ7GSELtvuHq/SGnKEUBnaxHhFQ==}
 
-  '@loom-dev/scene@0.2.1':
-    resolution: {integrity: sha512-2djBbPIOFtBspbfLiau/uZmqGgoetxo65GzZkZ8Gf5wQBPRJDYbP8WGSSwydZ83yXlW74WeJZVitI+z9exQ8DA==}
+  '@loom-dev/scene@0.3.0':
+    resolution: {integrity: sha512-rGXEQIAgARRUK5Pq7Ad5/QFQvaya+b+Jl6sZXTcqXkYhM8pZySkDYbyTMn1SeenBxBvsly1LctiJhCwJFOJFeA==}
 
   '@marijn/find-cluster-break@1.0.3':
     resolution: {integrity: sha512-FY+MKLBoTsLNJF/eLWaOsXGdz6uh3Iu1axjPf6TUq92IYumcTcXWHoS747JARLkcdlJ/Waiaxc5wQfFO8jC6NA==}
@@ -3486,8 +3486,8 @@ packages:
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
 
-  loom-dev@0.2.1:
-    resolution: {integrity: sha512-/U3HJQhb1v/nV3o1EmlFAdeAaf2EDMnYq/BhUHUMJGRSXaf5zkBc3fzYT6hXdJ1p5b5XqOHtqWiBCK5+l+/OJg==}
+  loom-dev@0.3.0:
+    resolution: {integrity: sha512-6/4PqWf0Qv/Mq5CPe05TlKOULJV9J43/n0d7wU2p6ZD7fwvbhs+MbG2NkJ2DfzYly5hjVBQoMa+RQVfm2XlLIA==}
     hasBin: true
 
   loose-envify@1.4.0:
@@ -5892,37 +5892,37 @@ snapshots:
     dependencies:
       '@lezer/common': 1.5.2
 
-  '@loom-dev/layout@0.2.1':
+  '@loom-dev/layout@0.3.0':
     dependencies:
-      '@loom-dev/scene': 0.2.1
+      '@loom-dev/scene': 0.3.0
 
-  '@loom-dev/preview@0.2.1(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
+  '@loom-dev/preview@0.3.0(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
     dependencies:
-      '@loom-dev/react': 0.2.1(react@18.3.1)
-      '@loom-dev/runtime': 0.2.1
+      '@loom-dev/react': 0.3.0(react@18.3.1)
+      '@loom-dev/runtime': 0.3.0
       react: 18.3.1
     optionalDependencies:
       vite: 6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
 
-  '@loom-dev/react@0.2.1(react@18.3.1)':
+  '@loom-dev/react@0.3.0(react@18.3.1)':
     dependencies:
-      '@loom-dev/layout': 0.2.1
-      '@loom-dev/renderer': 0.2.1
-      '@loom-dev/runtime': 0.2.1
-      '@loom-dev/scene': 0.2.1
+      '@loom-dev/layout': 0.3.0
+      '@loom-dev/renderer': 0.3.0
+      '@loom-dev/runtime': 0.3.0
+      '@loom-dev/scene': 0.3.0
       react: 18.3.1
       react-reconciler: 0.29.2(react@18.3.1)
 
-  '@loom-dev/renderer@0.2.1':
+  '@loom-dev/renderer@0.3.0':
     dependencies:
-      '@loom-dev/runtime': 0.2.1
-      '@loom-dev/scene': 0.2.1
+      '@loom-dev/runtime': 0.3.0
+      '@loom-dev/scene': 0.3.0
 
-  '@loom-dev/runtime@0.2.1':
+  '@loom-dev/runtime@0.3.0':
     dependencies:
-      '@loom-dev/scene': 0.2.1
+      '@loom-dev/scene': 0.3.0
 
-  '@loom-dev/scene@0.2.1': {}
+  '@loom-dev/scene@0.3.0': {}
 
   '@marijn/find-cluster-break@1.0.3': {}
 
@@ -8411,9 +8411,9 @@ snapshots:
 
   longest-streak@3.1.0: {}
 
-  loom-dev@0.2.1(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0):
+  loom-dev@0.3.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0):
     dependencies:
-      '@loom-dev/preview': 0.2.1(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
+      '@loom-dev/preview': 0.3.0(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
       react: 18.3.1
       vite: 6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
     transitivePeerDependencies:
