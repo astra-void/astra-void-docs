@@ -90,7 +90,12 @@ the shell uses `#/<relPath>` and `?target=` only seeds the initial selection.
 A host page can flip an already-loaded frame's theme without reloading it, by posting a message:
 
 ```js title="From the embedding page"
-frame.contentWindow.postMessage({ type: "loom-theme", theme: "dark" }, "*");
+// GALLERY_ORIGIN is where the built gallery is served from — same-origin
+// embeds can use window.location.origin.
+frame.contentWindow.postMessage(
+  { type: "loom-theme", theme: "dark" },
+  GALLERY_ORIGIN,
+);
 ```
 
 The shell listens for exactly `{ type: "loom-theme", theme: "light" | "dark" }` and ignores
@@ -98,6 +103,17 @@ everything else. Applying a theme does two things: it toggles a class on the gal
 and it writes `LoomTheme` onto `Players.LocalPlayer.PlayerGui`. That second part is the useful one —
 a scene can read the host page's theme through plain Roblox APIs, including
 `GetPropertyChangedSignal("LoomTheme")`, with no DOM access from roblox-ts code.
+
+<Callout title="Name the target origin, not a wildcard">
+`postMessage(msg, "*")` delivers to whatever document currently occupies that frame. A theme string
+is not worth stealing, but `"*"` is a habit that costs nothing to avoid and gets copied into
+messages that *are* worth stealing. Pass the origin you actually built the gallery for.
+
+The shell's own listener does **not** check `event.origin` — it accepts a well-formed
+`loom-theme` message from any parent. That is deliberate for a dev tool meant to be iframed by
+arbitrary hosts, and it is a reason to keep the message vocabulary at exactly this one message. If
+you fork the shell and add messages with side effects, add an origin check with them.
+</Callout>
 
 ```tsx title="A scene that follows the host page's theme"
 const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
