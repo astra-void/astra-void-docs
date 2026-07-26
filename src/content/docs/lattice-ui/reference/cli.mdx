@@ -41,9 +41,86 @@ Both binaries (`lattice` and `lattice-ui`) run the same program. Run `lattice he
 `npx lattice` does not work — `npx` resolves the published **package** name, not the shorthand binary alias, so it fails to find anything to run. Always write `npx lattice-ui`. The short `lattice` form is for an installed CLI, global or local.
 </Callout>
 
-<Callout title="Global options">
-`--help` / `-h` prints usage and `--version` / `-v` prints the version. As the first argument they short-circuit any command. An unknown global option (any other leading `-` token) is a usage error.
+## Help
+
+Every command has its own help page as of 0.7.0, and three spellings reach it:
+
+```bash
+lattice add --help
+```
+
+```bash
+lattice help add
+```
+
+A malformed run reaches it too — `lattice add --bogus --help` prints the `add` page rather than complaining about the unknown option first. `-h` works everywhere `--help` does.
+
+A command's page lists its usage, its own options, and its examples. For `add`, `remove`, and `upgrade` it also lists **every available component and preset** — previously the only way to see that list was to start an interactive run and read the prompt.
+
+## Global options
+
+<PropTable
+  rows={[
+    { name: "--help, -h", type: "flag", description: "Print usage. As the first argument it short-circuits any command; after a command name it prints that command's page." },
+    { name: "--version, -v", type: "flag", description: "Print the installed CLI version." },
+    { name: "--verbose", type: "flag", description: "Stream debug logging, per-file copy output, and the package manager's own output live instead of buffering it." },
+    { name: "--yes, -y", type: "flag", description: "Accept defaults and skip prompts. Accepted by every command that prompts." },
+  ]}
+/>
+
+An unknown option is a usage error, but not a bare one: the CLI suggests the closest valid name and points at the relevant help page.
+
+```
+Unknown option for add: --prest
+  Did you mean --preset?
+  Run `lattice add --help` to see the supported options.
+```
+
+The same suggestion machinery covers command names, component names, and preset names, so `lattice add dialogg` proposes `dialog` rather than failing blankly. Component and preset names are validated *before* a package manager is resolved — previously a typo could surface an unrelated package-manager error first whenever more than one manager was installed.
+
+## Terminal behavior
+
+| Variable | Effect |
+| --- | --- |
+| `NO_COLOR` | Disables colored output when set to any non-empty value. Wins over `FORCE_COLOR`. |
+| `FORCE_COLOR` | Forces color through a pipe. Any value except `0` enables it. |
+| `NO_HYPERLINK` | Disables OSC 8 hyperlinks. |
+| `FORCE_HYPERLINK` | Forces hyperlinks on. Any value except `0` enables it. |
+
+Color previously keyed off TTY detection alone. It now honors the `NO_COLOR`/`FORCE_COLOR` contract first, then falls back to TTY detection, and `TERM=dumb` always disables it.
+
+Project paths and package names are printed as **OSC 8 hyperlinks** so they are clickable in terminals that support them. Paths are shortened against the working directory and `~`. Hyperlinks are off automatically under `CI` and outside a terminal, since a few terminals print the raw escape sequence rather than ignoring it.
+
+<Callout title="Piped output stays flat">
+When output is not a terminal, the CLI drops to a flat ASCII layout so logs and CI transcripts stay readable. Everything below describing the connected-run layout applies to interactive terminals.
 </Callout>
+
+## Output
+
+Each run prints as one connected flow: a vertical gutter threads the header, each titled block, and the closing verdict together, with tree branches for the rows inside a block and the elapsed time on the last line. This replaced the five ceremonial sections every command used to print — counts now live in the heading of the block they describe, so `doctor` no longer states its warning count three times, and the `?` glyph is gone from informational lines where it read as a question.
+
+Commands also report which package manager they resolved and why.
+
+While a progress spinner is running, the package manager's own output is buffered and surfaced only if the command fails. Inherited output used to interleave with the animation, scattering spinner frames through the install log. Pass `--verbose` to stream it live instead.
+
+<Callout title="--verbose actually works now">
+The flag was documented by the logger but never parsed, so `logger.debug` and the verbose file-copy logging were unreachable before 0.7.0.
+</Callout>
+
+## Interactive prompts
+
+Selection prompts are keyboard-driven as of 0.7.0. They previously took a comma-separated list of numbers, and an answer that failed to parse aborted the whole command instead of re-asking.
+
+| Key | Action |
+| --- | --- |
+| `↑` / `↓`, or `k` / `j` | Move the cursor |
+| `Space` | Toggle the highlighted option |
+| `a` | Select all |
+| `n` | Select none |
+| `Enter` | Confirm |
+| `Ctrl-C` or `Esc` | Cancel |
+
+The list scrolls when it is taller than the terminal, keeping the cursor in view. Cancelling restores the cursor and takes the terminal out of raw mode — Ctrl-C previously exited before the restore could run, leaving the cursor hidden.
 
 ## Commands
 
@@ -68,7 +145,7 @@ npx lattice-ui create my-game --pm npm --git --no-lint
 <PropTable
   rows={[
     { name: "[project-path]", type: "positional", description: "Target directory for the new project. At most one is accepted; defaults to the current directory." },
-    { name: "--yes", type: "flag", description: "Accept defaults and skip interactive prompts." },
+    { name: "--yes, -y", type: "flag", description: "Accept defaults and skip interactive prompts." },
     { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager instead of auto-detecting one." },
     { name: "--git", type: "flag", description: "Initialize a git repository in the new project." },
     { name: "--template", type: "<rbxts>", description: "Project template to scaffold from. Currently rbxts." },
@@ -91,7 +168,7 @@ If the install fails, `init` and `create` roll their file changes back rather th
 
 <PropTable
   rows={[
-    { name: "--yes", type: "flag", description: "Accept defaults and skip prompts." },
+    { name: "--yes, -y", type: "flag", description: "Accept defaults and skip prompts." },
     { name: "--dry-run", type: "flag", description: "Show what would change without writing files." },
     { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager instead of auto-detecting one." },
     { name: "--template", type: "<rbxts>", description: "Template to initialize from." },
@@ -101,7 +178,7 @@ If the install fails, `init` and `create` roll their file changes back rather th
 
 ### add
 
-Installs one or more component packages along with everything they need. Pass component names directly (comma- or space-separated) and/or `--preset` groups. With no names or presets and without `--yes`, `add` prompts you to pick presets and components interactively.
+Installs one or more component packages along with everything they need. Pass component names directly (comma- or space-separated) and/or `--preset` groups. With no names or presets and without `--yes`, `add` prompts you to pick presets and components interactively. Run `lattice add --help` to see every available component and preset without starting a run.
 
 ```bash
 npx lattice-ui add dialog,toast --preset overlay
@@ -109,12 +186,14 @@ npx lattice-ui add dialog,toast --preset overlay
 
 For each selected component the CLI gathers its npm package, its **peers** (`@rbxts/react`, `@rbxts/react-roblox`), and any **required providers**, then installs the set minus whatever is already present. **Optional providers** are reported as suggestions but not installed. After a real run it points you at `doctor`.
 
+`context-menu` and `motion` were missing from the registry before 0.7.0, so `lattice add context-menu` and `lattice add motion` failed with "Unknown component". Both resolve now.
+
 <PropTable
   rows={[
     { name: "[name...]", type: "positional", description: "Component names to add. Comma-separated lists are split (e.g. dialog,toast)." },
     { name: "--preset", type: "<preset...>", description: "Add every component in a preset. Repeatable and comma-separated." },
     { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager instead of auto-detecting one." },
-    { name: "--yes", type: "flag", description: "Skip the install confirmation prompt." },
+    { name: "--yes, -y", type: "flag", description: "Skip the install confirmation prompt." },
     { name: "--dry-run", type: "flag", description: "Print the planned install command without changing anything." },
   ]}
 />
@@ -132,7 +211,7 @@ npx lattice-ui remove dialog --dry-run
     { name: "[name...]", type: "positional", description: "Component names to remove (comma- or space-separated)." },
     { name: "--preset", type: "<preset...>", description: "Remove every component in a preset." },
     { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager." },
-    { name: "--yes", type: "flag", description: "Skip the confirmation prompt." },
+    { name: "--yes, -y", type: "flag", description: "Skip the confirmation prompt." },
     { name: "--dry-run", type: "flag", description: "Preview the changes without applying them." },
   ]}
 />
@@ -150,7 +229,7 @@ npx lattice-ui upgrade --dry-run
     { name: "[name...]", type: "positional", description: "Specific packages to upgrade. Omit to consider all installed @lattice-ui packages." },
     { name: "--preset", type: "<preset...>", description: "Upgrade every component in a preset." },
     { name: "--pm", type: "<pnpm | npm | yarn>", description: "Force a package manager." },
-    { name: "--yes", type: "flag", description: "Skip the confirmation prompt." },
+    { name: "--yes, -y", type: "flag", description: "Skip the confirmation prompt." },
     { name: "--dry-run", type: "flag", description: "Preview the upgrade without applying it." },
   ]}
 />
@@ -203,10 +282,13 @@ Every component declares the peers it needs (`@rbxts/react`, `@rbxts/react-roblo
 
 ## Dry runs
 
-`init`, `add`, `remove`, and `upgrade` all accept `--dry-run`. A dry run prints the exact package-manager command it would run and reports that no files were changed, which is the safest way to preview a change before committing to it.
+`init`, `add`, `remove`, and `upgrade` all accept `--dry-run`. A dry run prints the exact package-manager command it would run and reports what it *would* do, which is the safest way to preview a change before committing to it.
+
+Before 0.7.0 a dry run closed by claiming work it had not done — `lattice add --dry-run` reported "Added components: …" and "Installed packages: 4" despite changing nothing, and `remove` and `upgrade` did the same.
 
 ## Related
 
 - [Installation](/lattice-ui/getting-started/installation/)
+- [Migration](/lattice-ui/reference/migration/)
 - [Package stability](/lattice-ui/getting-started/package-stability/)
 - [Portals and layers](/lattice-ui/guides/portals-and-layers/)
