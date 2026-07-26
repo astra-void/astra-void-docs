@@ -36,6 +36,114 @@ export default defineConfig({ plugins: [loomPreview()] });
 integration](/loom/guides/vite-integration/).
 </Callout>
 
+## A complete project from scratch
+
+If you do not have a roblox-ts tree to point at yet, this is the whole thing — three files, no
+`index.html`, no `tsconfig.json` needed to *render*:
+
+```text title="Project layout"
+my-preview/
+├── package.json
+├── vite.config.ts
+└── src/
+    └── main.client.tsx
+```
+
+```json title="package.json"
+{
+  "name": "my-preview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@loom-dev/preview": "^0.3.0",
+    "react": "^18.3.1",
+    "vite": "^6.0.0"
+  }
+}
+```
+
+```ts title="vite.config.ts"
+import { loomPreview } from "@loom-dev/preview/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [loomPreview()] });
+```
+
+```tsx title="src/main.client.tsx"
+import { useState } from "@rbxts/react";
+import { createRoot } from "@rbxts/react-roblox";
+
+function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <screengui>
+      <frame
+        AnchorPoint={new Vector2(0.5, 0.5)}
+        Position={UDim2.fromScale(0.5, 0.5)}
+        Size={UDim2.fromOffset(260, 140)}
+        BackgroundColor3={Color3.fromRGB(28, 30, 36)}
+      >
+        <uicorner CornerRadius={new UDim(0, 12)} />
+        <uipadding
+          PaddingTop={new UDim(0, 20)}
+          PaddingBottom={new UDim(0, 20)}
+          PaddingLeft={new UDim(0, 20)}
+          PaddingRight={new UDim(0, 20)}
+        />
+        <uilistlayout
+          FillDirection={Enum.FillDirection.Vertical}
+          HorizontalAlignment={Enum.HorizontalAlignment.Center}
+          VerticalAlignment={Enum.VerticalAlignment.Center}
+          Padding={new UDim(0, 12)}
+        />
+
+        <textlabel
+          Text={`clicked ${count} times`}
+          Size={new UDim2(1, 0, 0, 24)}
+          BackgroundTransparency={1}
+          Font={Enum.Font.GothamBold}
+          TextSize={18}
+          TextColor3={Color3.fromRGB(236, 238, 244)}
+        />
+        <textbutton
+          Text="click me"
+          Size={new UDim2(1, 0, 0, 40)}
+          BackgroundColor3={Color3.fromRGB(64, 118, 246)}
+          Font={Enum.Font.GothamBold}
+          TextSize={15}
+          TextColor3={Color3.fromRGB(255, 255, 255)}
+          Event={{ Activated: () => setCount((n) => n + 1) }}
+        >
+          <uicorner CornerRadius={new UDim(0, 8)} />
+        </textbutton>
+      </frame>
+    </screengui>
+  );
+}
+
+createRoot().render(<App />);
+```
+
+```bash title="Run it"
+pnpm install && pnpm vite
+```
+
+Open the printed URL and you get a dark full-viewport page with a rounded card in the middle: a
+label, a blue button, and a count that goes up when you click. `UDim2`, `Color3`, `Enum` and
+`Vector2` are never imported — the plugin installs them as real globals before your entry evaluates.
+Editing `main.client.tsx` hot-reloads.
+
+<Callout title="This project does not typecheck yet">
+esbuild strips types without reading a `tsconfig.json`, so it renders regardless. Your editor will
+still redline `@rbxts/react`, `UDim2` and the lowercase intrinsics until you add the ambient
+declarations — see [TypeScript setup](/loom/guides/typescript-setup/).
+</Callout>
+
 ## What the plugin looks for
 
 With no `index.html` in the project root, the plugin generates one and serves it from middleware.
@@ -102,6 +210,36 @@ import { App } from "./App";
 mount(App);
 ```
 
+## Preview many components at once
+
+One entry gives you one screen. A component library wants a browsable list instead, which is what
+**gallery mode** is: name any file `*.loom.tsx`, export a `preview` object from it, and add
+`--targets`.
+
+```tsx title="src/scenes/Button.loom.tsx"
+export const preview = {
+  render: () => (
+    <textbutton
+      Text="click me"
+      Size={new UDim2(0, 160, 0, 40)}
+      BackgroundColor3={Color3.fromRGB(64, 118, 246)}
+      TextColor3={Color3.fromRGB(255, 255, 255)}
+    />
+  ),
+  title: "Button",
+} as const;
+```
+
+```bash title="Browse every scene under the project"
+pnpm exec loom preview . --targets
+```
+
+Every match gets a sidebar entry, mounts lazily, and is wrapped in its own error boundary — one
+broken scene does not take the page down. No client entry is needed in gallery mode, and
+`loom build --targets` emits the same thing as a static, deep-linkable site. The target file
+contract, the glob rules and the URL parameters are in [Gallery
+targets](/loom/guides/gallery-targets/).
+
 ## Flags
 
 ```text
@@ -125,6 +263,9 @@ browser rather than in Studio.
 
 ## Next step
 
-The CLI is a convenience wrapper around one Vite plugin. When you want the preview to live inside
-your own project — your `vite.config.ts`, your dev-server options, your `vite build` — read [Vite
-integration](/loom/guides/vite-integration/).
+Before you trust what you see, read [Scope and status](/loom/getting-started/scope-and-status/) —
+it lists what loom renders faithfully and what it accepts and ignores.
+
+After that: [Vite integration](/loom/guides/vite-integration/) when you want the preview to live
+inside your own project, or [How it works](/loom/getting-started/how-it-works/) for the architecture
+behind it.

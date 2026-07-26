@@ -19,7 +19,7 @@ globals (`UDim2`, `Color3`, `Enum`, `game`) before your entry evaluates, rewrite
 uncompiled Luau straight to their TypeScript source. There is no roblox-ts build step in the loop:
 esbuild transpiles the same TSX, and HMR works.
 
-Two lines is the whole setup — the plugin generates the page too, so a roblox-ts source tree needs no
+One plugin is the whole setup — it generates the page too, so a roblox-ts source tree needs no
 `index.html` and no entry wiring:
 
 ```ts title="vite.config.ts"
