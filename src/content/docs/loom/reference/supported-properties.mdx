@@ -1,0 +1,153 @@
+---
+title: Supported instances and properties
+description: The per-property support matrix — what loom renders, what it accepts and silently ignores, and what will not typecheck at all.
+product: loom
+section: reference
+sidebar:
+  order: 25
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+[Scope and status](/loom/getting-started/scope-and-status/) answers "is text done?" at the area
+level. This page answers "does `AutomaticCanvasSize` work?" at the property level, so you know
+exactly how far a preview can be trusted before you open Studio.
+
+Everything below was read off loom `0.3.0`'s sources: the JSX intrinsics in `@loom-dev/react`, the
+DOM mapping in `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
+
+## How to read this
+
+| Mark | Meaning |
+| --- | --- |
+| **Supported** | Read by the layout engine or painted by the renderer. Behaves like Roblox, within the fidelity limits below. |
+| **Partial** | Implemented, with a stated gap. Correct in the common case, wrong at the edge. |
+| **Accepted** | Typed and settable, and nothing reads it. No error, no effect. |
+| **Not typed** | No JSX prop and no runtime handling. A compile error, and it would not render either. |
+
+**Accepted** is the row that costs you time, so it is spelled out rather than omitted. Those props
+exist so real component code — which sets them for the Roblox build — runs under the preview without
+edits.
+
+## Instances
+
+| Intrinsic | Status | Notes |
+| --- | --- | --- |
+| `screengui` `surfacegui` `billboardgui` | Supported | LayerCollectors: never background-painted, always click-through, z-ordered among themselves by `DisplayOrder`. |
+| `frame` | Supported | |
+| `scrollingframe` | Supported | Sinks pointer input unconditionally, like Roblox. |
+| `canvasgroup` | Supported | `GroupTransparency` becomes CSS `opacity` on the container div, which is the same "composite the subtree, then fade it" model. |
+| `textlabel` `textbutton` `textbox` | Supported | See [Text](#text-properties). |
+| `imagelabel` `imagebutton` | Partial | Laid out, background-painted, input-sinking. **No image is fetched or drawn** — there is no `Image` prop at all. An icon renders as an empty rect. |
+| `viewportframe` `videoframe` | Partial | Typed and laid out as plain `GuiObject`s. No 3D scene, no video — they paint as backgrounds. |
+| `uilistlayout` `uigridlayout` `uipadding` | Supported | |
+| `uicorner` `uistroke` `uigradient` | Supported | Mapped to `border-radius`, an outset `box-shadow` ring, and a CSS `linear-gradient`. |
+| `uisizeconstraint` `uiaspectratioconstraint` | Supported | |
+| `uiscale` | **Accepted** | Typed, recognized as a modifier, and read by nothing. A scaled subtree renders at 1×. |
+| `uiflexitem` | **Accepted** | A declared stub with no props yet. |
+| `uipagelayout` `uitablelayout` | Not typed | Recognized by the layout engine as non-layout modifiers, so they neither crash nor do anything — but they are absent from `IntrinsicElements`. |
+| Everything else | Not typed | `uitextsizeconstraint`, `folder`, `part`, … — the intrinsic set is exactly what the renderer implements. |
+
+## GuiObject properties
+
+Shared by every visual class.
+
+| Property | Status | Notes |
+| --- | --- | --- |
+| `Size` `Position` `AnchorPoint` | Supported | Full `UDim2` scale + offset resolution. |
+| `AutomaticSize` | Partial | `X` / `Y` / `XY` grow-to-content. See the [text-measurement gap](#automaticsize-on-text). |
+| `BackgroundColor3` `BackgroundTransparency` | Supported | |
+| `Visible` | Supported | Hidden via CSS; the node still occupies its computed rect, as in Roblox. |
+| `ZIndex` | Supported | `ZIndexBehavior.Sibling` semantics — the renderer's native model. |
+| `LayoutOrder` | Supported | Honored by `UIListLayout` / `UIGridLayout` under `SortOrder.LayoutOrder`. |
+| `Rotation` | Supported | Degrees clockwise about the element center, as a CSS transform. Purely visual: the layout rect is unrotated, matching Roblox. |
+| `ClipsDescendants` | Supported | |
+| `Active` | Partial | **Honored at runtime, not declared in the props type.** The renderer reads it for pointer sinking, so `Active` on a plain `frame` works — and your editor will redline it. |
+| `Name` | Supported | |
+| `Event` `Change` `ref` | Supported | `Event={{ Activated }}`, `Change={{ Text }}`, and `ref` to the live `LoomInstance`. |
+| `BorderSizePixel` `BorderColor3` `SizeConstraint` `Transparency` `Interactable` | Not typed | |
+
+## ScreenGui properties
+
+| Property | Status | Notes |
+| --- | --- | --- |
+| `DisplayOrder` | Supported | Becomes the layer's CSS `z-index` (may be negative). |
+| `Enabled` | Supported | |
+| `ZIndexBehavior` | **Accepted** | `Sibling` is what the renderer already does; `Global` is not emulated. |
+| `IgnoreGuiInset` | **Accepted** | The runtime's `GetGuiInset()` is zero, so there is no inset to ignore. |
+| `ResetOnSpawn` `ScreenInsets` | **Accepted** | Typed so real code runs unchanged; nothing reads them. |
+
+## Text properties
+
+| Property | Status | Notes |
+| --- | --- | --- |
+| `Text` `TextColor3` `TextSize` `TextTransparency` | Supported | |
+| `TextXAlignment` `TextYAlignment` | Supported | |
+| `TextWrapped` | Supported | `white-space: normal` vs `nowrap`. Not applied during measurement — see below. |
+| `Font` | Partial | Mapped to a CSS family stack by name prefix: `Code`/`RobotoMono` → monospace, `Gotham*`, `SourceSans*`, `Roboto*`, everything else → the system sans stack. Weight comes from the name suffix. Metrics are the browser's, not Roblox's, so line breaks can differ by a glyph. |
+| `TextScaled` | **Accepted** | Never applied. Text renders at `TextSize` whether or not it fits its box. |
+| `RichText` `TextTruncate` `LineHeight` `MaxVisibleGraphemes` `TextStrokeColor3` `TextStrokeTransparency` | Not typed | No markup parsing, no ellipsis, no per-line leading control. |
+
+### `AutomaticSize` on text
+
+Auto-sizing text is measured browser-side — the adapter runs a canvas `measureText()` with the same
+font the renderer paints and hands the result to the WASM engine as `TextBounds`, because font
+metrics do not exist inside the engine.
+
+That measurement splits on `\n` and takes the widest line. It **does not account for
+`TextWrapped`**, so `AutomaticSize={Enum.AutomaticSize.Y}` on a wrapped label measures one line per
+explicit newline and under-reports the height a wrapped paragraph actually needs. Give wrapping
+paragraphs an explicit height, or verify them in Studio.
+
+## TextBox properties
+
+| Property | Status | Notes |
+| --- | --- | --- |
+| `PlaceholderText` | Supported | Becomes the DOM input's `placeholder`. |
+| `ClearTextOnFocus` `TextEditable` `MultiLine` | Supported | |
+| `PlaceholderColor3` | **Accepted** | The placeholder is not restyled — you get the browser default. |
+
+## ScrollingFrame properties
+
+| Property | Status | Notes |
+| --- | --- | --- |
+| `CanvasSize` | Supported | Children lay out against the canvas, not the window. |
+| `CanvasPosition` | Supported | Applied as the DOM scroll offset by the renderer, not by the layout engine. |
+| `AutomaticCanvasSize` | Supported | `X` / `Y` / `XY`. The affected axis grows to the union bounding box of the frame's **direct** children, then `max()`ed with the resolved `CanvasSize`. |
+| `ScrollingDirection` `ScrollingEnabled` | Supported | |
+| `ScrollBarThickness` | **Accepted** | Loom draws no native scrollbar, so `AbsoluteWindowSize` is the full rect — never reduced by the bar. A layout that budgets for the scrollbar will be that many pixels wider here than in Studio. |
+| `ScrollBarImageTransparency` | **Accepted** | Nothing to make transparent. |
+
+<Callout title="AutomaticSize plus an explicit CanvasSize">
+`AutomaticSize` on a `ScrollingFrame` that also sets `CanvasSize` is explicitly deferred in the
+layout engine. The combination will not error; it will not size the way Studio does either.
+</Callout>
+
+## Layout and modifier properties
+
+| Instance | Supported | Accepted / partial |
+| --- | --- | --- |
+| `uilistlayout` | `FillDirection`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder`, `Padding` | — |
+| `uigridlayout` | `CellSize`, `CellPadding`, `FillDirection`, `FillDirectionMaxCells`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | `StartCorner` — only `TopLeft` is implemented; the other three corners fall back to it. |
+| `uipadding` | `PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight` | Scale padding on an `AutomaticSize` axis is treated as **offset-only**, so measurement and placement agree. |
+| `uisizeconstraint` | `MinSize`, `MaxSize` | — |
+| `uiaspectratioconstraint` | `AspectRatio`, `DominantAxis` | `AspectType` — `ScaleWithParentSize` is deferred. |
+| `uicorner` | `CornerRadius` | — |
+| `uistroke` | `Color`, `Thickness`, `Transparency` | `ApplyStrokeMode` — the ring is always drawn border-style, so `Contextual` on a text class does not outline glyphs. |
+| `uigradient` | `Color`, `Rotation`, `Enabled` | `Offset` is ignored. The gradient **overlays** the background rather than multiplying it, and `Transparency` (a `NumberSequence`) is not typed at all. |
+| `uiscale` | — | `Scale` is ignored entirely. |
+
+## Input
+
+Pointer and keyboard input route through the real runtime, not DOM shims: `Activated`,
+`MouseButton1Click`, `InputBegan` / `InputChanged` / `InputEnded`, `UserInputService`, focus and
+`TextBox` editing all behave as in Roblox, including input-sinking. Only `TextButton`,
+`ImageButton`, `TextBox`, `ScrollingFrame` and anything with `Active = true` sink pointer input —
+a transparent `Frame` is click-through, exactly as in Roblox.
+
+## What this list is not
+
+It is a description of loom `0.3.0`, not a compatibility promise. The project is pre-1.0 and rows
+move — an **Accepted** here is a gap someone can close without a breaking change. When a preview and
+Studio disagree and the property is not on this page, treat Studio as correct and
+[file it](https://github.com/astra-void/loom/issues).

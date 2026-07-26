@@ -4,7 +4,7 @@ description: What loom renders faithfully, what it recognizes but ignores, and w
 product: loom
 section: getting-started
 sidebar:
-  order: 40
+  order: 30
 ---
 
 import { Callout } from "@/components/docs/mdx";
@@ -31,6 +31,10 @@ Studio before shipping.
 | Dev loop: Vite plugin, HMR, `loom preview`, `loom build` | Complete. |
 | `vide` adapter | Shipped, on the same Scene IR. |
 
+Those rows are area-level. For the per-property answer — is `AutomaticCanvasSize` honored, does
+`UIGradient.Rotation` work, what happens to `ScrollBarThickness` — see [Supported instances and
+properties](/loom/reference/supported-properties/).
+
 The practical proof point: a full headless component library — dialogs, popovers, comboboxes,
 selects, tabs, sliders, focus scopes, portals and layers — renders and behaves correctly under `loom
 preview`, across more than fifty scenes, without a single source change on the library's side.
@@ -43,6 +47,12 @@ an empty rect.
 
 **`UIPageLayout` and `UITableLayout`.** Both are recognized by the layout engine — they will not
 crash — but neither does anything. Children of a `UIPageLayout` will not page.
+
+**`UIScale` and `UIFlexItem`.** Both are valid JSX intrinsics with typed props, and both are no-ops:
+nothing reads `UIScale.Scale`, so a scaled subtree renders at 1×.
+
+**`TextScaled`.** Accepted on every text class and never applied — text renders at `TextSize`
+whether or not it fits.
 
 **A roblox-ts compiler transform.** The preview path deliberately skips `rbxtsc` and lets esbuild
 transpile. A standalone transform, which would let loom consume compiled output rather than source,
