@@ -11,8 +11,15 @@ import { existsSync, readFileSync, readdirSync } from "node:fs"
 import { resolve } from "node:path"
 import { LATTICE_VERSION } from "./lattice-version"
 
-// This file lives at <docs root>/src/lib/.
-const docsRoot = resolve(import.meta.dirname ?? ".", "../..")
+// Anchored on the working directory rather than this file's own location,
+// because the two are not the same module twice over: the Loom preview
+// integration imports this file unbundled (from `src/lib/`) while astro.config
+// is evaluated, but page frontmatter gets it bundled into
+// `dist/.prerender/chunks/`. Deriving the root from `import.meta.dirname` made
+// those two contexts disagree — the integration found the checkout and the
+// pages did not, so CI silently shipped every page without its scene source.
+// Astro runs from the project root in dev, build, and CI alike.
+const docsRoot = process.cwd()
 
 const APP_CANDIDATES = [
   process.env.LATTICE_PREVIEW_APP,
