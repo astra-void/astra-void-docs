@@ -1,0 +1,17 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.25" r="1.15">
+      <stop offset="0" stop-color="#2e2e2e" />
+      <stop offset="1" stop-color="#0d0d0d" />
+    </radialGradient>
+    <linearGradient id="star" x1="16" y1="5.5" x2="16" y2="26.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#b3b3b3" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#bg)" />
+  <path
+    d="M16 5.5Q17.8 14.2 26.5 16Q17.8 17.8 16 26.5Q14.2 17.8 5.5 16Q14.2 14.2 16 5.5Z"
+    fill="url(#star)"
+  />
+</svg>
