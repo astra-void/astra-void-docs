@@ -1,6 +1,6 @@
 ---
 title: Responsive and input variants
-description: The nine variant prefixes including hover, the exact breakpoints, how orientation and input mode are detected, the compile-time cost — and the released bug that breaks breakpoints in 0.4.0.
+description: The nine variant prefixes including hover, the exact breakpoints, how orientation and input mode are detected, and the compile-time cost of using a variant at all.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -41,16 +41,15 @@ variants. Order within the chain does not matter — the conditions are combined
 unrecognized prefix is its own diagnostic, `unknown-variant`, whose message lists the supported
 nine; the token is dropped.
 
-<Callout title="Breakpoints and orientation are broken in the released 0.4.0">
-The published `0.4.0` runtime helper reads `Camera.ViewportSize` **once, at mount** — and at mount
-Roblox frequently still reports a 1×1 viewport. Every width test then sees width 1, so `sm:`, `md:`,
-and `lg:` rules **never match**, and orientation evaluates as `landscape`, until something replaces
-the camera. A resize is never tracked either way. The fix — following the viewport signal and
-re-evaluating on resize — is merged upstream and pending release as a compiler patch.
+<Callout title="Upgrade to 0.4.1 if you use breakpoints">
+In `0.4.0` the runtime helper read `Camera.ViewportSize` **once, at mount** — and at mount Roblox
+frequently still reports a 1×1 viewport, so every width test saw width 1: `sm:`, `md:` and `lg:`
+never matched and orientation was always `landscape`. `0.4.1` follows the camera's `ViewportSize`
+signal instead, so breakpoints resolve correctly **and** re-evaluate when the window is resized.
 
-Until it ships: `touch:`, `mouse:`, `gamepad:`, and `hover:` are reliable (their signals are
-subscribed correctly); for breakpoint-style reflow, read `ViewportSize` yourself and branch between
-two static class strings, as shown at the end of this page.
+If you are pinned to `0.4.0`, the input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` are
+unaffected — their signals were always subscribed correctly — and breakpoint-style reflow can be
+driven from your own state, as shown at the end of this page.
 </Callout>
 
 ## Breakpoints are min-width only
@@ -155,9 +154,10 @@ pay the inlining cost.
 
 ## Driving reflow yourself
 
-Until the breakpoint fix ships — and any time you want resize behavior you fully control — read the
-viewport yourself and branch between two static class strings. Both branches stay on the static path
-with the full utility set:
+Variants are not the only way to reflow, and sometimes not the best one: when you want thresholds
+the three breakpoints do not cover, or you would rather not pull the runtime helper into a file, read
+the viewport yourself and branch between two static class strings. Both branches stay on the static
+path with the full utility set:
 
 ```tsx title="src/client/ResponsiveShell.tsx"
 function useViewportWide(threshold: number) {

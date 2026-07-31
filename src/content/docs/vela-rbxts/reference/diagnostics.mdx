@@ -1,6 +1,6 @@
 ---
 title: Diagnostics
-description: Every diagnostic code Vela can emit at 0.4.0, how it reaches your build or editor, and the caveats that make some of them easy to miss.
+description: Every diagnostic code Vela can emit at 0.4.1, how it reaches your build or editor, and the caveats that make some of them easy to miss.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -38,19 +38,19 @@ before concluding your code is clean.
 **Some spans are still guessed, and some are not spans at all.** A diagnostic carries a real source
 range whenever the compiler could anchor it, which covers every token inside a static string
 `className` — those squiggles land on the class you actually wrote, even if the same token appears
-elsewhere in the file.
+elsewhere in the file. Since 0.4.1 `tsx-parse-failed` is anchored too, and its message names the
+line and column: `Failed to parse TSX input at line 2, column 53: Unexpected token …`.
 
 When there is no range, the host adapter searches for the first textual occurrence of the
 diagnostic's token anywhere in the file. That search only happens if the diagnostic carries a token,
 and in practice the dynamic-`className` case is the only one that does. Everything else with no
 range falls all the way through to `{start: 0, length: 0}` and is reported at the very top of the
-file: `tsx-parse-failed`, `tsx-emit-failed`, and the adapter's own
-`compiler-invocation-failed` all carry no token at all. `classname-on-unsupported-host` is a middle
-case — it gets a real range when the `className` is a plain string literal, and lands at offset 0
-when it is a computed expression.
+file — `tsx-emit-failed` and the adapter's own `compiler-invocation-failed` carry no token at all.
+`classname-on-unsupported-host` is a middle case: it gets a real range when the `className` is a
+plain string literal, and lands at offset 0 when it is a computed expression.
 
-So an underline can land on an unrelated comment or string, or on the first character of the file.
-Read the message rather than the underline.
+So an underline can still land on an unrelated comment or string, or on the first character of the
+file. Read the message rather than the underline.
 </Callout>
 
 ## Code table

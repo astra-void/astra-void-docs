@@ -66,8 +66,9 @@ executed through `createRequire` and `new Function`, module specifiers resolve a
 the config file. Your project's `tsconfig.json` `paths` aliases and ambient types are never consulted,
 so the config cannot rely on either. Third, the export must be usable: Vela takes `module.exports.default` if present and
 otherwise `module.exports`, then requires it to be either an already-resolved `TailwindConfig` or an
-input-shaped object it can pass through `defineConfig`. Anything else throws
-`Expected <path> to export a TailwindConfig-compatible object.`
+input-shaped object it can pass through `defineConfig`. Anything else throws — and since 0.4.1 the
+error names the key that failed validation, such as `theme.extend.colors.surface.55`, rather than
+only reporting that a `TailwindConfig`-compatible object was expected.
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";

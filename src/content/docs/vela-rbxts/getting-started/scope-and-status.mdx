@@ -1,6 +1,6 @@
 ---
 title: Scope and status
-description: What Vela covers at 0.4.0, which Tailwind families are permanently out, and where enforcement has gaps — including one sharp released-version bug.
+description: What Vela covers at 0.4.1, which Tailwind families are permanently out, and where enforcement has gaps.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -15,7 +15,7 @@ that cannot mean anything. What Vela ships instead is a Roblox-oriented mapping:
 correspond to real Roblox properties and helper instances, a few structural emulations where the
 correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes separator
 frames — and loud rejection of everything that cannot be expressed at all. This page is the honest
-map of where the edges are at **0.4.0**.
+map of where the edges are at **0.4.1**.
 
 ## What is in scope
 
@@ -33,7 +33,7 @@ Anything that is neither is skipped, keeps its `className` verbatim, and reports
 `classname-on-unsupported-host` — lowercase intrinsics Vela does not implement, such as `screengui`,
 and namespaced tags such as `<svg:rect />`, which never count as components.
 
-Within those eight, the covered ground at 0.4.0 is wide: colors (including arbitrary hex and `/N`
+Within those eight, the covered ground at 0.4.1 is wide: colors (including arbitrary hex and `/N`
 opacity modifiers), gradients, borders, rings and outlines, corner radius, shadows, padding,
 margins, gap and `space-*`, `divide-*` separators, sizing and min/max constraints, position on all
 four edges, anchor point, translation, z-index, layout order, rotation, scale, opacity, aspect
@@ -84,30 +84,30 @@ flat fill. Every other family without a transparency channel (`placeholder-*`, `
 warn.
 </Callout>
 
-## Known bug in the released 0.4.0
+## Fixed in 0.4.1 — upgrade if you are on 0.4.0
 
-<Callout title="Breakpoints and orientation do not work in 0.4.0">
-The runtime helper in the published `0.4.0` reads `Camera.ViewportSize` **once, when the element
-mounts** — and at mount Roblox often still reports a 1×1 viewport. The result is worse than "resizes
-are not tracked": every width test sees width 1, so **`sm:`, `md:`, and `lg:` rules never match, and
-orientation is evaluated as landscape**, until something replaces the camera. A fix that follows the
-viewport signal and reacts to resizes is merged upstream and pending release as a compiler patch.
+<Callout title="Breakpoints did not work in 0.4.0">
+The `0.4.0` runtime helper read `Camera.ViewportSize` **once, when the element mounted**, and Roblox
+often still reports a 1×1 viewport at that moment. Every width test therefore saw width 1, so
+**`sm:`, `md:` and `lg:` never matched and orientation was always landscape**. `0.4.1` follows the
+camera's `ViewportSize` signal, which both fixes the initial evaluation and makes breakpoints react
+to resizes. `divide-*` also drew one separator too many in `0.4.0` whenever the element carried a
+utility that lowers a helper instance; that is fixed in `0.4.1` too.
 
-Until that ships, treat the input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` as the
-reliable ones — their signals are subscribed correctly — and drive breakpoint-style reflow from your
-own state: read `ViewportSize` yourself, connect to its change signal, and branch between two static
-class strings as shown in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
+If you cannot upgrade, the input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` are
+unaffected, and breakpoint-style reflow can be driven from your own state — see
+[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/#driving-reflow-yourself).
 </Callout>
 
-Two smaller sharp edges, both documented where they live: `gap-*` on a `grid` element currently
-emits a conflicting `UIListLayout` alongside the `UIGridLayout` it feeds
-([utilities reference](/vela-rbxts/reference/utilities/#grid)), and `divide-*` separators interact
-poorly with explicit `LayoutOrder` and double-count the parent's `gap-*`
+One sharp edge is still open: `gap-*` on a `grid` element emits a conflicting `UIListLayout`
+alongside the `UIGridLayout` it feeds ([utilities reference](/vela-rbxts/reference/utilities/#grid)).
+And `divide-*` separators remain sensitive to explicit `LayoutOrder` and still double-count the
+parent's `gap-*`, which is a consequence of separators being list items rather than a defect
 ([utilities reference](/vela-rbxts/reference/utilities/#divide)).
 
 ## Release state
 
-Every package in the repo is at **0.4.0**, versioned in lockstep: `vela-rbxts` itself and the
+Every package in the repo is at **0.4.1**, versioned in lockstep: `vela-rbxts` itself and the
 `@vela-rbxts/*` scope covering the compiler, config, core, IR, types, host adapter and language
 server, plus the `vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix
 anywhere moves everything. Releases are tagged from `v0.3.0` onward, and a pending changeset holds
