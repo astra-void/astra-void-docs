@@ -22,6 +22,9 @@ importers:
       '@codemirror/lang-javascript':
         specifier: ^6.2.5
         version: 6.2.5
+      '@codemirror/lang-json':
+        specifier: ^6.0.2
+        version: 6.0.2
       '@codemirror/state':
         specifier: ^6.7.1
         version: 6.7.1
@@ -44,6 +47,9 @@ importers:
         specifier: ^4.3.0
         version: 4.3.0(vite@8.1.5(@types/node@25.9.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       '@vela-rbxts/compiler':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@vela-rbxts/compiler-wasm':
         specifier: ^0.4.1
         version: 0.4.1
       '@vela-rbxts/config':
@@ -460,6 +466,9 @@ packages:
 
   '@codemirror/lang-javascript@6.2.5':
     resolution: {integrity: sha512-zD4e5mS+50htS7F+TYjBPsiIFGanfVqg4HyUz6WNFikgOPf2BgKlx+TQedI1w6n/IqRBVBbBWmGFdLB/7uxO4A==}
+
+  '@codemirror/lang-json@6.0.2':
+    resolution: {integrity: sha512-x2OtO+AvwEHrEwR0FyyPtfDUiloG3rnVTSZV1W8UteaLL8/MajQd8DpvUb2YVzC+/T18aSDv0H9mu+xw0EStoQ==}
 
   '@codemirror/language@6.12.4':
     resolution: {integrity: sha512-1q4PaT+o6PbgpkJt4Q8Fv5XJxTy4FUZ4MWETtyiDw3J0Pyr9E2vqcKL+k9wcvjNTIsauxvE7OfmWj3FRPHQ76A==}
@@ -1098,6 +1107,9 @@ packages:
 
   '@lezer/javascript@1.5.4':
     resolution: {integrity: sha512-vvYx3MhWqeZtGPwDStM2dwgljd5smolYD2lR2UyFcHfxbBQebqx8yjmFmxtJ/E6nN6u1D9srOiVWm3Rb4tmcUA==}
+
+  '@lezer/json@1.0.3':
+    resolution: {integrity: sha512-BP9KzdF9Y35PDpv04r0VeSTKDeox5vVr3efE7eBbx3r4s3oNLfunchejZhjArmeieBH+nVOpgIiBJpEAv8ilqQ==}
 
   '@lezer/lr@1.4.10':
     resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
@@ -2407,6 +2419,10 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [musl]
+
+  '@vela-rbxts/compiler-wasm@0.4.1':
+    resolution: {integrity: sha512-4ie6lpBqwbrXvCDn+bnHWe0kYYPxRJcXWb9hT1bGP1JIJqUVh2irSW8YOAPLUK44aoXnISsZCFzX0Pw9dZmNFw==}
+    engines: {node: '>=20'}
 
   '@vela-rbxts/compiler-win32-x64-msvc@0.4.1':
     resolution: {integrity: sha512-P6P2AcqbVzkzALdRLTnVNZfYwpFplfMBiEhX6gz4WC+uTZAMGkucUyGZcBL2XgpS59ir1khYoAEP4l3VoDNylA==}
@@ -5473,6 +5489,11 @@ snapshots:
       '@lezer/common': 1.5.2
       '@lezer/javascript': 1.5.4
 
+  '@codemirror/lang-json@6.0.2':
+    dependencies:
+      '@codemirror/language': 6.12.4
+      '@lezer/json': 1.0.3
+
   '@codemirror/language@6.12.4':
     dependencies:
       '@codemirror/state': 6.7.1
@@ -5939,6 +5960,12 @@ snapshots:
       '@lezer/common': 1.5.2
 
   '@lezer/javascript@1.5.4':
+    dependencies:
+      '@lezer/common': 1.5.2
+      '@lezer/highlight': 1.2.3
+      '@lezer/lr': 1.4.10
+
+  '@lezer/json@1.0.3':
     dependencies:
       '@lezer/common': 1.5.2
       '@lezer/highlight': 1.2.3
@@ -7201,6 +7228,8 @@ snapshots:
 
   '@vela-rbxts/compiler-linux-x64-musl@0.4.1':
     optional: true
+
+  '@vela-rbxts/compiler-wasm@0.4.1': {}
 
   '@vela-rbxts/compiler-win32-x64-msvc@0.4.1':
     optional: true
