@@ -133,7 +133,8 @@ Shelling out to `loom build` before every site build works, but it buys a genera
 goes stale the moment a scene changes, and no HMR while you edit one. If the host is a Vite-based
 framework, mount the gallery instead: [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api)
 exposes both pipelines as functions — a middleware-mode server for dev, a static build for the
-output directory.
+output directory. (A Next.js host gets the same two pipelines pre-wired through one config
+wrapper — see [Next.js integration](/loom/guides/nextjs-integration/).)
 
 These docs do exactly that, from a ~40-line Astro integration:
 
