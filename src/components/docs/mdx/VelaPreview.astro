@@ -1,0 +1,152 @@
+---
+/**
+ * Embeds a live preview of a Vela example, plus the two sources that explain it.
+ *
+ * The example is authored in `preview/vela/` as ordinary roblox-ts with
+ * `className` on it; the `vela-preview` integration lowers it with the real
+ * compiler and Loom renders the *lowered* tree in the browser. So the three
+ * tabs are the whole Vela story on one page: the classes that were written, the
+ * Roblox properties and helper instances they became, and what that renders as.
+ *
+ * The iframe `src` is set lazily and carries the docs site's current theme; see
+ * src/lib/loom-frame.ts, which LoomPreview shares.
+ */
+import { Code } from "astro-expressive-code/components"
+import {
+  compileVelaScene,
+  stripVelaBoilerplate,
+  velaSceneTarget,
+} from "@/lib/vela-source"
+
+interface Props {
+  /** Scene name, e.g. "PanelScene" (the file is `<scene>.vela.tsx`). */
+  scene: string
+  /** Iframe height in px. Match it to the scene's own stage height. */
+  height?: number
+  /** Short caption under the frame. */
+  label?: string
+  /** Hide the lowered-output tab, for pages where the emit is beside the point. */
+  showOutput?: boolean
+}
+
+const { scene, height = 220, label, showOutput = true } = Astro.props as Props
+
+const built = compileVelaScene(scene)
+
+const previewSrc = `${import.meta.env.BASE_URL}vela-preview/index.html?target=${encodeURIComponent(
+  velaSceneTarget(scene),
+)}&chrome=none`
+
+// Both tabs drop the gallery harness (the stage import, the `preview` export)
+// so the two sides line up on the component and nothing else.
+const source = built ? stripVelaBoilerplate(built.source) : undefined
+const output =
+  built && showOutput ? stripVelaBoilerplate(built.output).trimEnd() : undefined
+// Warnings are worth showing: an example that trips a diagnostic is teaching
+// something, and a silent one would be the docs hiding the compiler's own voice.
+const diagnostics = built?.diagnostics ?? []
+---
+
+<figure class="not-prose my-6" data-loom-preview>
+  <div class="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+    <div class="flex items-center justify-between border-b border-border bg-muted/40 px-2 py-1.5">
+      <div class="flex items-center gap-1" role="tablist">
+        <button
+          aria-selected="true"
+          class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+          data-active="true"
+          data-loom-tab="preview"
+          role="tab"
+          type="button"
+        >
+          Preview
+        </button>
+        {source ? (
+          <button
+            aria-selected="false"
+            class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+            data-active="false"
+            data-loom-tab="code"
+            role="tab"
+            type="button"
+          >
+            Classes
+          </button>
+        ) : null}
+        {output ? (
+          <button
+            aria-selected="false"
+            class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+            data-active="false"
+            data-loom-tab="output"
+            role="tab"
+            type="button"
+          >
+            Lowered
+          </button>
+        ) : null}
+      </div>
+      <span class="hidden px-1 font-mono text-[0.7rem] text-muted-foreground/70 sm:inline">
+        Roblox UI · compiled by Vela
+      </span>
+    </div>
+    <div data-loom-panel="preview">
+      <iframe
+        class="block w-full bg-[#f6f9fc] dark:bg-[#12151a]"
+        data-loom-frame
+        data-src={previewSrc}
+        height={height}
+        loading="lazy"
+        style={`height:${height}px`}
+        title={`Live preview of ${scene}`}
+      >
+      </iframe>
+    </div>
+    {source ? (
+      <div class="loom-code max-h-96 overflow-auto" data-loom-panel="code" hidden>
+        <Code code={source} lang="tsx" title={`${scene}.vela.tsx`} />
+      </div>
+    ) : null}
+    {output ? (
+      <div class="loom-code max-h-96 overflow-auto" data-loom-panel="output" hidden>
+        <Code code={output} lang="tsx" title="Emitted by vela-rbxts" />
+      </div>
+    ) : null}
+  </div>
+  {diagnostics.length > 0 ? (
+    <ul class="mt-2 space-y-1 text-xs text-muted-foreground">
+      {diagnostics.map((diagnostic) => (
+        <li>
+          <code class="font-mono text-[0.7rem] text-foreground">{diagnostic.code}</code>{" "}
+          {diagnostic.message}
+        </li>
+      ))}
+    </ul>
+  ) : null}
+  {label ? (
+    <figcaption class="mt-2 text-center text-sm text-muted-foreground">
+      {label}
+    </figcaption>
+  ) : null}
+</figure>
+
+<style>
+  /* The embedded expressive-code block should sit flush inside the card. */
+  .loom-code :global(.expressive-code) {
+    margin: 0;
+  }
+  .loom-code :global(.expressive-code .frame) {
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+  }
+</style>
+
+<script>
+  // Shared with LoomPreview — both embed the same kind of frame.
+  import { mountLoomFrames, watchLoomTheme } from "@/lib/loom-frame"
+
+  mountLoomFrames()
+  watchLoomTheme()
+  document.addEventListener("astro:after-swap", mountLoomFrames)
+</script>

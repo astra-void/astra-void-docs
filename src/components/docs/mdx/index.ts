@@ -6,3 +6,4 @@ export { default as PackageInstall } from "./PackageInstall.astro";
 export { default as PrimitiveAnatomy } from "./PrimitiveAnatomy.astro";
 export { default as PropTable } from "./PropTable.astro";
 export { default as StatusBadge } from "./StatusBadge.astro";
+export { default as VelaPreview } from "./VelaPreview.astro";

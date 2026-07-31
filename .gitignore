@@ -12,3 +12,7 @@ digest.txt
 # Sibling checkouts the Loom previews are built from (pnpm link:preview-src;
 # CI checks the real repos out here).
 .preview-src
+
+# Generated gallery root: the Vela examples in preview/vela/ after the
+# compiler has lowered them (see src/integrations/vela-preview.ts).
+.vela-preview

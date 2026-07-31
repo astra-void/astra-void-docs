@@ -1,6 +1,7 @@
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import loomPreview from "./src/integrations/loom-preview";
+import velaPreview from "./src/integrations/vela-preview";
 import astroExpressiveCode from "astro-expressive-code";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
@@ -36,6 +37,9 @@ export default defineConfig({
     // Mounts Loom's own Vite server for the interactive component previews in
     // dev, and emits the static gallery into dist/loom-preview/ on build.
     loomPreview(),
+    // Lowers the Vela examples in preview/vela/ with the real compiler and
+    // serves the result as a second gallery (dist/vela-preview/ after a build).
+    velaPreview(),
   ],
   vite: {
     resolve: {

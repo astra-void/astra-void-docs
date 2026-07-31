@@ -1,0 +1,15 @@
+{
+  "theme": {
+    "extend": {
+      "colors": {
+        "brand": {
+          "500": "Color3.fromRGB(99, 102, 241)",
+          "700": "Color3.fromRGB(67, 56, 202)"
+        },
+        "surface": "Color3.fromRGB(24, 24, 27)"
+      },
+      "radius": { "card": "new UDim(0, 10)" },
+      "spacing": { "gutter": "new UDim(0, 20)" }
+    }
+  }
+}
