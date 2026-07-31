@@ -78,7 +78,7 @@ Those hosts all render a `frame` now, so the fade reaches the surface's own back
 
 The popper recipes took the **resolved** placement, so the motion originated from the side the surface actually landed on after any flip. Read it from `usePopper` if you want that behavior back; passing no placement animates from a fixed side.
 
-`Dialog.Content` is the one part whose old default cannot be passed back. Its motion host is a `frame` rather than a `canvasgroup`, and a `frame` has no property that fades its descendants, so `createCanvasGroupRevealRecipe()` has nothing to write `GroupTransparency` to. Give the content a `Position`-only config for the rise and fade the overlay dim or your own panel elements instead — [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog) has the pattern.
+`Dialog.Content` is the one part whose old default needs a change to pass back. Its motion host is a `frame` rather than a `canvasgroup`, and a `frame` has no property that fades its descendants, so `createCanvasGroupRevealRecipe()` has nothing to write `GroupTransparency` to — unless you pass `asChild` with your own `canvasgroup`, which makes that element the motion host and the recipe fit again. Otherwise give the content a `Position`-only config for the rise and fade the overlay dim or your own panel elements — [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog) has both patterns.
 
 Prefer these over a hand-written config. Each one declares the correct **target contract** — which properties motion is allowed to own — so it cannot fight your layout. A `PresenceMotionConfig` written by hand needs `reveal`/`exit` as `{ values, intent }`, not bare properties:
 

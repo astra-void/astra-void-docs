@@ -228,7 +228,7 @@ import { createPopperEntranceRecipe } from "@lattice-ui/react-motion";
 <Popover.Content transition={createPopperEntranceRecipe("bottom", 12, 0.2)} />
 ```
 
-`Dialog.Content` is the exception: its host is a full-screen `Frame`, so give it a `Position`-only config and fade the overlay or your own panel elements instead — see [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
+`Dialog.Content` is the exception: its host is a full-screen `Frame`, so give it a `Position`-only config and fade the overlay or your own panel elements — or pass `asChild` with a `canvasgroup` to fade the surface as one layer. See [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
 ## Related
 

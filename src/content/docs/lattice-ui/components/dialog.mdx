@@ -500,7 +500,7 @@ A force-mounted dialog that has never opened renders with its exit values pre-ap
 
 `Dialog.Content` registers on a global dismissable-layer stack. An outside pointer press (mouse button or touch, ignoring input the engine already processed) is routed to the **top-most open layer only**: `onPointerDownOutside` fires first, then `onInteractOutside` for the same press, and then the dialog closes unless either handler called `event.preventDefault()`. This is how stacked dialogs behave sanely — a press on a lower dialog dismisses only the top one.
 
-"Outside" is measured against the first direct host element you render inside `Dialog.Content` (your panel frame); additional top-level host children also count as inside. Presses within those bounds never trigger dismissal.
+"Outside" is measured against the first direct host element you render inside `Dialog.Content` (your panel frame); additional top-level host children also count as inside. Presses within those bounds never trigger dismissal. Under `asChild` the same rule applies one level down, against the first host child of the element you supplied.
 
 `modal` (default `true`) controls blocking, not dismissal: when modal, a full-screen input sink behind the content swallows interaction with everything underneath. With `modal={false}` the world stays interactive, but outside presses still dismiss unless you veto them.
 
@@ -531,13 +531,32 @@ const RISE: PresenceMotionConfig = {
 
 #### Fading a dialog
 
-The host is a plain `Frame` spanning the whole layer, and a `Frame` has no property that fades its descendants — `BackgroundTransparency` on the host fades the host's own background, which covers the screen. Animating it through `transition` fills the screen with a rectangle instead of fading your panel, so keep the content transition to `Position` and put the fade where the pixels are:
+The default host is a plain `Frame` spanning the whole layer, and a `Frame` has no property that fades its descendants — `BackgroundTransparency` on the host fades the host's own background, which covers the screen. Animating it through `transition` fills the screen with a rectangle instead of fading your panel. So either keep the content transition to `Position` and put the fade where the pixels are:
 
 - **Fade the dim.** `createOverlayFadeRecipe()` on an element inside `Dialog.Overlay` covers most of what a dialog reveal reads as.
 - **Fade your own elements.** Animate `BackgroundTransparency` on your panel frame and `TextTransparency` / `ImageTransparency` on the children that need it, driven by the same `open` state you pass to `Dialog.Root`. Keep those durations at or under the content transition's exit duration, or presence unmounts the tree before your fade finishes.
 
-<Callout title="Recipes that animate GroupTransparency do not fit Dialog.Content">
-`createCanvasGroupRevealRecipe` and `createCanvasGroupPopperEntranceRecipe` animate `GroupTransparency`, which exists only on a `CanvasGroup`. No primitive renders one any more: the anchored parts take a `canvasgroup` you pass through `asChild`, and `Dialog.Content` has no `asChild` at all, so on it the write has no property to land on.
+— or hand the dialog a `canvasgroup` with `asChild`. Your element becomes the motion host, so `createCanvasGroupRevealRecipe()` fades the whole subtree as one composited layer, the way the primitive used to before it stopped rendering a `CanvasGroup` for every dialog:
+
+```tsx title="Opting into a whole-surface fade"
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+
+<Dialog.Content asChild transition={createCanvasGroupRevealRecipe()}>
+  <canvasgroup>
+    <frame
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      BackgroundColor3={Color3.fromRGB(24, 26, 32)}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromOffset(320, 180)}
+    />
+  </canvasgroup>
+</Dialog.Content>
+```
+
+That buys an offscreen render target the size of the screen, which is exactly why it is opt-in rather than the default.
+
+<Callout title="asChild moves the outside-press boundary down a level">
+Outside presses are measured against the first direct host element inside `Dialog.Content`. With `asChild` your element *is* the host and spans the layer, so the boundary becomes its first host child instead — the panel above. Keep your panel as that first child, exactly as you would without `asChild`.
 </Callout>
 
 Presence timing is independent of that: with or without a `transition`, the content stays mounted until its exit resolves, so an exit animation is never cut off. `forceMount` on either part keeps it mounted while closed and lets long exits run outside the presence wrapper's bounded unmount window.
@@ -549,7 +568,7 @@ Presence timing is independent of that: with or without a `transition`, the cont
 </Callout>
 
 <Callout title="Make your panel the first child of Content">
-Outside-press detection hit-tests against the first direct host element inside `Dialog.Content`. Render your panel frame as that first child and keep everything interactive inside it, or presses on your own surface will be treated as outside and dismiss the dialog.
+Outside-press detection hit-tests against the first direct host element inside `Dialog.Content` — or, with `asChild`, inside the element you supplied. Render your panel frame as that first child and keep everything interactive inside it, or presses on your own surface will be treated as outside and dismiss the dialog.
 </Callout>
 
 <Callout title="Roblox layering">
@@ -617,6 +636,7 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
 
 <PropTable
   rows={[
+    { name: "asChild", type: "boolean", description: "Make the single child element the motion host instead of the frame the part renders. Pass a canvasgroup here to fade the whole surface as one layer. The outside-press boundary becomes that element's first host child." },
     { name: "trapFocus", type: "boolean", description: "Traps focus and selection inside the content while open. Defaults to true." },
     { name: "restoreFocus", type: "boolean", description: "Restores focus to the previously focused element on close — the trigger, when one opened the dialog. Defaults to true." },
     { name: "forceMount", type: "boolean", description: "Bypasses the presence wrapper: the content stays mounted while closed, long exits run to completion, and child state persists between opens." },
@@ -624,7 +644,7 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press lands outside the content, before dismissal. Call event.preventDefault() to keep the dialog open." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called after onPointerDownOutside for the same outside interaction, before dismissal. Call event.preventDefault() to keep the dialog open." },
     { name: "children", type: "React.ReactNode", description: "The surface contents. The first direct host element is the outside-press hit-test boundary." },
-    { name: "…Frame props", type: "Partial<WritableInstanceProperties<Frame>>", description: "Forwarded onto the rendered frame and type-checked against it. The frame spans the layer, so styling it paints the full screen — style your panel child instead. A transition owns Position while it runs." },
+    { name: "…Frame props", type: "Partial<WritableInstanceProperties<Frame>>", description: "Forwarded onto the rendered frame — or onto your asChild element — and type-checked against Frame. The host spans the layer, so styling it paints the full screen; style your panel child instead. A transition owns Position while it runs." },
   ]}
 />
 

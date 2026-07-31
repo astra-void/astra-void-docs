@@ -56,7 +56,7 @@ Presence recipes return a `PresenceMotionConfig`; response recipes return a `Res
 
 Every recipe also sets the right **target contract** — `createOverlayFadeRecipe` uses an `appearance` target, the reveal and popper recipes use an `offset-wrapper`, `createIndicatorRevealRecipe` a `size-wrapper`. That is a large part of why you should prefer a recipe over a hand-written config: the ownership boundary comes for free.
 
-`Dialog.Content` is the one part with no recipe to reach for. It renders a full-screen `Frame`, so a transition can slide it but has no property that fades its descendants — write a `Position`-only config for it and fade the overlay or your own panel elements separately. See [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
+`Dialog.Content` is the one part with no recipe to reach for by default. It renders a full-screen `Frame`, so a transition can slide it but has no property that fades its descendants — write a `Position`-only config for it and fade the overlay or your own panel elements separately, or pass `asChild` with a `canvasgroup` and use `createCanvasGroupRevealRecipe()`. See [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
 ## Giving a component a transition
 
