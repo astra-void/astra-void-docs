@@ -47,6 +47,12 @@ export default defineConfig({
         "@": fileURLToPath(new URL("./src", import.meta.url)),
       },
     },
+    optimizeDeps: {
+      // The playground's wasm compiler locates its own payload relative to
+      // `import.meta.url`. Pre-bundling would move the glue into
+      // node_modules/.vite/deps and leave the .wasm behind.
+      exclude: ["@vela-rbxts/compiler-wasm"],
+    },
     plugins: [tailwindcss()],
   },
 });

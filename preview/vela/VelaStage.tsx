@@ -19,7 +19,7 @@ type VelaStageProps = {
   children: React.ReactNode;
 };
 
-const BACKDROP = {
+export const BACKDROP = {
   light: Color3.fromRGB(246, 249, 252),
   dark: Color3.fromRGB(18, 21, 26),
 } as const;
@@ -40,7 +40,7 @@ function usePlayerGui() {
   return playerGui;
 }
 
-function useDocTheme() {
+export function useDocTheme() {
   const playerGui = usePlayerGui();
 
   const readThemeName = React.useCallback(() => {

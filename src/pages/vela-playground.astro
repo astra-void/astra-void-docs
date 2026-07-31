@@ -1,0 +1,791 @@
+---
+/**
+ * `/vela-playground/` — a live editor for Vela's className lowering.
+ *
+ * Vela is a compiler, so a playground for it has to be the compiler: the
+ * editor's TSX is lowered by `@vela-rbxts/compiler-wasm`, the WebAssembly build
+ * of the same crate `rbxtsc` loads natively. Nothing is sent anywhere — the
+ * compile, the resulting Roblox props, and the render all happen in this tab.
+ *
+ * The three-step pipeline, all client-side:
+ *   1. `@vela-rbxts/config`'s `defineConfig` resolves the config editor's JSON,
+ *      exactly as a project's `vela.config.json` is resolved for `rbxtsc`.
+ *   2. the wasm compiler lowers the source against it — `className` in, Roblox
+ *      properties and helper instances out, with the compiler's own diagnostics.
+ *   3. sucrase compiles that lowering to CommonJS and posts it into the Vela
+ *      preview gallery, where `VelaPlaygroundScene` evaluates and renders it.
+ *
+ * Starter templates are the checked-in examples under `preview/vela/`, the same
+ * sources the docs pages embed.
+ */
+import DocsHeader from "@/components/docs/DocsHeader.astro"
+import ThemeScript from "@/components/docs/ThemeScript.astro"
+import { DOCS_PRODUCTS, getDocsShellData, getHeaderNavLinks } from "@/lib/docs"
+import { codeBlockIconVars } from "@/lib/codeblock-icons"
+import { listVelaSceneTemplates, velaSceneTarget } from "@/lib/vela-source"
+import "@/styles/global.css"
+
+const product = DOCS_PRODUCTS["vela-rbxts"]
+const shell = await getDocsShellData(product.href, product.id)
+const navLinks = getHeaderNavLinks(shell)
+
+const templates = listVelaSceneTemplates()
+const defaultTemplate =
+  templates.find((template) => template.scene === "PanelScene") ?? templates[0]
+
+const previewSrc = `${import.meta.env.BASE_URL}vela-preview/index.html?target=${encodeURIComponent(
+  velaSceneTarget("VelaPlaygroundScene"),
+)}&chrome=none`
+
+const codeBlockIconStyle = Object.entries(codeBlockIconVars)
+  .map(([key, value]) => `--ec-icon-${key}: ${value};`)
+  .join("\n      ")
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Write Vela class names and watch the real compiler lower them, in your browser."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Playground · Vela</title>
+    <ThemeScript />
+  </head>
+  <body
+    class="min-h-screen bg-background font-sans text-foreground antialiased"
+    style={codeBlockIconStyle}
+  >
+    <DocsHeader docsHref={product.href} navLinks={navLinks} product={product} />
+
+    <main
+      class="mx-auto w-full max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8"
+      data-playground
+      data-preview-src={previewSrc}
+    >
+      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Playground</h1>
+          <p class="mt-1 text-sm text-muted-foreground">
+            The real compiler, running in your browser. Class names in, Roblox
+            properties out — nothing leaves this page.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <label class="sr-only" for="playground-template">Example</label>
+          <select
+            class="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground transition-colors hover:bg-muted/50"
+            id="playground-template"
+          >
+            {templates.map((template) => (
+              <option selected={template.scene === defaultTemplate?.scene} value={template.scene}>
+                {template.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            class="h-9 rounded-md border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            data-playground-reset
+            type="button"
+          >
+            Reset
+          </button>
+
+          <button
+            class="h-9 rounded-md border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+            data-playground-share
+            type="button"
+          >
+            Copy link
+          </button>
+
+          <button
+            class="h-9 rounded-md bg-foreground px-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            data-playground-run
+            type="button"
+          >
+            Run <span class="ml-1 font-mono text-xs opacity-70">⌘↵</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-2">
+        <section class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+          <header
+            class="flex items-center justify-between border-b border-border bg-muted/40 px-2 py-1.5"
+          >
+            <div class="flex items-center gap-1" role="tablist">
+              <button
+                aria-selected="true"
+                class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                data-active="true"
+                data-editor-tab="source"
+                role="tab"
+                type="button"
+              >
+                playground.tsx
+              </button>
+              <button
+                aria-selected="false"
+                class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                data-active="false"
+                data-editor-tab="config"
+                role="tab"
+                type="button"
+              >
+                vela.config.json
+              </button>
+            </div>
+            <span class="px-1 font-mono text-[0.7rem] text-muted-foreground/70" data-playground-dirty hidden>
+              unsaved · ⌘↵ to run
+            </span>
+          </header>
+
+          <div
+            class="h-[52vh] min-h-[320px] overflow-hidden lg:h-[calc(100vh-16rem)]"
+            data-editor-panel="source"
+          >
+          </div>
+          <div
+            class="h-[52vh] min-h-[320px] overflow-hidden lg:h-[calc(100vh-16rem)]"
+            data-editor-panel="config"
+            hidden
+          >
+          </div>
+        </section>
+
+        <section class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+          <header
+            class="flex items-center justify-between border-b border-border bg-muted/40 px-2 py-1.5"
+          >
+            <div class="flex items-center gap-1" role="tablist">
+              <button
+                aria-selected="true"
+                class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                data-active="true"
+                data-result-tab="preview"
+                role="tab"
+                type="button"
+              >
+                Preview
+              </button>
+              <button
+                aria-selected="false"
+                class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                data-active="false"
+                data-result-tab="lowered"
+                role="tab"
+                type="button"
+              >
+                Lowered
+              </button>
+            </div>
+            <span class="px-1 font-mono text-[0.7rem] text-muted-foreground/70" data-playground-status>
+              starting…
+            </span>
+          </header>
+
+          <div
+            class="h-[52vh] min-h-[320px] lg:h-[calc(100vh-16rem)]"
+            data-result-panel="preview"
+          >
+            <iframe
+              class="h-full w-full bg-[#f6f9fc] dark:bg-[#12151a]"
+              data-playground-frame
+              title="Vela playground preview"></iframe>
+          </div>
+          <div
+            class="h-[52vh] min-h-[320px] overflow-hidden lg:h-[calc(100vh-16rem)]"
+            data-result-panel="lowered"
+            hidden
+          >
+          </div>
+
+          <ul
+            class="max-h-32 space-y-1 overflow-auto border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground"
+            data-playground-diagnostics
+            hidden
+          >
+          </ul>
+
+          <pre
+            class="max-h-40 overflow-auto border-t border-destructive/40 bg-destructive/10 px-3 py-2 font-mono text-xs whitespace-pre-wrap text-destructive"
+            data-playground-error
+            hidden></pre>
+        </section>
+      </div>
+
+      <p class="mt-3 text-xs text-muted-foreground">
+        Imports resolve to <code class="font-mono">@rbxts/react</code> and{" "}
+        <code class="font-mono">./VelaStage</code>. Export{" "}
+        <code class="font-mono">preview = &#123; render &#125;</code> or a default component.
+        The config pane takes the same shape as a project's{" "}
+        <code class="font-mono">vela.config.json</code>.
+      </p>
+    </main>
+
+    <script
+      id="playground-templates"
+      is:inline
+      set:html={JSON.stringify(templates)}
+      type="application/json"
+    />
+
+    <script>
+      import { json } from "@codemirror/lang-json"
+      import { javascript } from "@codemirror/lang-javascript"
+      import { Compartment, EditorState } from "@codemirror/state"
+      import { oneDark } from "@codemirror/theme-one-dark"
+      import { EditorView, keymap } from "@codemirror/view"
+      import { basicSetup } from "codemirror"
+      import { transform as toCommonJs } from "sucrase"
+      import { toGallerySource } from "@/lib/vela-loom-compat"
+
+      type Template = {
+        scene: string
+        label: string
+        source: string
+        configInput?: string
+      }
+
+      type Diagnostic = {
+        level: string
+        code: string
+        message: string
+        token?: string
+      }
+
+      type LowerResult = {
+        code: string
+        diagnostics: Diagnostic[]
+        needsRuntimeHost: boolean
+      }
+
+      const root = document.querySelector<HTMLElement>("[data-playground]")
+      if (root) mountPlayground(root)
+
+      function mountPlayground(root: HTMLElement) {
+        const templates: Template[] = JSON.parse(
+          document.getElementById("playground-templates")?.textContent ?? "[]",
+        )
+        const select = document.querySelector<HTMLSelectElement>("#playground-template")!
+        const frame = root.querySelector<HTMLIFrameElement>("[data-playground-frame]")!
+        const statusEl = root.querySelector<HTMLElement>("[data-playground-status]")!
+        const errorEl = root.querySelector<HTMLElement>("[data-playground-error]")!
+        const dirtyEl = root.querySelector<HTMLElement>("[data-playground-dirty]")!
+        const diagnosticsEl = root.querySelector<HTMLElement>("[data-playground-diagnostics]")!
+
+        const isDark = () => document.documentElement.classList.contains("dark")
+        const currentTheme = () => (isDark() ? "dark" : "light")
+
+        // The gallery is served by this site's own origin (see the
+        // `vela-preview` integration), so both directions can name it.
+        const frameOrigin = location.origin
+
+        // --- editors ---------------------------------------------------------
+        const themeCompartment = new Compartment()
+        const configThemeCompartment = new Compartment()
+        const loweredThemeCompartment = new Compartment()
+        const runKeymap = keymap.of([
+          { key: "Mod-Enter", preventDefault: true, run: () => (run(), true) },
+          { key: "Mod-s", preventDefault: true, run: () => (run(), true) },
+        ])
+
+        // What "Reset" goes back to; re-pointed whenever a template is picked.
+        // `baselineFromLink` records that it arrived as a `#code=` fragment
+        // rather than a template, so the share hash is preserved instead of
+        // being cleared as redundant.
+        let baselineFromLink = false
+        let shared: { source: string; config: string } | undefined
+        const initial = initialDocs()
+        let baseline = initial
+
+        const editorTheme = EditorView.theme({
+          "&": { height: "100%", fontSize: "13px" },
+          ".cm-scroller": { fontFamily: "var(--font-mono, ui-monospace, monospace)" },
+        })
+
+        const view = new EditorView({
+          parent: root.querySelector<HTMLElement>("[data-editor-panel='source']")!,
+          state: EditorState.create({
+            doc: initial.source,
+            extensions: [
+              runKeymap,
+              basicSetup,
+              javascript({ jsx: true, typescript: true }),
+              themeCompartment.of(isDark() ? [oneDark] : []),
+              editorTheme,
+              EditorView.updateListener.of((update) => {
+                if (update.docChanged) scheduleRun()
+              }),
+            ],
+          }),
+        })
+
+        const configView = new EditorView({
+          parent: root.querySelector<HTMLElement>("[data-editor-panel='config']")!,
+          state: EditorState.create({
+            doc: initial.config,
+            extensions: [
+              runKeymap,
+              basicSetup,
+              json(),
+              configThemeCompartment.of(isDark() ? [oneDark] : []),
+              editorTheme,
+              EditorView.updateListener.of((update) => {
+                if (update.docChanged) scheduleRun()
+              }),
+            ],
+          }),
+        })
+
+        // The lowering is an output, so it is a read-only editor rather than a
+        // third input — same highlighting, no cursor to mistake for one.
+        const loweredView = new EditorView({
+          parent: root.querySelector<HTMLElement>("[data-result-panel='lowered']")!,
+          state: EditorState.create({
+            doc: "",
+            extensions: [
+              basicSetup,
+              javascript({ jsx: true, typescript: true }),
+              EditorState.readOnly.of(true),
+              loweredThemeCompartment.of(isDark() ? [oneDark] : []),
+              editorTheme,
+            ],
+          }),
+        })
+
+        function initialDocs() {
+          // A `#code=` fragment wins over any template: it is either a shared
+          // link or the "Edit" button on a docs example.
+          const fromLink = decodeShared(location.hash)
+          if (fromLink) {
+            const custom = document.createElement("option")
+            custom.textContent = "Custom"
+            custom.value = "__custom"
+            select.prepend(custom)
+            select.value = "__custom"
+            baselineFromLink = true
+            shared = fromLink
+            return fromLink
+          }
+
+          // `select.value` is the server-rendered default (`selected` option)
+          // unless `?example=` overrides it.
+          const wanted =
+            new URLSearchParams(location.search).get("example") ?? select.value
+          const template =
+            templates.find((item) => item.scene === wanted) ?? templates[0]
+          if (template) select.value = template.scene
+
+          return docsForTemplate(template)
+        }
+
+        function docsForTemplate(template: Template | undefined) {
+          return {
+            source: template?.source ?? "",
+            config: template?.configInput?.trimEnd() ?? "{}",
+          }
+        }
+
+        // --- compiler --------------------------------------------------------
+        // Both are code-split: the wasm payload is a few megabytes, and the page
+        // is useful (and editable) while it is still on the wire.
+        let lower: ((source: string, configJson?: string) => LowerResult) | undefined
+        let resolveConfig: ((input: unknown) => unknown) | undefined
+
+        const compilerReady = (async () => {
+          const [{ default: init, transform }, { defineConfig }] = await Promise.all([
+            import("@vela-rbxts/compiler-wasm"),
+            import("@vela-rbxts/config"),
+          ])
+
+          // No argument: the wasm-pack glue points at its own payload with
+          // `new URL(…, import.meta.url)`, which Vite emits as an asset. That
+          // only holds while the glue stays a real module, hence the
+          // `optimizeDeps.exclude` for this package in astro.config.mjs.
+          await init()
+          lower = (source, configJson) =>
+            transform(source, configJson === undefined ? null : { configJson }) as LowerResult
+          resolveConfig = defineConfig as (input: unknown) => unknown
+        })()
+
+        /**
+         * The config the compiler is handed. It wants the *resolved* config —
+         * defaults merged, `extend` applied — which is what `defineConfig`
+         * returns and what the `rbxtsc` host passes for a real project; handing
+         * it the input shape would wipe the built-in theme instead of extending
+         * it. An empty pane means "no config at all", i.e. the defaults.
+         */
+        function currentConfigJson() {
+          const text = configView.state.doc.toString().trim()
+          if (text === "" || text === "{}") {
+            return undefined
+          }
+
+          return JSON.stringify(resolveConfig!(JSON.parse(text)))
+        }
+
+        // --- run pipeline ----------------------------------------------------
+        // The frame announces itself with `vela-playground-ready`; until then the
+        // latest compile is held back (the scene mounts a few hundred ms after
+        // the bundle loads).
+        let frameReady = false
+        let pending: string | undefined
+        let version = 0
+        let debounce: number | undefined
+
+        function scheduleRun() {
+          dirtyEl.hidden = false
+          window.clearTimeout(debounce)
+          debounce = window.setTimeout(run, 700)
+        }
+
+        async function run() {
+          window.clearTimeout(debounce)
+          dirtyEl.hidden = true
+          const source = view.state.doc.toString()
+          syncShareHash()
+
+          if (!lower) {
+            setStatus("loading compiler…")
+            await compilerReady
+          }
+
+          let configJson: string | undefined
+          try {
+            configJson = currentConfigJson()
+          } catch (err) {
+            showError(`vela.config.json — ${describe(err)}`)
+            return
+          }
+
+          let lowered: LowerResult
+          try {
+            lowered = lower!(source, configJson)
+          } catch (err) {
+            showError(describe(err))
+            return
+          }
+
+          loweredView.dispatch({
+            changes: {
+              from: 0,
+              to: loweredView.state.doc.length,
+              insert: lowered.code,
+            },
+          })
+          showDiagnostics(lowered)
+
+          let compiled: string
+          try {
+            compiled = toCommonJs(toGallerySource(lowered.code), {
+              transforms: ["typescript", "jsx", "imports"],
+              jsxRuntime: "classic",
+              jsxPragma: "React.createElement",
+              jsxFragmentPragma: "React.Fragment",
+              filePath: "playground.tsx",
+            }).code
+          } catch (err) {
+            showError(describe(err))
+            return
+          }
+
+          version += 1
+          if (!frameReady) {
+            pending = compiled
+            setStatus("waiting for preview…")
+            return
+          }
+          send(compiled)
+        }
+
+        function send(compiled: string) {
+          setStatus("running…")
+          frame.contentWindow?.postMessage(
+            { type: "vela-playground-run", code: compiled, version },
+            frameOrigin,
+          )
+        }
+
+        function sendTheme() {
+          frame.contentWindow?.postMessage(
+            { type: "loom-theme", theme: currentTheme() },
+            frameOrigin,
+          )
+        }
+
+        function describe(err: unknown) {
+          return err instanceof Error ? err.message : String(err)
+        }
+
+        function setStatus(text: string) {
+          statusEl.textContent = text
+        }
+
+        function showError(message: string) {
+          errorEl.textContent = message
+          errorEl.hidden = false
+          setStatus("error")
+        }
+
+        function clearError() {
+          errorEl.hidden = true
+          setStatus("ok")
+        }
+
+        /**
+         * The compiler's own verdict on the snippet: unknown utilities, values
+         * outside the theme, and the like. Worth showing whether or not the
+         * preview renders — half of what a playground teaches is what Vela
+         * refuses to lower.
+         */
+        function showDiagnostics(lowered: LowerResult) {
+          const notes = lowered.diagnostics.map(
+            (diagnostic) =>
+              `${diagnostic.code} — ${diagnostic.message}${
+                diagnostic.token ? ` (${diagnostic.token})` : ""
+              }`,
+          )
+
+          // Loom has no `TweenService`, so a lowering that fell onto the runtime
+          // path renders only as far as its first transition. The output is
+          // still the real one, which is the half worth looking at.
+          if (lowered.needsRuntimeHost) {
+            notes.push(
+              "runtime path — this className could not be resolved at compile time, so Vela emitted its runtime host. The preview renders it, but transitions and interaction variants stay inert here.",
+            )
+          }
+
+          diagnosticsEl.replaceChildren(
+            ...notes.map((note) => {
+              const item = document.createElement("li")
+              item.textContent = note
+              return item
+            }),
+          )
+          diagnosticsEl.hidden = notes.length === 0
+        }
+
+        // --- share links ------------------------------------------------------
+        function encode(source: string) {
+          const bytes = new TextEncoder().encode(source)
+          let binary = ""
+          for (const byte of bytes) binary += String.fromCharCode(byte)
+          return encodeURIComponent(btoa(binary))
+        }
+
+        function decode(value: string) {
+          const binary = atob(decodeURIComponent(value))
+          const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
+          return new TextDecoder().decode(bytes)
+        }
+
+        /** True when the editors hold something no `?example=` can reproduce. */
+        function isCustom() {
+          return (
+            view.state.doc.toString() !== baseline.source ||
+            configView.state.doc.toString() !== baseline.config ||
+            baselineFromLink
+          )
+        }
+
+        function shareHash() {
+          const source = `code=${encode(view.state.doc.toString())}`
+          const config = configView.state.doc.toString().trim()
+          return config === "" || config === "{}"
+            ? source
+            : `${source}&config=${encode(config)}`
+        }
+
+        /**
+         * Keep the URL in step with the editors, so a reload restores what is on
+         * screen. An untouched template needs no fragment — writing one anyway
+         * would shadow `?example=` and relabel the picker "Custom" on reload.
+         */
+        function syncShareHash() {
+          if (!isCustom()) {
+            if (location.hash) {
+              history.replaceState(null, "", location.pathname + location.search)
+            }
+            return
+          }
+          history.replaceState(null, "", `#${shareHash()}`)
+        }
+
+        /**
+         * The URL to hand someone else. Pristine templates travel as the short
+         * `?example=` form; edited source has to carry the whole snippet.
+         */
+        function shareUrl() {
+          const url = new URL(location.href)
+          if (isCustom()) {
+            url.hash = shareHash()
+            return url.href
+          }
+          url.hash = ""
+          if (select.value !== "__custom") {
+            url.searchParams.set("example", select.value)
+          }
+          return url.href
+        }
+
+        function decodeShared(hash: string) {
+          const params = new URLSearchParams(hash.replace(/^#/, ""))
+          const code = params.get("code")
+          if (code === null) return undefined
+          try {
+            return {
+              source: decode(code),
+              config: params.get("config") ? decode(params.get("config")!) : "{}",
+            }
+          } catch {
+            return undefined
+          }
+        }
+
+        // --- wiring ------------------------------------------------------------
+        window.addEventListener("message", (event: MessageEvent) => {
+          const data = event.data as
+            | { type?: string; ok?: boolean; message?: string; version?: number }
+            | undefined
+          if (!data || event.source !== frame.contentWindow) return
+          if (event.origin !== frameOrigin) return
+
+          if (data.type === "vela-playground-ready") {
+            frameReady = true
+            // The gallery only starts listening once its bundle boots, so any
+            // theme change during that window was dropped — resend it now that
+            // the scene is up.
+            sendTheme()
+            const compiled = pending
+            pending = undefined
+            if (compiled) send(compiled)
+            else void run()
+            return
+          }
+
+          if (data.type === "vela-playground-result") {
+            // A slow run finishing after a newer one must not overwrite its
+            // verdict.
+            if (data.version !== version) return
+            if (data.ok) clearError()
+            else showError(data.message ?? "Unknown error.")
+          }
+        })
+
+        function replaceDocs(docs: { source: string; config: string }) {
+          view.dispatch({
+            changes: { from: 0, to: view.state.doc.length, insert: docs.source },
+          })
+          configView.dispatch({
+            changes: { from: 0, to: configView.state.doc.length, insert: docs.config },
+          })
+          void run()
+        }
+
+        select.addEventListener("change", () => {
+          // "Custom" is only present when the page arrived with a `#code=`
+          // link; picking it again returns to that snippet.
+          if (select.value === "__custom") {
+            if (!shared) return
+            baseline = shared
+            baselineFromLink = true
+            replaceDocs(shared)
+            return
+          }
+
+          const template = templates.find((item) => item.scene === select.value)
+          if (!template) return
+          baseline = docsForTemplate(template)
+          baselineFromLink = false
+          replaceDocs(baseline)
+        })
+
+        // Reset restores whatever the editors started from — the selected
+        // template, or the snippet a `#code=` link arrived with.
+        root.querySelector("[data-playground-reset]")?.addEventListener("click", () => {
+          replaceDocs(baseline)
+        })
+
+        root
+          .querySelector("[data-playground-run]")
+          ?.addEventListener("click", () => void run())
+
+        root
+          .querySelector("[data-playground-share]")
+          ?.addEventListener("click", async (event) => {
+            const button = event.currentTarget as HTMLButtonElement
+            const url = shareUrl()
+
+            let copied = true
+            try {
+              await navigator.clipboard.writeText(url)
+            } catch {
+              // Denied permission, or no clipboard at all. Put the link in the
+              // address bar so it is still reachable by hand rather than
+              // failing silently.
+              copied = false
+              history.replaceState(null, "", url)
+            }
+
+            button.textContent = copied ? "Copied" : "Link in address bar"
+            window.setTimeout(() => {
+              button.textContent = "Copy link"
+            }, 1500)
+          })
+
+        wireTabs("[data-editor-tab]", "[data-editor-panel]", "editorTab", "editorPanel")
+        wireTabs("[data-result-tab]", "[data-result-panel]", "resultTab", "resultPanel")
+
+        function wireTabs(
+          tabSelector: string,
+          panelSelector: string,
+          tabKey: string,
+          panelKey: string,
+        ) {
+          const tabs = root.querySelectorAll<HTMLButtonElement>(tabSelector)
+          const panels = root.querySelectorAll<HTMLElement>(panelSelector)
+
+          for (const tab of tabs) {
+            tab.addEventListener("click", () => {
+              const name = tab.dataset[tabKey]
+              for (const other of tabs) {
+                const active = other === tab
+                other.dataset.active = String(active)
+                other.setAttribute("aria-selected", String(active))
+              }
+              for (const panel of panels) {
+                panel.hidden = panel.dataset[panelKey] !== name
+              }
+              // CodeMirror measures lazily, and a panel that was `hidden` when
+              // its editor mounted has no layout to measure until now.
+              view.requestMeasure()
+              configView.requestMeasure()
+              loweredView.requestMeasure()
+            })
+          }
+        }
+
+        // Keep the preview and the editors on the docs site's theme.
+        new MutationObserver(() => {
+          const dark = isDark() ? [oneDark] : []
+          view.dispatch({ effects: themeCompartment.reconfigure(dark) })
+          configView.dispatch({ effects: configThemeCompartment.reconfigure(dark) })
+          loweredView.dispatch({ effects: loweredThemeCompartment.reconfigure(dark) })
+          sendTheme()
+        }).observe(document.documentElement, {
+          attributeFilter: ["class"],
+          attributes: true,
+        })
+
+        frame.src = `${root.dataset.previewSrc}&theme=${currentTheme()}`
+      }
+    </script>
+  </body>
+</html>

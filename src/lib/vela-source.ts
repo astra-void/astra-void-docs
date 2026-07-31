@@ -15,12 +15,16 @@
  * Three views of one scene, all derived here:
  * - `source` — what the author wrote (the Code tab, and the snippet in prose).
  * - `output` — what Vela emitted (the Output tab).
- * - `gallerySource` — `output` plus the small preview-compat rewrite below,
- *   which is what is written into the generated gallery.
+ * - `gallerySource` — `output` plus the preview-compat rewrite in
+ *   vela-loom-compat.ts, which is what is written into the generated gallery.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { createRequire } from "node:module"
 import { resolve } from "node:path"
+// Shared with the playground, which runs the same rewrite in the browser.
+import { toGallerySource } from "./vela-loom-compat"
+
+export { toGallerySource }
 
 // Anchored on the working directory for the same reason lattice-source.ts is:
 // this module is imported unbundled while astro.config is evaluated *and*
@@ -98,7 +102,12 @@ export function listVelaScenes(): string[] {
     .sort((a, b) => a.localeCompare(b, "en"))
 }
 
-/** Support modules (`VelaStage.tsx` and friends) a scene may import. */
+/**
+ * Everything in the scene directory that is not an authored example: the stage
+ * a scene imports, and the playground target. These are copied into the gallery
+ * verbatim rather than lowered — they carry no `className`, and the compiler is
+ * the thing they exist to show off, not something applied to them.
+ */
 export function listVelaSupportModules(): string[] {
   if (!existsSync(SCENE_DIR)) {
     return []
@@ -128,8 +137,8 @@ export function velaSceneTarget(name: string) {
  * merge rules the theming guide documents rather than a hand-rolled imitation.
  */
 function readSceneConfig(name: string) {
-  const file = resolve(SCENE_DIR, `${name}.config.json`)
-  if (!existsSync(file)) {
+  const input = readVelaSceneConfigInput(name)
+  if (input === undefined) {
     return undefined
   }
 
@@ -137,66 +146,58 @@ function readSceneConfig(name: string) {
     defineConfig(input: unknown): unknown
   }
 
-  return JSON.stringify(defineConfig(JSON.parse(readFileSync(file, "utf8"))))
+  return JSON.stringify(defineConfig(JSON.parse(input)))
 }
 
 /**
- * Loom knows Roblox's legacy `Font` enum, but not the `Font` datatype or
- * `FontFace` that `font-*` lowers to — `new Font(...)` would be an undefined
- * global in the browser and take the whole preview down with it. Map the
- * emitted family/weight pair onto the nearest legacy enum member, which the
- * renderer resolves to a real CSS font-weight.
- *
- * This rewrite exists only in the copy that is rendered. The Output tab shows
- * the compiler's actual emit, `FontFace` and all.
+ * The unresolved `<name>.config.json` beside a scene, as authored. The
+ * playground seeds its config editor from this — the input shape is what a
+ * project writes, and resolving it is the playground's job, same as here.
  */
-function toLoomFont(family: string, weight: string) {
-  const prefix = family.includes("Gotham")
-    ? "Gotham"
-    : family.includes("RobotoMono")
-      ? "RobotoMono"
-      : family.includes("Roboto")
-        ? "Roboto"
-        : family.includes("Arial")
-          ? "Arial"
-          : "SourceSans"
+export function readVelaSceneConfigInput(name: string): string | undefined {
+  const file = resolve(SCENE_DIR, `${name}.config.json`)
 
-  // Loom's enum only carries the weights Roblox shipped per family, so several
-  // Vela weights collapse onto one member (there is no SourceSansMedium).
-  if (weight === "Heavy" && prefix === "Gotham") return "GothamBlack"
-  if (weight === "Bold" || weight === "ExtraBold" || weight === "Heavy") {
-    return `${prefix}Bold`
-  }
-  if (weight === "SemiBold") {
-    return prefix === "Gotham" ? "GothamMedium" : "SourceSansSemibold"
-  }
-  if (weight === "Medium") {
-    return prefix === "Gotham" ? "GothamMedium" : "SourceSans"
-  }
-  if (weight === "Thin" || weight === "ExtraLight" || weight === "Light") {
-    return prefix === "SourceSans" ? "SourceSansLight" : prefix
-  }
+  return existsSync(file) ? readFileSync(file, "utf8") : undefined
+}
 
-  return prefix
+/** Turn "ListRowsScene" into "List Rows". */
+function labelForScene(scene: string) {
+  return scene.replace(/Scene$/, "").replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+}
+
+export type VelaSceneTemplate = {
+  scene: string
+  /** Human label, e.g. "List Rows". */
+  label: string
+  /** The authored source, harness and all — the playground runs it as the gallery does. */
+  source: string
+  /** The scene's `vela.config.json`, unresolved, when it has one. */
+  configInput?: string
 }
 
 /**
- * Rewrite the compiler's emit into something Loom can render. Two gaps need it
- * today — the font datatype above, and `ColorSequence`, whose browser stand-in
- * implements the two-color form only as the `.new` factory, so the constructor
- * call a gradient lowers to sets `Keypoints` to a bare color and throws while
- * the frame is being encoded. Same call either way.
- *
- * Everything else Vela emits is ordinary roblox-ts that Loom runs as-is.
+ * Every authored example as a playground starter. Deliberately the authored
+ * source rather than the lowering: the playground's whole subject is what the
+ * compiler does to it.
  */
-export function toGallerySource(output: string) {
-  return output
-    .replace(
-      /FontFace=\{new Font\("[^"]*\/([A-Za-z]+)\.json",\s*Enum\.FontWeight\.(\w+)\)\}/g,
-      (_match, family: string, weight: string) =>
-        `Font={Enum.Font.${toLoomFont(family, weight)}}`,
-    )
-    .replace(/new ColorSequence\(/g, "ColorSequence.new(")
+export function listVelaSceneTemplates(): VelaSceneTemplate[] {
+  return listVelaScenes().flatMap((scene) => {
+    const built = compileVelaScene(scene)
+    if (!built) {
+      return []
+    }
+
+    const configInput = readVelaSceneConfigInput(scene)
+
+    return [
+      {
+        scene,
+        label: labelForScene(scene),
+        source: built.source,
+        ...(configInput === undefined ? {} : { configInput }),
+      },
+    ]
+  })
 }
 
 // Compiling is cheap but not free, and both the integration and every page that

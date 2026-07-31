@@ -312,6 +312,11 @@ function buildSectionSubgroups(
 
 const HEADER_SECTIONS = ["components", "guides", "reference"] as const
 
+const PRODUCT_PLAYGROUNDS: Partial<Record<DocsProductId, string>> = {
+  "lattice-ui": "/playground/",
+  "vela-rbxts": "/vela-playground/",
+}
+
 /** Header nav mirrors whichever sections the product actually ships. */
 export function getHeaderNavLinks(shell: DocsShellData) {
   const links = HEADER_SECTIONS.flatMap((key) => {
@@ -321,8 +326,10 @@ export function getHeaderNavLinks(shell: DocsShellData) {
     return section && href ? [{ label: section.label, href }] : []
   })
 
-  if (shell.product.id === "lattice-ui") {
-    links.push({ label: "Playground", href: "/playground/" })
+  // Each product's playground is its own page: they share nothing but the idea.
+  const playground = PRODUCT_PLAYGROUNDS[shell.product.id]
+  if (playground) {
+    links.push({ label: "Playground", href: playground })
   }
 
   return links
