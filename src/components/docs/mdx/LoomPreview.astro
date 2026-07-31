@@ -146,83 +146,10 @@ const editHref = rawSource
 </style>
 
 <script>
-  const currentTheme = () =>
-    document.documentElement.classList.contains("dark") ? "dark" : "light"
+  // Shared with VelaPreview — both embed the same kind of frame.
+  import { mountLoomFrames, watchLoomTheme } from "@/lib/loom-frame"
 
-  function mountLoomPreviews() {
-    const frames = document.querySelectorAll<HTMLIFrameElement>(
-      "[data-loom-frame]:not([data-loaded])",
-    )
-
-    const load = (frame: HTMLIFrameElement) => {
-      const src = frame.dataset.src
-      if (!src || frame.dataset.loaded) return
-      frame.src = `${src}&theme=${currentTheme()}`
-      frame.dataset.loaded = "true"
-    }
-
-    if (frames.length > 0) {
-      if (!("IntersectionObserver" in window)) {
-        frames.forEach(load)
-      } else {
-        const observer = new IntersectionObserver(
-          (entries, obs) => {
-            for (const entry of entries) {
-              if (entry.isIntersecting) {
-                load(entry.target as HTMLIFrameElement)
-                obs.unobserve(entry.target)
-              }
-            }
-          },
-          { rootMargin: "200px" },
-        )
-        frames.forEach((frame) => observer.observe(frame))
-      }
-    }
-
-    // Tab switching (Preview / Code), wired once per figure.
-    for (const figure of document.querySelectorAll<HTMLElement>(
-      "[data-loom-preview]:not([data-tabs-wired])",
-    )) {
-      figure.dataset.tabsWired = "true"
-      const tabs = figure.querySelectorAll<HTMLButtonElement>("[data-loom-tab]")
-      const panels = figure.querySelectorAll<HTMLElement>("[data-loom-panel]")
-      for (const tab of tabs) {
-        tab.addEventListener("click", () => {
-          const name = tab.dataset.loomTab
-          for (const t of tabs) {
-            const active = t === tab
-            t.dataset.active = String(active)
-            t.setAttribute("aria-selected", String(active))
-          }
-          for (const panel of panels) {
-            panel.hidden = panel.dataset.loomPanel !== name
-          }
-        })
-      }
-    }
-  }
-
-  // Push docs theme toggles into already-loaded preview frames.
-  function watchThemeForLoomPreviews() {
-    const win = window as Window & { loomThemeObserver?: MutationObserver }
-    if (win.loomThemeObserver) return
-    const observer = new MutationObserver(() => {
-      const theme = currentTheme()
-      for (const frame of document.querySelectorAll<HTMLIFrameElement>(
-        "[data-loom-frame][data-loaded]",
-      )) {
-        frame.contentWindow?.postMessage({ type: "loom-theme", theme }, "*")
-      }
-    })
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-    win.loomThemeObserver = observer
-  }
-
-  mountLoomPreviews()
-  watchThemeForLoomPreviews()
-  document.addEventListener("astro:after-swap", mountLoomPreviews)
+  mountLoomFrames()
+  watchLoomTheme()
+  document.addEventListener("astro:after-swap", mountLoomFrames)
 </script>
