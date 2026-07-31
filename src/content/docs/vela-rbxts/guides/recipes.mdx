@@ -1,0 +1,231 @@
+---
+title: Recipes
+description: Small, complete UI patterns — buttons, badges, meters, list rows, a dialog — each compiled by the real compiler and rendered live, with notes on what lowers to what.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 80
+---
+
+import { Callout, VelaPreview } from "@/components/docs/mdx";
+
+The guides in this section explain Vela one utility family at a time. This page goes the other way:
+it builds the small pieces most Roblox interfaces are made of and reads the result. Every preview is
+compiled by the same compiler `rbxtsc` loads — open the **Classes** tab for the source and the
+**Lowered** tab for what actually comes out — and every example stays on the
+[static path](/vela-rbxts/getting-started/how-it-works/#the-two-lowering-paths), so what you see is
+plain Roblox properties with no runtime helper involved.
+
+Two conventions repeat throughout, both worth internalizing before you copy anything:
+
+- **Everything has an explicit size.** Roblox instances default to zero-height `Size` values, and
+  text instances default to an opaque white background. That is why the examples write `w-*`/`h-*`
+  on almost everything and `bg-transparent` on labels that should not paint — the noise is Roblox's
+  defaults, not Vela's requirements.
+- **Rows and columns are `UIListLayout`.** Any element with `flex`, `gap-*`, `justify-*` or
+  `items-*` on it gets exactly one `UIListLayout` child, and that layout owns the positions of every
+  child under it. See [layout and sizing](/vela-rbxts/guides/layout-and-sizing/) for the full model.
+
+## Buttons
+
+<VelaPreview
+  height={150}
+  label="Filled, outlined, and destructive — the outline is a UIStroke, and everything else is four utility families."
+  scene="ButtonScene"
+/>
+
+A button is a `textbutton` with sizing, a radius, a background, and text styling. The whole
+difference between the filled and outlined variants is one `border border-slate-600` pair, which
+lowers to a `UIStroke` child — there is no separate "outline button" concept to learn.
+
+Hover feedback comes straight from the [`hover:` variant](/vela-rbxts/guides/responsive-and-input-variants/#hover-is-per-element),
+and pairing it with `transition` tweens the change instead of snapping it:
+
+```tsx title="Hovering tweens the fill over 150ms"
+<textbutton
+  className="w-28 h-10 rounded-md bg-sky-500 hover:bg-sky-600 transition duration-150 text-white text-sm font-semibold"
+  Text="Play"
+/>
+```
+
+Know what that buys and costs: a variant moves the element onto the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/), and a gamepad or touch player may never
+hover — treat it as feedback, not as the only signal.
+
+**There is no `active:` or `pressed:` variant.** Press feedback is state you own — track it with
+React events and branch between two fully static class strings, which keeps both looks on the static
+path with the full utility set:
+
+```tsx title="src/client/ActionButton.tsx"
+export function ActionButton(props: { label: string; onClick: () => void }) {
+  const [pressed, setPressed] = React.useState(false);
+
+  return pressed ? (
+    <textbutton
+      className="w-28 h-10 rounded-md bg-sky-600 text-white text-sm font-semibold"
+      Text={props.label}
+      Event={{
+        Activated: props.onClick,
+        MouseButton1Up: () => setPressed(false),
+        MouseButton1Down: () => setPressed(true),
+      }}
+    />
+  ) : (
+    <textbutton
+      className="w-28 h-10 rounded-md bg-sky-500 text-white text-sm font-semibold"
+      Text={props.label}
+      Event={{
+        Activated: props.onClick,
+        MouseButton1Up: () => setPressed(false),
+        MouseButton1Down: () => setPressed(true),
+      }}
+    />
+  );
+}
+```
+
+The duplication is the point: one computed string would push the element onto the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/), where `font-semibold` and `text-sm` are
+silently dropped. Two literals cost nothing at runtime.
+
+**Buttons do not size to their label.** A bare `textbutton` is zero-sized; `w-fit`/`h-fit` lower to
+`AutomaticSize` if you want Roblox to measure the text, but a fixed `w-28 h-10` is the predictable
+default for anything that sits in a row with other buttons.
+
+## Badges
+
+<VelaPreview
+  height={140}
+  label="Status pills: rounded-full, a dark shade for the fill, a light shade of the same palette for the text."
+  scene="BadgeScene"
+/>
+
+A pill is a `textlabel` with `rounded-full` — which is `new UDim(0.5, 0)`, half the instance's own
+height, so it stays a perfect capsule at any size. Roblox centers label text by default, so a pill
+needs no alignment classes at all; the label's own background paints the pill, which is the one place
+in these recipes where a text instance *keeps* its background instead of clearing it.
+
+The color pattern is worth stealing: fill from the dark end of a palette (`bg-emerald-950`), border
+one step lighter (`border-emerald-800`), text from the light end (`text-emerald-400`). Because every
+built-in palette carries the same eleven shades, the recipe transfers mechanically to any hue —
+swap `emerald` for `amber`, `rose`, or a palette of your own from
+[theming](/vela-rbxts/guides/theming/).
+
+## Stat bars
+
+<VelaPreview
+  height={150}
+  label="A meter is a track and a fill: the fraction is the value, and the fill sits at the track's origin because a plain frame does not lay out its children."
+  scene="StatBarScene"
+/>
+
+A meter needs no layout instance at all. The track is a `rounded-full` frame; the fill is a plain
+child with `w-2/3 h-full`, and because the track has no `UIListLayout`, the fill just sits at the
+track's origin — top-left, exactly where a fill bar should start. Fractions lower to the *scale*
+component of `Size`, so `w-2/3` literally means "two thirds of the track" with no pixel math on
+your side.
+
+To drive the fill from live data, resist the computed class string. `w-*` is one of the prefixes the
+runtime resolver does support, but you would be paying for the whole
+[runtime path](/vela-rbxts/guides/dynamic-class-names/) to express a number. Set `Size` directly on
+the fill instead and let the classes carry everything that does not change:
+
+```tsx title="The fraction is data — pass it as a prop"
+<frame className="w-72 h-2 rounded-full bg-slate-800">
+  <frame className="rounded-full bg-emerald-500" Size={UDim2.fromScale(health, 1)} />
+</frame>
+```
+
+One rule makes this safe: **never set the same property from a class and a prop on one element.**
+When they collide, Vela emits its value after yours and the class wins — a `h-full` next to that
+`Size` prop would quietly overwrite the whole thing with `Size = (0, 1)` scale. Keep the classes on
+properties the prop does not touch, as above, and the two compose cleanly.
+
+## List rows
+
+<VelaPreview
+  height={220}
+  label="A column of rows, each row its own UIListLayout. Column widths are chosen so rank, avatar, name, and score fill the row exactly."
+  scene="ListRowsScene"
+/>
+
+Lists are the pattern Roblox UIs live in: a `flex flex-col gap-2` column whose children are
+`flex items-center gap-3` rows. Each element gets its own `UIListLayout`, and helper instances are
+per-element, so nesting costs nothing to reason about.
+
+Notice the score column is pushed to the right edge with fixed widths — rank, avatar, name, and
+score plus the gaps add up to exactly the row's inner width. `justify-between` does exist in Vela
+(it lowers to `UIListLayout.HorizontalFlex`), but the browser renderer behind these previews does
+not implement the flex-distribution properties yet, so the example uses the arithmetic layout that
+renders faithfully everywhere. Both approaches are legitimate in a real place; the fixed-width one
+is also what you need whenever some column must not shrink.
+
+In real code the rows come from data. A `className` written as a *literal inside the callback* is
+still a static string — mapping does not push you onto the runtime path:
+
+```tsx title="Still the static path"
+{entries.map((entry, index) => (
+  <frame className="flex items-center gap-3 w-full h-9 px-3 rounded-md bg-slate-800" key={entry.id}>
+    {/* … */}
+  </frame>
+))}
+```
+
+What matters is the expression in the attribute, not where it appears. `className={rowClasses}` with
+a computed `rowClasses` is dynamic; the literal above is not.
+
+## A confirmation dialog
+
+<VelaPreview
+  height={230}
+  label="Column layout, wrapped body text, and a justify-end button row — the alignment half of justify-*, which is plain UIListLayout."
+  scene="DialogScene"
+/>
+
+The dialog combines everything above: a column with `gap-3`, a `text-wrap` body — `TextWrapped`
+is off by default on Roblox labels, so long text clips without it — and a `justify-end` row for the
+buttons, which lowers to `UIListLayout.HorizontalAlignment = Right` and needs nothing from the flex
+model.
+
+To present it as a modal, parent the card to a full-screen scrim and lift it above the rest of the
+interface:
+
+```tsx title="src/client/Modal.tsx"
+<frame className="size-full bg-slate-950 opacity-60 z-50">
+  <frame className="origin-center left-1/2 top-1/2 w-96 h-40 …">{/* the card */}</frame>
+</frame>
+```
+
+Three details do the work: `opacity-60` maps to `BackgroundTransparency` (inverted — CSS measures
+opacity, Roblox measures transparency), `origin-center` sets `AnchorPoint` to `(0.5, 0.5)` so
+`left-1/2 top-1/2` centers the card rather than placing its corner, and `z-50` raises `ZIndex`.
+Remember the scrim's transparency does not cascade to the card — nothing in Roblox inherits, so the
+card keeps its own opaque background.
+
+## When a recipe needs state
+
+Every pattern here eventually meets data: a selected tab, a disabled button, a filling meter. The
+rule that keeps recipes working is always the same, and it is worth stating once in recipe form:
+
+- **The look changes between known states** → branch between two complete static literals, as the
+  button does. Full utility set, full diagnostics, zero runtime cost.
+- **A number changes continuously** → keep the classes static and set the property directly, as the
+  meter does — on a property no class on that element touches.
+- **Only a color, radius, spacing, or size varies** → a computed string is acceptable; those
+  families are within the [runtime resolver's subset](/vela-rbxts/guides/dynamic-class-names/). Know
+  that you are opting into the runtime path for that element.
+- **The state is the pointer being over the element** → that one is built in: `hover:`, ideally with
+  `transition`.
+
+What you should not do is compute a string that carries layout classes — `flex`, `items-center`,
+alignment, text styling. Those are silently dropped at runtime, and the failure mode is a broken
+screen with a clean build. If that sentence is surprising, read
+[dynamic class names](/vela-rbxts/guides/dynamic-class-names/) before shipping anything from this
+page.
+
+## See also
+
+- [Your first component](/vela-rbxts/getting-started/first-component/) — the same walkthrough at
+  single-utility resolution.
+- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the layout model these recipes lean on.
+- [Troubleshooting](/vela-rbxts/guides/troubleshooting/) — when a recipe does not look like its preview.

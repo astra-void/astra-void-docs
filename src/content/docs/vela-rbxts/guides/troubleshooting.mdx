@@ -1,0 +1,147 @@
+---
+title: Troubleshooting
+description: A symptom-first map of Vela's failure modes — the silent ones especially — with the fastest check for each and links to the full explanations.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 90
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Vela reports most mistakes as [diagnostics](/vela-rbxts/reference/diagnostics/), and when you have a
+warning code, that page is the faster route — look the code up and follow the fix. This page is for
+the other situation: **something is wrong on screen and the build said nothing.** It is organized by
+symptom; each entry gives the most likely cause first and the quickest way to confirm it.
+
+## "A class did nothing"
+
+Work down this list in order — it is sorted by how often each one turns out to be the answer.
+
+**1. The element is on the runtime path, and the class is outside the runtime subset.**
+A computed `className`, any variant prefix, or a margin/`divide-*`/`animate-*` utility moves the
+element onto the [runtime path](/vela-rbxts/guides/dynamic-class-names/), where the in-game resolver
+understands only colors, backgrounds, radius, spacing, sizing, and the structural and motion
+families. Everything else — layout direction, alignment, text styling, position, transforms,
+constraints — is **dropped with no diagnostic**. Confirm by checking the compiled output of that
+file: a runtime-path element renders as `VelaRuntimeHost` instead of its original tag. Fix by
+branching between two fully static string literals instead of computing one.
+
+**2. The utility does not belong on that host element.**
+`<frame className="text-red-500" />` compiles cleanly and emits `TextColor3` onto a Frame, which
+ignores it. The per-host rules are enforced **only in the editor** — the build never checks them.
+Confirm by opening the file in an editor with the [LSP installed](/vela-rbxts/guides/editor-setup/);
+`unsupported-host-utility` appears there and only there.
+
+**3. The class is on a component that does not forward it.**
+`<Panel className="p-4" />` hands `Panel` resolved props and helper children. If `Panel` does not
+spread its unrecognized props onto a host element and render `children`, everything vanishes —
+no warning anywhere. Confirm by reading the component; fix by forwarding, as described in
+[How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
+
+**4. Your build drops Vela diagnostics entirely.**
+Diagnostics reach you through roblox-ts's `context.addDiagnostic`. On a roblox-ts version that does
+not expose it, every Vela warning disappears and broken classes look fine. Confirm by compiling a
+deliberately broken class — `className="bg-nope-500"` — and checking a warning appears. If it does
+not, your diagnostics are being discarded; upgrade roblox-ts before trusting a clean build.
+
+**5. The editor stayed quiet, but the key is wrong.**
+The editor suppresses `unknown-theme-key` while your token is still a prefix of a real theme key, so
+`bg-slat` shows no squiggle and still warns in the build. The build is the source of truth.
+
+**6. `transition` on a static element.**
+Transitions animate *changes*, and a purely static element never changes. `transition`/`duration-*`
+without a variant rule or dynamic `className` is dropped with `transition-without-runtime` — add the
+`hover:` or breakpoint rule that gives it something to tween.
+
+## "A breakpoint or orientation variant never applies"
+
+That is a real bug in the released **0.4.0**, not your code. The runtime helper samples
+`Camera.ViewportSize` once at mount, when Roblox often still reports 1×1 — so `sm:`/`md:`/`lg:`
+never match and orientation reads as landscape. The fix is merged upstream and pending release.
+Until it ships, drive reflow from your own viewport state as shown in
+[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/#driving-reflow-yourself).
+The input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` are unaffected.
+
+## "The layout is wrong"
+
+**A row renders as a column.** The classic runtime-path signature. `gap-*` in a dynamic `className`
+creates a `UIListLayout`, but the `flex`/`flex-row`/`items-*` classes that configure it are dropped,
+and the layout falls back to its default **vertical** fill.
+See [the trap, concretely](/vela-rbxts/guides/dynamic-class-names/#the-trap-concretely).
+
+**`left-*` / `top-*` are ignored.** The parent has a `UIListLayout` — any `flex`, `gap-*`, or
+`space-*` on it — and a list layout owns its children's positions. Position the element only if its
+parent is a plain frame.
+
+**An element sits outside its parent after `right-*`/`bottom-*`.** Those utilities set the
+coordinate from the far edge but do not anchor the element, so its top-left corner is what lands
+there. Add the matching `origin-*` — `right-2 bottom-2 origin-bottom-right`.
+
+**`justify-*` behaves strangely.** `justify-center` and `justify-between` set two *different*
+properties (`HorizontalAlignment` vs `HorizontalFlex`), so writing both makes them interact inside
+the layout solver rather than one winning. Pick one. See
+[layout and sizing](/vela-rbxts/guides/layout-and-sizing/#justify--splits-across-two-properties).
+
+**Spacing is bigger than you asked for.** Margins are wrappers that participate in the parent's
+list, so they **sum** with its `gap-*`. Prefer gap alone for list spacing.
+
+**A grid stops laying out when you add `gap-*`.** Known 0.4.0 sharp edge: gap on a `grid` element
+also emits a conflicting `UIListLayout`. Keep gap off grid elements until the fix ships.
+
+**Children shuffle when `divide-*` is present.** Separators are inserted by child position and
+break under explicit `LayoutOrder`/`order-*` on the children. Use source order with dividers.
+
+## "The colors are wrong"
+
+**A gradient renders as a flat fill.** One of its stops is `transparent`, which is silently dropped
+— a two-stop gradient quietly becomes one stop. This is the one transparency case that produces no
+diagnostic. See [colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/).
+
+**`bg-*` seems ignored next to a gradient.** By design: a gradient forces `BackgroundColor3` to
+white so the stops read true, overriding any `bg-*` on the element regardless of order.
+
+**A theme color you defined reports `unknown-theme-key`.** Two usual suspects, both in config. A
+top-level `theme.colors` **silently discards `theme.extend.colors`** along with every built-in
+palette — add colors through `extend` alone. And config discovery walks up from each source file, so
+a stray `vela.config.ts` in a subdirectory shadows the root one for files beneath it. See
+[merge semantics](/vela-rbxts/reference/config/#merge-semantics).
+
+**A themed color works statically but not on a dynamically-classed element.** The runtime path
+re-parses theme values from text and accepts exactly two shapes — `Color3.fromRGB(r, g, b)` and
+`new UDim(a, b)` with numeric literals. Anything else (`Color3.fromHex`, a constant in the
+expression) silently degrades at runtime while the static path keeps working. Keep theme values in
+those two literal forms. See [theming](/vela-rbxts/guides/theming/).
+
+## "`className` is a type error"
+
+The global augmentation only loads if `vela-rbxts` is imported somewhere in your program. Add the
+one-line declaration file — and do not name it `src/vela-rbxts.d.ts`, which makes the import resolve
+to itself under roblox-ts's `baseUrl` and silently breaks the augmentation. Both are covered in
+[installation](/vela-rbxts/getting-started/installation/#declare-the-classname-prop).
+
+## "Nothing is being transformed at all"
+
+- The file must end in `.tsx` — a `className` built in a `.ts` helper is invisible to Vela.
+- The tsconfig plugin must be `vela-rbxts/transformer`, the subpath. The root package's
+  `createTransformer` is a different function, and passing it produces no transform and no error.
+- The transformer only runs under `rbxtsc` — it throws under plain `tsc`.
+- The file filter skips files with no literal `className` substring and no JSX open tag; both are
+  [toggleable](/vela-rbxts/reference/config/#tsconfig-plugin-options) but on by default.
+
+## "The build got slower, or the output got bigger"
+
+Every file with a variant-prefixed token or other runtime trigger carries its own ~2,300-line copy
+of the runtime helper — concentrate variants in a few container components. And
+`vela.config.ts` is re-read, re-transpiled, and re-executed for **every** eligible source file, so
+keep it a plain `defineConfig` call with literal values.
+
+## Still stuck?
+
+Compile the smallest possible reproduction and read the emitted TSX before the Luau: a static-path
+element keeps its tag and gains plain props; a runtime-path element becomes `VelaRuntimeHost` with
+`__vela*` props. Which of the two you are looking at answers most questions on this page. If the
+behavior contradicts the docs, the honest maps are
+[scope and status](/vela-rbxts/getting-started/scope-and-status/) and the
+[diagnostics reference](/vela-rbxts/reference/diagnostics/) — and a report to the
+[repository](https://github.com/astra-void/vela-rbxts) is welcome.
