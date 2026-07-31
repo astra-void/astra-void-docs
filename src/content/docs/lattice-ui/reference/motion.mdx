@@ -29,7 +29,7 @@ import {
   useResponseMotion,
   useFeedbackEffect,
   motionTargets,
-  createCanvasGroupRevealRecipe,
+  createSurfaceRevealRecipe,
 } from "@lattice-ui/react-motion";
 ```
 
@@ -72,7 +72,7 @@ function usePresenceMotion<T extends Instance>(
 ```
 
 ```tsx title="Animating a surface in and out"
-const ref = usePresenceMotion<Frame>(open, createCanvasGroupRevealRecipe(), () => unmount());
+const ref = usePresenceMotion<Frame>(open, createSurfaceRevealRecipe(), () => unmount());
 
 return <frame ref={ref} Size={UDim2.fromOffset(320, 180)} />;
 ```
@@ -262,9 +262,9 @@ function createIndicatorRevealRecipe(size: UDim2, duration?: number): PresenceMo
 ```
 
 - **`createSurfaceRevealRecipe`** — a small upward slide plus background fade for opaque surfaces.
-- **`createCanvasGroupRevealRecipe`** — the same slide using `GroupTransparency`, for content wrapped in a `CanvasGroup`.
+- **`createCanvasGroupRevealRecipe`** — the same slide using `GroupTransparency`, for a `CanvasGroup` you supply yourself. No primitive renders one; `Dialog.Content`, whose host spans the layer, wants a `Position`-only config instead.
 - **`createOverlayFadeRecipe`** — a plain backdrop fade (to half transparency on reveal).
-- **`createPopperEntranceRecipe`** / **`createCanvasGroupPopperEntranceRecipe`** — directional entrances offset by `placement` for anchored popovers, the second variant for `CanvasGroup` content.
+- **`createPopperEntranceRecipe`** / **`createCanvasGroupPopperEntranceRecipe`** — directional entrances offset by `placement` for anchored popovers. The first matches the `frame` every anchored part renders; the second is for a `canvasgroup` passed in through `asChild`.
 - **`createIndicatorRevealRecipe`** — grows an indicator from zero to `size` with a fade, for selection/check indicators.
 
 ### Response recipes

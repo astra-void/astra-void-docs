@@ -516,7 +516,7 @@ When a visible toast's time elapses (or `remove` is called on it), the provider 
 Every part renders unstyled, so the whole surface is yours:
 
 - `Toast.Viewport` — a `Frame` holding your children. No layout, no queue markup.
-- `Toast.Root` — a `CanvasGroup`. Its `Visible` is presence-driven; everything else is yours.
+- `Toast.Root` — a `Frame`. Its `Visible` is presence-driven; everything else is yours.
 - `Toast.Title` and `Toast.Description` — `TextLabel`s with no copy of their own. Pass `Text` from the record; they also render children, so a `uipadding` works directly on them.
 - `Toast.Action` and `Toast.Close` — `TextButton`s that merge `Active`, `Selectable`, and the `Activated` handler. Neither touches the queue: call `remove(id)` yourself.
 
@@ -577,7 +577,7 @@ The package also exports the provider's pure queue helpers — `enqueueToast`, `
   rows={[
     { name: "visible", type: "boolean", description: "Drives the shown/hidden motion state. Wire to !record.exiting in custom viewports. Defaults to true." },
     { name: "transition", type: "ResponseMotionConfig", description: "Show/hide motion. None by default; createToastResponseRecipe() gives the 0.14s settle. Exits slower than ~160ms are cut off by the provider's drop window." },
-    { name: "asChild", type: "boolean", description: "Apply the Visible binding and motion ref to the single child element instead of the canvasgroup the part renders." },
+    { name: "asChild", type: "boolean", description: "Apply the Visible binding and motion ref to the single child element instead of the frame the part renders." },
     { name: "children", type: "React.ReactNode", description: "The toast contents." },
   ]}
 />

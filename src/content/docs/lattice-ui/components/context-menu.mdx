@@ -417,7 +417,7 @@ The item renders an unstyled `textbutton`. It tracks hover through `MouseEnter`/
 
 ### Motion and presence
 
-`ContextMenu.Content` runs no motion of its own. Pass a `transition` to animate it; `createCanvasGroupPopperEntranceRecipe(placement)` from `@lattice-ui/react-motion` matches the `canvasgroup` the content renders, and taking the **resolved** placement makes the motion originate from the side the menu actually landed on — so a menu the popper flipped above the pointer animates from above. `forceMount` keeps the content mounted through its exit. The content wrapper is an automatically-sized `canvasgroup`, so your surface defines the measured size.
+`ContextMenu.Content` runs no motion of its own. Pass a `transition` to animate it; `createPopperEntranceRecipe(placement)` from `@lattice-ui/react-motion` matches the `frame` the content renders, and taking the **resolved** placement makes the motion originate from the side the menu actually landed on — so a menu the popper flipped above the pointer animates from above. `forceMount` keeps the content mounted through its exit. The content wrapper is an automatically-sized `frame`, so your surface defines the measured size.
 
 <Callout title="No ordered movement">
 `ContextMenu.Item` does not register a focus node. There is no automatic focus on open, no `Up`/`Down` movement between items, and no focus restore on close — `modal` here means "blocks pointer interaction behind the surface", not "traps selection". If your surface has to be operable without a mouse, build it with [Menu](/lattice-ui/components/menu/) instead.
@@ -469,9 +469,9 @@ Before 0.7.0 `ContextMenu.Item` animated your element's `BackgroundColor3` betwe
     { name: "sideOffset", type: "number", description: "Gap in pixels between the pointer anchor and the content. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the anchor's cross axis. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from every screen edge when resolving and clamping placement. Defaults to 8." },
-    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned canvasgroup instead of the part's own children." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned frame instead of the part's own children." },
     { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs, instead of unmounting on close." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createCanvasGroupPopperEntranceRecipe(placement) for a placement-aware entrance." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createPopperEntranceRecipe(placement) for a placement-aware entrance." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal. Call event.preventDefault() to veto the dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any outside interaction, before dismissal. Call event.preventDefault() to veto the dismissal." },
     { name: "children", type: "React.ReactNode", description: "The menu contents." },

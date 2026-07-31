@@ -384,7 +384,7 @@ When the menu opens, the first enabled item is focused automatically and selecti
 
 ### Motion and presence
 
-`Menu.Content` runs no motion of its own. Pass a `transition` to animate it — `createCanvasGroupPopperEntranceRecipe(placement)` matches the `canvasgroup` the content renders, and building it from the **resolved** placement makes a menu the popper flipped above the trigger animate from above. `forceMount` keeps the content mounted through its exit (useful when you drive motion yourself or need the node to persist). The content wrapper is an automatically-sized `canvasgroup`, so your surface defines the measured size.
+`Menu.Content` runs no motion of its own. Pass a `transition` to animate it — `createPopperEntranceRecipe(placement)` matches the `frame` the content renders, and building it from the **resolved** placement makes a menu the popper flipped above the trigger animate from above. `forceMount` keeps the content mounted through its exit (useful when you drive motion yourself or need the node to persist). The content wrapper is an automatically-sized `frame`, so your surface defines the measured size.
 
 <Callout title="Menu is modal">
 Menu defaults to `modal={true}`: it traps selection inside the open content and blocks interaction behind it. Set `modal={false}` on `Menu.Root` for a lightweight, non-blocking menu that leaves the rest of the UI interactive — closer to Popover's default behavior.
@@ -440,9 +440,9 @@ Before 0.7.0 `Menu.Item` animated your element's `BackgroundColor3` between fixe
     { name: "sideOffset", type: "number", description: "Gap in pixels between the trigger and the content. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the trigger's cross axis. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from every screen edge when resolving and clamping placement. Defaults to 8." },
-    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the canvasgroup the part renders." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the frame the part renders." },
     { name: "forceMount", type: "boolean", description: "Keeps the content mounted while exit motion runs, instead of unmounting on close." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createCanvasGroupPopperEntranceRecipe(placement) for a placement-aware entrance." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createPopperEntranceRecipe(placement) for a placement-aware entrance." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal. Call event.preventDefault() to veto the dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any outside interaction, before dismissal. Call event.preventDefault() to veto the dismissal." },
     { name: "children", type: "React.ReactNode", description: "The menu contents." },

@@ -44,7 +44,7 @@ Because props now forward, the fix is usually to move styling onto the part itse
 
 Each part checks forwarded props against the instance it actually renders. Passing a prop that instance does not accept is now a compile error instead of being silently dropped.
 
-That means you need to know what each part renders. `Dialog.Overlay` is a `textbutton`, `Dialog.Content` is a `canvasgroup`, `Toast.Viewport` and `Menu.Group` are `frame`s. Passing `TextColor3` to a `frame` will not compile.
+That means you need to know what each part renders. `Dialog.Overlay` is a `textbutton`; the content and surface parts — `Dialog.Content`, `Menu.Content`, `Tooltip.Content`, `Popover.Content` and friends, `Toast.Root`, `Toast.Viewport`, `Menu.Group` — are all `frame`s. Passing `TextColor3` to a `frame` will not compile.
 
 ### 3. Motion no longer has defaults
 
@@ -57,33 +57,36 @@ Motion that follows a value the primitive computes is unaffected: `Progress.Indi
 ```
 
 ```tsx title="0.7 — pass the transition you want"
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+import { createPopperEntranceRecipe } from "@lattice-ui/react-motion";
 
-<Dialog.Content transition={createCanvasGroupRevealRecipe()}>
+<Menu.Content transition={createPopperEntranceRecipe("bottom")}>
   {/* ... */}
-</Dialog.Content>
+</Menu.Content>
 ```
 
 The recipes that used to be applied for you are all still exported from `@lattice-ui/react-motion`, unchanged. Passing one back explicitly reproduces the old feel exactly:
 
 | Part | Recipe that used to be its default |
 | --- | --- |
-| `Dialog.Content` | `createCanvasGroupRevealRecipe()` |
-| `Menu.Content`, `ContextMenu.Content`, `Combobox.Content`, `Tooltip.Content` | `createCanvasGroupPopperEntranceRecipe(placement)` |
-| `Popover.Content`, `Select.Content` | `createCanvasGroupPopperEntranceRecipe(placement)`, or `createPopperEntranceRecipe(placement)` under `asChild` |
+| `Dialog.Content` | None that still fits — see below |
+| `Menu.Content`, `ContextMenu.Content`, `Combobox.Content`, `Tooltip.Content`, `Popover.Content`, `Select.Content` | `createPopperEntranceRecipe(placement)` |
 | `Accordion.Content`, `Tabs.Content` | `createSurfaceRevealRecipe()` |
 | `Checkbox.Indicator`, `RadioGroup.Indicator` | `createIndicatorRevealRecipe(size)` |
 | `Toast.Root` | `createToastRevealRecipe()` |
 
+Those hosts all render a `frame` now, so the fade reaches the surface's own background and not the labels inside it. Fade those with it, or pass `asChild` with your own `canvasgroup` and the canvas-group variant of the recipe.
+
 The popper recipes took the **resolved** placement, so the motion originated from the side the surface actually landed on after any flip. Read it from `usePopper` if you want that behavior back; passing no placement animates from a fixed side.
+
+`Dialog.Content` is the one part whose old default cannot be passed back. Its motion host is a `frame` rather than a `canvasgroup`, and a `frame` has no property that fades its descendants, so `createCanvasGroupRevealRecipe()` has nothing to write `GroupTransparency` to. Give the content a `Position`-only config for the rise and fade the overlay dim or your own panel elements instead — [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog) has the pattern.
 
 Prefer these over a hand-written config. Each one declares the correct **target contract** — which properties motion is allowed to own — so it cannot fight your layout. A `PresenceMotionConfig` written by hand needs `reveal`/`exit` as `{ values, intent }`, not bare properties:
 
 ```tsx title="The config shape, if you do write one"
 transition={{
-  initial: { GroupTransparency: 1 },
-  reveal: { values: { GroupTransparency: 0 }, intent: { duration: 0.12 } },
-  exit: { values: { GroupTransparency: 1 }, intent: { duration: 0.096 } },
+  initial: { Position: UDim2.fromOffset(0, 8) },
+  reveal: { values: { Position: UDim2.fromOffset(0, 0) }, intent: { duration: 0.12 } },
+  exit: { values: { Position: UDim2.fromOffset(0, 8) }, intent: { duration: 0.096 } },
 }}
 ```
 

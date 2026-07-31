@@ -114,13 +114,13 @@ A `PresenceMotionConfig` has up to four parts. `initial` is the snapshot applied
 
 Prefer a shared recipe over hand-rolling a config — they encode tested timing and the right target contract:
 
-- `createCanvasGroupRevealRecipe()` / `createSurfaceRevealRecipe()` — slide-and-fade for surfaces.
+- `createSurfaceRevealRecipe()` — slide-and-fade for surfaces. `createCanvasGroupRevealRecipe()` is the same motion through `GroupTransparency`, for a `canvasgroup` you own.
 - `createOverlayFadeRecipe()` — backdrop fade (`appearance` target).
-- `createPopperEntranceRecipe(placement)` / `createCanvasGroupPopperEntranceRecipe(placement)` — directional entrance for anchored content.
+- `createPopperEntranceRecipe(placement)` — directional entrance for anchored content, with `createCanvasGroupPopperEntranceRecipe(placement)` as the `canvasgroup` variant.
 - `createIndicatorRevealRecipe(size)` — grow-from-zero for indicators (`size-wrapper`).
 
 <Callout title="Match the transparency property to the instance">
-The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup`. The plain surface recipes animate `BackgroundTransparency`. Pick the recipe that matches the instance you attach the ref to, or the property write is rejected by the target contract.
+The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup` — no primitive renders one, so they are for a `canvasgroup` you attach the ref to yourself. The plain surface recipes animate `BackgroundTransparency`, which fades that instance's own background and not its children. Pick the recipe that matches the instance you attach the ref to, or the property write is rejected by the target contract.
 </Callout>
 
 ### forceMount and the lifecycle
@@ -222,11 +222,13 @@ The layered primitives accept a `transition` prop that is exactly a `PresenceMot
 They ship none by default. The lifecycle above runs either way — a part with no `transition` still mounts, still stays mounted until its exit resolves, and still fires `onExitComplete` — so adding a transition later never changes when things unmount, only what happens in between. [Motion recipes](/lattice-ui/guides/motion-recipes/) lists the recipe that suits each part.
 
 ```tsx
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+import { createPopperEntranceRecipe } from "@lattice-ui/react-motion";
 
-// Slower, larger reveal for a hero dialog:
-<Dialog.Content transition={createCanvasGroupRevealRecipe(12, 0.2)} />
+// Slower, larger entrance for an anchored surface:
+<Popover.Content transition={createPopperEntranceRecipe("bottom", 12, 0.2)} />
 ```
+
+`Dialog.Content` is the exception: its host is a full-screen `Frame`, so give it a `Position`-only config and fade the overlay or your own panel elements instead — see [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
 ## Related
 

@@ -436,7 +436,7 @@ Item registration is tied to component lifetime, and items live inside `Select.C
 
 ### Motion and presence
 
-`Select.Content` runs no motion of its own. Pass a `transition` to animate it: `createCanvasGroupPopperEntranceRecipe(placement)` matches the `canvasgroup` the content renders, and `createPopperEntranceRecipe(placement)` suits the `asChild` path where your own element replaces it. Both travel from the resolved placement side. `forceMount` keeps the content mounted while closed and through its exit.
+`Select.Content` runs no motion of its own. Pass a `transition` to animate it: `createPopperEntranceRecipe(placement)` matches the `frame` the content renders, on the default path and under `asChild` where your own element replaces it. It travels from the resolved placement side. `forceMount` keeps the content mounted while closed and through its exit.
 
 Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `SelectionGained`/`SelectionLost` drive a background-color settle using the selection response recipe, skipped while the item is disabled. With `asChild` on an item, the slot merges `Active`, the activation and hover handlers, and its ref onto your child element.
 
@@ -500,9 +500,9 @@ Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `Sele
     { name: "sideOffset", type: "number", description: "Gap in pixels between the trigger and the content along the placement axis. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Offset in pixels along the cross axis from the aligned edge. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the viewport edges when repositioning. Defaults to 8." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; createCanvasGroupPopperEntranceRecipe(placement) matches the canvasgroup the content renders, or createPopperEntranceRecipe(placement) under asChild." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; createPopperEntranceRecipe(placement) matches the frame the content renders, under asChild as well." },
     { name: "forceMount", type: "boolean", description: "Keeps the content — and therefore the item registry — mounted while closed and through exit motion." },
-    { name: "asChild", type: "boolean", description: "Render onto the single child element instead of the canvasgroup the part renders. Pair it with createPopperEntranceRecipe rather than the canvas-group variant." },
+    { name: "asChild", type: "boolean", description: "Render onto the single child element instead of the frame the part renders. createPopperEntranceRecipe fits either path; supply a canvasgroup here if you want the whole subtree to fade as one layer." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
     { name: "children", type: "React.ReactNode", description: "The list surface contents." },

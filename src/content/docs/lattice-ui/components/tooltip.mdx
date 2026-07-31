@@ -364,7 +364,7 @@ The skip window lives on the provider: every open — hover, selection, or a con
 
 ### Motion and presence
 
-`Tooltip.Content` wraps its children in a `canvasgroup` and runs no motion of its own. Pass a `transition` to animate it — `createCanvasGroupPopperEntranceRecipe(placement)` keyed to the **resolved** placement slides and fades from the trigger's actual side, even after a collision flip. Pass `forceMount` to keep the content mounted while closed and through its exit, bypassing the presence wrapper when you drive visibility yourself. With `asChild`, your single child is rendered inside the positioned surface with its position zeroed and its `Visible` bound to the motion state.
+`Tooltip.Content` wraps its children in a `frame` and runs no motion of its own. Pass a `transition` to animate it — `createPopperEntranceRecipe(placement)` keyed to the **resolved** placement slides and fades from the trigger's actual side, even after a collision flip. Pass `forceMount` to keep the content mounted while closed and through its exit, bypassing the presence wrapper when you drive visibility yourself. With `asChild`, your single child is rendered inside the positioned surface with its position zeroed and its `Visible` bound to the motion state.
 
 <Callout title="The skip window needs a Provider">
 Without a `Tooltip.Provider`, each tooltip still gets the 700 ms default delay, but there is no shared skip window — every hover re-waits the full delay. Wrap a region in a provider whenever neighboring tooltips should hand off instantly, and use `Root`'s own `delayDuration` for per-tooltip overrides.
@@ -430,7 +430,7 @@ Without `asChild`, `Tooltip.Trigger` renders a transparent 140x36 `textbutton` l
     { name: "sideOffset", type: "number", description: "Gap in pixels between the content and the trigger along the placement side." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the placement side." },
     { name: "collisionPadding", type: "number", description: "Minimum padding kept between the content and the viewport edges when resolving position." },
-    { name: "transition", type: "MotionConfig", description: "Reveal/exit motion. None by default; pass createCanvasGroupPopperEntranceRecipe(placement) keyed to the resolved placement." },
+    { name: "transition", type: "MotionConfig", description: "Reveal/exit motion. None by default; pass createPopperEntranceRecipe(placement) keyed to the resolved placement." },
     { name: "forceMount", type: "boolean", description: "Keeps the content mounted while closed and through exit motion, bypassing the presence wrapper. Defaults to false." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the content, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },

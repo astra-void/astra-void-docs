@@ -39,10 +39,10 @@ Presence recipes return a `PresenceMotionConfig`; response recipes return a `Res
 | Recipe | Animates | Pair it with |
 | --- | --- | --- |
 | `createSurfaceRevealRecipe(offsetY?, duration?)` | Upward slide + `BackgroundTransparency` fade | `Tabs.Content`, `Accordion.Content` |
-| `createCanvasGroupRevealRecipe(offsetY?, duration?)` | Upward slide + `GroupTransparency` fade | `Dialog.Content` |
+| `createCanvasGroupRevealRecipe(offsetY?, duration?)` | Upward slide + `GroupTransparency` fade | Your own `canvasgroup`, through `asChild` or `usePresenceMotion` |
 | `createOverlayFadeRecipe(duration?)` | Backdrop fade to half transparency | Your own element inside `Dialog.Overlay` |
-| `createPopperEntranceRecipe(placement?, distance?, duration?)` | Directional slide-in from the anchor side + fade | `Popover.Content`/`Select.Content` under `asChild` |
-| `createCanvasGroupPopperEntranceRecipe(placement?, distance?, duration?)` | Same, via `GroupTransparency` | `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`, `Combobox.Content`, and `Popover`/`Select` content wrappers |
+| `createPopperEntranceRecipe(placement?, distance?, duration?)` | Directional slide-in from the anchor side + fade | `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`, `Combobox.Content`, `Popover.Content`, `Select.Content` |
+| `createCanvasGroupPopperEntranceRecipe(placement?, distance?, duration?)` | Same, via `GroupTransparency` | Your own `canvasgroup`, supplied to an anchored part through `asChild` |
 | `createIndicatorRevealRecipe(size, duration?)` | Grow from zero to `size` + fade | `Checkbox.Indicator`, `RadioGroup.Indicator` |
 | `createIndicatorSettleRecipe(duration?)` | Size settling on an indicator wrapper | Custom selection indicators |
 | `createSliderThumbResponseRecipe(isDragging, duration?)` | Thumb position — instant while dragging, eased on release | Slider thumb |
@@ -56,27 +56,33 @@ Presence recipes return a `PresenceMotionConfig`; response recipes return a `Res
 
 Every recipe also sets the right **target contract** — `createOverlayFadeRecipe` uses an `appearance` target, the reveal and popper recipes use an `offset-wrapper`, `createIndicatorRevealRecipe` a `size-wrapper`. That is a large part of why you should prefer a recipe over a hand-written config: the ownership boundary comes for free.
 
+`Dialog.Content` is the one part with no recipe to reach for. It renders a full-screen `Frame`, so a transition can slide it but has no property that fades its descendants — write a `Position`-only config for it and fade the overlay or your own panel elements separately. See [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
+
 ## Giving a component a transition
 
 Pass a recipe's result straight to `transition`. Called with no arguments a recipe uses the house tokens — an 8-pixel rise over a 0.12s reveal, with the exit at 0.8x that. Call the same factory with arguments for a longer, larger reveal:
 
-```tsx title="HeroDialog.tsx"
-import { Dialog } from "@lattice-ui/react-dialog";
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+```tsx title="ShopTabs.tsx"
+import { createSurfaceRevealRecipe } from "@lattice-ui/react-motion";
+import { Tabs } from "@lattice-ui/react-tabs";
 
-export function HeroDialog(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
+const PANEL_REVEAL = createSurfaceRevealRecipe(16, 0.45);
+
+export function ShopTabs() {
   return (
-    <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay
-          BackgroundColor3={Color3.fromRGB(0, 0, 0)}
-          BackgroundTransparency={0.5}
-        />
-        <Dialog.Content transition={createCanvasGroupRevealRecipe(16, 0.45)}>
-          <textlabel Text="Welcome" Size={UDim2.fromOffset(320, 40)} />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <Tabs.Root defaultValue="weapons">
+      <Tabs.List>
+        <Tabs.Trigger value="weapons" />
+        <Tabs.Trigger value="armor" />
+      </Tabs.List>
+
+      <Tabs.Content value="weapons" transition={PANEL_REVEAL} asChild>
+        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(420, 220)} />
+      </Tabs.Content>
+      <Tabs.Content value="armor" transition={PANEL_REVEAL} asChild>
+        <frame BackgroundColor3={Color3.fromRGB(24, 26, 32)} Size={UDim2.fromOffset(420, 220)} />
+      </Tabs.Content>
+    </Tabs.Root>
   );
 }
 ```
@@ -122,9 +128,9 @@ Recipe factories expose the knobs that are safe to turn — an offset or placeme
 When a recipe is almost right, spread its result and override just the step you care about instead of authoring a config from scratch. The recipe's target contract and remaining steps carry over:
 
 ```tsx title="Snappy exit, recipe entrance"
-import { createCanvasGroupRevealRecipe, type PresenceMotionConfig } from "@lattice-ui/react-motion";
+import { createSurfaceRevealRecipe, type PresenceMotionConfig } from "@lattice-ui/react-motion";
 
-const base = createCanvasGroupRevealRecipe(8, 0.3);
+const base = createSurfaceRevealRecipe(8, 0.3);
 
 const snappyExit: PresenceMotionConfig = {
   ...base,
@@ -134,12 +140,12 @@ const snappyExit: PresenceMotionConfig = {
   },
 };
 
-<Dialog.Content transition={snappyExit} />;
+<Tabs.Content value="weapons" transition={snappyExit} />;
 ```
 
 Two constraints to keep in mind when editing steps:
 
-- **Match the transparency property to the instance.** Canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup`; surface recipes animate `BackgroundTransparency`. Swapping a recipe also swaps which instance class it expects.
+- **Match the transparency property to the instance.** No primitive renders a `CanvasGroup` any more, so the canvas-group recipes only fit a `canvasgroup` you supply yourself through `asChild`; everything else fades `BackgroundTransparency`, which reaches one instance's own background rather than its children. On a part whose host spans the layer, like `Dialog.Content`, neither fade does what you want.
 - **Stay inside the target contract.** If you add `Position` values to a recipe whose target is `appearance`, the write is rejected and reported as a diagnostic. Keep the recipe's `target` when you keep its properties; see [target contracts](/lattice-ui/guides/presence-and-motion/#target-contracts-who-owns-the-property).
 
 ## Reduced motion is automatic

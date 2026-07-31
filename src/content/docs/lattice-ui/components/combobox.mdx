@@ -409,7 +409,7 @@ The default filter is a case-insensitive plain substring match. The package also
 
 ### Motion and presence
 
-`Combobox.Content` runs no motion of its own. Pass a `transition` to animate it — `createCanvasGroupPopperEntranceRecipe(placement)` matches the `canvasgroup` the content renders and animates from the resolved placement. `forceMount` keeps the content mounted through its exit (useful when you drive motion yourself or need the node to persist).
+`Combobox.Content` runs no motion of its own. Pass a `transition` to animate it — `createPopperEntranceRecipe(placement)` matches the `frame` the content renders and animates from the resolved placement. `forceMount` keeps the content mounted through its exit (useful when you drive motion yourself or need the node to persist).
 
 <Callout title="Three states, kept in sync">
 Combobox tracks value, input text, and open state separately and reconciles them automatically: selecting syncs the input, closing re-syncs the input from the value, and an invalid selection is repaired against the registry while the list is open. Control each piece only when you need to — mixing controlled value with uncontrolled input is fully supported.
@@ -496,9 +496,9 @@ Filtering works by each item toggling its own visibility, so the listbox stays o
     { name: "sideOffset", type: "number", description: "Gap in pixels between the anchor and the listbox. Defaults to 0." },
     { name: "alignOffset", type: "number", description: "Shift in pixels along the anchor's cross axis. Defaults to 0." },
     { name: "collisionPadding", type: "number", description: "Minimum distance in pixels to keep from the screen edge. Defaults to 8." },
-    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the canvasgroup the part renders." },
+    { name: "asChild", type: "boolean", description: "Render the single child element inside the positioned wrapper instead of the frame the part renders." },
     { name: "forceMount", type: "boolean", description: "Keeps the listbox mounted while exit motion runs." },
-    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createCanvasGroupPopperEntranceRecipe(placement) for a placement-aware entrance." },
+    { name: "transition", type: "PresenceMotionConfig", description: "Reveal/exit motion. None by default; pass createPopperEntranceRecipe(placement) for a placement-aware entrance." },
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press occurs outside the listbox, before dismissal." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called for any other outside interaction, before dismissal." },
     { name: "children", type: "React.ReactNode", description: "The listbox contents." },

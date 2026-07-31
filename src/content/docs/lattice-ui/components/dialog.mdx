@@ -191,13 +191,24 @@ export function TradeRequestDialog(props: {
 
 ### Custom overlay and content transition
 
-Use `asChild` on `Dialog.Overlay` when you need a different element class for the backdrop, and pass `transition` on `Dialog.Content` for the entrance. Two things to design around: the overlay runs no motion of its own and owns no color, so both the dim and any fade are yours; and it closes the dialog on press, so keep the child an activatable button class. The content's `transition` is used as-is (see [Motion and presence](#motion-and-presence)) — here `createCanvasGroupRevealRecipe` with a taller 24px rise.
+Use `asChild` on `Dialog.Overlay` when you need a different element class for the backdrop, and pass `transition` on `Dialog.Content` for the entrance. Two things to design around: the overlay runs no motion of its own and owns no color, so both the dim and any fade are yours; and it closes the dialog on press, so keep the child an activatable button class. The content's `transition` is used as-is (see [Motion and presence](#motion-and-presence)) — here a taller 24px rise.
 
 ```tsx title="StoreDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+import { motionTargets, type PresenceMotionConfig } from "@lattice-ui/react-motion";
 
-const STORE_REVEAL = createCanvasGroupRevealRecipe(24, 0.2);
+const STORE_REVEAL: PresenceMotionConfig = {
+  target: motionTargets.offsetWrapper("store reveal"),
+  initial: { Position: UDim2.fromOffset(0, 24) },
+  reveal: {
+    values: { Position: UDim2.fromOffset(0, 0) },
+    intent: { duration: 0.2, tempo: "swift", tone: "calm" },
+  },
+  exit: {
+    values: { Position: UDim2.fromOffset(0, 24) },
+    intent: { duration: 0.16, tempo: "swift", tone: "calm" },
+  },
+};
 
 export function StoreDialog() {
   return (
@@ -411,9 +422,20 @@ Without `forceMount`, `Dialog.Content` sits inside a presence wrapper that unmou
 
 ```tsx title="MatchResultsDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+import { motionTargets, type PresenceMotionConfig } from "@lattice-ui/react-motion";
 
-const RESULTS_TRANSITION = createCanvasGroupRevealRecipe(16, 0.35);
+const RESULTS_TRANSITION: PresenceMotionConfig = {
+  target: motionTargets.offsetWrapper("results reveal"),
+  initial: { Position: UDim2.fromOffset(0, 16) },
+  reveal: {
+    values: { Position: UDim2.fromOffset(0, 0) },
+    intent: { duration: 0.35, tempo: "gentle", tone: "expressive" },
+  },
+  exit: {
+    values: { Position: UDim2.fromOffset(0, 16) },
+    intent: { duration: 0.28, tempo: "gentle", tone: "expressive" },
+  },
+};
 
 export function MatchResultsDialog(props: {
   open: boolean;
@@ -484,15 +506,39 @@ A force-mounted dialog that has never opened renders with its exit values pre-ap
 
 ### Motion and presence
 
-`Dialog.Content` renders your children inside a full-screen `CanvasGroup`, but runs **no motion of its own**. Pass a `transition` to animate it; the config you pass is used as-is, with nothing underneath to merge with. `createCanvasGroupRevealRecipe()` from `@lattice-ui/react-motion` is the natural fit, since it animates `GroupTransparency` and so fades the panel as one surface:
+`Dialog.Content` renders your children inside a full-screen `Frame`, but runs **no motion of its own**. Pass a `transition` to animate it; the config you pass is used as-is, with nothing underneath to merge with. What the transition can move is the host — animate `Position` and the whole surface slides:
 
 ```tsx title="Opting into the reveal"
-import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+import { motionTargets, type PresenceMotionConfig } from "@lattice-ui/react-motion";
 
-<Dialog.Content transition={createCanvasGroupRevealRecipe()}>
+const RISE: PresenceMotionConfig = {
+  target: motionTargets.offsetWrapper("dialog rise"),
+  initial: { Position: UDim2.fromOffset(0, 8) },
+  reveal: {
+    values: { Position: UDim2.fromOffset(0, 0) },
+    intent: { duration: 0.12, tempo: "swift", tone: "calm" },
+  },
+  exit: {
+    values: { Position: UDim2.fromOffset(0, 8) },
+    intent: { duration: 0.096, tempo: "swift", tone: "calm" },
+  },
+};
+
+<Dialog.Content transition={RISE}>
   {/* your panel */}
 </Dialog.Content>
 ```
+
+#### Fading a dialog
+
+The host is a plain `Frame` spanning the whole layer, and a `Frame` has no property that fades its descendants — `BackgroundTransparency` on the host fades the host's own background, which covers the screen. Animating it through `transition` fills the screen with a rectangle instead of fading your panel, so keep the content transition to `Position` and put the fade where the pixels are:
+
+- **Fade the dim.** `createOverlayFadeRecipe()` on an element inside `Dialog.Overlay` covers most of what a dialog reveal reads as.
+- **Fade your own elements.** Animate `BackgroundTransparency` on your panel frame and `TextTransparency` / `ImageTransparency` on the children that need it, driven by the same `open` state you pass to `Dialog.Root`. Keep those durations at or under the content transition's exit duration, or presence unmounts the tree before your fade finishes.
+
+<Callout title="Recipes that animate GroupTransparency do not fit Dialog.Content">
+`createCanvasGroupRevealRecipe` and `createCanvasGroupPopperEntranceRecipe` animate `GroupTransparency`, which exists only on a `CanvasGroup`. No primitive renders one any more: the anchored parts take a `canvasgroup` you pass through `asChild`, and `Dialog.Content` has no `asChild` at all, so on it the write has no property to land on.
+</Callout>
 
 Presence timing is independent of that: with or without a `transition`, the content stays mounted until its exit resolves, so an exit animation is never cut off. `forceMount` on either part keeps it mounted while closed and lets long exits run outside the presence wrapper's bounded unmount window.
 
@@ -563,6 +609,12 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
 
 ### Dialog.Content
 
+<ForwardedProps
+  instance="Frame"
+  owns={["Visible", "Size"]}
+  ownedBecause="from presence and full-screen layer geometry"
+/>
+
 <PropTable
   rows={[
     { name: "trapFocus", type: "boolean", description: "Traps focus and selection inside the content while open. Defaults to true." },
@@ -572,6 +624,7 @@ The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, i
     { name: "onPointerDownOutside", type: "(event: LayerInteractEvent) => void", description: "Called when a pointer press lands outside the content, before dismissal. Call event.preventDefault() to keep the dialog open." },
     { name: "onInteractOutside", type: "(event: LayerInteractEvent) => void", description: "Called after onPointerDownOutside for the same outside interaction, before dismissal. Call event.preventDefault() to keep the dialog open." },
     { name: "children", type: "React.ReactNode", description: "The surface contents. The first direct host element is the outside-press hit-test boundary." },
+    { name: "…Frame props", type: "Partial<WritableInstanceProperties<Frame>>", description: "Forwarded onto the rendered frame and type-checked against it. The frame spans the layer, so styling it paints the full screen — style your panel child instead. A transition owns Position while it runs." },
   ]}
 />
 
