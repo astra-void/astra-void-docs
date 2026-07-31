@@ -1,6 +1,6 @@
 ---
 title: Dynamic class names
-description: Computing className is allowed, but the runtime resolver supports only fifteen prefixes and silently drops everything else — here is how to stay on the static path.
+description: Computing className is allowed, but the runtime resolver supports a fraction of the utility set and silently drops everything else — here is how to stay on the static path.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -13,52 +13,66 @@ import { Callout } from "@/components/docs/mdx";
 
 What changes is *how* the class string is lowered. When Vela can collapse the expression to a fixed set of tokens at compile time, it takes the **static path** and the full utility set is available. When it cannot, the element falls onto the **runtime path**, where a much smaller resolver runs inside your game. The gap between those two sets is large, undocumented in the README, and — this is the important part — silent.
 
-## The runtime resolver supports fifteen prefixes
+## What the runtime resolver understands
 
-When an element is on the runtime path, its className is tokenized in-game and each token is passed to a resolver that handles exactly these:
+When an element is on the runtime path, its className is tokenized in-game and each token is passed
+to a resolver that handles exactly these families:
 
-`border` (bare) · `border-*` · `bg-*` · `rounded-*` · `p-` · `px-` · `py-` · `pt-` · `pr-` · `pb-` · `pl-` · `gap-` · `w-` · `h-` · `size-`
+`border` (bare) · `border-*` · `bg-*` · `rounded-*` · `p-` · `px-` · `py-` · `pt-` · `pr-` · `pb-` ·
+`pl-` · `gap-` · `w-` · `h-` · `size-` · the positive margins (`m-`, `mx-`, `my-`, `mt-`, `mr-`,
+`mb-`, `ml-`) · `divide-*` · the case transforms (`uppercase`, `lowercase`, `capitalize`,
+`normal-case`) · the decorations (`underline`, `line-through`, `no-underline`) · `animate-*` · and
+the `transition` / `duration-` / `delay-` / `ease-` family.
 
-That is the complete list. Colors, backgrounds, radius, padding, gap, and sizing survive.
+That is the complete list. Colors, backgrounds, radius, spacing, sizing, and the structural and
+motion families survive.
 
 <Callout title="Everything else is silently dropped">
-Any other utility inside a dynamic `className` is discarded at runtime with **no diagnostic** — no compile warning, no editor squiggle, no runtime error. Layout, alignment, text, position, transforms, visibility, shadows, gradients, and constraints all vanish. The element simply renders without them.
+Any other utility inside a dynamic `className` is discarded at runtime with **no diagnostic** — no
+compile warning, no editor squiggle, no runtime error. The flex direction and alignment classes
+(`flex`, `flex-row`, `flex-col`, `justify-*`, `items-*`), text size, weight, and color, position and
+anchor, rotation and scale, visibility, shadows, gradients, and constraints all vanish. The element
+simply renders without them.
+
+Note the asymmetry inside the layout family: `gap-*` is supported and creates a `UIListLayout`, but
+the classes that *configure* that layout are not. A dynamically-classed `gap-2` list falls back to
+`UIListLayout`'s default fill direction — vertical — whatever direction you asked for.
 </Callout>
 
 ## The trap, concretely
 
 Here is code that looks correct, compiles clean, and produces a broken layout:
 
-```tsx title="Broken — the layout classes disappear"
+```tsx title="Broken — the row silently becomes a column"
 import React from "@rbxts/react";
 
-interface CardProps {
+interface RowProps {
   emphasized: boolean;
 }
 
-export function Card({ emphasized }: CardProps) {
-  const classes = `flex flex-col items-center gap-2 p-4 rounded-lg ${
+export function Row({ emphasized }: RowProps) {
+  const classes = `flex items-center gap-2 p-2 rounded-md ${
     emphasized ? "bg-slate-700" : "bg-slate-800"
   }`;
 
   return (
     <frame className={classes}>
-      <textlabel Text="Title" />
-      <textlabel Text="Body" />
+      <imagelabel Image="rbxassetid://123456" />
+      <textlabel Text="astra" />
     </frame>
   );
 }
 ```
 
-The expression cannot be collapsed to static tokens, so the whole element is on the runtime path. Of the six utilities, only `gap-2`, `p-4`, `rounded-lg`, and the background survive. `flex`, `flex-col`, and `items-center` are dropped — which means no `UIListLayout` is created at all, the `gap-2` has no layout to attach to, and the two labels stack on top of each other at the frame's origin.
+The expression cannot be collapsed to static tokens, so the whole element is on the runtime path. Of the six utilities, only `gap-2`, `p-2`, `rounded-md`, and the background survive. `flex` and `items-center` are dropped — and while `gap-2` does create a `UIListLayout`, nothing configures it, so it keeps its default **vertical** fill direction. The avatar and the name render stacked in a column, uncentered, instead of side by side.
 
 Nothing warns you. You find out by looking at the screen.
 
-Note that inlining the template string directly into the attribute does not help. What matters is whether the *expression* collapses to fixed tokens, not where it is written. As long as any part of the string is computed, the whole element is on the runtime path and every unsupported token in it — including the literal `flex flex-col items-center` prefix — is dropped. The working fix is in [What to do instead](#what-to-do-instead).
+Note that inlining the template string directly into the attribute does not help. What matters is whether the *expression* collapses to fixed tokens, not where it is written. As long as any part of the string is computed, the whole element is on the runtime path and every unsupported token in it — including the literal `flex items-center` prefix — is dropped. The working fix is in [What to do instead](#what-to-do-instead).
 
 ## The other divergences
 
-Even within the supported fifteen prefixes, the runtime path is not the static path with fewer features. Three behaviors differ outright.
+Even within the supported families, the runtime path is not the static path with fewer features. Three behaviors differ outright.
 
 **Arbitrary bracket values work at runtime but not statically.** The runtime resolver parses bracket numerics, so `rounded-[8]`, `p-[10]`, and `w-[240]` all resolve. The static path rejects them — `rounded-[8]` is not a theme key, so you get `unknown-theme-key`. This is the one case where the runtime path is more permissive, and it makes bracket values a trap in reverse: a class that works in a computed string breaks when you inline it as a literal.
 
@@ -121,13 +135,13 @@ There is no diagnostic and no flag, so check the emitted Luau or the intermediat
 
 ## Components take the same two paths
 
-Everything on this page applies to `className` on your own components too — `<Panel className={classes} />` is lowered exactly like `<frame className={classes} />`, with the same fifteen-prefix runtime resolver and the same silent drops.
+Everything on this page applies to `className` on your own components too — `<Panel className={classes} />` is lowered exactly like `<frame className={classes} />`, with the same narrow runtime resolver and the same silent drops.
 
 The one visible difference is the tag. On the runtime path the component is swapped for `VelaRuntimeHost` as usual, but `__velaTag` carries a live reference rather than a string: `__velaTag={Panel}`, or `__velaTag={Switch.Root}` for a member expression. The helper then renders your component with the resolved props and the helper children.
 
 Which means the component has to forward what it does not consume, or none of it lands. That is the trap worth internalizing before you reach for a computed `className` on a component — it is described in full in [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components), and there is no diagnostic for getting it wrong.
 
-The other way onto the runtime path is variants — a single `sm:` or `touch:` prefix, even in a plain literal, is enough. That case is covered in [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/). Note that variant-prefixed tokens are analyzed statically and serialized as rules, so they keep the full utility set; it is the *dynamic className* case specifically that narrows to fifteen prefixes.
+The other ways onto the runtime path are variants — a single `sm:`, `touch:`, or `hover:` prefix, even in a plain literal, is enough — and the structural utilities (margins, `divide-*`, `animate-*`). Those cases are covered in [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) and the [utilities reference](/vela-rbxts/reference/utilities/). Note that variant-prefixed tokens are analyzed statically and serialized as rules, so they keep the full utility set; it is the *dynamic className* case specifically that narrows to the resolver's subset.
 
 ## See also
 

@@ -1,6 +1,6 @@
 ---
 title: Responsive and input variants
-description: The eight variant prefixes, the exact breakpoints, how orientation and input mode are detected, and the compile-time cost of using a variant at all.
+description: The nine variant prefixes including hover, the exact breakpoints, how orientation and input mode are detected, the compile-time cost — and the released bug that breaks breakpoints in 0.4.0.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -9,7 +9,8 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela supports eight variant prefixes. Each one is a condition evaluated at runtime on the player's client, and a token only applies when its condition matches.
+Vela supports nine variant prefixes. Each one is a condition evaluated at runtime on the player's
+client, and a token only applies when its condition matches.
 
 | Variant | Matches when |
 | --- | --- |
@@ -21,6 +22,7 @@ Vela supports eight variant prefixes. Each one is a condition evaluated at runti
 | `touch` | the active input mode is touch |
 | `mouse` | the active input mode is mouse |
 | `gamepad` | the active input mode is gamepad |
+| `hover` | the pointer is over this element |
 
 You write a variant as a colon prefix on a utility, exactly as in Tailwind:
 
@@ -34,7 +36,22 @@ Prefixes chain, and a chained token requires **all** of its conditions to match:
 <frame className="hidden touch:portrait:visible" />
 ```
 
-There is no `not-` form, no arbitrary variant, and no group or peer variants. Order within the chain does not matter — the conditions are combined as a set.
+There is no `not-` form, no arbitrary variant, no `focus:`/`active:`/`dark:`, and no group or peer
+variants. Order within the chain does not matter — the conditions are combined as a set. An
+unrecognized prefix is its own diagnostic, `unknown-variant`, whose message lists the supported
+nine; the token is dropped.
+
+<Callout title="Breakpoints and orientation are broken in the released 0.4.0">
+The published `0.4.0` runtime helper reads `Camera.ViewportSize` **once, at mount** — and at mount
+Roblox frequently still reports a 1×1 viewport. Every width test then sees width 1, so `sm:`, `md:`,
+and `lg:` rules **never match**, and orientation evaluates as `landscape`, until something replaces
+the camera. A resize is never tracked either way. The fix — following the viewport signal and
+re-evaluating on resize — is merged upstream and pending release as a compiler patch.
+
+Until it ships: `touch:`, `mouse:`, `gamepad:`, and `hover:` are reliable (their signals are
+subscribed correctly); for breakpoint-style reflow, read `ViewportSize` yourself and branch between
+two static class strings, as shown at the end of this page.
+</Callout>
 
 ## Breakpoints are min-width only
 
@@ -46,66 +63,135 @@ The three breakpoints are hard-coded pixel thresholds on the viewport's X dimens
 | `md` | `width >= 768` |
 | `lg` | `width >= 1024` |
 
-They are **min-width only**. There is no max-width form and no `max-sm:` style prefix, and the thresholds are not configurable through `vela.config.ts` — the theme schema has no breakpoint section. As in Tailwind, you write the small-viewport value unprefixed and layer larger viewports on top.
+They are **min-width only**. There is no max-width form and no `max-sm:` style prefix, and the
+thresholds are not configurable through `vela.config.ts` — the theme schema has no breakpoint
+section. As in Tailwind, you write the small-viewport value unprefixed and layer larger viewports on
+top.
 
 ## How orientation is derived
 
-Orientation is not read from a Roblox API. It is computed from the camera's `ViewportSize`: if width is greater than or equal to height the result is `landscape`, otherwise `portrait`.
+Orientation is not read from a Roblox API. It is computed from the camera's `ViewportSize`: if width
+is greater than or equal to height the result is `landscape`, otherwise `portrait`.
 
-The `>=` matters. A perfectly square viewport counts as **landscape**, not portrait. If you are branching on orientation for a layout that has a meaningful square case, test it explicitly rather than assuming portrait catches it.
+The `>=` matters. A perfectly square viewport counts as **landscape**, not portrait. If you are
+branching on orientation for a layout that has a meaningful square case, test it explicitly rather
+than assuming portrait catches it.
 
 ## How input mode is detected
 
-The input mode is read from `UserInputService` and resolved by priority, not by which device was used most recently:
+The input mode is read from `UserInputService` and resolved by priority, not by which device was
+used most recently:
 
 1. If `GamepadEnabled` is true → `gamepad`
 2. Otherwise if `TouchEnabled` is true → `touch`
 3. Otherwise → `mouse`
 
-Exactly one mode is active at a time. On a device that reports both a gamepad and a touchscreen, `gamepad:` matches and `touch:` does not — gamepad wins over touch, and touch wins over mouse. A player who plugs in a controller mid-session flips to `gamepad` because the helper subscribes to the `TouchEnabled`, `MouseEnabled`, and `GamepadEnabled` change signals.
+Exactly one mode is active at a time. On a device that reports both a gamepad and a touchscreen,
+`gamepad:` matches and `touch:` does not — gamepad wins over touch, and touch wins over mouse. A
+player who plugs in a controller mid-session flips to `gamepad` because the helper subscribes to the
+`TouchEnabled`, `MouseEnabled`, and `GamepadEnabled` change signals.
+
+## Hover is per-element
+
+`hover:` is the one variant whose condition lives on the element rather than in the environment. The
+runtime helper attaches `MouseEnter`/`MouseLeave` handlers — composing with any handlers you wrote
+yourself, not replacing them — and only when the element actually has a hover rule, so unhovered
+elements pay nothing extra.
+
+Hover is where the [motion utilities](/vela-rbxts/reference/utilities/#motion) earn their keep: a
+`transition` on the same element tweens the properties a hover rule changes instead of snapping
+them.
+
+```tsx title="A tweened hover state"
+<textbutton
+  className="w-28 h-10 rounded-md bg-sky-500 hover:bg-sky-600 transition duration-150"
+  Text="Play"
+/>
+```
+
+Remember that a gamepad or touch player may never hover. Treat `hover:` styling as feedback, never
+as the only signal for something important.
 
 ## The cost: any variant forces the runtime path
 
 This is the part worth internalizing before you reach for a variant.
 
-Vela normally lowers `className` at compile time. The class string disappears, and the output is plain Roblox props plus a few helper instances — no per-element work, no extra imports.
+Vela normally lowers `className` at compile time. The class string disappears, and the output is
+plain Roblox props plus a few helper instances — no per-element work, no extra imports.
 
-A variant condition cannot be evaluated at compile time, because it depends on the player's screen and input device. So any token carrying a variant prefix switches that element onto the **runtime path**: the JSX tag is replaced with a `VelaRuntimeHost` component, the element's variant tokens are serialized into a `__velaRules` JSON prop, the original tag is passed along as `__velaTag`, and the static props are emitted as casts.
+A variant condition cannot be evaluated at compile time, because it depends on the player's screen,
+input device, or pointer. So any token carrying a variant prefix switches that element onto the
+**runtime path**: the JSX tag is replaced with a `VelaRuntimeHost` component, the element's variant
+tokens are serialized into a `__velaRules` JSON prop, the original tag is passed along as
+`__velaTag`, and the static props are emitted as casts.
 
 <Callout title="A variant in a plain string literal is enough">
-You do not need a dynamic `className` to trigger this. `className="sm:w-full"` — a fully static string literal — is enough. One variant-prefixed token anywhere in the file causes the whole runtime helper module to be inlined at the top of that file's output.
+You do not need a dynamic `className` to trigger this. `className="sm:w-full"` — a fully static
+string literal — is enough. One variant-prefixed token anywhere in the file causes the whole runtime
+helper module to be inlined at the top of that file's output.
 </Callout>
 
-That helper is roughly fifteen hundred lines of generated roblox-ts. It imports `@rbxts/react` and `{ UserInputService, Workspace } from "@rbxts/services"`, normalizes your theme's color and spacing strings into `Color3` and `UDim` values at module load, and installs `useState`/`useEffect` subscriptions on each element that uses it.
+That helper is roughly 2,300 lines of generated roblox-ts. It imports `@rbxts/react` and
+`{ TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your theme's
+color and spacing strings into `Color3` and `UDim` values at module load, and installs
+`useState`/`useEffect` subscriptions on each element that uses it.
 
 The practical consequences:
 
-- **Output size.** Every file that uses a variant carries its own copy of the helper. Sprinkling `md:` across twenty component files inlines the helper twenty times.
-- **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment changes, instead of being a fixed set of props.
-- **Fewer compile-time diagnostics.** Variant-prefixed tokens are still analyzed statically, so you keep your warnings for those. But the moment an element is on the runtime path for other reasons, the utility coverage narrows sharply — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
+- **Output size.** Every file that uses a variant carries its own copy of the helper. Sprinkling
+  `md:` across twenty component files inlines the helper twenty times.
+- **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment
+  changes, instead of being a fixed set of props.
+- **Fewer compile-time diagnostics.** Variant-prefixed tokens are still analyzed statically, so you
+  keep your warnings for those. But the moment an element is on the runtime path for other reasons,
+  the utility coverage narrows sharply — see
+  [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
 
-The recommendation follows directly: use variants where they earn their keep — a handful of top-level layout containers that genuinely need to reflow between phone and desktop, or an input hint that only makes sense on gamepad — and keep leaf components on plain static classes. Concentrating variants in a few container components means only those files pay the inlining cost.
+The recommendation follows directly: use variants where they earn their keep — a handful of
+top-level layout containers that genuinely need to reflow between phone and desktop, an input hint
+that only makes sense on gamepad, hover feedback on interactive controls — and keep leaf components
+on plain static classes. Concentrating variants in a few container components means only those files
+pay the inlining cost.
 
-## Known limitation: resizes do not re-evaluate
+## Driving reflow yourself
 
-The runtime helper re-reads the environment when `Workspace.CurrentCamera` changes and when the `UserInputService` input signals fire. It does **not** subscribe to `ViewportSize` changes on the camera.
+Until the breakpoint fix ships — and any time you want resize behavior you fully control — read the
+viewport yourself and branch between two static class strings. Both branches stay on the static path
+with the full utility set:
 
-The effect is that a viewport resize does not re-evaluate breakpoints or orientation. A player who resizes a windowed Studio client, or a device that rotates without swapping the camera, keeps whatever `sm`/`md`/`lg`/`portrait`/`landscape` result was computed when the element first mounted. Input variants are unaffected — those signals are subscribed properly.
+```tsx title="src/client/ResponsiveShell.tsx"
+function useViewportWide(threshold: number) {
+  const [wide, setWide] = React.useState(false);
 
-If you need a layout to survive a live resize today, drive it from your own state rather than from Vela's variants: read `Workspace.CurrentCamera.ViewportSize` yourself, connect to its `GetPropertyChangedSignal("ViewportSize")`, and branch between two static class strings. That pattern is shown in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) and has the additional benefit of keeping both branches on the static path.
+  React.useEffect(() => {
+    const camera = Workspace.CurrentCamera;
+    if (!camera) return;
+    const update = () => setWide(camera.ViewportSize.X >= threshold);
+    const connection = camera.GetPropertyChangedSignal("ViewportSize").Connect(update);
+    update();
+    return () => connection.Disconnect();
+  }, [threshold]);
 
-## Unrecognized prefixes fail quietly-ish
+  return wide;
+}
 
-The variant splitter recognizes only the eight names above. If any segment of a colon-chained token is not one of them, the split is abandoned and the **entire token** — colons and all — is parsed as a single plain utility.
+export function Shell(props: { children?: React.Element }) {
+  const wide = useViewportWide(768);
 
-```tsx title="A typo does not produce a variant error"
-<frame className="dark:w-full" />
+  return wide ? (
+    <frame className="flex gap-4 p-4 w-full h-full">{props.children}</frame>
+  ) : (
+    <frame className="flex flex-col gap-2 p-2 w-full h-full">{props.children}</frame>
+  );
+}
 ```
-
-There is no "unknown variant" diagnostic. `dark:w-full` is handed to the utility parser as one opaque name, which does not match any family, so what you actually see is `unsupported-utility-family` pointing at the whole token. When a variant seems to be doing nothing and the warning names the utility family rather than the variant, check the prefix spelling first.
 
 ## See also
 
-- [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — the other way onto the runtime path, and the much sharper limits that come with it.
-- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities you will most often want to vary by breakpoint.
+- [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — the other way onto the runtime
+  path, and the much sharper limits that come with it.
+- [Utilities reference — Motion](/vela-rbxts/reference/utilities/#motion) — transitions and
+  animations that pair with variants.
+- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities you will most often
+  want to vary by breakpoint.
 - [Diagnostics](/vela-rbxts/reference/diagnostics/) — the full warning code list.

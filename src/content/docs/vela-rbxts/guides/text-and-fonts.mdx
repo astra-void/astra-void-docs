@@ -8,9 +8,9 @@ sidebar:
 draft: false
 ---
 
-import { Callout } from "@/components/docs/mdx";
+import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-Text utilities write to the text properties of Roblox's text instances — `TextSize`, `TextColor3`, `FontFace`, `TextXAlignment`, `TextYAlignment`, `TextWrapped`, `TextTruncate`. Three host elements have those properties: `textlabel`, `textbutton`, and `textbox`.
+Text utilities write to the text properties of Roblox's text instances — `TextSize`, `TextColor3`, `FontFace`, `TextXAlignment`, `TextYAlignment`, `TextWrapped`, `TextTruncate`, `LineHeight` — and two of them rewrite the `Text` string itself. Three host elements have those properties: `textlabel`, `textbutton`, and `textbox`.
 
 ```tsx title="src/client/Title.tsx"
 <textlabel
@@ -18,6 +18,16 @@ Text utilities write to the text properties of Roblox's text instances — `Text
   Text="Match found"
 />
 ```
+
+<VelaPreview
+  height={180}
+  label="Three labels: size, weight, color and alignment, all from the text-* and font-* families."
+  scene="TextScene"
+/>
+
+<Callout title="Weights are approximated in the preview">
+The **Lowered** tab shows what Vela really emits for `font-*`: a `FontFace` carrying a Source Sans Pro `Font` value. The browser renderer behind these previews has no `Font` datatype, so the preview maps each weight onto the nearest legacy `Font` enum member instead. Relative weights read correctly; the exact face does not.
+</Callout>
 
 ## The host restriction is editor-only
 
@@ -98,6 +108,10 @@ new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBol
 
 Two names do not match their class: `font-normal` produces `Regular`, and `font-black` produces `Heavy`. Those are the Roblox enum member names, so the class names follow Tailwind while the emitted values follow Roblox.
 
+`italic` rides in the same `FontFace` value as a third argument — `font-bold italic` emits
+`new Font("…/SourceSansPro.json", Enum.FontWeight.Bold, Enum.FontStyle.Italic)` — and `not-italic`
+resets the style axis. Weight and style are the only two axes; the family is fixed either way.
+
 <Callout title="The font family is hard-coded">
 Every `font-*` class emits the **Source Sans Pro** family asset. The family is baked into the utility and there is no class, no theme key, and no config option that changes it — `font-*` controls weight only.
 
@@ -121,9 +135,17 @@ Vertical alignment uses a different prefix — `align-top`, `align-middle`, and 
 
 `text-justify` parses but does not resolve — Roblox's `TextXAlignment` has no justified mode — and reports `unsupported-text-alignment`. There is no workaround; pick one of the three real alignments.
 
+## Line height
+
+`leading-{key}` sets `LineHeight` from six named keys — `none` (1), `tight` (1.25), `snug` (1.375),
+`normal` (1.5), `relaxed` (1.625), `loose` (2). The numeric Tailwind forms (`leading-5`,
+`leading-[1.2]`) are not accepted and report `unsupported-line-height-value`.
+
 ## Wrapping and truncation
 
-`text-wrap` sets `TextWrapped = true` and `text-nowrap` sets it to `false`.
+`text-wrap` sets `TextWrapped = true` and `text-nowrap` sets it to `false`. The
+`whitespace-normal`/`whitespace-nowrap` pair is an accepted alias for the same property; any other
+`whitespace-*` value is `unsupported-whitespace-value`.
 
 `truncate` sets `TextTruncate = Enum.TextTruncate.AtEnd`, cutting overflowing text with an ellipsis at the end. It is a bare class with no payload, and `AtEnd` is the only truncation mode Vela emits.
 
@@ -131,19 +153,47 @@ Vertical alignment uses a different prefix — `align-top`, `align-middle`, and 
 <textlabel className="text-sm text-nowrap truncate" Text={playerName} />
 ```
 
+## Case transforms rewrite the string
+
+`uppercase`, `lowercase`, `capitalize`, and `normal-case` exist, and they work on the only thing
+Roblox gives them: the `Text` string itself, since there is no text-transform property. When `Text`
+is a literal, the rewrite happens **at compile time** and costs nothing:
+
+```tsx title="In"
+<textlabel className="uppercase" Text="match found" />
+```
+
+```tsx title="Out"
+<textlabel Text="MATCH FOUND" />
+```
+
+When `Text` is an expression, the transform has to run in-game, so the element moves onto the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/) and the helper transforms the value as it
+changes.
+
+## Decorations use RichText
+
+`underline` and `line-through` wrap the text in Roblox RichText markup — `Text="<u>hello</u>"` with
+`RichText={true}` — escaping the content as needed; `no-underline` removes them. If the element
+already sets `RichText` itself, Vela backs off and reports `decoration-on-richtext` rather than
+double-wrapping markup you own. `overline` has no RichText equivalent and reports
+`no-roblox-equivalent`.
+
 ## Placeholders
 
 `placeholder-*` sets `PlaceholderColor3` and is meaningful only on `textbox` — no other host element has the property. As with every host restriction on this page, the editor flags it and the compiler does not.
 
 `placeholder-transparent` is an error (`unsupported-color-key`) because `PlaceholderColor3` has no paired transparency property for the `transparent` keyword to set. See [Colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/) for how `transparent` works across the other families.
 
-## Typography families that do not exist
+## Typography families that cannot exist
 
-Several Tailwind typography families have no implementation in Vela. They are not partially supported and not silently degraded — they simply are not recognised, so they parse as an unknown family and report `unsupported-utility-family`:
+A few Tailwind typography families have no Roblox property to target, and Vela says so explicitly
+with `no-roblox-equivalent` rather than treating them as typos:
 
-- `leading-*` — line height. Roblox exposes `LineHeight` on text instances, but no utility writes to it. Set the property directly.
-- `tracking-*` — letter spacing. There is no Roblox property for it at all.
-- `uppercase`, `lowercase`, `capitalize` — text transforms. Roblox has no text-transform property; change the string you pass to `Text`.
+- `tracking-*` — letter spacing. The Roblox text engine exposes nothing for it.
+- `indent-*`, `break-*`, `hyphens-*`, `list-*` — no indentation, line-breaking, or list-marker
+  control.
+- `decoration-*` and `overline` — RichText has underline and strikethrough only.
 
 ## See also
 

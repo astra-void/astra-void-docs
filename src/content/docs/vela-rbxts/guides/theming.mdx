@@ -8,7 +8,7 @@ sidebar:
 draft: false
 ---
 
-import { Callout } from "@/components/docs/mdx";
+import { Callout, VelaPreview } from "@/components/docs/mdx";
 
 A Vela theme has exactly three families: `colors`, `radius`, and `spacing`. There is nothing else. No `content`, no `plugins`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them.
 
@@ -31,6 +31,14 @@ export default defineConfig({
   },
 });
 ```
+
+<VelaPreview
+  height={180}
+  label="bg-surface, rounded-card, p-gutter and bg-brand-500 — all four keys come from the config above."
+  scene="ThemeScene"
+/>
+
+That preview is compiled against exactly that config. Because it extends rather than replaces, the built-in `text-slate-100` still resolves next to the new keys, and the **Lowered** tab shows each one spliced in as the roblox-ts expression the config declared.
 
 ## Values are source code, not values
 
@@ -65,7 +73,7 @@ A value that is perfectly good roblox-ts but not in one of those two shapes comp
 Keep every theme value in those two literal forms with numeric arguments, even if you do not think you use a dynamic `className`.
 </Callout>
 
-The config file itself is discovered by walking up from the source file being compiled, looking for exactly one filename: `vela.config.ts`. See the [configuration reference](/vela-rbxts/reference/config/) for discovery, loading, and the full schema.
+The config file itself is discovered by walking up from the source file being compiled, looking for `vela.config.ts` or `vela.config.json` (the `.ts` form wins when both exist). See the [configuration reference](/vela-rbxts/reference/config/) for discovery, loading, and the full schema.
 
 ## Extend merges, top-level replaces
 
@@ -107,10 +115,6 @@ A palette may also carry a twelfth key, `DEFAULT`, which is what a bare family n
 
 `DEFAULT` is a config key, not a class name. `bg-slate-DEFAULT` is not a valid class: only the eleven numeric tokens count as shades, so that payload is read as the semantic key `slate-DEFAULT` and reported as `unknown-theme-key`. Completions offer the bare family name instead.
 
-<Callout title="Bare palette names are not in 0.2.0">
-This behavior landed after `0.2.0` and is unreleased at the time of writing. On `vela-rbxts@0.2.0` from npm, every palette reference still needs an explicit shade and `bg-slate` reports `color-missing-shade`.
-</Callout>
-
 ```ts title="vela.config.ts"
 theme: {
   extend: {
@@ -146,10 +150,11 @@ The last four — `mauve`, `olive`, `mist`, and `taupe` — are not Tailwind pal
 
 ### Radius
 
-Ten keys, consumed by `rounded-*`.
+Ten named keys consumed by `rounded-*`, plus a `DEFAULT` consumed by bare `rounded`.
 
 | Key | Value |
 | --- | --- |
+| `DEFAULT` | `new UDim(0, 4)` |
 | `none` | `new UDim(0, 0)` |
 | `xs` | `new UDim(0, 2)` |
 | `sm` | `new UDim(0, 4)` |

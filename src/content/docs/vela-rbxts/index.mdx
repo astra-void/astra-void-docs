@@ -5,13 +5,75 @@ product: vela-rbxts
 section: home
 ---
 
-Vela adds `className` to `roblox-ts` React elements and compiles it away. A supported utility class
-becomes a Roblox property or a helper instance at build time — `p-4` becomes a `UIPadding` child,
-`rounded-lg` becomes a `UICorner`, `bg-slate-700` becomes `BackgroundColor3`. Nothing about Vela
-survives into the shipped Lua unless a class genuinely needs to be evaluated at runtime.
+import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-It is not Tailwind parity, and it does not try to be. Vela implements a Roblox-oriented slice of the
-utility vocabulary, mapped onto the instances Roblox actually gives you. On the compile-time path it
-reports a diagnostic for most of what it cannot lower, rather than quietly dropping it — but not for
-all of it. A few cases still fall through silently, such as a gradient stop set to `transparent` or a
-class the runtime host cannot resolve.
+Vela adds `className` to `roblox-ts` React elements and compiles it away. You write Tailwind-shaped
+utility classes on Roblox host elements — and on your own components — and a TypeScript transformer
+rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau. `p-4`
+becomes a `UIPadding` child, `rounded-lg` becomes a `UICorner`, `bg-slate-700` becomes
+`BackgroundColor3`. Nothing about Vela survives into the shipped game unless a class genuinely needs
+the player's screen or input device to resolve.
+
+<VelaPreview
+  height={200}
+  label="Compiled by the real Vela compiler and rendered live. The Classes tab is the source as written; the Lowered tab is what rbxtsc actually emits."
+  scene="HeroScene"
+/>
+
+Every class on that card resolves at build time. The **Classes** tab is the component as its author
+wrote it; the **Lowered** tab is the output — plain Roblox properties, a few helper instances, and no
+trace of Vela. That before-and-after is the whole product, and every preview in these docs is
+produced the same way: by the actual compiler, not by hand.
+
+## What you get
+
+**Static by default.** The common case — a plain string of classes — is lowered entirely at compile
+time. The `className` attribute disappears, the element keeps its tag, and the cost of Vela is paid
+once, on your machine. Only two things opt an element into runtime work: a `className` the compiler
+cannot collapse to fixed tokens, and responsive or input [variants](/vela-rbxts/guides/responsive-and-input-variants/),
+which by their nature depend on the player's device.
+
+**Diagnostics instead of silence.** On the compile-time path, a class Vela cannot lower is reported,
+not dropped — `tracking-wide` warns that the Roblox text engine has no letter spacing, `bg-brand`
+tells you the palette needs a shade, a typo in a theme key names the scale it searched. The
+[diagnostics reference](/vela-rbxts/reference/diagnostics/) lists every code. A few cases still fall through silently — a gradient stop set to `transparent`,
+utilities inside a dynamic `className` the runtime resolver does not know — and the docs flag each
+one where it lives rather than pretending otherwise.
+
+**Editor tooling from the same compiler.** The `vela-rbxts-lsp` language server links the same Rust
+crate the build uses, so completions, hover, color swatches, quickfixes, and squiggles agree with the
+compiler by construction. See [editor setup](/vela-rbxts/guides/editor-setup/).
+
+**A Roblox-shaped vocabulary.** Vela is not Tailwind parity and does not try to be. It implements the
+slice of the utility vocabulary that maps cleanly onto what Roblox actually gives you — colors,
+gradients, strokes, corners, padding, gap, sizing, position, flex layout, typography — and rejects
+the rest loudly instead of inventing approximations. The edges are mapped honestly in
+[scope and status](/vela-rbxts/getting-started/scope-and-status/).
+
+## Where to start
+
+If you are new, the getting-started sequence is designed to be read in order:
+
+1. [Installation](/vela-rbxts/getting-started/installation/) — the package, the tsconfig plugin, the
+   config file, and the one `.d.ts` line that makes `className` type-check.
+2. [Your first component](/vela-rbxts/getting-started/first-component/) — build a panel and read
+   exactly what each class lowered to.
+3. [How it works](/vela-rbxts/getting-started/how-it-works/) — the pipeline, and the two very
+   different paths a `className` can take.
+4. [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is deliberately absent,
+   and the three gaps that do not announce themselves.
+
+From there, go where your task points:
+
+- Building something concrete? [Recipes](/vela-rbxts/guides/recipes/) walks through buttons, badges,
+  meters, list rows, and a dialog — each with a live preview and notes on what it lowers to.
+- Styling and layout questions land in the guides: [theming](/vela-rbxts/guides/theming/),
+  [layout and sizing](/vela-rbxts/guides/layout-and-sizing/),
+  [colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/), and
+  [text and fonts](/vela-rbxts/guides/text-and-fonts/).
+- A class did nothing and you want to know why? Start at
+  [troubleshooting](/vela-rbxts/guides/troubleshooting/) — it is organized by symptom.
+- Looking something up? The [utilities reference](/vela-rbxts/reference/utilities/) enumerates every
+  class and the exact values it accepts; [configuration](/vela-rbxts/reference/config/),
+  [diagnostics](/vela-rbxts/reference/diagnostics/), and the [API](/vela-rbxts/reference/api/) cover
+  the rest.

@@ -25,7 +25,7 @@ Vela has no runtime you install and no build step of its own. It is a TypeScript
 
 Those last three are toggles (`skipNodeModules`, `requireClassName`, `requireJsxSyntax`) on the plugin options object, all on by default. There is no include or exclude glob support — those three booleans are the whole filter surface.
 
-**The adapter finds your config.** For each eligible file, Vela walks up from that file's directory looking for `vela.config.ts`, reads it, strips every `import … from "vela-rbxts"` statement, transpiles it with `ts.transpileModule`, and executes the result in a function scope where `defineConfig` and `defaultConfig` are injected as parameters. That injection is why the stripped import still works. A TypeScript diagnostic in your config throws; an export that is neither a resolved config nor an input-shaped object throws. Finding nothing at all is fine — you get the default theme.
+**The adapter finds your config.** For each eligible file, Vela walks up from that file's directory looking for `vela.config.ts` or `vela.config.json` — the `.ts` form wins when a directory has both. A TypeScript config is read, stripped of every `import … from "vela-rbxts"` statement, transpiled with `ts.transpileModule`, and executed in a function scope where `defineConfig` and `defaultConfig` are injected as parameters. That injection is why the stripped import still works. A TypeScript diagnostic in your config throws; an export that is neither a resolved config nor an input-shaped object throws. A JSON config is parsed directly, with its `$schema` key stripped. Finding nothing at all is fine — you get the default theme.
 
 <Callout title="Config discovery is not cached">
 Config resolution runs **per file**, so `vela.config.ts` is re-read, re-transpiled and re-executed once for every eligible source file in your project. On a large project this is a measurable share of build time. Keep the config file small and side-effect-free.
@@ -75,27 +75,27 @@ This is the part worth internalizing. A `className` is lowered in one of two ver
 
 ### Static lowering
 
-The default. The compiler resolves every token to a concrete value, emits Roblox properties directly on the element, prepends helper instances (`uicorner`, `uistroke`, `uipadding`, `uilistlayout`, `uigradient`, `uisizeconstraint`, `uiaspectratioconstraint`, `uiscale`, `uishadow`, `uiflexitem`) as children, and removes the `className` attribute. The element keeps its original tag. Nothing from Vela survives into the running game.
+The default. The compiler resolves every token to a concrete value, emits Roblox properties directly on the element, prepends helper instances (`uicorner`, `uistroke`, `uipadding`, `uilistlayout`, `uigridlayout`, `uigradient`, `uisizeconstraint`, `uiaspectratioconstraint`, `uiscale`, `uishadow`, `uiflexitem`) as children, and removes the `className` attribute. The element keeps its original tag. Nothing from Vela survives into the running game.
 
 This path supports the full utility set.
 
 ### The runtime path
 
-When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because the runtime host's prop type does not describe them, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`.
+When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because the runtime host's prop type does not describe them, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`. Structural work rides along in further internal props as needed: `__velaTransition` and `__velaAnimation` for the motion utilities, `__velaText` for case transforms and decorations on a computed `Text`, `__velaMargin` for the margin box, and `__velaDivide` for separators.
 
 For a host element `__velaTag` is the tag string — `__velaTag="frame"`. For a component it is a live reference to the component itself — `__velaTag={Box}`, or `__velaTag={Switch.Root}` for a member expression — so the runtime helper renders your component rather than an intrinsic. Its tag type is `SupportedHostElementTag | ((props: never) => unknown)` accordingly.
 
 At runtime that component normalizes the theme strings into `Color3` and `UDim` values, reads the environment, applies whichever rules match, tokenizes the dynamic `className` and applies whichever utilities it understands, strips the internal props, and calls `React.createElement` with the original tag and the helper children.
 
-The inlined helper imports `React` from `@rbxts/react` and `{ UserInputService, Workspace }` from `@rbxts/services`. It reads `Workspace.CurrentCamera.ViewportSize` for width, height and orientation, and `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, re-evaluating on camera changes and on those input signals.
+The inlined helper — a `forwardRef` component of roughly 2,300 generated lines — imports `React` from `@rbxts/react` and `{ TweenService, UserInputService, Workspace }` from `@rbxts/services`. It reads `Workspace.CurrentCamera.ViewportSize` for width, height and orientation, `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, and `MouseEnter`/`MouseLeave` on the element itself for `hover:`.
 
 ### What triggers the runtime path
 
-Two independent conditions, either one sufficient:
+Any one of these conditions is sufficient:
 
 **A `className` expression that cannot collapse to static tokens.** A template literal with an interpolation, a variable, a ternary whose branches Vela cannot fold, an array or object `ClassValue` built at runtime, an empty expression container — anything the compiler cannot reduce to a known list of strings.
 
-**Any token carrying a variant prefix.** This one catches people out. The eight runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
+**Any token carrying a variant prefix.** This one catches people out. The nine runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, and `hover`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
 
 ```tsx title="Static string, runtime path"
 <frame className="w-full sm:w-1/2" />
@@ -103,12 +103,14 @@ Two independent conditions, either one sufficient:
 
 That injects the whole helper module into the file. There is no way to evaluate a breakpoint at compile time, so this is expected — but it is worth knowing that the trigger is the variant, not the dynamism.
 
+**A structural utility.** Margins (`m-*` and friends, except the static `mx-auto`/`my-auto`), `divide-*`, and `animate-*` build wrapper frames, separator frames, or animation loops — things that cannot exist as static props — so any of them promotes the element even in a plain literal. The one motion utility that does *not* promote is `transition-*` on its own: with no variant rules and no dynamic `className` there is nothing to animate, so it warns `transition-without-runtime` and is dropped.
+
 <Callout title="The runtime path understands far less">
-The runtime token resolver handles **only** `border`, `border-*`, `bg-*`, `rounded-*`, the padding family (`p-`, `px-`, `py-`, `pt-`, `pr-`, `pb-`, `pl-`), `gap-`, `w-`, `h-` and `size-`. Every other utility inside a *dynamic* `className` is dropped with no diagnostic — it simply does not appear in the output. Variant-prefixed static tokens are not affected by this limit; they go through the static resolver and are only evaluated at runtime.
+The runtime token resolver handles the color, background, radius, padding, margin, gap, and sizing prefixes, plus `divide-*`, the case transforms, the text decorations, and the motion families. Every other utility inside a *dynamic* `className` — layout, alignment, text size and color, position, constraints — is dropped with no diagnostic; it simply does not appear in the output. Variant-prefixed static tokens are not affected by this limit; they go through the static resolver and are only evaluated at runtime.
 </Callout>
 
 The full list of divergences — including the runtime path accepting arbitrary bracket values the static path rejects, and `w-`/`h-` overwriting rather than merging — is in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/). Read it before you reach for a computed `className`.
 
 ## Next step
 
-Get the honest boundaries of the project at 0.2.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).
+Get the honest boundaries of the project at 0.4.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).

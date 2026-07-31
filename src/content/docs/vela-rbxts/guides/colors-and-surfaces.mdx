@@ -8,7 +8,7 @@ sidebar:
 draft: false
 ---
 
-import { Callout } from "@/components/docs/mdx";
+import { Callout, VelaPreview } from "@/components/docs/mdx";
 
 Every color utility in Vela resolves a key from `theme.colors` and writes it onto a specific Roblox property — either on the host instance itself or on a helper instance that Vela adds as a child. Nothing is inherited and nothing cascades: a class writes one property on one instance, and that is the whole model.
 
@@ -18,6 +18,14 @@ Every color utility in Vela resolves a key from `theme.colors` and writes it ont
 </frame>
 ```
 
+<VelaPreview
+  height={180}
+  label="A fill, a fill with a stroke, a pill radius, and a gradient — four utility families, four different targets."
+  scene="SurfaceScene"
+/>
+
+Open the **Lowered** tab on that preview to see the split the table below describes: `bg-*` lands on the frame, while `border-*`, `rounded-*` and the gradient stops each become a child instance.
+
 ## The color families
 
 | Family | Roblox property | Written on |
@@ -26,13 +34,32 @@ Every color utility in Vela resolves a key from `theme.colors` and writes it ont
 | `text-*` | `TextColor3` | the host instance |
 | `image-*` | `ImageColor3` | the host instance |
 | `placeholder-*` | `PlaceholderColor3` | the host instance |
-| `border-{color}` | `Color` | a `UIStroke` child |
+| `border-{color}`, `ring-{color}`, `outline-{color}` | `Color` | the shared `UIStroke` child |
 | `shadow-{color}` | `Color` | a `UIShadow` child |
+| `divide-{color}` | `BackgroundColor3` | the separator frames |
 | `from-*`, `via-*`, `to-*` | color keypoints | a `UIGradient` child |
 
-Each of these except `placeholder-*` and the gradient stops also has a paired transparency property — `BackgroundTransparency`, `TextTransparency`, `ImageTransparency`, `UIStroke.Transparency`, `UIShadow.Transparency`. Setting `border-{color}` writes `Color` and also sets `Transparency` to `0`, so a colored stroke is visible without a second class. `shadow-{color}` does not do the same — it writes `Color` alone.
+Each of these except `placeholder-*`, `divide-*` and the gradient stops also has a paired transparency property — `BackgroundTransparency`, `TextTransparency`, `ImageTransparency`, `UIStroke.Transparency`, `UIShadow.Transparency`. Setting `border-{color}` writes `Color` and also sets `Transparency` to `0`, so a colored stroke is visible without a second class. `shadow-{color}` does not do the same — it writes `Color` alone.
 
 `text-*` is not only a color family. It also carries sizes, alignment, and wrapping — see [Text and fonts](/vela-rbxts/guides/text-and-fonts/) for how the compiler decides which one you meant.
+
+### Arbitrary hex colors
+
+Every color family also accepts a bracketed hex payload, bypassing the theme: `bg-[#3b82f6]`,
+`text-[#fff]`, `border-[#101828]`, `from-[#0ea5e9]`. Three- and six-digit forms lower straight to
+`Color3.fromRGB(...)`. A bracket payload that is not a hex color reports
+`unsupported-arbitrary-value`. Reach for these sparingly — a hex that appears twice is a theme key
+waiting to be named in [theming](/vela-rbxts/guides/theming/).
+
+### Opacity modifiers
+
+A color can carry a level in one token: `/N` with an integer 0–100 sets the family's transparency
+alongside its color, Tailwind-style. `bg-blue-600/50` emits `BackgroundColor3` plus
+`BackgroundTransparency = 0.5`; `text-slate-100/80` fades text to 80% opacity. The modifier works
+exactly where a transparency channel exists — `bg`, `text`, `image`, `shadow`, `ring`, `outline` —
+and reports `unsupported-opacity-modifier` elsewhere. (`border-{color}/50` is the odd one out: the
+border parser rejects any slash payload as `unsupported-border-value` before the modifier is even
+considered.)
 
 ## `transparent`, and the two rejected keywords
 
@@ -48,7 +75,7 @@ Gradient stops are the other family with no transparency property, but they do n
 
 A color payload is either a literal key or a palette key plus a shade. The suffix after the last hyphen counts as a shade only if it is one of `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`. Anything else means the whole payload is one semantic key, so `bg-my-color` looks up `my-color`.
 
-A bare palette name is not a mistake either. It resolves through the palette's `DEFAULT` key, and every built-in palette ships one mirroring its `500`, so `bg-blue`, `text-slate`, and `from-sky` all work. Note that `DEFAULT` is a config key and never a class — `bg-blue-DEFAULT` is read as the semantic key `blue-DEFAULT` and reported as `unknown-theme-key`. See [Theming](/vela-rbxts/guides/theming/) for setting it on your own palettes; this behavior landed after `0.2.0` and is unreleased at the time of writing, so on `vela-rbxts@0.2.0` a bare `bg-blue` still warns.
+A bare palette name is not a mistake either. It resolves through the palette's `DEFAULT` key, and every built-in palette ships one mirroring its `500`, so `bg-blue`, `text-slate`, and `from-sky` all work. Note that `DEFAULT` is a config key and never a class — `bg-blue-DEFAULT` is read as the semantic key `blue-DEFAULT` and reported as `unknown-theme-key`. See [Theming](/vela-rbxts/guides/theming/) for setting it on your own palettes.
 
 Three diagnostics cover the failure modes:
 
@@ -77,10 +104,20 @@ Thickness accepts **exactly four values**: `border-0`, `border-1`, `border-2`, a
 Everything below is explicitly detected and rejected with `unsupported-border-value`, so you get a diagnostic instead of a silent no-op:
 
 - Border styles — `border-dashed`, `border-solid`, `border-dotted`, `border-double`. `UIStroke` draws one continuous line and has no style property.
-- Side-specific keys — `border-x`, `border-y`, `border-t`, `border-r`, `border-b`, `border-l`, and their prefixed forms like `border-t-2` or `border-x-slate-500`. A `UIStroke` outlines the whole instance; there are no per-side strokes.
+- Side-specific keys — `border-x`, `border-y`, `border-t`, `border-r`, `border-b`, `border-l`, and their prefixed forms like `border-t-2` or `border-x-slate-500`. A `UIStroke` outlines the whole instance; there are no per-side strokes. (For dividers *between* children, `divide-x`/`divide-y` builds real separator frames — see the [utilities reference](/vela-rbxts/reference/utilities/#divide).)
 - `border-opacity-*`. Use `border-transparent`, or set the color you actually want.
-- Arbitrary values in brackets, like `border-[3]`.
 - Anything containing a `/`, such as `border-slate-500/50`.
+
+An arbitrary bracket thickness like `border-[3]` is rejected too, as `unsupported-arbitrary-value`.
+
+### Rings and outlines
+
+`ring` and `outline` exist for Tailwind muscle memory: `ring` is thickness 3, `outline` thickness 2,
+`ring-{0,1,2,4,8}` picks a size, `outline-none`/`outline-hidden` zero it, and each takes a
+`-{color}`. Both also set `ApplyStrokeMode = Border`, pinning the stroke to the element's bounds.
+But Roblox gives one reliable `UIStroke` per instance, so all three families — `border-*`, `ring-*`,
+`outline-*` — **write into the same helper** and the later token wins on a collision. There is no
+CSS-style ring-stacked-on-border. Off-list values are `unsupported-stroke-value`.
 
 ## Radius
 
@@ -149,6 +186,12 @@ Color stops come from `from-*`, `via-*`, and `to-*`, and how many you write chan
 ```tsx title="src/client/Header.tsx"
 <frame className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
 ```
+
+<VelaPreview
+  height={170}
+  label="Two stops, three stops with via-*, and a vertical direction — each swatch is one UIGradient child."
+  scene="GradientScene"
+/>
 
 <Callout title="A gradient forces the background to white">
 When a gradient is present, Vela sets `BackgroundColor3` to `Color3.fromRGB(255, 255, 255)`. `UIGradient` multiplies against the instance's background color, so anything other than white would tint every stop. This means a `bg-*` class on the same element is overwritten — pick the gradient or the fill, not both.

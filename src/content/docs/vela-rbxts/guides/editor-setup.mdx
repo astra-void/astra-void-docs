@@ -65,7 +65,7 @@ The rule that `text-*` belongs on `textlabel`/`textbutton`/`textbox`, `image-*` 
 Inside a component's `className` the rule is dropped rather than merely unenforced. The editor cannot know which host element `<Panel />` renders, so it completes and hovers the full utility set there and never raises `unsupported-host-utility`.
 </Callout>
 
-The editor also suppresses `unknown-theme-key` while the text after the first `-` is three characters or shorter, so partially typed color names do not flash warnings at you mid-keystroke.
+The editor also suppresses `unknown-theme-key` while the payload you have typed so far is still a prefix of a real theme key, so `bg-sla` on the way to `bg-slate-800` never flashes a warning — while `bg-nope`, which no key starts with, warns immediately.
 
 ## Other editors
 
@@ -94,7 +94,7 @@ Pass the configs in `initializationOptions`:
 
 Each entry is a directory plus the resolved config serialized as JSON. The server matches a file to the nearest containing `dir`, which is how per-package configs in a monorepo work.
 
-To update configs after startup — for example when the user edits `vela.config.ts` — send the custom method `vela-rbxts/setConfigs`. Its payload carries only `configs`, with no `workspaceRoot`. That is exactly what the VS Code extension does: it watches `**/vela.config.ts`, evaluates each match through `@vela-rbxts/rbxtsc-host/project-config`, pushes `{ dir, json }` pairs at startup, and pushes again on every change.
+To update configs after startup — for example when the user edits `vela.config.ts` — send the custom method `vela-rbxts/setConfigs`. Its payload carries only `configs`, with no `workspaceRoot`. That is exactly what the VS Code extension does: it watches `**/vela.config.{ts,json}`, evaluates each match through `@vela-rbxts/rbxtsc-host/project-config`, pushes `{ dir, json }` pairs at startup, and pushes again on every change.
 
 If your client cannot evaluate TypeScript, you can build the same JSON however you like — the server only cares that the shape matches the resolved `TailwindConfig`. See [Configuration](/vela-rbxts/reference/config/) for that shape.
 

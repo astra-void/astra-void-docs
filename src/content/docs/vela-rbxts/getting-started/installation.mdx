@@ -53,7 +53,7 @@ The plugin entry object is also where transformer options go — file-filter tog
 
 ## Add `vela.config.ts`
 
-Vela looks for exactly one filename, `vela.config.ts`, walking up from the directory of each source file until it finds one or hits the filesystem root. There are no `.js`, `.mjs` or `.cjs` variants and no `package.json` key. If nothing is found, Vela uses its built-in default theme, which already contains 28 color families, ten radius keys, and the spacing fallback.
+Vela looks for `vela.config.ts` or `vela.config.json` (the `.ts` form wins when both exist), walking up from the directory of each source file until it finds one or hits the filesystem root. There are no `.js`, `.mjs` or `.cjs` variants and no `package.json` key. If nothing is found, Vela uses its built-in default theme, which already contains 28 color families, the radius scale, and the spacing fallback.
 
 The minimum useful file accepts the defaults wholesale:
 

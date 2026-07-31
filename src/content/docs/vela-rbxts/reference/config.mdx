@@ -9,27 +9,44 @@ sidebar:
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-Vela reads a single optional file, `vela.config.ts`, and it configures exactly one thing: the theme.
-There is no build configuration to write — file selection, output, and diagnostics all come from
+Vela reads a single optional config file, and it configures exactly one thing: the theme. There is
+no build configuration to write — file selection, output, and diagnostics all come from
 `tsconfig.json` instead.
 
 ## Discovery
 
-The filename is exactly `vela.config.ts`. There are no `.js`, `.mjs`, `.cjs`, or `.mts` variants, and
-no `package.json` key.
+Two filenames are recognized, exactly: `vela.config.ts` and `vela.config.json`. There are no `.js`,
+`.mjs`, `.cjs`, or `.mts` variants, and no `package.json` key. When a directory contains both, the
+`.ts` file wins.
 
 For each source file it is about to transform, Vela walks upward from that file's directory to the
-filesystem root and uses the first `vela.config.ts` it finds. If it finds none, it uses
+filesystem root and uses the first match it finds. If it finds none, it uses
 `defaultConfig`. Because the walk starts at the source file, a config in a subdirectory shadows one
 at the repo root for the files beneath it — which is usually accidental rather than intended.
+
+The JSON form holds the same input shape as `defineConfig`'s argument, plus an optional `$schema`
+key that is stripped before parsing — the package ships a `schema.json` you can point it at for
+editor validation:
+
+```json title="vela.config.json"
+{
+  "$schema": "./node_modules/vela-rbxts/schema.json",
+  "theme": {
+    "extend": {
+      "colors": { "brand": { "500": "Color3.fromRGB(99, 102, 241)" } }
+    }
+  }
+}
+```
 
 <Callout title="The config is re-executed for every file">
 There is no caching. Config resolution runs once per eligible source file, which means
 `vela.config.ts` is re-read, re-transpiled, and re-executed for each `.tsx` file in your project.
-Keep the file cheap: no filesystem access, no network, no heavy computation at module scope.
+Keep the file cheap: no filesystem access, no network, no heavy computation at module scope. (A
+`vela.config.json` skips the transpile-and-execute steps, but is still re-read per file.)
 </Callout>
 
-## How the file is loaded
+## How the TypeScript form is loaded
 
 Vela does not hand the file to roblox-ts. It loads it itself, in three steps:
 
@@ -121,12 +138,6 @@ because only the eleven numeric tokens are treated as shades, so that payload is
 key `brand-DEFAULT` and reported as `unknown-theme-key`. Every built-in palette ships a `DEFAULT`
 mirroring its `500`.
 
-<Callout title="DEFAULT resolution is not in 0.2.0">
-Bare palette names landed after `0.2.0` and are unreleased at the time of writing. On
-`vela-rbxts@0.2.0` from npm, a palette reference always needs an explicit shade, and a bare `bg-brand`
-reports `color-missing-shade`.
-</Callout>
-
 An empty palette object throws
 `Color palette normalization requires at least one shade value.` — but only where the palette is
 actually normalized: a family that is not already in the registry, or any family under a top-level
@@ -214,10 +225,11 @@ surfaces, and they behave exactly like any other palette: `bg-mauve-800`, `text-
 
 ### Radius
 
-Ten keys.
+Ten named keys, plus a `DEFAULT` that bare `rounded` resolves to.
 
 | Key | Value |
 |---|---|
+| `DEFAULT` | `new UDim(0, 4)` |
 | `none` | `new UDim(0, 0)` |
 | `xs` | `new UDim(0, 2)` |
 | `sm` | `new UDim(0, 4)` |
@@ -230,7 +242,8 @@ Ten keys.
 | `full` | `new UDim(0.5, 0)` |
 
 Because `rounded-*` is a pure theme lookup with no numeric fallback, this table is the complete set
-of radii you can write until you extend it.
+of radii you can write until you extend it. Bare `rounded` reads the `DEFAULT` key, which you can
+override in `theme.extend.radius` like any other.
 
 ### Spacing
 
