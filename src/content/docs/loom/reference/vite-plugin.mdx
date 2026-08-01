@@ -26,6 +26,7 @@ interface LoomPreviewOptions {
   targets?: string | string[] | true;
   title?: string;
   html?: boolean;
+  shims?: Record<string, string>;
 }
 ```
 
@@ -35,6 +36,7 @@ interface LoomPreviewOptions {
 | `targets` | — | Gallery mode. Normalized exactly like the CLI's `--targets`: `true` → `**/*.loom.tsx`, a value containing `*` used verbatim, anything else treated as a directory and expanded to `<value>/**/*.loom.tsx`. |
 | `title` | `"loom preview"`, or `"loom gallery"` with `targets` | `<title>` of the generated page. |
 | `html` | `true` | `false` removes the HTML plugin: no generated page, no entry detection, no Rollup input. |
+| `shims` | `{}` | Package redirects for roblox-ts packages loom cannot run — `{ "<specifier>": "<module>" }`. Exact-match only, and applied **before** every alias below, so a shim can override the built-ins. See [Package compatibility](/loom/guides/package-compatibility/#shims). |
 
 ## The plugins
 
@@ -93,11 +95,13 @@ Order matters; more specific patterns come first.
 
 | Pattern | Resolves to |
 | --- | --- |
-| `@rbxts/react-roblox` (and any subpath) | The preview client — `createRoot`, `createPortal`, `setPreviewTheme`. |
+| Every `shims` entry | The module you named. Exact match, ahead of everything below — so a shim can replace any built-in. |
+| `@rbxts/ui-labs`, `@rbxts/ripple`, `@rbxts/react-ripple` | Loom's [built-in adapters](/loom/guides/package-compatibility/#what-loom-ships). Exact matches: `@rbxts/ui-labs/controls` and `@rbxts/ui-labs-extra` are deliberately not captured. |
+| `@rbxts/react-roblox` | The preview client — `createRoot`, `createPortal`, `setPreviewTheme`. Exact, not subpath-globbing: an unadapted subpath must reach the entrypoint diagnostic rather than silently landing on `createRoot`. |
 | `@rbxts/services` | Service singletons backed by `getService`. |
 | `@rbxts/react/jsx-runtime` | React's JSX runtime (absolute path). |
 | `@rbxts/react/jsx-dev-runtime` | React's dev JSX runtime (absolute path). |
-| `@rbxts/react` | A shim: React plus `React.Event` / `React.Change` keyed-prop namespaces. |
+| `@rbxts/react` | The compatibility facade: loom's one React instance forwarded by identity, plus the Roblox-only surface — `ReactComponent`, `Event` / `Change` / `Tag`, `None` — and bindings. |
 | `react/jsx-runtime` | Same absolute path as above. |
 | `react/jsx-dev-runtime` | Same absolute path as above. |
 | `react` | One absolute React path, resolved from the preview package. |

@@ -72,12 +72,15 @@ is still open.
 - **`print` types oddly.** The globals declaration deliberately omits `print` because `lib.dom`
   already declares one and redeclaring is a compile error. The runtime still overwrites the value.
 - **Unknown services are stubs.** `@rbxts/services` is aliased to a module exporting only the
-  services the runtime actually implements — `CollectionService`, `ContextActionService`,
-  `GuiService`, `HttpService`, `Players`, `RunService`, `TweenService`, `UserInputService`,
-  `Workspace`. Importing anything else is a build error rather than a silent stub, which is the
-  intended trade. `HttpService` implements `GenerateGUID`, `JSONEncode` and `JSONDecode`;
-  `GetAsync` / `PostAsync` / `RequestAsync` throw by name, because a preview never issues requests on
-  your behalf.
+  [services the runtime actually implements](/loom/reference/services/) — `CollectionService`,
+  `ContextActionService`, `GuiService`, `HttpService`, `Players`, `RunService`, `TweenService`,
+  `UserInputService`, `Workspace`. Importing anything else is a build error rather than a silent
+  stub, which is the intended trade.
+- **A Luau-only package needs a shim.** Most roblox-ts packages redirect to their own TypeScript
+  source automatically; a declaration-only one has no source to redirect to and fails by name until
+  you point [`shims`](/loom/guides/package-compatibility/#shims) at a browser module. `@rbxts/react`,
+  `@rbxts/react-roblox`, `@rbxts/services`, `@rbxts/vide`, `@rbxts/ui-labs`, `@rbxts/ripple` and
+  `@rbxts/react-ripple` are handled out of the box.
 - **`rbxassetid://` needs a server.** Roblox's thumbnail API sends no CORS headers, so the id is
   resolved by a dev-server route the preview installs — under `loom preview`, the embedded server and
   Next dev. A [static gallery build](/loom/guides/static-builds-and-embedding/) has no server to ask:

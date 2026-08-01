@@ -143,7 +143,7 @@ usually sits ahead of rustup's in `PATH`. `scripts/build-wasm.sh` compensates by
 `link:` symlinks rather than copies, so the package's own `workspace:*` dependencies resolve through
 the real path from the checkout's `node_modules` — you never install loom's dependency tree into your
 project. Importing the plugin from an *unbuilt* checkout has one extra wrinkle, covered in
-[Vite integration](/loom/guides/vite-integration/#consuming-an-unbuilt-checkout).
+[Advanced Vite setup](/loom/guides/advanced-vite-setup/#consuming-an-unbuilt-source-checkout).
 
 ## Next step
 

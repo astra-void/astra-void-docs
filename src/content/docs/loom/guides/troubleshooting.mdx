@@ -24,7 +24,11 @@ come up.
 | `no index.html and no client entry found` | Neither a conventional entry nor an `index.html` under the root | Pass `entry`, or `targets` for a gallery |
 | `loom.config.ts found, but its default export has no targets field` | A config in the pre-0.3.0 shape | Export `{ targets, port? }` |
 | `no targets matched … — nothing to build` | Glob missed, or unsupported glob syntax | Only `**`, `**/` and `*` are supported |
+| `Package "…" only provides a Lua/Luau runtime` | A declaration-only roblox-ts package | Add a [`shims`](/loom/guides/package-compatibility/#shims) entry |
+| `RollupError: Expected ';', '}' or <eof>` in a `.luau` file, build only | The same thing, reached by a target the dev server never loaded | As above — see [Package compatibility](/loom/guides/package-compatibility/) |
+| `does not provide an export named 'default'` from `@rbxts/react-roblox` | Loom older than 0.6.1 | Upgrade |
 | Renders, but looks wrong | Unimplemented property | Check [Supported instances and properties](/loom/reference/supported-properties/) |
+| Runs off the edge on a phone | Nothing — the stage scales below 960px | See [Previews on a phone](/loom/guides/mobile-previews/) |
 
 ## Blank page, `nothing mounted into #loom-root after 2s`
 

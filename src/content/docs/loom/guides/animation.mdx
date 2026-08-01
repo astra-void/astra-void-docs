@@ -1,0 +1,185 @@
+---
+title: Animation
+description: Three ways to move a preview — bindings, TweenService, and the @rbxts/ripple springs — and why an animation costs zero React renders.
+product: loom
+section: guides
+sidebar:
+  order: 25
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Everything animated in a preview runs on loom's own frame loop — the scheduler's `RunService`
+signals, the same ones your Roblox code connects to. There is no CSS transition anywhere in the
+renderer, so what you see is the interpolation your code actually computes.
+
+Three layers, from lowest to highest:
+
+| Layer | Use it for |
+| --- | --- |
+| [Bindings](#bindings) | A value you drive yourself, per frame, without re-rendering. |
+| [`TweenService`](#tweenservice) | The engine's own tween API, with the same easing enums. |
+| [`@rbxts/ripple`](#rbxtsripple) | Springs, tweens and motion as React hooks. |
+
+## Bindings
+
+`createBinding`, `useBinding` and `joinBindings` are exported from `@rbxts/react`, and **any host
+prop accepts either a plain value or a `Binding` of one**:
+
+```tsx
+import { useBinding } from "@rbxts/react";
+
+function Follower() {
+  const [position, setPosition] = useBinding(UDim2.fromOffset(0, 0));
+
+  return (
+    <frame
+      Size={UDim2.fromOffset(80, 80)}
+      Position={position}
+      Event={{
+        InputChanged: (_, input) =>
+          setPosition(UDim2.fromOffset(input.Position.X, input.Position.Y)),
+      }}
+    />
+  );
+}
+```
+
+A bound prop is written **straight onto the live instance** by the renderer, bypassing React
+entirely. A 60fps animation is 60 property writes and zero renders.
+
+There is exactly one kind of binding in a preview: the implementations come from `@loom-dev/react`,
+which is what the renderer resolves, so a binding minted by `useBinding` and one minted by ripple's
+`useSpring` are the same object as far as the renderer is concerned.
+
+## `TweenService`
+
+The engine's tween API, imported the way you already import it:
+
+```tsx
+import { useEffect, useRef } from "@rbxts/react";
+import { TweenService } from "@rbxts/services";
+
+function SlideIn() {
+  const ref = useRef<Frame>();
+
+  useEffect(() => {
+    const frame = ref.current;
+    if (!frame) return;
+
+    const info = new TweenInfo(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+    const tween = TweenService.Create(frame, info, {
+      Position: UDim2.fromScale(0.5, 0.5),
+    });
+
+    tween.Play();
+    return () => tween.Cancel();
+  }, []);
+
+  return <frame ref={ref} Position={UDim2.fromScale(0.5, 1.2)} />;
+}
+```
+
+`TweenInfo`'s positional arguments are the engine's, in the engine's order:
+`(Time, EasingStyle, EasingDirection, RepeatCount, Reverses, DelayTime)`.
+
+| Surface | Supported |
+| --- | --- |
+| `TweenService` | `Create`, `GetValue`. |
+| `Tween` | `Play`, `Pause`, `Cancel`, `Completed`, `PlaybackState`. |
+| `TweenInfo` | `DelayTime`, `RepeatCount`, `Reverses`, and every `EasingStyle` / `EasingDirection`. |
+| Interpolated types | `number`, `Color3`, `UDim`, `UDim2`, `Vector2`. |
+
+Tweens advance on the scheduler's frame signal, so a tweened write flushes to the DOM like any other
+property write — and pausing the scheduler pauses the tween.
+
+## `@rbxts/ripple`
+
+`@rbxts/ripple` and `@rbxts/react-ripple` both work with **no configuration** — loom answers them
+with a port of the published implementation rather than a stub, because the package ships a Luau
+runtime a browser cannot execute. See [Package
+compatibility](/loom/guides/package-compatibility/#rbxtsripple-and-rbxtsreact-ripple) for why.
+
+```tsx
+import { config, useSpring } from "@rbxts/react-ripple";
+
+function AnimatedButton() {
+  const [offset, spring] = useSpring(0, config.stiff);
+
+  return (
+    <textbutton
+      Size={offset.map((value) => UDim2.fromOffset(200 + value, 50 + value))}
+      Event={{
+        MouseEnter: () => spring.setGoal(10),
+        MouseLeave: () => spring.setGoal(0),
+      }}
+    />
+  );
+}
+```
+
+The spring integrator, the easing curves, the Oklab colour interpolation and the rest thresholds all
+follow the Luau source, so a component animates the way it does in Roblox.
+
+### Exports
+
+`createSpring`, `createTween`, `createMotion`, `config`, `easing`, `springScheduler`,
+`tweenScheduler`, `motionScheduler`, and the `useSpring` / `useTween` / `useMotion` hooks — which also
+re-export the core, as the real package does. Every published `config` preset and every published
+`easing` curve is implemented.
+
+### Controller methods
+
+Matching the published `.d.ts`:
+
+| Controller | Methods |
+| --- | --- |
+| All three | `getPosition` `getGoal` `setPosition` `setGoal` `onChange` `onComplete` `step` `idle` `configure` `start` `stop` `destroy` |
+| `Spring` / `Motion` | `getVelocity` `setVelocity` |
+| `Spring` | `impulse` `halt` |
+| `Tween` | `getFrom` `setFrom` |
+| `Motion` | `spring` `tween` |
+
+Every documented option is honoured: `start`, `tension`, `friction`, `mass`, `dampingRatio`,
+`frequency`, `precision`, `restVelocity`, `position`, `velocity`, `impulse` for springs; `start`,
+`easing`, `duration`, `repeats`, `reverses`, `position` for tweens; `start`, `spring`, `tween` for
+motion.
+
+### Values
+
+`number`, `Vector2`, `Vector3`, `Color3`, `UDim`, `UDim2`, `Rect`, and records of numbers — which
+accept partial goals, so keys you leave out do not move. `Color3` interpolates through Oklab, and
+`UDim` / `UDim2` offsets round to integers, both as Roblox does.
+
+`CFrame` **throws** rather than animating:
+
+```text
+[loom] Ripple compatibility does not yet support animating CFrame
+```
+
+Loom's `CFrame` carries position only and the Scene IR has no property slot for one, so an
+interpolation could not reach the screen. Anything else — a string, a record of non-numbers — throws
+by name too, instead of freezing or producing a corrupt value. Subpaths like `@rbxts/ripple/foo` are
+not covered.
+
+<Callout title="Two deliberate differences from upstream">
+Both in loom's favour:
+
+- **`destroy()` also drops the controller's `onChange` / `onComplete` callbacks.** Upstream only stops
+  it, which leaves a torn-down controller able to call into an unmounted component.
+- **The hooks ignore a changed `initialOptions` after mount** — exactly as upstream does. Recreating
+  a controller mid-animation would drop its velocity and its subscribers. Call
+  `controller.configure(...)` to retune one in place.
+</Callout>
+
+## One frame loop
+
+Every controller — spring, tween and motion alike — shares a single `RunService.Heartbeat`
+connection, released the moment the last one settles. Values are pushed into a binding, so the
+renderer writes them onto the live instance and React never re-renders.
+
+<Callout title="Frozen animations in a background tab">
+Loom's scheduler is driven by `requestAnimationFrame`, which browsers do not fire for a tab that is
+not visible. An animation in a hidden or backgrounded preview is not broken, it is not being stepped
+— it resumes where it left off when the tab comes forward.
+</Callout>

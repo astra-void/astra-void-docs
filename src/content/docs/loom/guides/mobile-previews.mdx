@@ -1,0 +1,72 @@
+---
+title: Previews on a phone
+description: How a desktop-sized UI survives a 390px screen — stage scaling, pointer coordinate mapping, touch scrolling, and the gallery chrome on a narrow viewport.
+product: loom
+section: guides
+sidebar:
+  order: 33
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+A Roblox UI is written for a desktop-sized viewport. Rendered into a phone browser at 1:1 it would
+run off the edge of the screen, so loom scales the stage instead of reflowing it — your layout is
+never asked to be responsive, because in Roblox it is not.
+
+Nothing here needs configuration, and **nothing changes at 960px or wider**: desktop previews render
+exactly as they did.
+
+## The stage keeps a desktop viewport
+
+Below 960px wide, the preview mount stops shrinking the *scene* and starts shrinking the *pixels*: it
+keeps a logical width of **960** and is scaled down with a CSS transform by `hostWidth / 960` to fit
+the real screen.
+
+The logical *height* is not clamped — it is the real height divided by that same scale, so a tall
+phone becomes a tall viewport rather than a letterboxed 16:9 window, and scale-based (`UDim2` scale)
+layouts still fill the screen the way they do on a real device. The generated pages size with `dvh`,
+so a full-height stage no longer hangs underneath a mobile browser's toolbars.
+
+<Callout title="Your scene still sees the logical viewport">
+The world reads the mount's **untransformed** layout size, and that is what is mirrored onto
+`Workspace.CurrentCamera.ViewportSize` and fed to the layout engine. A scene that branches on viewport
+width takes its 960-wide path on a phone, which is the point: you are previewing the desktop layout,
+drawn smaller.
+</Callout>
+
+960 is a trade-off rather than a constant with one right answer — the wider the base, the more desktop
+layout survives intact and the smaller everything is drawn. It is wide enough that a two-column or
+fixed-panel layout still has room, and small enough that a phone renders at roughly 40% rather than
+the ~30% a 1280 base would give, where body text stops being readable.
+
+## Pointer coordinates follow the scale
+
+Because the stage is transformed, an on-screen pixel is not a layout pixel. The renderer converts
+back by reading the mount's own rendered-to-layout ratio, so hit testing lands where the scene *looks*
+like it is. That covers:
+
+- `MouseEnter` / `Activated` / `InputChanged` positions
+- `GetMouseLocation`
+- Wheel deltas
+
+## ScrollingFrames scroll from a touch drag
+
+There is no wheel on a phone. A drag inside a `ScrollingFrame` moves `CanvasPosition` with the same
+clamping the wheel path uses, and past a small slop threshold it stops counting as a tap — so
+dragging past a button does not activate the button under your finger.
+
+Two deliberate limits:
+
+- **Only `ScrollingFrame`s opt out of native touch panning.** A preview embedded in a docs page never
+  traps the reader's scroll; the page keeps scrolling normally everywhere else.
+- **Taps do not wait for the double-tap-zoom timeout.** A tap registers immediately rather than after
+  the browser's ~300ms delay.
+
+## The gallery chrome stacks
+
+In full-chrome gallery mode, the 248px sidebar becomes a top bar with a `targets` button. Opening it
+shows the target list; picking one closes it again, leaving the rest of the screen to the stage.
+
+`?chrome=none` — what the [docs-site
+iframes](/loom/guides/static-builds-and-embedding/) use — is unaffected, since there is no chrome to
+stack. Embedded previews get the stage scaling and the touch handling and nothing else.

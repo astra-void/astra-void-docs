@@ -1,0 +1,211 @@
+---
+title: Package compatibility
+description: What loom does with the @rbxts packages your tree imports — the automatic source redirect, the built-in adapters, and the shims option for everything else.
+product: loom
+section: guides
+sidebar:
+  order: 45
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Loom runs a roblox-ts source tree in a browser, so every package that tree imports needs *something a
+browser can execute*. Most roblox-ts packages have one and you never think about it. A few do not,
+and this page is about those.
+
+## The automatic case
+
+A normal roblox-ts package points `"main"` at compiled Luau:
+
+```json
+{ "main": "out/init.luau", "types": "out/index.d.ts" }
+```
+
+Loom's resolver walks up from the importer, sees the `.luau` main, and redirects the specifier to
+that package's own TypeScript source at `src/index.ts` or `src/index.tsx` instead. It runs *before*
+Vite resolves anything, so it works whether or not the package was ever compiled — an `out/` that
+does not exist is not a problem.
+
+That covers the large majority of the ecosystem with no configuration. `@rbxts/*` specifiers are
+deliberately excluded from the redirect: those go through the [alias
+table](/loom/reference/vite-plugin/#alias-table), not to their own source.
+
+## The case that needs help
+
+A **declaration-only** package has nothing to redirect *to* — a Luau runtime plus `.d.ts` files, and
+no TypeScript implementation:
+
+```json
+{ "main": "src/init.lua", "types": "src/index.d.ts" }
+```
+
+Declaration files are types, not code, and running the Luau in a browser is not an option. The only
+answer is a browser module that stands in for the package. Loom ships one for the packages whose
+browser meaning is unambiguous, and lets you write one for anything else.
+
+## What loom ships
+
+| Specifier | Stand-in |
+| --- | --- |
+| `@rbxts/react` | The full browser-meaningful runtime surface of `@rbxts/react@17.3.7-ts.2`, forwarding standard React by identity to loom's own React 18. |
+| `@rbxts/react-roblox` | `createRoot`, `createBlockingRoot`, `createLegacyRoot`, `createPortal`, `act`, `version` — and the namespace as a default export, matching upstream's `export =` typings. |
+| `@rbxts/services` | Loom's [service singletons](/loom/reference/services/) — the same objects `game.GetService(...)` returns. |
+| `@rbxts/vide` | `@loom-dev/vide`, the signals adapter on the same Scene IR. |
+| `@rbxts/ui-labs` | The **non-story** `Environment` — root specifier only. |
+| `@rbxts/ripple` `@rbxts/react-ripple` | A port of the published spring/tween/motion implementation. |
+
+Everything below is the detail on the last two.
+
+### `@rbxts/ui-labs`
+
+The root import works with no configuration and no local compatibility file:
+
+```ts
+import { Environment } from "@rbxts/ui-labs";
+```
+
+Loom models the non-story environment — exactly how UI Labs itself behaves when the same code runs
+outside a story:
+
+- `Environment.IsStory()` returns `false`.
+- `Environment.InputListener` is `undefined`; it is story-only.
+- `Environment.UserInput` is loom's `UserInputService`, the same object `game.GetService(...)`
+  returns, never a copy.
+- `Unmount`, `Reload`, `CreateSnapshot` and `SetStoryHolder` are no-ops, and `GetJanitor()` returns
+  `undefined`, so ordinary cleanup code does not fail.
+
+So the usual reusable-input guard picks loom's own service with nothing to configure:
+
+```ts
+import { Environment } from "@rbxts/ui-labs";
+import { UserInputService } from "@rbxts/services";
+
+export const InputService = Environment.IsStory()
+  ? Environment.InputListener
+  : UserInputService;
+```
+
+<Callout title="Compatibility for one import, not support for UI Labs">
+Loom is not the Studio plugin and a loom scene is not a story. Story creators (`CreateReactStory` and
+friends), controls, snapshots, sandbox injection, story mounting, hot-reload internals and the plugin
+APIs are **not** emulated — importing one fails with the normal ESM missing-export error, which is
+better than a stub that behaves differently than it does in Studio. Subpaths like
+`@rbxts/ui-labs/controls` are not covered either.
+</Callout>
+
+### `@rbxts/ripple` and `@rbxts/react-ripple`
+
+Both root imports work with no configuration:
+
+```tsx
+import { config, useSpring } from "@rbxts/react-ripple";
+
+function AnimatedButton() {
+  const [offset, spring] = useSpring(0, config.stiff);
+
+  return (
+    <textbutton
+      Size={offset.map((value) => UDim2.fromOffset(200 + value, 50 + value))}
+      Event={{
+        MouseEnter: () => spring.setGoal(10),
+        MouseLeave: () => spring.setGoal(0),
+      }}
+    />
+  );
+}
+```
+
+Ripple publishes a Luau runtime and a `.d.ts`, so loom answers both packages with a **port** of the
+published implementation rather than a stub. The spring integrator, the easing curves, the Oklab
+colour interpolation and the rest thresholds all follow the Luau source, so a component animates the
+way it does in Roblox. The full API surface and the value types it animates are in
+[Animation](/loom/guides/animation/).
+
+## `shims`
+
+For any other package loom cannot run, point the specifier at a browser module you write:
+
+```ts title="vite.config.ts"
+loomPreview({
+  shims: { "@rbxts/example": "./loom-shims/example.ts" },
+});
+```
+
+Targets are absolute paths, paths relative to the project root, or bare package ids. Matching is
+**exact** — `@rbxts/example` does not capture `@rbxts/example/controls`, which keeps a partial shim
+from silently answering for a subpath it was never written for. List the subpath separately when you
+mean to cover it.
+
+Shims are matched ahead of every one of loom's own aliases, so they can override the built-in
+compatibility above as well.
+
+The option exists on every entry path, since they all share one Vite config:
+
+| Entry point | Where `shims` goes |
+| --- | --- |
+| `loomPreview()` | The plugin options object. |
+| `loom preview` / `loom build` | `loom.config.ts`. |
+| `createGalleryServer` / `buildGallery` | The `loom-dev/embed` options object. |
+| `withLoomGallery()` | The `loom-dev/next` options object (paths relative to `root`). |
+
+```ts title="loom.config.ts"
+export default {
+  targets: "src/scenes",
+  shims: { "@rbxts/example": "./loom-shims/example.ts" },
+};
+```
+
+## Writing a shim
+
+Model what the package means *here*, and only the slice your code actually uses. Import loom's own
+modules the way app code does — `@rbxts/services` is aliased to loom's service singletons, so a shim
+that re-exports one hands back the same object `game.GetService(...)` returns.
+
+```ts title="loom-shims/example.ts"
+import { UserInputService } from "@rbxts/services";
+
+export const listener = UserInputService;
+```
+
+**Never construct a second service.** And leaving the rest out is the point: an import of something
+you did not shim fails with the normal ESM missing-export error, which beats a stub that behaves
+differently than it does in Studio.
+
+## The error you are trying to avoid
+
+A package loom cannot run and you have not shimmed says so directly, naming the importer and the fix:
+
+```text
+[loom] Package "@rbxts/example" only provides a Lua/Luau runtime
+("src/init.lua") and cannot run in the browser.
+Imported by /project/src/app.ts
+
+Provide a browser-compatible replacement with:
+
+loomPreview({
+  shims: {
+    "@rbxts/example": "./loom-shims/example.ts",
+  },
+});
+```
+
+That message replaces what you would otherwise get — Vite's opaque `Failed to resolve entry for
+package`, or, only during a build, Rollup trying to *parse* the Luau as JavaScript:
+
+```text
+RollupError:
+../node_modules/@rbxts/example/src/init.luau (1:6):
+Expected ';', '}' or <eof>
+```
+
+Both mean the same thing: the package's npm runtime is `.lua`/`.luau`, so loom needs a browser
+runtime adapter for it. Nothing can be inferred automatically — Luau is not JavaScript, and a `.d.ts`
+is types rather than code.
+
+<Callout title="This can surface only in the build">
+A gallery target is a lazy `import()`, so the dev server never fetches a scene you do not open, while
+`loom build` (and `next build`) follows every target eagerly to code-split it. **A gallery that runs
+fine in development can still fail the build.** That is why loom applies the same aliases and the same
+resolver in both modes — but a package reached only from a scene you never opened will still wait
+until the build to tell you.
+</Callout>
