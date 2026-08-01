@@ -88,9 +88,12 @@ to a live `LoomInstance` through a `data-loom-id` attribute, and dispatches thro
 signals — so `Activated`, `InputBegan`, and `UserInputService` all fire the way they do in Roblox.
 
 Pointer capture mirrors Roblox's input sinking rather than the DOM's: only `TextButton`,
-`ImageButton`, `TextBox`, `ScrollingFrame`, and GuiObjects with `Active = true` receive pointer
-events. Plain frames, labels, `CanvasGroup`s and `LayerCollector`s are click-through. A transparent
-full-screen positioning frame therefore does not swallow clicks meant for the control underneath it,
+`ImageButton`, `TextBox`, `ScrollingFrame`, and GuiObjects with `Active = true` *sink* pointer
+events. Anything the app actually listens to is hit-tested either way — `Active` governs sinking,
+not hearing, so a slider handle that is a plain `Frame` with an `InputBegan` handler still gets its
+events. Frames, labels, `CanvasGroup`s and `LayerCollector`s with no listeners are click-through. A
+transparent full-screen positioning frame therefore does not swallow clicks meant for the control
+underneath it,
 which is exactly the Roblox behavior — and modal blocking still works, because a modal scrim in
 practice is a `TextButton`, which does sink.
 

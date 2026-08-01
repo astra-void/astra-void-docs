@@ -13,8 +13,8 @@ import { Callout } from "@/components/docs/mdx";
 level. This page answers "does `AutomaticCanvasSize` work?" at the property level, so you know
 exactly how far a preview can be trusted before you open Studio.
 
-Everything below was read off loom `0.3.0`'s sources: the JSX intrinsics in `@loom-dev/react`, the
-DOM mapping in `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
+Everything below describes loom `0.6.1`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
+`@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
 
 ## How to read this
 
@@ -38,13 +38,14 @@ edits.
 | `scrollingframe` | Supported | Sinks pointer input unconditionally, like Roblox. |
 | `canvasgroup` | Supported | `GroupTransparency` becomes CSS `opacity` on the container div, which is the same "composite the subtree, then fade it" model. |
 | `textlabel` `textbutton` `textbox` | Supported | See [Text](#text-properties). |
-| `imagelabel` `imagebutton` | Partial | Laid out, background-painted, input-sinking. **No image is fetched or drawn** — there is no `Image` prop at all. An icon renders as an empty rect. |
+| `imagelabel` `imagebutton` | Partial | The `Image` paints in an `<img>` layer beneath the text. See [Image properties](#image-properties) for the `ScaleType` and sprite-window gaps. |
 | `viewportframe` `videoframe` | Partial | Typed and laid out as plain `GuiObject`s. No 3D scene, no video — they paint as backgrounds. |
 | `uilistlayout` `uigridlayout` `uipadding` | Supported | |
 | `uicorner` `uistroke` `uigradient` | Supported | Mapped to `border-radius`, an outset `box-shadow` ring, and a CSS `linear-gradient`. |
+| `uishadow` | Supported | A CSS drop shadow, layered *under* a `UIStroke` ring rather than replacing it. |
 | `uisizeconstraint` `uiaspectratioconstraint` | Supported | |
 | `uiscale` | **Accepted** | Typed, recognized as a modifier, and read by nothing. A scaled subtree renders at 1×. |
-| `uiflexitem` | **Accepted** | A declared stub with no props yet. |
+| `uiflexitem` | Supported | `FlexMode` — `Grow` / `Fill`, or `Custom` with `GrowRatio`. |
 | `uipagelayout` `uitablelayout` | Not typed | Recognized by the layout engine as non-layout modifiers, so they neither crash nor do anything — but they are absent from `IntrinsicElements`. |
 | Everything else | Not typed | `uitextsizeconstraint`, `folder`, `part`, … — the intrinsic set is exactly what the renderer implements. |
 
@@ -55,15 +56,16 @@ Shared by every visual class.
 | Property | Status | Notes |
 | --- | --- | --- |
 | `Size` `Position` `AnchorPoint` | Supported | Full `UDim2` scale + offset resolution. |
-| `AutomaticSize` | Partial | `X` / `Y` / `XY` grow-to-content. See the [text-measurement gap](#automaticsize-on-text). |
+| `AutomaticSize` | Supported | `X` / `Y` / `XY` grow-to-content, with the object's own `Size` as the floor — as in Roblox, it only grows past `Size` for larger content. |
 | `BackgroundColor3` `BackgroundTransparency` | Supported | |
 | `Visible` | Supported | Hidden via CSS; the node still occupies its computed rect, as in Roblox. |
 | `ZIndex` | Supported | `ZIndexBehavior.Sibling` semantics — the renderer's native model. |
 | `LayoutOrder` | Supported | Honored by `UIListLayout` / `UIGridLayout` under `SortOrder.LayoutOrder`. |
 | `Rotation` | Supported | Degrees clockwise about the element center, as a CSS transform. Purely visual: the layout rect is unrotated, matching Roblox. |
 | `ClipsDescendants` | Supported | |
-| `Active` | Partial | **Honored at runtime, not declared in the props type.** The renderer reads it for pointer sinking, so `Active` on a plain `frame` works — and your editor will redline it. |
+| `Active` | Partial | **Honored at runtime, not declared in the props type**, so setting it works and your editor will redline it. It governs whether input is *sunk*, not whether the object hears it: a `frame` with an `InputBegan` handler is hit-testable either way, and a frame with no listeners stays click-through. |
 | `Name` | Supported | |
+| *(unwritten properties)* | Supported | Reading a property nobody has written yields the Roblox default — `Visible`, `ZIndex`, `BackgroundTransparency`, `Rotation`, `LayoutOrder`, `Active`, `ClipsDescendants`, `AnchorPoint`, `Position`, `Size` — not `undefined`. |
 | `Event` `Change` `ref` | Supported | `Event={{ Activated }}`, `Change={{ Text }}`, and `ref` to the live `LoomInstance`. |
 | `BorderSizePixel` `BorderColor3` `SizeConstraint` `Transparency` `Interactable` | Not typed | |
 
@@ -83,10 +85,13 @@ Shared by every visual class.
 | --- | --- | --- |
 | `Text` `TextColor3` `TextSize` `TextTransparency` | Supported | |
 | `TextXAlignment` `TextYAlignment` | Supported | |
-| `TextWrapped` | Supported | `white-space: normal` vs `nowrap`. Not applied during measurement — see below. |
-| `Font` | Partial | Mapped to a CSS family stack by name prefix: `Code`/`RobotoMono` → monospace, `Gotham*`, `SourceSans*`, `Roboto*`, everything else → the system sans stack. Weight comes from the name suffix. Metrics are the browser's, not Roblox's, so line breaks can differ by a glyph. |
+| `TextWrapped` | Supported | `white-space: normal` vs `nowrap`, and applied during measurement — see [below](#automaticsize-on-text). The deprecated `TextWrap` alias reads as the same property. |
+| `FontFace` | Supported | `new Font(family, weight, style)` resolved to a CSS family/weight/slant, including for text measurement. Preferred over the legacy `Font` enum when both are set. |
+| `Font` | Partial | The legacy enum, mapped to a CSS family stack by name prefix: `Code`/`RobotoMono` → monospace, `Gotham*`, `SourceSans*`, `Roboto*`, everything else → the system sans stack. Weight comes from the name suffix. Metrics are the browser's, not Roblox's, so line breaks can differ by a glyph. |
+| `FontSize` | Supported | The legacy `Enum.FontSize` — the pixel size is read out of the enum name, so `Size24` paints and measures at 24px. `TextSize` wins when both are set, as in Roblox. |
+| `RichText` | Supported | `<b>`, `<i>`, `<u>`, `<s>`, `<br/>`, `<font>` (colour, size, face, family, weight, transparency), `<uppercase>` / `<smallcaps>` and the character entities. With the flag off — or on a tag the engine would not recognise either — the markup stays literal, as in Roblox. Measurement uses each run's own font. |
 | `TextScaled` | **Accepted** | Never applied. Text renders at `TextSize` whether or not it fits its box. |
-| `RichText` `TextTruncate` `LineHeight` `MaxVisibleGraphemes` `TextStrokeColor3` `TextStrokeTransparency` | Not typed | No markup parsing, no ellipsis, no per-line leading control. |
+| `TextTruncate` `LineHeight` `MaxVisibleGraphemes` `TextStrokeColor3` `TextStrokeTransparency` | Not typed | No ellipsis, no per-line leading control, no glyph outline. |
 
 ### `AutomaticSize` on text
 
@@ -94,10 +99,37 @@ Auto-sizing text is measured browser-side — the adapter runs a canvas `measure
 font the renderer paints and hands the result to the WASM engine as `TextBounds`, because font
 metrics do not exist inside the engine.
 
-That measurement splits on `\n` and takes the widest line. It **does not account for
-`TextWrapped`**, so `AutomaticSize={Enum.AutomaticSize.Y}` on a wrapped label measures one line per
-explicit newline and under-reports the height a wrapped paragraph actually needs. Give wrapping
-paragraphs an explicit height, or verify them in Studio.
+`TextWrapped` is honored: the runs are laid into lines at word boundaries — constrained by the
+object's own width, or by the parent's when the X axis is automatic — rather than measured as one
+long line. Wrapped text is re-measured once the layout has sized its container, so an
+`AutomaticSize={Enum.AutomaticSize.Y}` paragraph converges on the second pass. A `RichText` string is
+measured run by run in the font its own tags ask for, so a bold or resized run does not clip.
+
+An empty `TextBox` is measured against its `PlaceholderText`, which is what it displays — otherwise
+an `AutomaticSize.Y` input would collapse to zero height and become unclickable.
+
+## Image properties
+
+Shared by `imagelabel` and `imagebutton`. The image paints in an `<img>` layer beneath the text.
+
+| Property | Status | Notes |
+| --- | --- | --- |
+| `Image` | Partial | `http(s):`, `data:` and `blob:` URLs load directly. `rbxassetid://` is resolved by a dev-server route — see the callout below. |
+| `ImageTransparency` | Supported | |
+| `ImageColor3` | Supported | A per-channel multiply through an `feColorMatrix`, matching the engine — so a full-colour image tints as correctly as a monochrome icon. The default white costs no filter at all. |
+| `ScaleType` | Partial | `Stretch`, `Fit` and `Crop` are implemented. `Slice` and `Tile` are accepted and paint as `Stretch`. |
+| `ImageRectOffset` `ImageRectSize` | **Accepted** | The sprite window is ignored — an icon cut out of a sheet renders as the whole sheet. |
+
+<Callout title="rbxassetid:// outside a dev server">
+Roblox's thumbnail API sends no CORS headers, so the browser cannot resolve an asset id on its own.
+`@loom-dev/preview` installs a resolver backed by a dev-server route that resolves the id server-side
+and redirects to the CDN image — so ids paint under `loom preview`, the embedded server and Next dev
+with no configuration, and resolutions are cached on both sides.
+
+A [static gallery build](/loom/guides/static-builds-and-embedding/) has no server to ask. Pass real
+URLs there, or install your own resolver with `setImageResolver`. The renderer ships no default
+rather than routing your asset traffic through a third party's proxy.
+</Callout>
 
 ## TextBox properties
 
@@ -127,15 +159,21 @@ layout engine. The combination will not error; it will not size the way Studio d
 
 | Instance | Supported | Accepted / partial |
 | --- | --- | --- |
-| `uilistlayout` | `FillDirection`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder`, `Padding` | — |
+| `uilistlayout` | `FillDirection`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder`, `Padding`, `HorizontalFlex`, `VerticalFlex`, `Wraps` | — |
 | `uigridlayout` | `CellSize`, `CellPadding`, `FillDirection`, `FillDirectionMaxCells`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | `StartCorner` — only `TopLeft` is implemented; the other three corners fall back to it. |
+| `uiflexitem` | `FlexMode` (`Grow` / `Fill` / `Custom`), `GrowRatio` | — |
 | `uipadding` | `PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight` | Scale padding on an `AutomaticSize` axis is treated as **offset-only**, so measurement and placement agree. |
 | `uisizeconstraint` | `MinSize`, `MaxSize` | — |
 | `uiaspectratioconstraint` | `AspectRatio`, `DominantAxis` | `AspectType` — `ScaleWithParentSize` is deferred. |
 | `uicorner` | `CornerRadius` | — |
 | `uistroke` | `Color`, `Thickness`, `Transparency` | `ApplyStrokeMode` — the ring is always drawn border-style, so `Contextual` on a text class does not outline glyphs. |
 | `uigradient` | `Color`, `Rotation`, `Enabled` | `Offset` is ignored. The gradient **overlays** the background rather than multiplying it, and `Transparency` (a `NumberSequence`) is not typed at all. |
+| `uishadow` | `Color`, `Offset`, `Blur`, `Spread`, `Transparency` | Drawn as a CSS drop shadow under the `UIStroke` ring. |
 | `uiscale` | — | `Scale` is ignored entirely. |
+
+`UIListLayout` and `UIGridLayout` report `AbsoluteContentSize` back after layout, gated on real
+change — so a control that sizes itself from `Change={{ AbsoluteContentSize }}` (a dropdown, say)
+gets a real number instead of collapsing to zero height.
 
 ## Input
 
@@ -145,9 +183,13 @@ Pointer and keyboard input route through the real runtime, not DOM shims: `Activ
 `ImageButton`, `TextBox`, `ScrollingFrame` and anything with `Active = true` sink pointer input —
 a transparent `Frame` is click-through, exactly as in Roblox.
 
+`Active` governs *sinking*, not *hearing*: a plain `Frame` with an `InputBegan` handler — a slider
+handle, say — is hit-testable whether or not it is `Active`, while a frame with no listeners stays
+click-through so a transparent positioning layer does not swallow clicks.
+
 ## What this list is not
 
-It is a description of loom `0.3.0`, not a compatibility promise. The project is pre-1.0 and rows
+It is a description of loom `0.6.1`, not a compatibility promise. The project is pre-1.0 and rows
 move — an **Accepted** here is a gap someone can close without a breaking change. When a preview and
 Studio disagree and the property is not on this page, treat Studio as correct and
 [file it](https://github.com/astra-void/loom/issues).

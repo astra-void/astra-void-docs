@@ -26,7 +26,11 @@ Studio before shipping.
 | Roblox datatypes, `Instance` model, signals, services, scheduler, Luau globals | Complete enough to run real component libraries. |
 | `@rbxts/react` adapter | Complete: a custom `react-reconciler` host config driving live loom instances. |
 | Layout: list, grid, padding, constraints, `AutomaticSize`, text measurement | Complete. |
-| Visuals: text, `UICorner`, `UIStroke`, gradients, clipping, transparency, rotation, scrolling frames | Complete. |
+| Visuals: text, `UICorner`, `UIStroke`, `UIShadow`, gradients, clipping, transparency, rotation, scrolling frames | Complete. |
+| Images: `ImageLabel` / `ImageButton`, `ScaleType`, `ImageColor3`, `rbxassetid://` | Painted. See the gaps below. |
+| Text: `FontFace`, `RichText` markup, wrapping and measurement | Complete. |
+| Flex: `UIListLayout` flex and `Wraps`, `UIFlexItem` | Complete. |
+| `TweenService`, bindings, `@rbxts/ripple` | Complete. |
 | Pointer and keyboard input, focus, `UserInputService` | Complete, with Roblox input-sinking semantics. |
 | Dev loop: Vite plugin, HMR, `loom preview`, `loom build` | Complete. |
 | `vide` adapter | Shipped, on the same Scene IR. |
@@ -41,15 +45,16 @@ preview`, across more than fifty scenes, without a single source change on the l
 
 ## Not implemented
 
-**Images.** `ImageLabel` and `ImageButton` exist as JSX intrinsics and lay out correctly, but no
-image source is fetched or painted. Anything that reads as an icon or a texture in Studio renders as
-an empty rect.
+**Sprite sheets and 9-slice.** Images paint as of `0.6.0`, but `ScaleType.Slice` and `ScaleType.Tile`
+fall back to `Stretch`, and the `ImageRectOffset` / `ImageRectSize` sprite window is ignored — each
+needs more than one `<img>` layer. An icon cut out of a sheet renders as the whole sheet.
 
 **`UIPageLayout` and `UITableLayout`.** Both are recognized by the layout engine — they will not
 crash — but neither does anything. Children of a `UIPageLayout` will not page.
 
-**`UIScale` and `UIFlexItem`.** Both are valid JSX intrinsics with typed props, and both are no-ops:
-nothing reads `UIScale.Scale`, so a scaled subtree renders at 1×.
+**`UIScale`.** A valid JSX intrinsic with typed props, and a no-op: nothing reads `UIScale.Scale`, so
+a scaled subtree renders at 1×. (`UIFlexItem`, which used to sit in this row, is implemented as of
+`0.5.0`.)
 
 **`TextScaled`.** Accepted on every text class and never applied — text renders at `TextSize`
 whether or not it fits.
@@ -67,9 +72,16 @@ is still open.
 - **`print` types oddly.** The globals declaration deliberately omits `print` because `lib.dom`
   already declares one and redeclaring is a compile error. The runtime still overwrites the value.
 - **Unknown services are stubs.** `@rbxts/services` is aliased to a module exporting only the
-  services the runtime actually implements — `ContextActionService`, `GuiService`, `Players`,
-  `RunService`, `UserInputService`, `Workspace`. Importing anything else is a build error rather than
-  a silent stub, which is the intended trade.
+  services the runtime actually implements — `CollectionService`, `ContextActionService`,
+  `GuiService`, `HttpService`, `Players`, `RunService`, `TweenService`, `UserInputService`,
+  `Workspace`. Importing anything else is a build error rather than a silent stub, which is the
+  intended trade. `HttpService` implements `GenerateGUID`, `JSONEncode` and `JSONDecode`;
+  `GetAsync` / `PostAsync` / `RequestAsync` throw by name, because a preview never issues requests on
+  your behalf.
+- **`rbxassetid://` needs a server.** Roblox's thumbnail API sends no CORS headers, so the id is
+  resolved by a dev-server route the preview installs — under `loom preview`, the embedded server and
+  Next dev. A [static gallery build](/loom/guides/static-builds-and-embedding/) has no server to ask:
+  pass real URLs there, or install your own resolver with `setImageResolver`.
 - **The React version is pinned in effect.** The adapter's reconciler targets React 18; the plugin
   aliases bare `react` to one absolute path to guarantee a single instance.
 

@@ -44,7 +44,7 @@ Only the plugin has peers; the CLI vendors its own copies. `@loom-dev/preview` d
 ```json title="From @loom-dev/preview's package.json"
 {
   "peerDependencies": {
-    "react": "^18.3.1 || ^19.0.0",
+    "react": "^18.3.1",
     "vite": "^6.0.0 || ^7.0.0"
   },
   "peerDependenciesMeta": {
@@ -57,10 +57,11 @@ Only the plugin has peers; the CLI vendors its own copies. `@loom-dev/preview` d
 are useful without it — but `loomPreview()` obviously is not, so install Vite if you are using the
 plugin. The CLI brings its own.
 
-<Callout title="The React peer range is wrong — install React 18">
-`|| ^19.0.0` in that range is a packaging bug, not an option. The React adapter drives
-`react-reconciler@^0.29.2`, which reads React 18 internals that React 19 renamed, so a React 19
-install fails at evaluation time. Until the range is narrowed, treat it as `^18.3.1`:
+<Callout title="React 18 only">
+The React peer is `^18.3.1` and nothing wider. The adapter drives `react-reconciler@^0.29.2`, which
+reads React 18 internals that React 19 renamed, so a React 19 install fails at evaluation time.
+Loom `0.4.0` narrowed the range to match — before that it advertised `|| ^19.0.0`, and the failure
+surfaced at first render instead of at install:
 
 ```bash
 pnpm add -D react@^18.3.1 @types/react@^18.3.12
