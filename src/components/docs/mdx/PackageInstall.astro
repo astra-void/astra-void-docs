@@ -4,17 +4,25 @@ import { Code } from "astro-expressive-code/components";
 interface Props {
   packageName: string;
   manager?: "pnpm" | "npm" | "yarn" | "bun";
+  dev?: boolean;
+  title?: string;
 }
 
-const { packageName, manager = "pnpm" } = Astro.props as Props;
+const {
+  packageName,
+  manager = "pnpm",
+  dev = false,
+  title,
+} = Astro.props as Props;
 
 const MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
 
+// Every manager but bun spells the dev flag `-D`.
 const commands: Record<(typeof MANAGERS)[number], string> = {
-  pnpm: `pnpm add ${packageName}`,
-  npm: `npm install ${packageName}`,
-  yarn: `yarn add ${packageName}`,
-  bun: `bun add ${packageName}`,
+  pnpm: `pnpm add ${dev ? "-D " : ""}${packageName}`,
+  npm: `npm install ${dev ? "-D " : ""}${packageName}`,
+  yarn: `yarn add ${dev ? "-D " : ""}${packageName}`,
+  bun: `bun add ${dev ? "-d " : ""}${packageName}`,
 };
 ---
 
@@ -48,7 +56,7 @@ const commands: Record<(typeof MANAGERS)[number], string> = {
       data-pm-panel={name}
       role="tabpanel"
     >
-      <Code code={commands[name]} frame="code" lang="bash" />
+      <Code code={commands[name]} frame="code" lang="bash" title={title} />
     </div>
   ))}
 </figure>
