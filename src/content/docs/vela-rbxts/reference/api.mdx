@@ -168,6 +168,7 @@ rather than silent. Plugin options are documented in
 |---|---|---|
 | `vela-rbxts` | The entry point: config helpers, types, the global augmentation, and the transformer subpath | **Yes** — this is the only one an app installs |
 | `@vela-rbxts/compiler` | The Rust compiler behind an N-API binding: transform, completions, hover, diagnostics, document colors | No, pulled in transitively |
+| `@vela-rbxts/compiler-wasm` | The same compiler built to WebAssembly, for hosts that cannot load the native addon — a browser, most usefully | Only if you are lowering classes outside Node |
 | `@vela-rbxts/config` | The theme schema, `defineConfig`, `defaultConfig`, and the color merge helpers | Only to reach a helper the root package does not re-export |
 | `@vela-rbxts/core` | Shared constants, including the supported host element tags | No — and nothing depends on it, so it never arrives transitively either |
 | `@vela-rbxts/ir` | The intermediate style representation shared between the compiler and its consumers | No |
@@ -229,6 +230,13 @@ The compiler ships N-API binaries for these targets:
 There is **no `aarch64-pc-windows-msvc` build**, so Windows on ARM has no prebuilt binary. There is
 also no linux arm64 musl build. On an unsupported target you need to build the compiler crate from
 source.
+
+Two things that look like escape hatches and are not. The napi-rs loader ends with a WASI fallback
+that reaches for `@vela-rbxts/compiler-wasm32-wasi`, which is not published, so it always falls
+through to `Cannot find native binding.` — a message whose advice, to reinstall without a lockfile,
+is misleading on a platform that simply has no binary. And `@vela-rbxts/compiler-wasm` is a separate
+package with its own API rather than a drop-in fallback — `@vela-rbxts/rbxtsc-host` depends on the
+native `@vela-rbxts/compiler` alone, so it cannot pick the WebAssembly build up for a build.
 
 ## See also
 
