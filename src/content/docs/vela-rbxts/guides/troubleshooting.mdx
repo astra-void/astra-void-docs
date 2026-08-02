@@ -133,6 +133,18 @@ one-line declaration file — and do not name it `src/vela-rbxts.d.ts`, which ma
 to itself under roblox-ts's `baseUrl` and silently breaks the augmentation. Both are covered in
 [installation](/vela-rbxts/getting-started/installation/#declare-the-classname-prop).
 
+## "The build fails on the first file with `compiler-invocation-failed`"
+
+If the message is `Cannot read properties of undefined (reading 'Latest')`, your project's
+TypeScript is too new. Vela's host adapter resolves `typescript` from your install and calls into
+its API, and TypeScript 7 moved it — so a plain `npm install typescript` today breaks every Vela
+build with an error that mentions neither TypeScript nor a version. Pin `typescript@5.9.3`, which is
+what the repo tests against; `6.x` works too.
+
+Any other `compiler-invocation-failed` means the native compiler call itself threw. Check that the
+platform has a [prebuilt binary](/vela-rbxts/reference/api/#prebuilt-compiler-binaries) — Windows on
+ARM and linux arm64 musl do not.
+
 ## "Nothing is being transformed at all"
 
 - The file must end in `.tsx` — a `className` built in a `.ts` helper is invisible to Vela.

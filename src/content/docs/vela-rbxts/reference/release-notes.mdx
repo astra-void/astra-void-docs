@@ -141,6 +141,11 @@ elements and set `CellPadding` yourself
 
 Neither of these is a regression; both have been true since the families shipped.
 
+**TypeScript 7 is not supported.** The host adapter calls into the `typescript` it resolves from your
+project, and 7.x fails that call — `compiler-invocation-failed: Cannot read properties of undefined
+(reading 'Latest')` on the first file compiled. Pin `typescript@5.9.3` (the tested version) or
+`6.x`. Nothing declares this as a peer range, so the install is clean and the build is not.
+
 ## Platform coverage
 
 Prebuilt native binaries do not cover every target. There is no `aarch64-pc-windows-msvc` build, so

@@ -138,6 +138,13 @@ Z-index gets four codes of its own, so the message tells you exactly what went w
 
 The errors are structural rather than about your classes.
 
+`compiler-invocation-failed` has one cause common enough to name. The host adapter resolves
+`typescript` from your project and calls into its API, so a TypeScript it does not understand
+surfaces here rather than as a version complaint — TypeScript 7 produces
+`Cannot read properties of undefined (reading 'Latest')` on the first file, and the build stops.
+Pin `typescript@5.9.3`, which is what the repo tests against. Everything else under this code is the
+native binding failing to load or throwing.
+
 `classname-on-unsupported-host` is the one that tells you nothing happened. Vela lowers `className`
 on the eight supported host elements and on components; on anything else it leaves the attribute in
 the output exactly as written and warns:

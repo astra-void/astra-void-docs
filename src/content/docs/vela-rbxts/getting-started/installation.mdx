@@ -25,11 +25,26 @@ Nothing about Vela is a runtime library you render. It is a transformer you regi
 
 <PackageInstall
   dev
-  packageName="roblox-ts typescript @rbxts/compiler-types @rbxts/types"
+  packageName="roblox-ts typescript@5.9.3 @rbxts/compiler-types @rbxts/types"
 />
 
-<Callout title="Nothing here is enforced">
-No package in the Vela repo declares a single `peerDependency`, and the only `engines` field anywhere is the VS Code extension's `vscode: ^1.90.0`. TypeScript, roblox-ts and React are plain dependencies, so your package manager will not warn you about a mismatch. What follows is what Vela is developed and tested against, not a constraint you have to satisfy: **Node 24** in CI, **TypeScript 5.9.3** pinned exactly in the repo, **roblox-ts `^3.0.0`**, `@rbxts/compiler-types ^3.0.0-types.0`, `@rbxts/types ^1.0.935`, `@rbxts/react ^17.3.7-ts.1`, and `@rbxts/services ^1.6.0`. One detail is worth knowing: the host adapter resolves `typescript` from your install at runtime without declaring a dependency on it, so a project that somehow has no resolvable `typescript` will fail when Vela tries to load your config.
+<Callout title="Pin TypeScript — the current release does not work">
+The version is pinned in that command for a reason. Vela's host adapter resolves `typescript` from
+**your** install and calls into its API, and TypeScript 7 moved enough of it that the call fails.
+Installing plain `typescript` today gets you 7.x and a build that dies on the first file:
+
+```text title="rbxtsc output with typescript@7"
+src/client/Panel.tsx:1:1 - error TS89000: [@vela-rbxts/rbxtsc-host] compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')
+```
+
+`5.9.3` is what the Vela repo pins and tests against; `6.x` also builds. Nothing enforces this —
+no package in the repo declares a `peerDependency`, and the only `engines` field anywhere is the VS
+Code extension's `vscode: ^1.90.0` — so your package manager will not warn you, and the error you
+get names neither TypeScript nor a version.
+
+The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0.0`**,
+`@rbxts/compiler-types ^3.0.0-types.0`, `@rbxts/types ^1.0.935`, `@rbxts/react ^17.3.7-ts.1`, and
+`@rbxts/services ^1.6.0`.
 </Callout>
 
 ## Register the transformer

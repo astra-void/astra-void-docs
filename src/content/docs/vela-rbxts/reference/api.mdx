@@ -198,23 +198,32 @@ it for editor validation.
 Be aware of what is and is not enforced. **No package declares an `engines` field** except the VS
 Code extension, which requires VS Code `^1.90.0`. **No package declares any `peerDependencies`.**
 roblox-ts, TypeScript, and React are ordinary dependencies or devDependencies throughout, so nothing
-is checked at install time and npm will not warn you about a mismatch. If your toolchain is too old,
-you find out from a build failure.
+is checked at install time and npm will not warn you about a mismatch. You find out from a build
+failure — and, in the TypeScript case below, from one that does not mention versions at all.
 
 What the project is developed and tested against:
 
 | Tool | Version |
 |---|---|
 | Node | 24 (what CI runs) |
-| TypeScript | 5.9.3, pinned exactly |
+| TypeScript | 5.9.3, pinned exactly — see below |
 | roblox-ts | `^3.0.0` |
 | `@rbxts/react` | `^17.3.7-ts.1` |
 | `@rbxts/services` | `^1.6.0` |
 
+<Callout title="TypeScript is an upper bound, not just a floor">
+`@vela-rbxts/rbxtsc-host` resolves `typescript` from **your** project — it declares no dependency on
+one — and calls into its API directly. TypeScript 7 moved enough of that API to break the call, so a
+project on the current TypeScript fails on its first file with
+`compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')`, naming neither
+TypeScript nor a version.
+
+`5.9.3` is the tested pin and `6.x` also builds. Note that roblox-ts's own `typescript` dependency
+does not save you here: it pins `=5.5.3` for itself, while Vela reads the one in your project.
+</Callout>
+
 `@rbxts/services` is a genuine runtime dependency, not just a type package: the injected runtime
-helper imports `UserInputService` and `Workspace` from it to evaluate variants. `@vela-rbxts/rbxtsc-host`
-needs a resolvable `typescript` at runtime but declares no dependency on it — in a normal project
-roblox-ts brings one.
+helper imports `UserInputService` and `Workspace` from it to evaluate variants.
 
 ### Prebuilt compiler binaries
 
