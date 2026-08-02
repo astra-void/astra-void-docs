@@ -1,24 +1,17 @@
 ---
 import { Badge } from "@/components/ui/badge"
-
-type Status =
-  | "stable-direction"
-  | "experimental"
-  | "feature-limited"
-  | "internal-foundation"
+import {
+  PACKAGE_STATUS_LABELS,
+  type PackageStatus,
+} from "@/lib/package-status"
 
 interface Props {
-  status: Status
+  status: PackageStatus
 }
 
 const { status } = Astro.props as Props
 
-const labels: Record<Status, string> = {
-  "stable-direction": "Stable direction",
-  experimental: "Experimental",
-  "feature-limited": "Feature limited",
-  "internal-foundation": "Foundation",
-}
+const labels = PACKAGE_STATUS_LABELS
 ---
 
 <Badge

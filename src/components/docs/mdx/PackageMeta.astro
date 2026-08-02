@@ -1,15 +1,10 @@
 ---
 import StatusBadge from "./StatusBadge.astro"
-
-type Status =
-  | "stable-direction"
-  | "experimental"
-  | "feature-limited"
-  | "internal-foundation"
+import type { PackageStatus } from "@/lib/package-status"
 
 interface Props {
   packageName: string
-  status: Status
+  status: PackageStatus
   importName?: string
   dependencies?: string[]
 }
