@@ -19,13 +19,14 @@
  * so these previews cannot be silently skipped; a broken example is a build
  * error (see {@link reportDiagnostics}).
  */
-import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import type { AstroIntegration } from "astro"
 import { buildGallery, createGalleryServer } from "loom-dev/embed"
 // Relative, not the `@/` alias: this module is loaded while astro.config is
 // being evaluated, before that alias exists.
+import { getLatticePreviewApp } from "../lib/lattice-source"
 import {
   compileVelaScene,
   listVelaScenes,
@@ -45,6 +46,44 @@ const TARGETS = "src/preview-targets"
 
 /** Path segment the gallery is mounted under, below the site's own base. */
 const MOUNT = "vela-preview/"
+
+/**
+ * `@lattice-ui/*` → the checkout's package sources, as Loom `shims`.
+ *
+ * An example that styles a Lattice primitive with `className` imports packages
+ * this repo does not depend on: the generated gallery root sits outside the
+ * lattice workspace, so nothing resolves `@lattice-ui/react-switch` there the
+ * way it does for the lattice gallery (whose root *is* inside that workspace).
+ * Loom's `shims` are plain Vite aliases, so pointing each package id at its
+ * `src/index.ts` in the same checkout the lattice previews already come from
+ * closes the gap without adding a dependency.
+ *
+ * Empty when there is no checkout — the Vela examples that use no Lattice
+ * primitive keep working, and one that does fails the same way a missing
+ * checkout fails the lattice gallery.
+ */
+function latticeShims(): Record<string, string> {
+  const app = getLatticePreviewApp()
+  if (!app) {
+    return {}
+  }
+
+  // <checkout>/apps/loom-preview → <checkout>/packages/react.
+  const packagesDir = resolve(app, "../../packages/react")
+  if (!existsSync(packagesDir)) {
+    return {}
+  }
+
+  const shims: Record<string, string> = {}
+  for (const name of readdirSync(packagesDir)) {
+    const entry = resolve(packagesDir, name, "src/index.ts")
+    if (existsSync(entry)) {
+      shims[`@lattice-ui/react-${name}`] = entry
+    }
+  }
+
+  return shims
+}
 
 /**
  * Lower every example into the generated gallery root and return the
@@ -144,6 +183,7 @@ export default function velaPreview(): AstroIntegration {
           root: resolve(process.cwd(), GENERATED_DIR),
           targets: TARGETS,
           base: `${base}${MOUNT}`,
+          shims: latticeShims(),
         })
         // Registered during `astro:server:setup`, so it sits ahead of Astro's
         // own dev handler and wins for `/vela-preview/*`.
@@ -185,6 +225,7 @@ export default function velaPreview(): AstroIntegration {
           root: resolve(process.cwd(), GENERATED_DIR),
           targets: TARGETS,
           outDir,
+          shims: latticeShims(),
         })
         logger.info(`built Vela previews → ${outDir}`)
       },
