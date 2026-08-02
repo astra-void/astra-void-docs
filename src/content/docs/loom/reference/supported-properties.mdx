@@ -13,7 +13,7 @@ import { Callout } from "@/components/docs/mdx";
 level. This page answers "does `AutomaticCanvasSize` work?" at the property level, so you know
 exactly how far a preview can be trusted before you open Studio.
 
-Everything below describes loom `0.6.4`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
+Everything below describes loom `0.7.0`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
 `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
 
 ## How to read this
@@ -38,15 +38,15 @@ edits.
 | `scrollingframe` | Supported | Sinks pointer input unconditionally, like Roblox. |
 | `canvasgroup` | Supported | `GroupTransparency` becomes CSS `opacity` on the container div, which is the same "composite the subtree, then fade it" model. |
 | `textlabel` `textbutton` `textbox` | Supported | See [Text](#text-properties). |
-| `imagelabel` `imagebutton` | Partial | The `Image` paints in an `<img>` layer beneath the text. See [Image properties](#image-properties) for the `ScaleType` and sprite-window gaps. |
+| `imagelabel` `imagebutton` | Supported | The `Image` paints in a layer beneath the text, in every `ScaleType`. See [Image properties](#image-properties). |
 | `viewportframe` `videoframe` | Partial | Typed and laid out as plain `GuiObject`s. No 3D scene, no video — they paint as backgrounds. |
 | `uilistlayout` `uigridlayout` `uipadding` | Supported | |
+| `uipagelayout` `uitablelayout` | Supported | Implemented in `0.7.0`. See [Layout and modifier properties](#layout-and-modifier-properties). |
 | `uicorner` `uistroke` `uigradient` | Supported | Mapped to `border-radius` (per-corner), a `box-shadow` ring on the side `BorderStrokePosition` asks for, and a CSS `linear-gradient`. |
 | `uishadow` | Supported | A CSS drop shadow, layered *under* a `UIStroke` ring rather than replacing it. |
 | `uisizeconstraint` `uiaspectratioconstraint` | Supported | |
 | `uiscale` | **Accepted** | Typed, recognized as a modifier, and read by nothing. A scaled subtree renders at 1×. |
 | `uiflexitem` | Supported | `FlexMode` — `Grow` / `Fill`, or `Custom` with `GrowRatio`. |
-| `uipagelayout` `uitablelayout` | Not typed | Recognized by the layout engine as non-layout modifiers, so they neither crash nor do anything — but they are absent from `IntrinsicElements`. |
 | Everything else | Not typed | `uitextsizeconstraint`, `folder`, `part`, … — the intrinsic set is exactly what the renderer implements. |
 
 ## GuiObject properties
@@ -60,7 +60,7 @@ Shared by every visual class.
 | `BackgroundColor3` `BackgroundTransparency` | Supported | |
 | `Visible` | Supported | Hidden via CSS; the node still occupies its computed rect, as in Roblox. |
 | `ZIndex` | Supported | `ZIndexBehavior.Sibling` semantics — the renderer's native model. |
-| `LayoutOrder` | Supported | Honored by `UIListLayout` / `UIGridLayout` under `SortOrder.LayoutOrder`. |
+| `LayoutOrder` | Supported | Honored by every layout under `SortOrder.LayoutOrder` — which is **not** the default. See [`SortOrder` defaults to `Name`](#sortorder-defaults-to-name). |
 | `Rotation` | Supported | Degrees clockwise about the element center, as a CSS transform. Purely visual: the layout rect is unrotated, matching Roblox. |
 | `ClipsDescendants` | Supported | |
 | `Active` | Partial | **Honored at runtime, not declared in the props type**, so setting it works and your editor will redline it. It governs whether input is *sunk*, not whether the object hears it: a `frame` with an `InputBegan` handler is hit-testable either way, and a frame with no listeners stays click-through. |
@@ -139,25 +139,42 @@ the object to make room.
 
 ## Image properties
 
-Shared by `imagelabel` and `imagebutton`. The image paints in an `<img>` layer beneath the text.
+Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text — a
+background-painted element rather than an `<img>`, because a sprite window and a 9-slice both place a
+*region* of the source, which `object-fit` cannot express.
 
 | Property | Status | Notes |
 | --- | --- | --- |
-| `Image` | Partial | `http(s):`, `data:` and `blob:` URLs load directly. `rbxassetid://` is resolved by a dev-server route — see the callout below. |
+| `Image` | Supported | `http(s):`, `data:` and `blob:` URLs load directly. `rbxassetid://` is resolved by a dev-server route, and baked into a static build — see the callout below. |
 | `ImageTransparency` | Supported | |
 | `ImageColor3` | Supported | A per-channel multiply through an `feColorMatrix`, matching the engine — so a full-colour image tints as correctly as a monochrome icon. The default white costs no filter at all. |
-| `ScaleType` | Partial | `Stretch`, `Fit` and `Crop` are implemented. `Slice` and `Tile` are accepted and paint as `Stretch`. |
-| `ImageRectOffset` `ImageRectSize` | Not typed | The sprite window needs more than one `<img>` layer. An icon cut out of a sheet renders as the whole sheet, and the props are absent from `ImageGuiProps`. |
+| `ScaleType` | Supported | All five as of `0.7.0`: `Stretch`, `Fit`, `Crop`, `Slice` and `Tile`. |
+| `SliceCenter` `SliceScale` | Supported | The 9-slice centre in the source image's own pixels, painted as a CSS `border-image`: corners keep their size, edges stretch along one axis, the middle along both. `SliceScale` scales the painted border without touching the source. A `SliceCenter` that leaves no centre (the default `Rect.new(0, 0, 0, 0)` included) stretches instead. |
+| `TileSize` | Supported | One tile's size for `ScaleType.Tile`, a `UDim2` against the node — so `UDim2.fromScale(0.5, 0.5)` is four tiles. Defaults to `{1,0},{1,0}`, one tile filling the node. |
+| `ImageRectOffset` `ImageRectSize` | Supported | The sprite window, in image pixels. A zero `ImageRectSize` means the whole image, as in Roblox. The window is clipped to its own destination rect, so a sheet's neighbouring sprites never leak under `Fit`. |
+| `ResampleMode` | Supported | `Pixelated` becomes CSS `image-rendering: pixelated` — pixel art scales up crisp instead of blurred. |
 
-<Callout title="rbxassetid:// outside a dev server">
+Two combinations are **not** reproduced, and say so rather than painting something wrong:
+
+- **`ScaleType.Tile` with an `ImageRect` window.** CSS backgrounds cannot repeat a *region*, so the
+  whole image tiles and loom warns once, naming the node.
+- **A `SliceCenter` measured against a window** rather than against the whole image. The slice insets
+  are read from the source's natural size.
+
+<Callout title="rbxassetid:// resolution">
 Roblox's thumbnail API sends no CORS headers, so the browser cannot resolve an asset id on its own.
-`@loom-dev/preview` installs a resolver backed by a dev-server route that resolves the id server-side
-and redirects to the CDN image — so ids paint under `loom preview`, the embedded server and Next dev
-with no configuration, and resolutions are cached on both sides.
+`@loom-dev/preview` installs a resolver for both cases:
 
-A [static gallery build](/loom/guides/static-builds-and-embedding/) has no server to ask. Pass real
-URLs there, or install your own resolver with `setImageResolver`. The renderer ships no default
-rather than routing your asset traffic through a third party's proxy.
+- **Under a dev server** (`loom preview`, the embedded server, Next dev) the id is resolved
+  server-side and answered as a redirect from `<base>__loom/asset/<id>`.
+- **In a static build** (`loom build`, `vite build`) there is no server later, so the ids the bundle
+  mentions are resolved *at build time*, the images are downloaded into the output, and a
+  `__loom/assets.json` manifest points the page at them — see [Static builds and
+  embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
+
+Only ids written out as `rbxassetid://<digits>` can be baked; one assembled at runtime is not in the
+output to find. Anywhere else, install your own resolver with `setImageResolver` from
+`@loom-dev/renderer`.
 </Callout>
 
 ## TextBox properties
@@ -190,6 +207,8 @@ layout engine. The combination will not error; it will not size the way Studio d
 | --- | --- | --- |
 | `uilistlayout` | `FillDirection`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder`, `Padding`, `HorizontalFlex`, `VerticalFlex`, `Wraps` | — |
 | `uigridlayout` | `CellSize`, `CellPadding`, `FillDirection`, `FillDirectionMaxCells`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | `StartCorner` — only `TopLeft` is implemented; the other three corners fall back to it. |
+| `uitablelayout` | `MajorAxis`, `Padding`, `FillEmptySpaceColumns`, `FillEmptySpaceRows`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | See [`UITableLayout`](#uitablelayout). |
+| `uipagelayout` | `FillDirection`, `Padding`, `Circular`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | `Animated`, `TweenTime`, `EasingStyle`, `EasingDirection` and the gamepad/touch/scroll input flags are **accepted**: a preview shows the settled layout, so page changes are instant. See [`UIPageLayout`](#uipagelayout). |
 | `uiflexitem` | `FlexMode` (`Grow` / `Fill` / `Custom`), `GrowRatio` | — |
 | `uipadding` | `PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight` | Scale padding on an `AutomaticSize` axis is treated as **offset-only**, so measurement and placement agree. |
 | `uisizeconstraint` | `MinSize`, `MaxSize` | — |
@@ -203,6 +222,73 @@ layout engine. The combination will not error; it will not size the way Studio d
 `UIListLayout` and `UIGridLayout` report `AbsoluteContentSize` back after layout, gated on real
 change — so a control that sizes itself from `Change={{ AbsoluteContentSize }}` (a dropdown, say)
 gets a real number instead of collapsing to zero height.
+
+### `SortOrder` defaults to `Name`
+
+Every `UIGridStyleLayout` defaults `SortOrder` to `Enum.SortOrder.Name`, which is the engine's own
+default — so **a list whose children carry distinct `Name`s flows alphabetically**, not in source
+order. Children with equal names keep source order (the sort is stable), which is why a tree that
+never sets `Name` is unaffected either way.
+
+Loom defaulted to `LayoutOrder` until `0.7.0`. If a list reordered itself when you upgraded, it was
+already ordering that way in Studio; set `SortOrder={Enum.SortOrder.LayoutOrder}` to get source /
+`LayoutOrder` order back.
+
+### `UITableLayout`
+
+The layout's siblings are the table's *lines* — rows, or columns under `MajorAxis.ColumnMajor` — and
+each line's own children are the cells:
+
+```tsx
+<frame Size={UDim2.new(1, 0, 0, 120)}>
+  <uitablelayout Padding={UDim2.new(0, 8, 0, 4)} FillEmptySpaceColumns={true} />
+  <frame Name="Row1">
+    <textlabel Text="Region" Size={UDim2.fromOffset(120, 26)} />
+    <textlabel Text="Players" Size={UDim2.fromOffset(100, 26)} />
+  </frame>
+</frame>
+```
+
+A column is as wide as its widest cell and a row as tall as its tallest, both measured against the
+**table's** content box — so a `0.25` scale cell is a quarter of the table, not of its row. A line
+spans the whole table on its minor axis, which is what the engine reports for the row frames
+themselves; the line's own `Size` is ignored, and so is any `UIPadding` on it (insetting each line
+separately would slide its cells off the columns they define).
+
+`FillEmptySpaceColumns` / `FillEmptySpaceRows` scale the tracks **proportionally** so the table spans
+its container — in both directions, so a table whose natural width overruns is squeezed by the same
+rule. A hidden cell takes neither a track nor a gap.
+
+### `UIPageLayout`
+
+Pages keep their own `Size` and sit one container-plus-`Padding` apart along `FillDirection`, so a
+parent with `ClipsDescendants` shows exactly one. Which page that is, is *state* — changed by method
+call as in Roblox, through a ref:
+
+```tsx
+const pager = useRef<{ Next(): void; CurrentPageIndex: number }>();
+
+<frame Size={UDim2.new(1, 0, 0, 90)} ClipsDescendants={true}>
+  <uipagelayout
+    ref={(instance) => { pager.current = instance as never; }}
+    Padding={UDim.new(0, 16)}
+    Circular={true}
+  />
+  {/* …pages… */}
+</frame>;
+```
+
+`JumpToIndex(i)` / `JumpTo(page)` / `Next()` / `Previous()` all work and fire `PageLeave` →
+`PageEnter` → `Stopped`; `Circular` decides whether `Next` and `Previous` wrap at the ends.
+
+<Callout title="CurrentPage is an instance, so the engine reads an index">
+Roblox's `CurrentPage` is a **GuiObject reference**, and a Scene IR property value is a datatype —
+never a node — so it cannot cross the wasm boundary. The layout engine reads `CurrentPageIndex`, a
+0-based int the runtime keeps in step; `CurrentPage` still reads back as the instance for your code.
+
+That only matters if you drive a pager from something other than the `@rbxts/react` adapter: set
+`CurrentPageIndex` on the node yourself.
+</Callout>
 
 ## Input
 
@@ -218,7 +304,7 @@ click-through so a transparent positioning layer does not swallow clicks.
 
 ## What this list is not
 
-It is a description of loom `0.6.4`, not a compatibility promise. The project is pre-1.0 and rows
+It is a description of loom `0.7.0`, not a compatibility promise. The project is pre-1.0 and rows
 move — an **Accepted** here is a gap someone can close without a breaking change. When a preview and
 Studio disagree and the property is not on this page, treat Studio as correct and
 [file it](https://github.com/astra-void/loom/issues).

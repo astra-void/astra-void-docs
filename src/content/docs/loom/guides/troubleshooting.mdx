@@ -33,6 +33,8 @@ come up.
 | Text wraps differently on another machine | The same thing — a different fallback font per OS | As above |
 | Text or buttons spill out of their container | Content wider than the parent allows | Expected as of `0.6.4` — [`AutomaticSize` is bounded](/loom/reference/supported-properties/#automaticsize-is-bounded-by-the-parent) and the engine overflows rather than widening |
 | A narrow desktop window stopped scaling | Deliberate as of `0.6.4` | It reflows instead. `?base=960` restores the old behaviour |
+| A list reordered itself after upgrading to `0.7.0` | `SortOrder` now defaults to `Name`, as it does in Studio | The engine ordered it that way all along — set `SortOrder={Enum.SortOrder.LayoutOrder}` for the old order |
+| `rbxassetid://` images are blank in a static build | The id is assembled at runtime, so the build could not find it to bake | Pass a real URL, or install your own `setImageResolver` — see [static builds](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) |
 
 ## Blank page, `nothing mounted into #loom-root after 2s`
 
@@ -179,10 +181,9 @@ dot-directories.
 Before assuming a loom bug, check the property you are relying on against [Supported instances and
 properties](/loom/reference/supported-properties/). A surprising number of "wrong render" reports are
 a prop that is typed, settable, and read by nothing — `TextScaled`, `UIScale.Scale`,
-`UIGradient.Offset`, `ScrollBarThickness`. Images paint as of `0.6.0`, but `ScaleType.Slice` /
-`ScaleType.Tile` fall back to `Stretch` and the `ImageRectOffset` sprite window is not implemented at
-all, so an icon cut out of a sheet renders as the whole sheet. `UIPageLayout` / `UITableLayout` are
-recognized but do nothing.
+`UIGradient.Offset`, `ScrollBarThickness`. Images, including 9-slice, tiling and sprite windows, are
+complete as of `0.7.0`; the one image combination loom cannot reproduce is tiling a sprite window,
+and it warns rather than pretending.
 
 A preview is a high-fidelity approximation, not a Studio replacement — verify final visuals in
 Studio.

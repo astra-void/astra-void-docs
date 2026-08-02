@@ -24,13 +24,21 @@ HttpService === game.GetService("HttpService"); // true
 | --- | --- |
 | `CollectionService` | The real tag registry — `AddTag`, `HasTag`, `GetTagged` and the added/removed signals. Code-set tags only; there is no Studio tag editor. |
 | `ContextActionService` | `BindAction` / `BindActionAtPriority` / `UnbindAction` as no-ops. |
+| `Debris` | `AddItem(instance, lifetime)` on a real timer — the instance really is destroyed. |
 | `GuiService` | `SelectedObject` with selection signals, `GetGuiInset`, `ReducedMotionEnabled`. |
 | `HttpService` | `GenerateGUID` and the JSON pair — [see below](#httpservice). |
 | `Players` | `LocalPlayer` with a pre-built `PlayerGui`. |
 | `RunService` | `RenderStepped` / `Heartbeat` / `PostSimulation`, `IsStudio` / `IsRunning` / `IsClient`. |
+| `StarterGui` | A real container; `SetCore` / `GetCore` / `SetCoreGuiEnabled` / `GetCoreGuiEnabled` as no-ops. |
+| `TextService` | `GetTextSize` / `GetTextBoundsAsync` — [see below](#textservice). |
 | `TweenService` | `Create` and real tween playback — see [Animation](/loom/guides/animation/#tweenservice). |
 | `UserInputService` | Input signals, `GetMouseLocation`, `GetFocusedTextBox`, capability flags. |
 | `Workspace` | `CurrentCamera` with a live `ViewportSize`. |
+
+Plus the services that are only *containers* in a client, exported so a tree can be parented into
+them: `Lighting`, `ReplicatedFirst`, `ReplicatedStorage`, `ServerScriptService`, `ServerStorage`,
+`SoundService`, `StarterPack`, `StarterPlayer` and `Teams`. They have no behaviour to model, so
+before `0.7.0` they resolved to a warned stub; now they are ordinary instances.
 
 <Callout title="The list is deliberate, not exhaustive">
 Importing a service loom does *not* implement fails with the normal ESM missing-export error. That is
@@ -40,6 +48,31 @@ looks like working code right up until you open Studio.
 To stand one up yourself, point a [shim](/loom/guides/package-compatibility/#shims) at
 `@rbxts/services` and re-export loom's singletons alongside your own.
 </Callout>
+
+## `TextService`
+
+```ts
+import { TextService } from "@rbxts/services";
+
+const bounds = TextService.GetTextSize(
+  "Hello world",
+  18,
+  Enum.Font.SourceSans,
+  new Vector2(200, 1000),
+);
+```
+
+`GetTextSize(text, fontSize, font, frameSize)` measures through **the same font stack the renderer
+paints with**, so what a component reserves for a label and what the label then occupies come from
+one place. Wrapping is greedy at word boundaries and a zero `frameSize.X` means "no frame", as in
+Roblox. The modern `GetTextBoundsAsync(params)` spelling reads the same measurement off a
+`GetTextBoundsParams` instance, and does not yield — there is nothing to wait for in a browser.
+
+The caveat is the one that applies to all of loom's text: the metrics are the browser's, so shaping
+and rounding differ from the engine by a glyph here and there, and *which* typeface answers is the
+host's to install — see [Fonts and text metrics](/loom/guides/fonts/). The filtering methods
+(`FilterStringAsync` and friends) are absent: moderation is a server call loom will not make on
+anyone's behalf.
 
 ## `HttpService`
 
@@ -88,3 +121,17 @@ const accent = Color3.fromHex("#6366F1");
 
 CSS shorthand (`#abc`), alpha channels, `0x` notation and stray whitespace are rejected with a located
 loom error rather than being silently reinterpreted as some other colour.
+
+`Color3:ToHex()` is its inverse as of `0.7.0` — six **lowercase** digits with no leading `#`, each
+channel clamped and rounded to the nearest 255th, verified against a running engine rather than
+guessed at:
+
+```ts
+Color3.fromRGB(99, 102, 241).ToHex(); // "6366f1"
+Color3.fromHex(colour.ToHex()) === colour; // by value
+```
+
+`ToHSV()` destructures as a tuple (`const [h, s, v] = colour.ToHSV()`) and `Color3.fromHSV(h, s, v)`
+is its inverse. The same release added `Vector2`'s `Unit` / `Dot` / `Cross` / `Lerp` / `Min` / `Max` /
+`Abs` and its `xAxis` / `yAxis` constants, the equivalents on `Vector3`, and `UDim2:Lerp`. `UDim` has
+no `Lerp` here because it has none in the engine either.

@@ -27,6 +27,7 @@ interface LoomPreviewOptions {
   title?: string;
   html?: boolean;
   shims?: Record<string, string>;
+  assets?: boolean;
 }
 ```
 
@@ -37,6 +38,7 @@ interface LoomPreviewOptions {
 | `title` | `"loom preview"`, or `"loom gallery"` with `targets` | `<title>` of the generated page. |
 | `html` | `true` | `false` removes the HTML plugin: no generated page, no entry detection, no Rollup input. |
 | `shims` | `{}` | Package redirects for roblox-ts packages loom cannot run — `{ "<specifier>": "<module>" }`. Exact-match only, and applied **before** every alias below, so a shim can override the built-ins. See [Package compatibility](/loom/guides/package-compatibility/#shims). |
+| `assets` | `true` | `false` stops a **build** downloading the `rbxassetid://` images its bundle mentions. Use it for a build that must not reach the network, or one whose images come from somewhere else. The dev-server route is unaffected. See [`rbxassetid://` in a static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build). |
 
 ## The plugins
 

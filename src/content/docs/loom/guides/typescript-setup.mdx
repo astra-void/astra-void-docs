@@ -62,13 +62,14 @@ screengui  surfacegui  billboardgui
 frame  scrollingframe  canvasgroup  viewportframe  videoframe
 textlabel  textbutton  textbox
 imagelabel  imagebutton
-uilistlayout  uigridlayout  uipadding  uicorner  uistroke  uiscale  uigradient
+uilistlayout  uigridlayout  uitablelayout  uipagelayout
+uipadding  uicorner  uistroke  uishadow  uiscale  uigradient
 uiaspectratioconstraint  uisizeconstraint  uiflexitem
 ```
 
-An element outside that list is a type error and will also not render. `uipagelayout` and
-`uitablelayout` are recognized by the layout engine but unimplemented, and are absent here — see
-[Scope and status](/loom/getting-started/scope-and-status/).
+An element outside that list is a type error and will also not render — the intrinsic set is exactly
+what the renderer implements. See [Supported instances and
+properties](/loom/reference/supported-properties/).
 
 ## Teaching the editor about `@rbxts/*`
 
