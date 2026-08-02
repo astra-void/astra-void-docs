@@ -65,6 +65,15 @@ considered.)
 
 `transparent` is not a theme color. It is handled specially: it sets the family's **transparency** property to `1` and **removes** the color property entirely. `bg-transparent` emits `BackgroundTransparency = 1` and no `BackgroundColor3`.
 
+<Callout title="You rarely need bg-transparent any more">
+Since 0.5.0, [preflight](/vela-rbxts/reference/config/#preflight) already starts every classed host
+element at `BackgroundTransparency = 1`, so `bg-transparent` on a label or a layout frame is a no-op
+that emits the property Vela was going to emit anyway. It still earns its place in two spots: on an
+element whose background is painted by a variant or a dynamic class and should be clear by default,
+and anywhere you have set `preflight: false`. The other families — `text-transparent`,
+`image-transparent`, `border-transparent` — are unaffected and mean exactly what they always did.
+</Callout>
+
 That is why `placeholder-transparent` is an error. `PlaceholderColor3` has no paired transparency property, so there is nothing for the utility to set, and the compiler reports `unsupported-color-key` rather than emitting something that would not work.
 
 Gradient stops are the other family with no transparency property, but they do not behave the same way. `from-transparent`, `via-transparent`, and `to-transparent` produce **no diagnostic at all**: the stop is dropped and the gradient is built from whatever stops remain, exactly as if you had not written it. It is a silent no-op rather than an error, and it is worth knowing about because a two-stop gradient that quietly becomes a one-stop gradient renders as a flat fill.
@@ -123,7 +132,7 @@ CSS-style ring-stacked-on-border. Off-list values are `unsupported-stroke-value`
 
 `rounded-{key}` sets `CornerRadius` on a `UICorner` child, and on the static path it is a **pure theme lookup**. The key must exist in `theme.radius` or you get `unknown-theme-key` on the `radius` family.
 
-There are no arbitrary values on the static path — `rounded-[8]` does not compile to anything. If you need a radius the theme does not have, add it to `theme.extend.radius` and give it a name.
+There are no arbitrary values on the static path: `rounded-[8]` reports `unsupported-arbitrary-value` and emits nothing. If you need a radius the theme does not have, add it to `theme.extend.radius` and give it a name.
 
 ```ts title="vela.config.ts"
 theme: { extend: { radius: { card: "new UDim(0, 10)" } } }

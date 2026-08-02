@@ -56,14 +56,13 @@ without a variant rule or dynamic `className` is dropped with `transition-withou
 
 ## "A breakpoint or orientation variant never applies"
 
-Check your version first: this was a real bug in **0.4.0**, not your code. The runtime helper
-sampled `Camera.ViewportSize` once at mount, when Roblox often still reports 1×1, so `sm:`/`md:`/`lg:`
-never matched and orientation read as landscape. **Upgrading to 0.4.1 fixes it**, and makes
-breakpoints react to resizes as well.
+Check that the token's other conditions hold — a chained `md:touch:` needs both to match — and
+remember the thresholds are min-width only, measured on the viewport's X dimension, so a phone-sized
+viewport matches none of the three. A square viewport counts as `landscape`, not `portrait`.
 
-If it still does not apply on 0.4.1, check that the token's other conditions hold — a chained
-`md:touch:` needs both — and remember the thresholds are min-width only, measured on the viewport's
-X dimension. The input variants and `hover:` were never affected by the 0.4.0 bug.
+If none of that explains it, check your version: breakpoints and orientation were broken outright in
+**0.4.0** and fixed in 0.4.1 ([release notes](/vela-rbxts/reference/release-notes/#041)). The input
+variants and `hover:` were never affected.
 
 ## "The layout is wrong"
 
@@ -88,13 +87,25 @@ the layout solver rather than one winning. Pick one. See
 **Spacing is bigger than you asked for.** Margins are wrappers that participate in the parent's
 list, so they **sum** with its `gap-*`. Prefer gap alone for list spacing.
 
-**A grid stops laying out when you add `gap-*`.** Still open in 0.4.1: gap on a `grid` element
+**A grid stops laying out when you add `gap-*`.** Still open in 0.5.0: gap on a `grid` element
 also emits a conflicting `UIListLayout`. Keep gap off grid elements until the fix ships.
 
 **Children shuffle when `divide-*` is present.** Separators are inserted by child position and
 break under explicit `LayoutOrder`/`order-*` on the children. Use source order with dividers.
 
+**`order-*` does nothing.** The layout instance is one you wrote yourself: `SortOrder` defaults to
+`Enum.SortOrder.Name`, which sorts children alphabetically by instance name and ignores
+`LayoutOrder` entirely — set it to `LayoutOrder`. Vela's own layouts set it for you, but only since
+0.5.0 ([release notes](/vela-rbxts/reference/release-notes/#050)).
+
 ## "The colors are wrong"
+
+**An element that used to be visible disappeared after upgrading to 0.5.0.** It was relying on
+Roblox's default gray background, and [preflight](/vela-rbxts/reference/config/#preflight) now starts
+every classed host element at `BackgroundTransparency = 1`. Give it the `bg-*` it was implicitly
+using, or set `preflight: false` to restore the old behavior wholesale. Elements with no `className`
+at all, and components, are never preflighted — so a container that vanished definitely has classes
+on it.
 
 **A gradient renders as a flat fill.** One of its stops is `transparent`, which is silently dropped
 — a two-stop gradient quietly becomes one stop. This is the one transparency case that produces no
@@ -142,7 +153,9 @@ keep it a plain `defineConfig` call with literal values.
 
 Compile the smallest possible reproduction and read the emitted TSX before the Luau: a static-path
 element keeps its tag and gains plain props; a runtime-path element becomes `VelaRuntimeHost` with
-`__vela*` props. Which of the two you are looking at answers most questions on this page. If the
+`__vela*` props. Which of the two you are looking at answers most questions on this page — and the
+[five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path)
+are how you stop landing on the second one. If the
 behavior contradicts the docs, the honest maps are
 [scope and status](/vela-rbxts/getting-started/scope-and-status/) and the
 [diagnostics reference](/vela-rbxts/reference/diagnostics/) — and a report to the

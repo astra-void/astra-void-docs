@@ -17,7 +17,9 @@ The fastest way to understand Vela is to write a small component and read what c
   scene="PanelScene"
 />
 
-That preview is not a screenshot and not a mock-up: the example was lowered by the same compiler `rbxtsc` loads, and the emitted Roblox tree is what you see. The **Classes** tab is the source with `className` on it, the **Lowered** tab is what came out. Two differences from the snippet below, both about Roblox defaults rather than Vela: the labels carry `bg-transparent` because a Roblox text instance is opaque white by default, and the panel carries an explicit `h-24` because a width-only `Size` is zero pixels tall — which is exactly what the [sizing note](#what-each-class-lowers-to) further down describes.
+That preview is not a screenshot and not a mock-up: the example was lowered by the same compiler `rbxtsc` loads, and the emitted Roblox tree is what you see. The **Classes** tab is the source with `className` on it, the **Lowered** tab is what came out — and that source is the snippet below, line for line, so what you copy from this page is what the preview renders.
+
+Open the **Lowered** tab and you will also find `BackgroundTransparency` and `BorderSizePixel` on elements whose classes never mention either. That is [preflight](/vela-rbxts/reference/config/#preflight): Roblox paints every `GuiObject` as an opaque gray box, so any element carrying a `className` starts from transparent-and-borderless unless something actually paints it.
 
 ## The component
 
@@ -26,15 +28,62 @@ import React from "@rbxts/react";
 
 export function Panel() {
   return (
-    <frame className="flex flex-col gap-4 p-4 rounded-lg bg-slate-800 border border-slate-700 w-80">
-      <textlabel className="text-slate-100 text-lg font-semibold" Text="Loadout" />
-      <textlabel className="text-slate-400 text-sm" Text="Two slots remaining" />
+    <frame className="flex flex-col gap-4 p-4 rounded-lg bg-slate-800 border border-slate-700 w-80 h-24">
+      <textlabel
+        className="w-full h-6 text-left text-slate-100 text-lg font-semibold"
+        Text="Loadout"
+      />
+      <textlabel
+        className="w-full h-5 text-left text-slate-400 text-sm"
+        Text="Two slots remaining"
+      />
     </frame>
   );
 }
 ```
 
-Every class on the `frame` resolves at compile time. Nothing in this file reads the theme at runtime, and nothing in the output refers back to Vela.
+Every class here resolves at compile time. Nothing in this file reads the theme at runtime, and nothing in the output refers back to Vela.
+
+<Callout title="Why every element carries a size">
+`h-24` on the panel and `w-full h-6` on the labels are not Vela requirements — they are Roblox
+defaults showing through. A `GuiObject` starts at `Size = (0, 0, 0, 0)`, and a class list that only
+sets a width leaves the height axis at zero, so the instance is real, correct, and zero pixels tall.
+Drop those classes and this panel compiles cleanly to an invisible frame containing two invisible
+labels. `w-fit`/`h-fit` lower to `AutomaticSize` if you would rather Roblox measure the content.
+</Callout>
+
+## Put it on screen
+
+A component that is never mounted renders nothing, and Vela changes nothing about how you mount one
+— this is ordinary `@rbxts/react-roblox`. The one Vela-specific detail is the wrapper: `screengui`
+is **not** one of the eight host elements Vela lowers, so classes belong on a `frame` inside it, not
+on the `screengui` itself.
+
+```tsx title="src/client/main.client.tsx"
+import React from "@rbxts/react";
+import { createPortal, createRoot } from "@rbxts/react-roblox";
+import { Players } from "@rbxts/services";
+import { Panel } from "./Panel";
+
+const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
+const root = createRoot(new Instance("Folder"));
+
+root.render(
+  createPortal(
+    <screengui ResetOnSpawn={false} ZIndexBehavior={Enum.ZIndexBehavior.Sibling}>
+      <Panel />
+    </screengui>,
+    playerGui,
+  ),
+);
+```
+
+Rojo maps this file into `StarterPlayer/StarterPlayerScripts` the same way it would any other client
+entry point; the `.client` in the filename is what makes roblox-ts emit a LocalScript. Note the
+extension too — Vela only ever transforms `.tsx` files, so a `className` assembled in a `.ts` helper
+is invisible to it.
+
+Build, sync, and press play: the panel from the preview above is now in your place.
 
 ## What each class lowers to
 
@@ -50,7 +99,7 @@ The `frame` classes split into two kinds of result: properties set directly on t
 | `bg-slate-800` | `BackgroundColor3` | `Color3.fromRGB(29, 41, 61)` |
 | `border` | `UIStroke.Thickness` | `1` |
 | `border-slate-700` | `UIStroke.Color` and `Transparency` | `Color3.fromRGB(49, 65, 88)`, `0` |
-| `w-80` | `Size` | `UDim2.fromOffset(320, 0)` |
+| `w-80 h-24` | `Size` | `UDim2.fromOffset(320, 96)` |
 
 A few of those deserve a note.
 
@@ -58,43 +107,60 @@ A few of those deserve a note.
 
 `gap-4` and `p-4` both resolve `4` through the theme's `spacing` scale, which is where the built-in default has its only entry: `"4": "new UDim(0, 16)"`. Every other numeric spacing key — `p-2`, `gap-6`, `p-1.5` — comes from an arithmetic fallback instead: the key must parse as a non-negative multiple of `0.5`, and the result is that number times four pixels. That is why `w-80` is 320 pixels rather than a lookup failure.
 
-`w-80` produces a whole `Size`, and a sibling `h-*` on the same element merges into it rather than replacing it. With only a width given, the height axis stays at zero, so the emitted value is `UDim2.fromOffset(320, 0)`. Add `h-40` and you get `UDim2.fromOffset(320, 160)`.
+`w-80` and `h-24` merge into one `Size` rather than one replacing the other, which is why the two of them produce a single `UDim2.fromOffset(320, 96)`. Drop the `h-24` and the height axis falls back to zero — `UDim2.fromOffset(320, 0)` — and the panel disappears. (On the runtime path that merge does not happen; the later token wins. See [dynamic class names](/vela-rbxts/guides/dynamic-class-names/).)
 
 `border` and `border-slate-700` are two different utilities that happen to share a prefix. The bare form sets thickness; the color form sets color and transparency. Writing only `border-slate-700` gives you a colored stroke with no explicit thickness set.
 
-The `textlabel` classes are text-only utilities: `text-slate-100` and `text-slate-400` set `TextColor3`, `text-lg` sets `TextSize` to `18`, `text-sm` sets it to `14`, and `font-semibold` sets `FontFace` to `new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)`. Note that `text-*` is disambiguated by value, not by prefix: a known size key becomes `TextSize`, an alignment keyword becomes `TextXAlignment`, and anything else is treated as a color.
+The `textlabel` classes are mostly text-only utilities: `text-slate-100` and `text-slate-400` set `TextColor3`, `text-lg` sets `TextSize` to `18`, `text-sm` sets it to `14`, `text-left` sets `TextXAlignment` to `Left`, and `font-semibold` sets `FontFace` to `new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)`. Their `w-full h-6` and `w-full h-5` go through the same sizing path as the panel's, mixing a scale and an offset — `new UDim2(1, 0, 0, 24)`.
 
-## Roughly what comes out
+Note that `text-*` is disambiguated by value, not by prefix: a known size key becomes `TextSize`, an alignment keyword becomes `TextXAlignment`, and anything else is treated as a color. There is no such thing as an unrecognised `text-*` class — misspell a size and you get a theme-key warning about a color.
 
-The transformer removes `className` entirely, emits the resolved properties on the element, and prepends the helper instances as children ahead of whatever children you wrote:
+## What comes out
 
-```tsx title="Transformed output (shape, not verbatim)"
+The transformer removes `className` entirely, emits the resolved properties on the element, and prepends the helper instances as children ahead of whatever children you wrote. This is the actual emitted TSX, with line breaks added:
+
+```tsx title="Transformed output (line breaks added; nothing else changed)"
 <frame
   BackgroundColor3={Color3.fromRGB(29, 41, 61)}
-  Size={UDim2.fromOffset(320, 0)}
+  Size={UDim2.fromOffset(320, 96)}
+  BorderSizePixel={0}
 >
-  <uicorner CornerRadius={new UDim(0, 8)} />
-  <uistroke Thickness={1} Color={Color3.fromRGB(49, 65, 88)} Transparency={0} />
+  <uilistlayout
+    FillDirection={Enum.FillDirection.Vertical}
+    Padding={new UDim(0, 16)}
+    SortOrder={Enum.SortOrder.LayoutOrder}
+  />
   <uipadding
     PaddingTop={new UDim(0, 16)}
     PaddingRight={new UDim(0, 16)}
     PaddingBottom={new UDim(0, 16)}
     PaddingLeft={new UDim(0, 16)}
   />
-  <uilistlayout FillDirection={Enum.FillDirection.Vertical} Padding={new UDim(0, 16)} />
+  <uicorner CornerRadius={new UDim(0, 8)} />
+  <uistroke Thickness={1} Color={Color3.fromRGB(49, 65, 88)} Transparency={0} />
   <textlabel
+    Text="Loadout"
+    TextXAlignment={Enum.TextXAlignment.Left}
     TextColor3={Color3.fromRGB(241, 245, 249)}
     TextSize={18}
+    Size={new UDim2(1, 0, 0, 24)}
     FontFace={new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)}
-    Text="Loadout"
+    BorderSizePixel={0}
+    BackgroundTransparency={1}
   />
   <textlabel
+    Text="Two slots remaining"
+    TextXAlignment={Enum.TextXAlignment.Left}
     TextColor3={Color3.fromRGB(144, 161, 185)}
     TextSize={14}
-    Text="Two slots remaining"
+    Size={new UDim2(1, 0, 0, 20)}
+    BorderSizePixel={0}
+    BackgroundTransparency={1}
   />
 </frame>
 ```
+
+Three things in there were never in your class list. `BorderSizePixel` and the labels' `BackgroundTransparency` are [preflight](/vela-rbxts/reference/config/#preflight), as described above — the panel does not get the transparency because `bg-slate-800` paints it. `SortOrder = LayoutOrder` is emitted on every Vela layout so that `order-*` works at all.
 
 Because the helpers are prepended, they always sort ahead of your own children in the emitted JSX. That does not affect layout — `UIListLayout` ignores non-`GuiObject` siblings — but it is worth knowing if you index children positionally.
 

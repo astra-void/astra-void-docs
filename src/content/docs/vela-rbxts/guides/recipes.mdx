@@ -18,10 +18,11 @@ plain Roblox properties with no runtime helper involved.
 
 Two conventions repeat throughout, both worth internalizing before you copy anything:
 
-- **Everything has an explicit size.** Roblox instances default to zero-height `Size` values, and
-  text instances default to an opaque white background. That is why the examples write `w-*`/`h-*`
-  on almost everything and `bg-transparent` on labels that should not paint — the noise is Roblox's
-  defaults, not Vela's requirements.
+- **Everything has an explicit size.** Roblox instances default to zero-height `Size` values, which
+  is why the examples write `w-*`/`h-*` on almost everything — the noise is Roblox's defaults, not
+  Vela's requirements. Backgrounds are not in that bucket any more: since 0.5.0
+  [preflight](/vela-rbxts/reference/config/#preflight) starts every classed element transparent, so
+  a label that should not paint needs no `bg-transparent`.
 - **Rows and columns are `UIListLayout`.** Any element with `flex`, `gap-*`, `justify-*` or
   `items-*` on it gets exactly one `UIListLayout` child, and that layout owns the positions of every
   child under it. See [layout and sizing](/vela-rbxts/guides/layout-and-sizing/) for the full model.
@@ -221,7 +222,8 @@ What you should not do is compute a string that carries layout classes — `flex
 alignment, text styling. Those are silently dropped at runtime, and the failure mode is a broken
 screen with a clean build. If that sentence is surprising, read
 [dynamic class names](/vela-rbxts/guides/dynamic-class-names/) before shipping anything from this
-page.
+page — or the short version, the
+[five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path).
 
 ## See also
 

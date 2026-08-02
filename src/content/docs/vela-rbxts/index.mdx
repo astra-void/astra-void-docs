@@ -55,13 +55,19 @@ the rest loudly instead of inventing approximations. The edges are mapped honest
 If you are new, the getting-started sequence is designed to be read in order:
 
 1. [Installation](/vela-rbxts/getting-started/installation/) — the package, the tsconfig plugin, the
-   config file, and the one `.d.ts` line that makes `className` type-check.
-2. [Your first component](/vela-rbxts/getting-started/first-component/) — build a panel and read
-   exactly what each class lowered to.
-3. [How it works](/vela-rbxts/getting-started/how-it-works/) — the pipeline, and the two very
-   different paths a `className` can take.
+   config file, the one `.d.ts` line that makes `className` type-check, and a smoke test that proves
+   all of it took.
+2. [Your first component](/vela-rbxts/getting-started/first-component/) — build a panel, put it on
+   screen, and read exactly what each class lowered to.
+3. [How it works](/vela-rbxts/getting-started/how-it-works/) — the pipeline, the two very different
+   paths a `className` can take, and the
+   [five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path)
+   that keep you on the good one.
 4. [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is deliberately absent,
-   and the three gaps that do not announce themselves.
+   and the gaps that do not announce themselves.
+
+Or skip the setup entirely for now: the [playground](/vela-playground/) runs the real compiler in
+the browser, so you can type class strings and watch them lower with no project at all.
 
 From there, go where your task points:
 

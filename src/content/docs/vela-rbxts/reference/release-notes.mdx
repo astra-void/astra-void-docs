@@ -1,0 +1,156 @@
+---
+title: Release notes
+description: What changed in each Vela release — the 0.5.0 preflight break, the 0.4.1 breakpoint fix, and the sharp edges still open.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 50
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Every package in the repo moves in lockstep — `vela-rbxts`, the whole `@vela-rbxts/*` scope, and the
+`vela-rbxts-lsp` VS Code extension all carry the same version, so a fix anywhere bumps everything.
+Releases are tagged from `v0.3.0` onward, and the upstream
+[`CHANGELOG.md`](https://github.com/astra-void/vela-rbxts/blob/main/CHANGELOG.md) carries the
+per-package detail behind this page. If you are installing Vela for the first time, you are on the
+current release and none of the upgrade notes below apply to you — skip to
+[what is still open](#still-open).
+
+## 0.5.0
+
+The current release.
+
+<Callout title="Breaking: preflight neutralizes the Roblox host defaults">
+Roblox paints every `GuiObject` as an opaque gray box with a 1px border, and a framework that only
+ever *adds* properties can never take that back — which is why every example used to repeat
+`bg-transparent` on anything that was not meant to paint.
+
+A supported host element **that carries a `className`** now starts from `BackgroundTransparency = 1`
+and `BorderSizePixel = 0` instead. Anything that actually paints opts back out: a `bg-*` utility,
+`opacity-*`, a gradient stop, or a `BackgroundColor3` / `BackgroundTransparency` you declared as a
+prop yourself. A background painted by a variant or by a dynamic class value reopens it at runtime,
+so `hover:bg-sky-500` still works on an otherwise transparent element. An element with no
+`className` is untouched, and so is a **component** — Vela cannot know which host element its props
+will land on.
+
+**Anywhere the gray default was load-bearing, the element now renders invisible.** Add the `bg-*` it
+was relying on, or set [`preflight: false`](/vela-rbxts/reference/config/#preflight) to keep the old
+behavior wholesale.
+</Callout>
+
+**`order-*` works under `flex`.** Vela's `UIListLayout` did not set `SortOrder`, and the engine
+default is `Name` — so children sorted alphabetically by instance name and every `order-*` was a
+silent no-op, while `grid` set `SortOrder = LayoutOrder` and worked. Both layouts now set it. If you
+still see `order-*` ignored on 0.5.0, the layout instance is one you wrote yourself.
+
+**The runtime host no longer emits `table.getn`.** The deprecated call was reaching your output on
+every runtime-path element.
+
+## 0.4.2
+
+**A WebAssembly build of the compiler**, published as `@vela-rbxts/compiler-wasm`, so class lowering
+can run where the native N-API addon cannot be loaded — a browser, most usefully. The
+[playground](/vela-playground/) on this site compiles with it.
+
+**Transitions tween from the right starting value.** The runtime host seeded its held values from
+the *runtime* resolution only, so a base utility that lowers statically — `bg-slate-700` under a
+`hover:bg-slate-600` — was not there to travel from: the first time a variant introduced the prop,
+the element jumped straight to the target instead of tweening. Both directions animate now.
+
+**A base opacity modifier no longer leaks into a variant.** `bg-blue-600/50 hover:bg-blue-600`
+stayed half transparent on hover, because a bare color utility drops the transparency prop rather
+than resetting it, and a variant resolves in isolation over the base. The reset is emitted when
+something else in the same class list set that family's transparency.
+
+**Refs on runtime-path elements are typed from the tag.** Anything a variant or a motion utility
+promoted typed its `ref` as `Ref<unknown>`; it now follows whichever host element `__velaTag`
+carries.
+
+## 0.4.1
+
+<Callout title="Breakpoints did not work in 0.4.0">
+The `0.4.0` runtime helper read `Camera.ViewportSize` **once, when the element mounted**, and Roblox
+often still reports a 1×1 viewport at that moment. Every width test therefore saw width 1, so
+**`sm:`, `md:` and `lg:` never matched and orientation was always landscape**. `0.4.1` follows the
+camera's `ViewportSize` signal, which both fixes the initial evaluation and makes breakpoints react
+to resizes.
+
+The input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` were never affected — their signals
+were always subscribed correctly.
+</Callout>
+
+**`divide-*` drew one separator too many** whenever the element carried a utility that lowers a
+helper instance. Fixed.
+
+**Config errors name the key that failed.** A malformed config now reports the offending path — such
+as `theme.extend.colors.surface.55` — instead of only saying that a `TailwindConfig`-compatible
+object was expected.
+
+**`tsx-parse-failed` is anchored.** It carries a real source range, and its message names the line
+and column: `Failed to parse TSX input at line 2, column 53: Unexpected token …`.
+
+**Malformed `configJson` is an error, not a shrug.** The compiler reports `invalid-config-json`
+instead of quietly compiling that file against the default theme.
+
+**A smaller install.** `@vela-rbxts/compiler` no longer bundles the publish machine's native binary;
+platform binaries come only from the per-platform optional dependencies.
+
+## 0.4.0
+
+Where `hover:`, arbitrary hex colors, and opacity modifiers arrived: `hover:bg-*` works on its own
+and tweens when paired with `transition`, `[#rgb]` and `[#rrggbb]` payloads resolve in every color
+family, and a trailing `/N` lowers to the family's transparency property. `border-[N]` started
+reporting `unsupported-arbitrary-value` in the same release, since bracket payloads are parsed as
+arbitrary colors first.
+
+Breakpoints and orientation are broken in this release, as described above. If you are pinned to it
+and cannot move, drive reflow from your own state — see
+[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/#driving-reflow-yourself).
+
+## Earlier
+
+**0.3.0** is where most of the surface this documentation describes landed at once: far-edge
+positioning, `content-*`/`self-*`, `order-*`, grid, `basis-*`, `mx-auto`/`my-auto`, `translate-*`,
+`space-x/y-*`, `pointer-events-*`, `object-*`, `overscroll-*`, `ring`/`outline`, `leading-*`,
+`italic`, the case transforms and decorations, the whole motion layer, and the structural
+utilities — margins and `divide-*`. The runtime host became a `forwardRef` component in the same
+release, which is what lets `asChild`-style slotting libraries reach the rendered instance.
+
+**0.2.1** added `vela.config.json` and the palette `DEFAULT` key, and corrected the setup guide's
+declaration filename: `src/vela-rbxts.d.ts` collides with the package name under the `baseUrl` of
+`src` that every roblox-ts project sets, so the augmentation silently never loaded. It is
+`src/vela-env.d.ts` now.
+
+**0.2.0** was the first public release. `className` on components started being lowered there, and
+the standalone runtime package was replaced by the helper module Vela inlines into the files that
+need it — which is why there is no Vela runtime to place in your DataModel.
+
+## Still open
+
+These are known and unfixed as of 0.5.0.
+
+**`gap-*` on a `grid` element emits a conflicting `UIListLayout`** alongside the `UIGridLayout` it
+correctly feeds, leaving two layout instances fighting over the children. Keep `gap-*` off grid
+elements and set `CellPadding` yourself
+([utilities reference](/vela-rbxts/reference/utilities/#grid)).
+
+**`divide-*` separators are sensitive to explicit `LayoutOrder`** and double-count the parent's
+`gap-*`. That is a consequence of separators being list items rather than a defect
+([utilities reference](/vela-rbxts/reference/utilities/#divide)).
+
+Neither of these is a regression; both have been true since the families shipped.
+
+## Platform coverage
+
+Prebuilt native binaries do not cover every target. There is no `aarch64-pc-windows-msvc` build, so
+**Windows on ARM is unsupported**, and there is no linux arm64 musl build either. On those two you
+have to build the compiler crate and the language server from source. The full target list is in the
+[API reference](/vela-rbxts/reference/api/#prebuilt-compiler-binaries).
+
+## See also
+
+- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.5.0.
+- [Configuration](/vela-rbxts/reference/config/#preflight) — the `preflight` opt-out.
+- [Troubleshooting](/vela-rbxts/guides/troubleshooting/) — symptom-first, including the two entries
+  that turn out to be version problems.

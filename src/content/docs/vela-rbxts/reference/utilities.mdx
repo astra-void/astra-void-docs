@@ -1,6 +1,6 @@
 ---
 title: Utility reference
-description: Every utility class Vela supports at 0.4.1, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
+description: Every utility class Vela supports at 0.5.0, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-This is the complete list of what Vela compiles as of **0.4.1**. If a class is not on this page,
+This is the complete list of what Vela compiles as of **0.5.0**. If a class is not on this page,
 Vela does not implement it — an unknown family produces `unsupported-utility-family`, a real
 Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`, and a few (anything that
 looks like `text-*`) get misread as a color key instead. See
@@ -149,9 +149,10 @@ into the same helper**, and on a collision the later token wins. The one real di
 
 Explicitly rejected: for `border-*`, the CSS border styles `dashed`, `solid`, `dotted`, `double`;
 every side-specific form (`border-x`, `border-t`, `border-t-2`, …); `border-opacity-*`; anything
-containing a slash (`unsupported-border-value`) — and since 0.4.0, `border-[3]` reports
-`unsupported-arbitrary-value` instead. For `ring-*`/`outline-*`: `inset`, `solid`, `dashed`,
-`dotted`, `double`, `offset-*`, and any other thickness (`unsupported-stroke-value`).
+containing a slash (`unsupported-border-value`). A bracketed thickness — `border-[3]` — is
+`unsupported-arbitrary-value` instead, because bracket payloads are parsed as arbitrary colors
+first. For `ring-*`/`outline-*`: `inset`, `solid`, `dashed`, `dotted`, `double`, `offset-*`, and any
+other thickness (`unsupported-stroke-value`).
 
 ## Radius
 
@@ -161,9 +162,10 @@ containing a slash (`unsupported-border-value`) — and since 0.4.0, `border-[3]
 | `rounded-{key}` | any key in `theme.radius` | `UICorner.CornerRadius` | Pure theme lookup |
 
 The default theme ships the `DEFAULT` plus ten named keys: `none`, `xs`, `sm`, `md`, `lg`, `xl`,
-`2xl`, `3xl`, `4xl`, `full`. There is no numeric fallback and no arbitrary `rounded-[8]` on the
-compile-time path — an unknown key is `unknown-theme-key` in the `radius` family. The runtime path
-does accept brackets; see [Dynamic class names](#dynamic-class-names) below.
+`2xl`, `3xl`, `4xl`, `full`. There is no numeric fallback on the compile-time path: an unknown key
+is `unknown-theme-key` in the `radius` family, and a bracketed one — `rounded-[8]` — is
+`unsupported-arbitrary-value`. The runtime path does accept brackets; see
+[Dynamic class names](#dynamic-class-names) below.
 
 ## Shadow
 
@@ -314,7 +316,7 @@ values: both scales zero gives `UDim2.fromOffset(x, y)`, both offsets zero gives
 `UDim2.fromScale(x, y)`, and a mix gives the full `UDim2.new(sx, ox, sy, oy)`.
 
 `basis-*` accepts the same values and lowers onto the X axis of `Size`, regardless of the parent's
-fill direction — as of 0.4.1 it is `w-*` under another name. Reach for it only when porting Tailwind
+fill direction — as of 0.5.0 it is `w-*` under another name. Reach for it only when porting Tailwind
 markup; write `w-*`/`h-*` in new code.
 
 ## Constraints
@@ -364,7 +366,7 @@ These write into a `UIListLayout` helper instance.
 
 | Class | Values | Roblox target | Notes |
 |---|---|---|---|
-| `flex` | — | `FillDirection = Enum.FillDirection.Horizontal` | Bare form |
+| `flex` | — | `FillDirection = Enum.FillDirection.Horizontal` | Bare form. Every form also sets `SortOrder = LayoutOrder` |
 | `flex-row` | — | `FillDirection = Enum.FillDirection.Horizontal` | |
 | `flex-col` | — | `FillDirection = Enum.FillDirection.Vertical` | |
 | `flex-wrap` | — | `Wraps = true` | |
@@ -413,7 +415,7 @@ Anything else in the grid family — `col-span-*`, `row-span-*`, template values
 
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element writes `UIGridLayout.CellPadding`, which is the right target — but as of
-0.4.1 it **also** emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+0.5.0 it **also** emits the ordinary `UIListLayout` carrying the same value, leaving two layout
 instances fighting over the children. Until that is fixed upstream, add the `UIGridLayout` yourself
 when you need cell padding, or accept the default spacing.
 </Callout>
@@ -429,6 +431,12 @@ when you need cell padding, or accept the default spacing.
 
 An unresolvable payload is `unsupported-layout-order-value`. Remember `divide-*` separators are
 positioned by child order, not `LayoutOrder` — mixing the two breaks separator placement.
+
+`LayoutOrder` only decides anything when the parent's layout sorts by it. Vela's `UIListLayout` and
+`UIGridLayout` both set `SortOrder = LayoutOrder`, so `order-*` under a `flex` or `grid` parent works
+— but a layout instance **you** wrote keeps the engine default of `Enum.SortOrder.Name`, which sorts
+children alphabetically by instance name and ignores `order-*` entirely. (Vela's own `UIListLayout`
+had that bug until 0.5.0; see the [release notes](/vela-rbxts/reference/release-notes/#050).)
 
 ## Aspect ratio
 

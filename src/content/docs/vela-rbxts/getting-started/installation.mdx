@@ -19,15 +19,14 @@ Nothing about Vela is a runtime library you render. It is a transformer you regi
 
 `vela-rbxts` expects the ordinary roblox-ts React stack alongside it. Install those yourself if the project does not already have them.
 
-```bash title="Runtime dependencies"
-pnpm add @rbxts/react @rbxts/react-roblox @rbxts/services
-```
+<PackageInstall packageName="@rbxts/react @rbxts/react-roblox @rbxts/services" />
 
 `@rbxts/react` and `@rbxts/services` matter beyond your own imports: when Vela takes its runtime path it inlines a helper module into your output that imports `React` from `@rbxts/react` and `{ UserInputService, Workspace }` from `@rbxts/services`. Both must resolve in the built place even if you never import them by hand. `@rbxts/react-roblox` is what you need to mount a tree at all.
 
-```bash title="Dev dependencies"
-pnpm add -D roblox-ts typescript @rbxts/compiler-types @rbxts/types
-```
+<PackageInstall
+  dev
+  packageName="roblox-ts typescript @rbxts/compiler-types @rbxts/types"
+/>
 
 <Callout title="Nothing here is enforced">
 No package in the Vela repo declares a single `peerDependency`, and the only `engines` field anywhere is the VS Code extension's `vscode: ^1.90.0`. TypeScript, roblox-ts and React are plain dependencies, so your package manager will not warn you about a mismatch. What follows is what Vela is developed and tested against, not a constraint you have to satisfy: **Node 24** in CI, **TypeScript 5.9.3** pinned exactly in the repo, **roblox-ts `^3.0.0`**, `@rbxts/compiler-types ^3.0.0-types.0`, `@rbxts/types ^1.0.935`, `@rbxts/react ^17.3.7-ts.1`, and `@rbxts/services ^1.6.0`. One detail is worth knowing: the host adapter resolves `typescript` from your install at runtime without declaring a dependency on it, so a project that somehow has no resolvable `typescript` will fail when Vela tries to load your config.
@@ -54,6 +53,26 @@ The plugin entry object is also where transformer options go — file-filter tog
 ## Add `vela.config.ts`
 
 Vela looks for `vela.config.ts` or `vela.config.json` (the `.ts` form wins when both exist), walking up from the directory of each source file until it finds one or hits the filesystem root. There are no `.js`, `.mjs` or `.cjs` variants and no `package.json` key. If nothing is found, Vela uses its built-in default theme, which already contains 28 color families, the radius scale, and the spacing fallback.
+
+<Callout title="Put it next to tsconfig.json, not inside src">
+Vela loads this file itself, with Node — it is build tooling, not game code. Keep it at the project
+root, **outside** `rootDir`. Dropped into `src/`, roblox-ts sweeps it up with the rest of your
+sources and fails the build outright:
+
+```text title="rbxtsc output"
+src/vela.config.ts:1:30 - error TS roblox-ts: You cannot use modules directly under node_modules.
+
+1 import { defineConfig } from "vela-rbxts";
+                               ~~~~~~~~~~~~
+```
+
+Note that this is the opposite of the `.d.ts` file below, which *must* live inside `rootDir`.
+
+One wrinkle at the root: a roblox-ts `tsconfig.json` includes only `src`, so a typed-ESLint setup
+will report `vela.config.ts` as a file not included in the project. Widening `include` would hand
+the file back to roblox-ts, so the fix is either an ESLint override for that one path or the JSON
+form, `vela.config.json`, which no TypeScript tool tries to own.
+</Callout>
 
 The minimum useful file accepts the defaults wholesale:
 
@@ -123,6 +142,44 @@ rojo serve
 
 You do not need a Rojo mapping for Vela, and there is no Vela runtime package to place in the DataModel. Everything Vela produces is either an ordinary Roblox property, a helper instance emitted as a JSX child, or — on the runtime path — a helper module inlined directly into the same output file. The only things that must exist in your place tree are `@rbxts/react` and `@rbxts/services`, which your existing `node_modules` → `ReplicatedStorage` mapping already covers.
 
-## Next step
+## Check that it actually took
 
-Write something and watch it lower in [Your first component](/vela-rbxts/getting-started/first-component/).
+Two of the three ways this setup can fail are silent, so spend one build proving it worked. Put a
+deliberately broken class on any `.tsx` element:
+
+```tsx title="src/client/Smoke.tsx"
+<frame className="bg-nope-500 p-4" />
+```
+
+Build, and read the output. You are looking for exactly this — a roblox-ts warning, numbered from
+the diagnostic code base, with the offending token underlined:
+
+```text title="rbxtsc output"
+src/client/Smoke.tsx:4:28 - warning TS89000: [@vela-rbxts/compiler] unknown-theme-key: Unknown theme key "nope-500" for background color utility in className literal.
+
+4   return <frame className="bg-nope-500 p-4" />;
+                            ~~~~~~~~~~~
+```
+
+- **You get the warning.** Everything is wired: the plugin is loading, the compiler is running, and
+  diagnostics are reaching you. Delete the file.
+- **No warning, and `className` is a type error in your editor.** The ambient declaration is not
+  loading — check the `.d.ts` file exists inside `rootDir` and is not named `src/vela-rbxts.d.ts`.
+- **No warning, and `className` type-checks fine.** Either the transformer is not running (check the
+  `plugins` entry spells the `/transformer` subpath, and that the file ends in `.tsx`), or your
+  roblox-ts version does not expose `context.addDiagnostic` and is discarding every Vela warning.
+  The second case is the dangerous one — it makes broken classes look clean forever — so upgrade
+  roblox-ts rather than living with it.
+
+Then check the emitted file. `p-4` should have become a `<uipadding>` child and the `className`
+attribute should be gone entirely; if the attribute survived verbatim, the element was skipped.
+
+## Next steps
+
+- [Your first component](/vela-rbxts/getting-started/first-component/) — write a panel, put it on
+  screen, and read exactly what each class lowered to.
+- [Editor setup](/vela-rbxts/guides/editor-setup/) — worth doing now rather than later. A whole
+  class of mistakes (`text-*` on a `frame`, `image-*` on a label) is reported **only** by the
+  language server; the build never checks it.
+- [The playground](/vela-playground/) — compile class strings in the browser against the real
+  compiler, with no project at all.

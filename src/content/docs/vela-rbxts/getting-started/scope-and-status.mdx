@@ -1,6 +1,6 @@
 ---
 title: Scope and status
-description: What Vela covers at 0.4.1, which Tailwind families are permanently out, and where enforcement has gaps.
+description: What Vela covers at 0.5.0, which Tailwind families are permanently out, and where enforcement has gaps.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -15,7 +15,7 @@ that cannot mean anything. What Vela ships instead is a Roblox-oriented mapping:
 correspond to real Roblox properties and helper instances, a few structural emulations where the
 correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes separator
 frames — and loud rejection of everything that cannot be expressed at all. This page is the honest
-map of where the edges are at **0.4.1**.
+map of where the edges are at **0.5.0**.
 
 ## What is in scope
 
@@ -33,7 +33,7 @@ Anything that is neither is skipped, keeps its `className` verbatim, and reports
 `classname-on-unsupported-host` — lowercase intrinsics Vela does not implement, such as `screengui`,
 and namespaced tags such as `<svg:rect />`, which never count as components.
 
-Within those eight, the covered ground at 0.4.1 is wide: colors (including arbitrary hex and `/N`
+Within those eight, the covered ground at 0.5.0 is wide: colors (including arbitrary hex and `/N`
 opacity modifiers), gradients, borders, rings and outlines, corner radius, shadows, padding,
 margins, gap and `space-*`, `divide-*` separators, sizing and min/max constraints, position on all
 four edges, anchor point, translation, z-index, layout order, rotation, scale, opacity, aspect
@@ -84,34 +84,43 @@ flat fill. Every other family without a transparency channel (`placeholder-*`, `
 warn.
 </Callout>
 
-## Fixed in 0.4.1 — upgrade if you are on 0.4.0
+## One behavior worth knowing before you write anything
 
-<Callout title="Breakpoints did not work in 0.4.0">
-The `0.4.0` runtime helper read `Camera.ViewportSize` **once, when the element mounted**, and Roblox
-often still reports a 1×1 viewport at that moment. Every width test therefore saw width 1, so
-**`sm:`, `md:` and `lg:` never matched and orientation was always landscape**. `0.4.1` follows the
-camera's `ViewportSize` signal, which both fixes the initial evaluation and makes breakpoints react
-to resizes. `divide-*` also drew one separator too many in `0.4.0` whenever the element carried a
-utility that lowers a helper instance; that is fixed in `0.4.1` too.
+<Callout title="Preflight neutralizes the Roblox host defaults">
+Roblox paints every `GuiObject` as an opaque gray box with a 1px border, and a framework that only
+ever *adds* properties can never take that back. So a supported host element **that carries a
+`className`** starts from `BackgroundTransparency = 1` and `BorderSizePixel = 0` instead: a class
+list says everything about how the element looks, and an element you did not paint does not paint.
 
-If you cannot upgrade, the input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` are
-unaffected, and breakpoint-style reflow can be driven from your own state — see
-[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/#driving-reflow-yourself).
+Anything that actually paints opts back out — a `bg-*` utility, `opacity-*`, a gradient stop, or a
+`BackgroundColor3` / `BackgroundTransparency` you declared as a prop yourself — and a background
+painted by a variant or a dynamic class value reopens it at runtime, so `hover:bg-sky-500` still
+works on an otherwise transparent element. An element with no `className` is untouched, and so is a
+**component**, because Vela cannot know which host element its props will land on.
+
+This arrived in 0.5.0 and **is a breaking change if you are upgrading** — anywhere the gray default
+was load-bearing, the element now renders invisible. [`preflight: false`](/vela-rbxts/reference/config/#preflight)
+restores the old behavior wholesale; the [release notes](/vela-rbxts/reference/release-notes/) have
+the rest of the upgrade path.
 </Callout>
 
-One sharp edge is still open: `gap-*` on a `grid` element emits a conflicting `UIListLayout`
-alongside the `UIGridLayout` it feeds ([utilities reference](/vela-rbxts/reference/utilities/#grid)).
-And `divide-*` separators remain sensitive to explicit `LayoutOrder` and still double-count the
-parent's `gap-*`, which is a consequence of separators being list items rather than a defect
+## Sharp edges still open
+
+`gap-*` on a `grid` element emits a conflicting `UIListLayout` alongside the `UIGridLayout` it feeds
+([utilities reference](/vela-rbxts/reference/utilities/#grid)). And `divide-*` separators remain
+sensitive to explicit `LayoutOrder` and still double-count the parent's `gap-*`, which is a
+consequence of separators being list items rather than a defect
 ([utilities reference](/vela-rbxts/reference/utilities/#divide)).
+
+Neither is a regression, and both are tracked in the
+[release notes](/vela-rbxts/reference/release-notes/) alongside what changed in each version.
 
 ## Release state
 
-Every package in the repo is at **0.4.1**, versioned in lockstep: `vela-rbxts` itself and the
+Every package in the repo is at **0.5.0**, versioned in lockstep: `vela-rbxts` itself and the
 `@vela-rbxts/*` scope covering the compiler, config, core, IR, types, host adapter and language
 server, plus the `vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix
-anywhere moves everything. Releases are tagged from `v0.3.0` onward, and a pending changeset holds
-the viewport fix described above plus a `divide-*` separator-placement fix.
+anywhere moves everything. Releases are tagged from `v0.3.0` onward.
 
 Two consequences follow from the version being what it is. First, nothing is enforced at install
 time: no package declares `peerDependencies`, and the only `engines` field anywhere is the VS Code
@@ -130,7 +139,8 @@ generation, no side effects — keeps that cost small and predictable. (A JSON c
 
 ## See also
 
-- [How it works](/vela-rbxts/getting-started/how-it-works/) for the pipeline and the two lowering paths.
+- [How it works](/vela-rbxts/getting-started/how-it-works/) for the pipeline, the two lowering paths, and the rules that keep you on the good one.
+- [Release notes](/vela-rbxts/reference/release-notes/) for what changed in each version.
 - [Diagnostics](/vela-rbxts/reference/diagnostics/) for every warning code and what triggers it.
 - [Troubleshooting](/vela-rbxts/guides/troubleshooting/) for the symptom-first version of this page.
 - [Editor setup](/vela-rbxts/guides/editor-setup/) for the checks the compiler does not run.

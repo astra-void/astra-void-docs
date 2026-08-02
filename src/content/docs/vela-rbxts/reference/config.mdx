@@ -9,9 +9,9 @@ sidebar:
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-Vela reads a single optional config file, and it configures exactly one thing: the theme. There is
-no build configuration to write — file selection, output, and diagnostics all come from
-`tsconfig.json` instead.
+Vela reads a single optional config file, and it configures exactly two things: the theme, and
+whether [preflight](#preflight) neutralizes the Roblox host defaults. There is no build configuration
+to write — file selection, output, and diagnostics all come from `tsconfig.json` instead.
 
 ## Discovery
 
@@ -66,9 +66,9 @@ executed through `createRequire` and `new Function`, module specifiers resolve a
 the config file. Your project's `tsconfig.json` `paths` aliases and ambient types are never consulted,
 so the config cannot rely on either. Third, the export must be usable: Vela takes `module.exports.default` if present and
 otherwise `module.exports`, then requires it to be either an already-resolved `TailwindConfig` or an
-input-shaped object it can pass through `defineConfig`. Anything else throws — and since 0.4.1 the
-error names the key that failed validation, such as `theme.extend.colors.surface.55`, rather than
-only reporting that a `TailwindConfig`-compatible object was expected.
+input-shaped object it can pass through `defineConfig`. Anything else throws, and the error names
+the key that failed validation — `theme.extend.colors.surface.55`, say — rather than only reporting
+that a `TailwindConfig`-compatible object was expected.
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -89,12 +89,18 @@ export default defineConfig({
 
 ## Schema
 
-The entire schema is one optional `theme` key. There is no `content`, `plugins`, `presets`,
-`darkMode`, `prefix`, `important`, `corePlugins`, `safelist`, or `variants` option. Those keys do not
-exist in the type and are ignored if you write them anyway.
+The schema is two optional keys: `preflight` and `theme`. There is no `content`, `plugins`,
+`presets`, `darkMode`, `prefix`, `important`, `corePlugins`, `safelist`, or `variants` option. Those
+keys do not exist in the type and are ignored if you write them anyway.
 
 <PropTable
   rows={[
+    {
+      name: "preflight",
+      type: "boolean",
+      description:
+        "Default true. Neutralizes the Roblox host defaults on every supported host element that carries a className. Set false to restore the pre-0.5.0 behavior, where Vela only ever added properties.",
+    },
     {
       name: "theme.colors",
       type: 'Record<string, string | Partial<Record<Shade | "DEFAULT", string>>>',
@@ -145,6 +151,36 @@ actually normalized: a family that is not already in the registry, or any family
 `theme.colors`. Extending a family that already exists as a palette takes the merge path instead,
 which spreads your object over the base and returns the base unchanged. So
 `theme.extend.colors: { blue: {} }` throws nothing, warns nothing, and does nothing.
+
+### preflight
+
+Roblox paints every `GuiObject` as an opaque gray box with a 1px border. Since 0.5.0 a supported host
+element that carries a `className` starts from `BackgroundTransparency = 1` and `BorderSizePixel = 0`
+instead, so a class list says everything about how the element looks.
+
+```tsx
+<frame className="w-20 h-10" />
+// → <frame Size={UDim2.fromOffset(80, 40)} BorderSizePixel={0} BackgroundTransparency={1} />
+
+<frame className="w-20 h-10 bg-slate-800" />
+// → <frame BackgroundColor3={Color3.fromRGB(29, 41, 61)} Size={UDim2.fromOffset(80, 40)} BorderSizePixel={0} />
+```
+
+The transparency is only added when nothing else paints the element. Any of these opts back out of
+it: a `bg-*` utility, `opacity-*`, a gradient stop, or a `BackgroundColor3` / `BackgroundTransparency`
+prop you wrote yourself. `BorderSizePixel` is likewise skipped when you declared it. A background
+painted by a variant (`hover:bg-sky-500`) or by a dynamic class value reopens the element at runtime,
+so the transparent starting point does not strand those.
+
+Two things are never touched: an element with **no `className`**, and a **component** — Vela cannot
+know which host element a component's props will reach, so it neutralizes nothing there.
+
+```ts title="vela.config.ts"
+export default defineConfig({ preflight: false });
+```
+
+Turning it off restores the pre-0.5.0 behavior exactly: Vela only ever adds the properties your
+classes name, and the gray default shows through wherever you do not paint over it.
 
 ### Values are roblox-ts expression strings
 

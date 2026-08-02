@@ -41,17 +41,6 @@ variants. Order within the chain does not matter — the conditions are combined
 unrecognized prefix is its own diagnostic, `unknown-variant`, whose message lists the supported
 nine; the token is dropped.
 
-<Callout title="Upgrade to 0.4.1 if you use breakpoints">
-In `0.4.0` the runtime helper read `Camera.ViewportSize` **once, at mount** — and at mount Roblox
-frequently still reports a 1×1 viewport, so every width test saw width 1: `sm:`, `md:` and `lg:`
-never matched and orientation was always `landscape`. `0.4.1` follows the camera's `ViewportSize`
-signal instead, so breakpoints resolve correctly **and** re-evaluate when the window is resized.
-
-If you are pinned to `0.4.0`, the input variants (`touch:`, `mouse:`, `gamepad:`) and `hover:` are
-unaffected — their signals were always subscribed correctly — and breakpoint-style reflow can be
-driven from your own state, as shown at the end of this page.
-</Callout>
-
 ## Breakpoints are min-width only
 
 The three breakpoints are hard-coded pixel thresholds on the viewport's X dimension:
@@ -66,6 +55,11 @@ They are **min-width only**. There is no max-width form and no `max-sm:` style p
 thresholds are not configurable through `vela.config.ts` — the theme schema has no breakpoint
 section. As in Tailwind, you write the small-viewport value unprefixed and layer larger viewports on
 top.
+
+The helper tracks the camera's `ViewportSize` signal, so a breakpoint re-evaluates when the viewport
+changes rather than being sampled once at mount. (It was sampled once in `0.4.0`, which broke every
+breakpoint in that release — see the [release notes](/vela-rbxts/reference/release-notes/#041) if
+you are pinned to it.)
 
 ## How orientation is derived
 

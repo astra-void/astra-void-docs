@@ -65,6 +65,7 @@ Anything that is neither is skipped, its `className` is left in the output untou
 Vela hands the component props and children. It cannot make the component do anything with them. If `Box` does not spread its unrecognized props onto a Roblox host element and render its children, the styling is simply lost — and **there is no diagnostic for that**, at compile time or in the editor.
 
 This is exactly how `className` behaves on the web: it only works because the component passes it down to a DOM node. Write your components to spread the rest of their props and render `children`, or the classes on them do nothing.
+
 </Callout>
 
 Because the eventual host element is unknown at the point Vela sees the component, the per-element utility restrictions do not apply inside a component's `className`. The editor offers the full utility set there — including `text-*`, `image-*` and `placeholder-*` on any component — and never raises `unsupported-host-utility`. Whether `text-lg` actually means anything depends on which host element your component ends up rendering, and nothing checks that for you.
@@ -78,6 +79,8 @@ This is the part worth internalizing. A `className` is lowered in one of two ver
 The default. The compiler resolves every token to a concrete value, emits Roblox properties directly on the element, prepends helper instances (`uicorner`, `uistroke`, `uipadding`, `uilistlayout`, `uigridlayout`, `uigradient`, `uisizeconstraint`, `uiaspectratioconstraint`, `uiscale`, `uishadow`, `uiflexitem`) as children, and removes the `className` attribute. The element keeps its original tag. Nothing from Vela survives into the running game.
 
 This path supports the full utility set.
+
+Since 0.5.0 it also emits two properties you did not ask for. A host element carrying a `className` starts from `BackgroundTransparency = 1` and `BorderSizePixel = 0`, so the opaque gray box Roblox gives every `GuiObject` is not something every class list has to paint over. Anything that actually paints — a `bg-*`, `opacity-*`, a gradient stop, or a background prop you wrote yourself — opts back out of the transparency, and a background painted by a variant or a dynamic value reopens it at runtime. Components are never preflighted, because their eventual host element is unknown. See [`preflight`](/vela-rbxts/reference/config/#preflight) for the opt-out.
 
 ### The runtime path
 
@@ -111,6 +114,29 @@ The runtime token resolver handles the color, background, radius, padding, margi
 
 The full list of divergences — including the runtime path accepting arbitrary bracket values the static path rejects, and `w-`/`h-` overwriting rather than merging — is in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/). Read it before you reach for a computed `className`.
 
+## Five rules that keep you on the static path
+
+Almost every "my class did nothing" report comes from an element that quietly took the runtime path.
+These five habits keep that from happening, and they are the whole of what you need to remember:
+
+1. **Write `className` as a plain string literal.** A literal inside a `.map()` callback is still a
+   literal — what matters is the expression in the attribute, not where it appears in the file.
+2. **When the look changes between known states, branch between two complete literals** rather than
+   computing one string. It duplicates the shared classes; it also keeps both looks on the static
+   path with the full utility set.
+3. **When a number changes continuously, set the property directly** — `Size={UDim2.fromScale(health, 1)}`
+   — and let the classes carry everything that does not change. Never set the same property from
+   both a class and a prop: on a collision Vela emits after you and the class wins.
+4. **Give every element an explicit size.** Roblox starts instances at zero, so a missing `h-*` is
+   an invisible element, not a small one.
+5. **Prefer `gap-*` to margins.** Margins build a wrapper frame, which forces the runtime path even
+   in a plain literal — and they sum with the parent's gap.
+
+Variants are the deliberate exception. `hover:` on a control, a breakpoint on a handful of top-level
+layout containers — those earn the runtime helper. What does not earn it is a computed string that
+carries layout or text classes, because those are the ones the runtime resolver drops without a
+word.
+
 ## Next step
 
-Get the honest boundaries of the project at 0.4.1 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).
+Get the honest boundaries of the project at 0.5.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).

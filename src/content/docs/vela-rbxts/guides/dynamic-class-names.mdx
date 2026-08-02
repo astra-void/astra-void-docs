@@ -74,7 +74,7 @@ Note that inlining the template string directly into the attribute does not help
 
 Even within the supported families, the runtime path is not the static path with fewer features. Three behaviors differ outright.
 
-**Arbitrary bracket values work at runtime but not statically.** The runtime resolver parses bracket numerics, so `rounded-[8]`, `p-[10]`, and `w-[240]` all resolve. The static path rejects them — `rounded-[8]` is not a theme key, so you get `unknown-theme-key`. This is the one case where the runtime path is more permissive, and it makes bracket values a trap in reverse: a class that works in a computed string breaks when you inline it as a literal.
+**Arbitrary bracket values work at runtime but not statically.** The runtime resolver parses bracket numerics, so `rounded-[8]`, `p-[10]`, and `w-[240]` all resolve. The static path rejects them with `unsupported-arbitrary-value` — *"Arbitrary value `[8]` is not supported yet; use a theme key from `vela.config.ts` instead."* This is the one case where the runtime path is more permissive, and it makes bracket values a trap in reverse: a class that works in a computed string breaks when you inline it as a literal. (Bracketed hex colors are the exception that does work statically — `bg-[#3b82f6]` is fine.)
 
 **Automatic sizing is dropped at runtime.** Statically, `w-fit`, `h-fit`, `size-fit`, `w-auto`, `h-auto`, and `size-auto` emit `AutomaticSize`. The runtime resolver handles only `px`, `full`, `fit`, fractions, spacing keys and bracket numerics — `fit` resolves to nothing and `auto` matches no branch at all — so automatic sizing silently does not happen for any of them. If an element needs `AutomaticSize`, it must be on the static path.
 
@@ -87,6 +87,8 @@ Even within the supported families, the runtime path is not the static path with
 ```
 
 On the static path the same string produces `UDim2.new(1, 0, 0, 48)`. This one is easy to miss because sizing *is* in the supported list — it is supported, just differently.
+
+It also takes other utilities down with it. The axis that loses is left at zero, and a **scale-based** value on that axis then computes to nothing: an element written `w-11 h-6 rounded-full` ends up 0 pixels wide, so its `UDim(0.5, 0)` corner radius rounds nothing and the class reads as if it had been dropped. A fixed radius like `rounded-md` survives the same collapse, which makes the sizing bug look like a radius bug. Set one axis from the class and the other from a `Size` prop, or keep the element on the static path.
 
 ## What to do instead
 
@@ -145,6 +147,7 @@ The other ways onto the runtime path are variants — a single `sm:`, `touch:`, 
 
 ## See also
 
+- [The five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path) — this page compressed to what you have to remember while writing code.
 - [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) — the other trigger for the runtime path.
 - [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the static-path behavior of the utilities most often lost here.
 - [How it works](/vela-rbxts/getting-started/how-it-works/) — the compile pipeline and where the two paths diverge.
