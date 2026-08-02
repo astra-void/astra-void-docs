@@ -1,0 +1,142 @@
+---
+title: Fonts and text metrics
+description: Why a preview's text measures differently on macOS, Windows and Linux — and how registerFont and @loom-dev/renderer/fonts pin it to the typefaces the engine actually draws with.
+product: loom
+section: guides
+sidebar:
+  order: 27
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Roblox ships its own typefaces. A browser has none of them.
+
+Loom names the Roblox families in CSS — `font-family: "Gotham", system-ui, …` — and until `0.6.4`
+loaded nothing behind them, so on a machine without the font installed every family resolved to
+`system-ui`: SF Pro on macOS, Segoe UI on Windows, Roboto on Linux. Three typefaces, three sets of
+advance widths. That is not only a paint difference: `AutomaticSize` and `TextWrapped` are driven by
+[measuring those widths](/loom/reference/supported-properties/#automaticsize-on-text), so the same
+scene laid out differently on each machine, and nothing pointed at the font as the reason.
+
+As of `0.6.4` the host installs the faces it has, the same way it installs an image resolver — and
+loom says so, once per family, when nothing is installed.
+
+## The quick fix
+
+```bash title="The renderer is a transitive dependency; import it directly and it needs declaring"
+pnpm add -D @loom-dev/renderer
+```
+
+```ts title="src/main.client.tsx — first import in the entry"
+import "@loom-dev/renderer/fonts";
+```
+
+That registers the Roblox families that are openly licensed:
+
+| Roblox family | Typeface | Licence |
+| --- | --- | --- |
+| `SourceSans*` | Source Sans 3 | OFL-1.1 |
+| `Roboto*` | Roboto | OFL-1.1 |
+| `RobotoMono*` | Roboto Mono | OFL-1.1 |
+| `Inconsolata` | Inconsolata | OFL-1.1 |
+
+These are the *actual* fonts the engine draws with, so the metrics are the engine's rather than an
+approximation of them. The module is a separate entry point with the font packages behind it — a
+project that never imports it ships none of it — and it has a side effect on import, which is its
+whole job.
+
+<Callout title="`Gotham` cannot ship here">
+Roblox's default family, and the Builder faces behind it today, are proprietary and cannot be
+redistributed. `/fonts` covers everything else; `Gotham` still falls back unless you register your
+own copy, which is the next section.
+</Callout>
+
+## Registering a face yourself
+
+`registerFont` installs a typeface for one Roblox family. A project that has the Gotham files makes
+exactly the call `/fonts` makes for the open families:
+
+```ts title="Any spelling of the family name reaches the same registration"
+import { registerFont } from "@loom-dev/renderer";
+import gotham from "./fonts/Gotham-VF.woff2";
+
+registerFont("Gotham", {
+  family: "Gotham",
+  faces: [{ src: gotham, weight: "100 900" }],
+});
+```
+
+Omit `faces` when the page already provides the family — a `<link>` to a font CDN, your own
+`@font-face`, or a font the machine has installed. Then the registration only has to name it:
+
+```ts
+registerFont("SourceSans", { family: "Source Sans 3 Variable" });
+```
+
+### The registration shape
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `family` | `string` | **Required.** The CSS family to paint and measure with. When `faces` is given, this is also the name they are declared under. |
+| `faces` | `{ src, weight?, style?, display? }[]` | `@font-face` rules to declare. `src` is a URL the page can load — usually a bundler-emitted import. `weight` defaults to `400` and takes a range (`"200 900"`) for a variable font; `style` defaults to `normal`; `display` defaults to `swap`. |
+| `fallback` | `string` | Appended behind `family`. Defaults to that family's own default stack. |
+
+### One key per family
+
+Roblox names a family several ways: the legacy `Enum.Font` item folds the weight in (`GothamBold`),
+and a `FontFace` carries the asset's own family (`GothamSSm`, `SourceSansPro`). All of them identify
+the family by prefix, so one registration covers every spelling — `Gotham`, `GothamBold` and a
+`GothamSSm` `FontFace` are one family, and so are `SourceSans` and `SourceSansPro`.
+
+The keys, longest prefix first (`RobotoMono` must not be read as `Roboto`): `RobotoMono`, `Roboto`,
+`GothamSSm`, `Gotham`, `SourceSansPro`, `SourceSans`, `Inconsolata`, `Arial`, `Code`. A name outside
+that list falls to the generic sans stack and is not registrable.
+
+## A late face re-lays-out
+
+Text bounds are measured against whatever the browser has *at the time*, so a face that arrives after
+the first paint would otherwise leave a layout measured in the fallback. Registering late is
+therefore fine and expected: a registration — or a `@font-face` finishing its download — invalidates
+every `AutomaticSize` bound that came out of the old stack, and both adapters re-measure.
+
+```ts title="If you need the hook yourself"
+import { onFontsChanged } from "@loom-dev/renderer";
+
+const stop = onFontsChanged(() => {
+  // every text measurement taken before this is stale
+});
+```
+
+`clearRegisteredFonts()` takes every registration back out, along with the `@font-face` rules loom
+added — useful in tests, and rarely otherwise.
+
+## The warning
+
+A family some text actually asked for, with nothing loaded behind it, is reported once:
+
+```text
+loom: no face is loaded for the Roblox font family "Gotham" — its text is painted
+and measured in the system fallback instead, which is a different typeface per OS
+and does not match the engine's layout. Register one with registerFont("Gotham",
+{ family, faces }), or import "@loom-dev/renderer/fonts" for the families Roblox
+licenses openly.
+```
+
+Two details make it trustworthy rather than noisy:
+
+- **It waits for `document.fonts.ready`.** A face that is still downloading is late, not missing.
+- **Availability is decided by probe-string width**, not `document.fonts.check()`. That method
+  answers "would this font specification resolve", and an unknown family resolves — to the fallback —
+  so it returns `true` for a family nobody has. Loom measures a probe string against two generics
+  with wildly different metrics instead: a real family shifts at least one of them, a missing one
+  leaves both exactly where the generic put them.
+
+`Arial` is exempt. It is a system font everywhere, so there is nothing to load and nothing to warn
+about.
+
+## What is still approximate
+
+Registering the right face pins the *typeface*. It does not make the browser's text engine Roblox's:
+shaping, hinting and sub-pixel rounding still differ, so a line can break a glyph earlier or later
+than Studio does. The gap after registration is small enough to be a rounding difference; before it,
+it was a different font.

@@ -1,6 +1,6 @@
 ---
 title: Previews on a phone
-description: How a desktop-sized UI survives a 390px screen — stage scaling, pointer coordinate mapping, touch scrolling, and the gallery chrome on a narrow viewport.
+description: How a desktop-sized UI survives a 390px screen — stage scaling on touch devices, the ?base= override, pointer coordinate mapping, touch scrolling, and the gallery chrome on a narrow viewport.
 product: loom
 section: guides
 sidebar:
@@ -10,17 +10,17 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 A Roblox UI is written for a desktop-sized viewport. Rendered into a phone browser at 1:1 it would
-run off the edge of the screen, so loom scales the stage instead of reflowing it — your layout is
-never asked to be responsive, because in Roblox it is not.
+run off the edge of the screen, so on a touch device loom scales the stage instead of reflowing it —
+your layout is never asked to be responsive, because in Roblox it is not.
 
-Nothing here needs configuration, and **nothing changes at 960px or wider**: desktop previews render
-exactly as they did.
+Nothing here needs configuration, and **nothing applies under a mouse**: a desktop preview reflows at
+every width, narrow window included.
 
 ## The stage keeps a desktop viewport
 
-Below 960px wide, the preview mount stops shrinking the *scene* and starts shrinking the *pixels*: it
-keeps a logical width of **960** and is scaled down with a CSS transform by `hostWidth / 960` to fit
-the real screen.
+On a device whose primary pointer is coarse — a phone or a tablet — and below 960px wide, the preview
+mount stops shrinking the *scene* and starts shrinking the *pixels*: it keeps a logical width of
+**960** and is scaled down with a CSS transform by `hostWidth / 960` to fit the real screen.
 
 The logical *height* is not clamped — it is the real height divided by that same scale, so a tall
 phone becomes a tall viewport rather than a letterboxed 16:9 window, and scale-based (`UDim2` scale)
@@ -38,6 +38,36 @@ drawn smaller.
 layout survives intact and the smaller everything is drawn. It is wide enough that a two-column or
 fixed-panel layout still has room, and small enough that a phone renders at roughly 40% rather than
 the ~30% a 1280 base would give, where body text stops being readable.
+
+## A narrow desktop window reflows
+
+Until `0.6.4` the scaling applied to every screen under 960px, including a desktop window an author
+had merely dragged narrow — and there it was wrong in the way that matters most. Studio reflows at
+that viewport, so the preview wrapped text at the wrong width, re-proportioned columns at the wrong
+breakpoints, and stopped changing at all as the window got narrower.
+
+It is now scoped to `(pointer: coarse)`, the devices it was written for. Under a mouse a narrow
+window is a narrow window: the scene lays out against it and matches Studio at every width.
+
+## `?base=` sets the logical viewport
+
+The device default is only a default. A page embedding a preview at a fixed width can name the
+logical viewport its scene was written for:
+
+| Value | Effect |
+| --- | --- |
+| `?base=<px>` | Use this logical width, on any device. Below it the stage scales, at or above it nothing is applied. |
+| `?base=none` (or `off`, or `0`) | Never adapt — the scene lays out against the real viewport at every width. |
+| `?base=960` | The pre-`0.6.4` behaviour, restored everywhere including desktop. |
+| *absent* | The device default: 960 on a coarse pointer, off under a mouse. |
+
+```text title="A 1280-wide logical viewport, whatever the frame is"
+/loom-preview/index.html?target=src%2Fscenes%2FCounter.loom.tsx&chrome=none&base=1280
+```
+
+A value that cannot be read falls back to the device default rather than silently un-adapting the
+phone the adaptation exists for. It sits alongside the rest of the [URL
+contract](/loom/guides/static-builds-and-embedding/#the-url-contract).
 
 ## Pointer coordinates follow the scale
 

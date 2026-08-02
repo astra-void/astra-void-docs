@@ -153,9 +153,9 @@ Asset URLs inside the bundle are absolute under the mount path (the gallery is b
 
 ## 5. Embedding scenes in pages
 
-The [URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract) — `target`,
-`chrome`, `theme` — is identical against the proxied dev gallery and the static build, so an
-iframe written once works in both:
+The [URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract) — `target`, `chrome`,
+`theme`, `background`, `base` — is identical against the proxied dev gallery and the static build, so
+an iframe written once works in both:
 
 ```tsx
 <iframe
@@ -165,8 +165,8 @@ iframe written once works in both:
 ```
 
 `target` takes the discovery-relative path of the scene, `chrome=none` drops the sidebar for a
-single-scene embed, and `theme=light|dark` seeds the stage —
-[live theme switching](/loom/guides/static-builds-and-embedding/#live-theme-switching) via
+single-scene embed, `theme=light|dark` seeds the stage and `background=` overrides just its backdrop
+— [live theme switching](/loom/guides/static-builds-and-embedding/#live-theme-switching) via
 `postMessage` works through the proxy unchanged. Query strings pass through Next rewrites
 untouched, and the iframe is just an iframe: App Router, pages router, RSC or client component,
 none of it matters.

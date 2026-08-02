@@ -25,9 +25,19 @@ graph resolves.
 | `@loom-dev/scene` | The Scene IR types — the contract every other package is written against. Mirrors the `loom-scene` Rust crate. |
 | `@loom-dev/layout` | A typed async wrapper over the WASM layout engine: `initLayout()`, `computeLayout(scene, viewport)`. |
 | `@loom-dev/runtime` | Roblox datatypes, the `Instance` model, signals, services, the scheduler, and the Luau globals. |
-| `@loom-dev/renderer` | Scene IR → DOM, plus the incremental patching session with pointer and keyboard input delegation. |
+| `@loom-dev/renderer` | Scene IR → DOM, plus the incremental patching session with pointer and keyboard input delegation, and the font registry (`registerFont`, `onFontsChanged`). |
 | `@loom-dev/react` | The `@rbxts/react` adapter — a custom `react-reconciler` host config driving live loom instances. |
 | `@loom-dev/vide` | The `vide` signals adapter, on the same Scene IR. |
+
+## Secondary entry points
+
+| Specifier | What it is |
+| --- | --- |
+| `@loom-dev/preview/vite` | The Vite plugin. Always import it by this bare specifier — a file path moves the anchor it resolves its aliases from. |
+| `@loom-dev/preview/globals` | The Roblox datatype globals, as a side effect. Only needed on a hand-rolled build the plugin cannot see. |
+| `@loom-dev/renderer/fonts` | The openly licensed Roblox typefaces, registered on import. A side-effect module with the font packages behind it, so a project that does not import it ships none of it. See [Fonts and text metrics](/loom/guides/fonts/). |
+| `loom-dev/embed` | `createGalleryServer()`, `buildGallery()`, `findGalleryTargets()` — the CLI's two pipelines as functions. |
+| `loom-dev/next` | The Next.js config wrapper around the same two pipelines. |
 
 ## The Rust half
 

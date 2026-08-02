@@ -28,7 +28,11 @@ come up.
 | `RollupError: Expected ';', '}' or <eof>` in a `.luau` file, build only | The same thing, reached by a target the dev server never loaded | As above — see [Package compatibility](/loom/guides/package-compatibility/) |
 | `does not provide an export named 'default'` from `@rbxts/react-roblox` | Loom older than 0.6.1 | Upgrade |
 | Renders, but looks wrong | Unimplemented property | Check [Supported instances and properties](/loom/reference/supported-properties/) |
-| Runs off the edge on a phone | Nothing — the stage scales below 960px | See [Previews on a phone](/loom/guides/mobile-previews/) |
+| Runs off the edge on a phone | Nothing — the stage scales on a touch device | See [Previews on a phone](/loom/guides/mobile-previews/) |
+| `no face is loaded for the Roblox font family "…"` | The browser has none of the engine's typefaces | `import "@loom-dev/renderer/fonts"`, or [register your own](/loom/guides/fonts/) |
+| Text wraps differently on another machine | The same thing — a different fallback font per OS | As above |
+| Text or buttons spill out of their container | Content wider than the parent allows | Expected as of `0.6.4` — [`AutomaticSize` is bounded](/loom/reference/supported-properties/#automaticsize-is-bounded-by-the-parent) and the engine overflows rather than widening |
+| A narrow desktop window stopped scaling | Deliberate as of `0.6.4` | It reflows instead. `?base=960` restores the old behaviour |
 
 ## Blank page, `nothing mounted into #loom-root after 2s`
 
@@ -175,11 +179,43 @@ dot-directories.
 Before assuming a loom bug, check the property you are relying on against [Supported instances and
 properties](/loom/reference/supported-properties/). A surprising number of "wrong render" reports are
 a prop that is typed, settable, and read by nothing — `TextScaled`, `UIScale.Scale`,
-`UIGradient.Offset`, `ScrollBarThickness`. Images are not implemented either, and `UIPageLayout` /
-`UITableLayout` are recognized but do nothing.
+`UIGradient.Offset`, `ScrollBarThickness`. Images paint as of `0.6.0`, but `ScaleType.Slice` /
+`ScaleType.Tile` fall back to `Stretch` and the `ImageRectOffset` sprite window is not implemented at
+all, so an icon cut out of a sheet renders as the whole sheet. `UIPageLayout` / `UITableLayout` are
+recognized but do nothing.
 
 A preview is a high-fidelity approximation, not a Studio replacement — verify final visuals in
 Studio.
+
+## Text is a different size, or wraps differently, than on your colleague's machine
+
+```text
+loom: no face is loaded for the Roblox font family "Gotham" — its text is painted
+and measured in the system fallback instead, …
+```
+
+A browser ships none of Roblox's typefaces. Unregistered, every Roblox family resolves to the
+machine's `system-ui` — SF Pro, Segoe UI or Roboto depending on the OS — and since `AutomaticSize`
+and `TextWrapped` are driven by measuring glyph widths, the *layout* moves with the font, not just
+the paint.
+
+```ts title="The one-line fix for the openly licensed families"
+import "@loom-dev/renderer/fonts";
+```
+
+`Gotham` is proprietary and cannot ship with loom; register your own copy with `registerFont`. Both
+are [Fonts and text metrics](/loom/guides/fonts/).
+
+## Content spills out of its container
+
+As of `0.6.4` an `AutomaticSize` object grows only up to the room its parent leaves, which is what
+Roblox does. Content with an irreducible minimum — a long unbreakable word, a row of buttons that
+will not fit — therefore overflows the box instead of widening it, and that overflow is now the same
+overflow Studio shows. Before `0.6.4` loom grew unbounded, so the container silently got wider and a
+`45%`-wide card could paint over the card beside it.
+
+If a preview overflows and Studio does not, the layout is genuinely too small for its content at that
+viewport: give the parent more room, or let the text wrap.
 
 <Callout title="Layout changes need a WASM rebuild">
 If you are developing loom itself and edit anything under `crates/loom-layout`, the browser keeps

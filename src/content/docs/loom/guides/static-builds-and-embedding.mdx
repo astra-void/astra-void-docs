@@ -70,13 +70,15 @@ each — then the shell. Globals-first is why a built gallery never throws `UDim
 
 ## The URL contract
 
-The built page reads three query parameters. This is the whole embedding API.
+The built page reads five query parameters. This is the whole embedding API.
 
 | Parameter | Values | Effect |
 | --- | --- | --- |
 | `target` | a target's relative path, URL-encoded | Selects and mounts that target on load, without a hash. |
 | `chrome` | `none` | Hides the sidebar and renders one target full-bleed. Any other value (or absent) keeps the full chrome. |
 | `theme` | `light` \| `dark` | Sets the stage background and seeds `PlayerGui.LoomTheme`. Anything other than `light` is treated as `dark`. |
+| `background` | a CSS colour | *(`0.6.2`)* Paints the stage backdrop, overriding the one `theme` would have used and leaving the rest of the palette alone. |
+| `base` | px, or `none` / `off` / `0` | *(`0.6.4`)* The logical viewport the scene lays out against — see [Previews on a phone](/loom/guides/mobile-previews/#base-sets-the-logical-viewport). |
 
 ```text title="Deep-link one scene, chromeless, light"
 /loom-preview/index.html?target=src%2Fscenes%2FCounter.loom.tsx&chrome=none&theme=light
@@ -84,6 +86,31 @@ The built page reads three query parameters. This is the whole embedding API.
 
 In chromeless mode there is no hash routing — the mount is fixed to `?target=`. In full-chrome mode
 the shell uses `#/<relPath>` and `?target=` only seeds the initial selection.
+
+### `?background=` for a backdrop that is not either theme
+
+`theme` picks a whole palette — chrome, text, and one of loom's two backdrops (`#14161a` or
+`#f6f9fc`). `background` overrides just the backdrop, so a plain white stage under the light palette
+is `?theme=light&background=white`, and `transparent` lets the host page show through the iframe. It
+applies in both gallery modes and to the static build.
+
+<Callout title="Hex, without the `#`">
+A literal `?background=#ffffff` never reaches the gallery: `#` opens the URL fragment, which is also
+where the gallery keeps its route. Both spellings that survive the trip are accepted — percent-encoded
+(`%23ffffff`) and bare digits (`ffffff`). No CSS named colour is spelled with hex digits alone, so
+the bare form is unambiguous.
+</Callout>
+
+Only colours are accepted, through an allowlist: hex, a bare identifier, and the functional forms
+(`rgb()`, `hsl()`, `oklch()`, `color()`, `light-dark()`, …) with arguments that cannot open a nested
+function. A gradient, a `url(...)` — anything that could turn a query parameter into a network fetch
+— is ignored and the theme's own backdrop stands. A misspelled colour name passes the shape test and
+simply fails to apply in the browser, which lands in the same place.
+
+The backdrop is decided in the page's `<head>` from `location.search` alone, before the first paint,
+so an embed no longer flashes the dark default while the bundle, the WASM engine and the target chunk
+load. That was up to half a second of black on a light or custom-coloured frame, repeated every time
+a host control changed a parameter and reloaded the iframe.
 
 ## Live theme switching
 
@@ -98,8 +125,25 @@ frame.contentWindow.postMessage(
 );
 ```
 
-The shell listens for exactly `{ type: "loom-theme", theme: "light" | "dark" }` and ignores
-everything else. Applying a theme does two things: it toggles a class on the gallery's root element,
+The backdrop moves the same way, next to it — so a docs page that switches theme at runtime need not
+reload the frame to re-point the stage:
+
+```js title="Re-point the backdrop live"
+frame.contentWindow.postMessage(
+  { type: "loom-background", background: "#0b0d10" },
+  GALLERY_ORIGIN,
+);
+
+// With no colour, the backdrop goes back to whatever the theme paints.
+frame.contentWindow.postMessage({ type: "loom-background" }, GALLERY_ORIGIN);
+```
+
+Both write to the same element the first-paint script did, which makes the shell's own first pass a
+no-op rather than a second paint.
+
+The shell listens for exactly `{ type: "loom-theme", theme: "light" | "dark" }` and
+`{ type: "loom-background", background?: string }`, and ignores everything else. Applying a theme
+does two things: it toggles a class on the gallery's root element,
 and it writes `LoomTheme` onto `Players.LocalPlayer.PlayerGui`. That second part is the useful one —
 a scene can read the host page's theme through plain Roblox APIs, including
 `GetPropertyChangedSignal("LoomTheme")`, with no DOM access from roblox-ts code.
@@ -109,10 +153,11 @@ a scene can read the host page's theme through plain Roblox APIs, including
 is not worth stealing, but `"*"` is a habit that costs nothing to avoid and gets copied into
 messages that *are* worth stealing. Pass the origin you actually built the gallery for.
 
-The shell's own listener does **not** check `event.origin` — it accepts a well-formed
-`loom-theme` message from any parent. That is deliberate for a dev tool meant to be iframed by
-arbitrary hosts, and it is a reason to keep the message vocabulary at exactly this one message. If
-you fork the shell and add messages with side effects, add an origin check with them.
+The shell's own listener does **not** check `event.origin` — it accepts a well-formed `loom-theme` or
+`loom-background` message from any parent. That is deliberate for a dev tool meant to be iframed by
+arbitrary hosts, and it is a reason to keep the message vocabulary at exactly these two, both of
+which only repaint. If you fork the shell and add messages with side effects, add an origin check
+with them.
 </Callout>
 
 ```tsx title="A scene that follows the host page's theme"

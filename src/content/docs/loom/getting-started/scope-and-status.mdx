@@ -28,7 +28,8 @@ Studio before shipping.
 | Layout: list, grid, padding, constraints, `AutomaticSize`, text measurement | Complete. |
 | Visuals: text, `UICorner`, `UIStroke`, `UIShadow`, gradients, clipping, transparency, rotation, scrolling frames | Complete. |
 | Images: `ImageLabel` / `ImageButton`, `ScaleType`, `ImageColor3`, `rbxassetid://` | Painted. See the gaps below. |
-| Text: `FontFace`, `RichText` markup, wrapping and measurement | Complete. |
+| Text: `FontFace`, `RichText` markup, wrapping, `LineHeight` and measurement | Complete. |
+| Fonts: `registerFont`, `@loom-dev/renderer/fonts` | Shipped in `0.6.4`. The host installs the engine's typefaces; unbacked families warn. |
 | Flex: `UIListLayout` flex and `Wraps`, `UIFlexItem` | Complete. |
 | `TweenService`, bindings, `@rbxts/ripple` | Complete. |
 | Pointer and keyboard input, focus, `UserInputService` | Complete, with Roblox input-sinking semantics. |
@@ -59,6 +60,10 @@ a scaled subtree renders at 1×. (`UIFlexItem`, which used to sit in this row, i
 **`TextScaled`.** Accepted on every text class and never applied — text renders at `TextSize`
 whether or not it fits.
 
+**`Gotham`, out of the box.** Roblox's default family is proprietary and cannot be redistributed, so
+`@loom-dev/renderer/fonts` covers only the openly licensed families. A project that has the files
+registers them itself — see [Fonts and text metrics](/loom/guides/fonts/).
+
 **A roblox-ts compiler transform.** The preview path deliberately skips `rbxtsc` and lets esbuild
 transpile. A standalone transform, which would let loom consume compiled output rather than source,
 is still open.
@@ -87,6 +92,10 @@ is still open.
   pass real URLs there, or install your own resolver with `setImageResolver`.
 - **The React version is pinned in effect.** The adapter's reconciler targets React 18; the plugin
   aliases bare `react` to one absolute path to guarantee a single instance.
+- **Text metrics are the browser's.** Loom measures with canvas `measureText()`, so shaping and
+  rounding differ from the engine by a glyph here and there even with the right typeface installed.
+  Installing it is the part that matters: without it the fallback is a *different* typeface per OS,
+  and the layout moves with it.
 
 ## Versioning
 
