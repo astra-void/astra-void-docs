@@ -14,7 +14,7 @@ loom — Roblox UI preview
 
 Usage:
   loom preview [dir] [--port <n>] [--host] [--targets [glob]]
-  loom build   [dir] --targets [glob] [--out <dir>] [--base <path>]
+  loom build   [dir] --targets [glob] [--out <dir>] [--base <path>] [--no-assets]
 ```
 
 Any other first argument (including none) prints this usage text and exits `0`.
@@ -78,6 +78,7 @@ It is `loomPreview({ targets })` under `vite build` with `configFile: false` and
 | `--targets [glob]` | **required** | Same parsing as `preview`. Absent → exit `1`: `loom: build requires --targets [glob] (the static gallery is target-driven)`. |
 | `--out <dir>` | `dist-preview` | Resolved against the **working directory**, not `dir`. Emptied before writing. |
 | `--base <path>` | `./` | Vite's public base path. The relative default keeps assets host-agnostic. |
+| `--no-assets` | off | Skips the `rbxassetid://` bake, keeping the build off the network — see [static builds](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build). Boolean; takes no value. |
 
 `build` does **not** read `loom.config.ts`. If no file matches the glob it throws
 `no targets matched <patterns> under <root> — nothing to build` and exits non-zero.
@@ -165,7 +166,7 @@ await buildGallery({
 | Export | What it does |
 | --- | --- |
 | `createGalleryServer(options)` | Gallery Vite server in middleware mode; resolves to `{ base, middleware, vite, close() }` |
-| `buildGallery(options)` | Static gallery build; resolves to the resolved output directory |
+| `buildGallery(options)` | Static gallery build; resolves to the resolved output directory. Takes `assets: false` to skip the `rbxassetid://` bake, as `withLoomGallery` does |
 | `findGalleryTargets(root, targets?)` | The relative target paths that would be served — for skipping cleanly when a checkout is absent |
 | `isGalleryRequest(url, base)` | Whether a URL belongs to a gallery mounted at `base` |
 | `normalizeGalleryBase(base?)` | Forces the leading and trailing slash Vite's `base` wants |

@@ -91,9 +91,9 @@ Two things are worth knowing before you rely on it:
 - **A build never fails over an image.** An id that will not resolve — offline, deleted, moderated —
   is warned about and left out of the manifest.
 
-Pass `loomPreview({ assets: false })` to keep a build off the network entirely. The option is on the
-Vite plugin itself; `loom-dev/embed` and `withLoomGallery` do not forward it yet, so a gallery
-embedded through those always bakes.
+To keep a build off the network entirely, turn the bake off wherever the build is configured —
+`loomPreview({ assets: false })`, `loom build --no-assets`, or `assets: false` on `buildGallery` and
+`withLoomGallery` *(`0.7.1`; earlier versions only had the plugin option)*.
 
 ## The URL contract
 

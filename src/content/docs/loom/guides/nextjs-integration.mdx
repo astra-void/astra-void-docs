@@ -150,6 +150,8 @@ Asset URLs inside the bundle are absolute under the mount path (the gallery is b
 | `port` | `number` | ephemeral | Pin the dev gallery's port instead of picking a free one per boot. |
 | `hmrPort` | `number \| false` | ephemeral | Vite's HMR WebSocket port; `false` disables HMR (edits then need a frame reload). |
 | `staticBuild` | `boolean` | `true` | `false` skips the `next build`-time gallery emit entirely. |
+| `shims` | `Record<string, string>` | `{}` | Package redirects for roblox-ts packages loom can't run. Paths are relative to `root`, not to the Next app, so dev and the static build agree. See [Package compatibility](/loom/guides/package-compatibility/#shims). |
+| `assets` | `boolean` | `true` | `false` stops the `next build` gallery downloading the `rbxassetid://` images it mentions *(`0.7.1`)*. The dev gallery is unaffected — it has a server to resolve ids with. |
 
 ## 5. Embedding scenes in pages
 
