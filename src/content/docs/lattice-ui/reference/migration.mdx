@@ -167,7 +167,7 @@ const toast = useToast();
 Not everything here is work. Three fixes remove workarounds you may currently be carrying:
 
 - **16 leaf parts now render `children`.** Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay` previously dropped children unless `asChild` was set, so attaching a `UICorner` or `UIPadding` silently did nothing. Delete any `asChild` you added only to work around that.
-- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform emits — is now re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error.
+- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits — is now re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 - **Highlight state is readable.** `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext` return `{ highlighted, disabled }`. `highlighted` reports hover *or* managed focus, which is what you need to render the highlight the primitive used to draw.
 
 ### 7. Focus additions

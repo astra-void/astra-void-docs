@@ -47,7 +47,7 @@ The current stable release, and the largest breaking one so far. It strips every
 **Fixes**
 
 - 16 leaf parts render `children` again — both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay`. Attaching a `UICorner` or `UIPadding` to one of these previously did nothing.
-- `asChild` accepts Roblox UI modifiers as siblings of the child element, which is the shape a Tailwind-style `className` transform emits.
+- `asChild` accepts Roblox UI modifiers as siblings of the child element, which is the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 - `Menu.Trigger` no longer runs its activation twice, and `Menu.Item` fires `onSelect` exactly once per activation.
 - A menu item stays highlighted while it holds keyboard focus.
 - The switch thumb is centered in its track, and its travel derives from `AnchorPoint` and `Position` rather than a declared `Size`.

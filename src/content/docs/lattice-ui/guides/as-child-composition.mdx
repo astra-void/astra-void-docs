@@ -71,7 +71,7 @@ Two things do **not** count against that one-element budget, as of 0.7.0:
 - **Fragments are looked through.** A fragment wrapping a single element resolves to that element.
 - **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uigradient`, `uiscale`, the constraints, and the rest of the `UIBase` classes are re-parented under the element the props land on instead of competing to be the target.
 
-That second rule exists because Roblox attaches modifiers as *children* rather than properties, which is exactly the shape a Tailwind-style `className` transform emits when it lowers `rounded-md` or `p-2` at the call site:
+That second rule exists because Roblox attaches modifiers as *children* rather than properties, which is exactly the shape a Tailwind-style `className` transform emits when it lowers `rounded-md` or `p-2` at the call site — [vela-rbxts](/vela-rbxts/) being the one this was built against:
 
 ```tsx title="A modifier sibling is re-parented, not cloned"
 <Dialog.Trigger asChild>
@@ -81,6 +81,11 @@ That second rule exists because Roblox attaches modifiers as *children* rather t
 ```
 
 Two real `GuiObject` candidates are still an error — the primitive cannot know which one to enhance.
+
+This is what makes a class name on the *part* work: Vela emits its helper instances as the
+component's children, and they arrive here as siblings of your element rather than as rival slot
+candidates. [Styling with Vela](/lattice-ui/guides/styling-with-vela/) walks through all three
+placements.
 </Callout>
 
 ## Where you'll use it

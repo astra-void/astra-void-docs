@@ -16,6 +16,8 @@ Lattice primitives are headless — they give you behavior and leave the pixels 
 
 Both produce ordinary Roblox instance props in the end. The difference is where the styling decision lives: inline at the call site, or centralized in a recipe your whole design system shares.
 
+Both also resolve at runtime and read the live `Theme`, which is what makes a theme toggle work. If your project compiles Tailwind-shaped class names with [vela-rbxts](/vela-rbxts/), that is a third route with the opposite tradeoff — no runtime cost, no runtime theming — and it composes with these two rather than replacing them. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
+
 ## The sx value
 
 An `Sx<Props>` is deliberately small:

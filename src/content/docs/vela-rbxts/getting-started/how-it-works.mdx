@@ -66,6 +66,8 @@ Vela hands the component props and children. It cannot make the component do any
 
 This is exactly how `className` behaves on the web: it only works because the component passes it down to a DOM node. Write your components to spread the rest of their props and render `children`, or the classes on them do nothing.
 
+A component library can be built to receive this shape deliberately — [lattice-ui](/lattice-ui/) forwards unknown props from every part and re-parents Vela's helper instances under the element the props land on. [Styling Lattice with Vela](/lattice-ui/guides/styling-with-vela/) is a worked example of both halves.
+
 </Callout>
 
 Because the eventual host element is unknown at the point Vela sees the component, the per-element utility restrictions do not apply inside a component's `className`. The editor offers the full utility set there — including `text-*`, `image-*` and `placeholder-*` on any component — and never raises `unsupported-host-utility`. Whether `text-lg` actually means anything depends on which host element your component ends up rendering, and nothing checks that for you.
