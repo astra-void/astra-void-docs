@@ -14,6 +14,7 @@ import {
   getHeaderNavLinks,
   type DocsProductId,
 } from "@/lib/docs"
+import { getDocMarkdownPath } from "@/lib/llms"
 import "@/styles/global.css"
 import "@/styles/expressive-code.css"
 
@@ -36,6 +37,11 @@ const {
 const shell = await getDocsShellData(currentPath, productId)
 const sectionLabel = shell.current?.section?.replace(/-/g, " ")
 
+// Lets an agent that landed on the HTML page find the Markdown of it.
+const markdownHref = shell.current
+  ? getDocMarkdownPath(shell.current, shell.product.id)
+  : undefined
+
 const navLinks = getHeaderNavLinks(shell)
 
 const pageTitle =
@@ -55,6 +61,9 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {markdownHref ? (
+      <link href={markdownHref} rel="alternate" type="text/markdown" />
+    ) : null}
     <title>{pageTitle}</title>
     <ClientRouter />
     <ThemeScript />
