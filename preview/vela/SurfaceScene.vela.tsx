@@ -1,11 +1,6 @@
 import React from "@rbxts/react";
 import { VelaStage } from "./VelaStage";
 
-/**
- * Each swatch is one surface utility family: a fill, a fill plus a stroke, a
- * corner radius, and a gradient. Every one of them writes either a property on
- * the frame or a helper instance under it — nothing here is inherited.
- */
 export function Swatches() {
   return (
     <frame className="flex gap-3 justify-center items-center w-96 h-24 p-4 rounded-lg bg-slate-900">

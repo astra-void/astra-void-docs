@@ -1,23 +1,18 @@
 import React from "@rbxts/react";
 import { VelaStage } from "./VelaStage";
 
-/**
- * A confirmation dialog: column layout, wrapped body text, and a `justify-end`
- * button row — the alignment half of `justify-*`, which lowers to
- * `UIListLayout.HorizontalAlignment` and needs nothing from the flex model.
- */
 export function LeaveDialog() {
   return (
     <frame className="flex flex-col gap-3 w-96 h-40 p-4 rounded-xl bg-slate-900 border border-slate-700">
       <textlabel
-        className="bg-transparent w-full h-6 text-left text-slate-100 text-lg font-semibold"
+        className="w-full h-6 text-left text-slate-100 text-lg font-semibold"
         Text="Leave match?"
       />
       <textlabel
-        className="bg-transparent w-full h-10 text-left text-slate-400 text-sm text-wrap"
+        className="w-full h-10 text-left text-slate-400 text-sm text-wrap"
         Text="You will lose your streak bonus and any unclaimed round rewards."
       />
-      <frame className="flex justify-end items-center gap-2 w-full h-9 bg-transparent">
+      <frame className="flex justify-end items-center gap-2 w-full h-9">
         <textbutton
           className="w-24 h-9 rounded-md bg-slate-800 border border-slate-700 text-slate-200 text-sm"
           Text="Cancel"

@@ -1,11 +1,6 @@
 import React from "@rbxts/react";
 import { VelaStage } from "./VelaStage";
 
-/**
- * Three button tones from the same four families: sizing, radius, background,
- * typography. The secondary button adds a `UIStroke` through `border`, which is
- * the whole difference between the filled and outlined looks.
- */
 export function Buttons() {
   return (
     <frame className="flex gap-3 justify-center items-center w-96 h-20 p-4 rounded-lg bg-slate-900">

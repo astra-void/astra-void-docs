@@ -1,11 +1,6 @@
 import React from "@rbxts/react";
 import { VelaStage } from "./VelaStage";
 
-/**
- * The three gradient shapes: two stops, three stops (`via-*`), and a vertical
- * direction. Each swatch is a `UIGradient` child over a background the compiler
- * forces to white so the stops read exactly as the theme defines them.
- */
 export function Gradients() {
   return (
     <frame className="flex gap-3 justify-center items-center w-96 h-24 p-4 rounded-lg bg-slate-900">

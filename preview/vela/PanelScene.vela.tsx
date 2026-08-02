@@ -5,11 +5,11 @@ export function Panel() {
   return (
     <frame className="flex flex-col gap-4 p-4 rounded-lg bg-slate-800 border border-slate-700 w-80 h-24">
       <textlabel
-        className="bg-transparent w-full h-6 text-left text-slate-100 text-lg font-semibold"
+        className="w-full h-6 text-left text-slate-100 text-lg font-semibold"
         Text="Loadout"
       />
       <textlabel
-        className="bg-transparent w-full h-5 text-left text-slate-400 text-sm"
+        className="w-full h-5 text-left text-slate-400 text-sm"
         Text="Two slots remaining"
       />
     </frame>

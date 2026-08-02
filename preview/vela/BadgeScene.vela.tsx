@@ -1,11 +1,6 @@
 import React from "@rbxts/react";
 import { VelaStage } from "./VelaStage";
 
-/**
- * Status pills: `rounded-full` on a fixed-size label, a dark shade of the
- * palette for the fill and a light one for the text. Roblox text labels center
- * their text by default, which is exactly what a pill wants.
- */
 export function Badges() {
   return (
     <frame className="flex gap-2 justify-center items-center w-96 h-16 p-3 rounded-lg bg-slate-900">
