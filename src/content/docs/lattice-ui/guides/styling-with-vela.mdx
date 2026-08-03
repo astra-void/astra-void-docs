@@ -38,17 +38,22 @@ Vela in the project at all; you would just be writing the props by hand.
   scene="LatticeSwitchScene"
 />
 
-Every row above is `Switch.Root` + `Switch.Thumb` with no styling of its own. Open the **Classes**
-tab for the source and **Lowered** for the props Vela produced.
+Every row above is `Switch.Root` + `Switch.Thumb` with no styling of its own — toggle them. Open the
+**Classes** tab for the source and **Lowered** for the props Vela produced.
 
 ### On your own host element, inside `asChild`
 
 The plainest case. `asChild` hands the part's behavior to an element you render, and that element is
-an ordinary `textbutton` — so its `className` is lowered exactly as it would be anywhere else.
+an ordinary `textbutton` — so its `className` is lowered exactly as it would be anywhere else. The
+Wi-Fi row paints its track from `checked`, which makes the class value dynamic:
 
 ```tsx title="Classes on the element you own"
 <Switch.Root asChild checked={wifi} onCheckedChange={setWifi}>
-  <textbutton className="w-11 h-6 rounded-full bg-sky-500" Text="">
+  <textbutton
+    className={`w-11 h-6 rounded-full ${wifi ? "bg-sky-500" : "bg-slate-700"}`}
+    LayoutOrder={2}
+    Text=""
+  >
     <Switch.Thumb asChild>
       <frame className="w-5 h-5 rounded-full bg-white" />
     </Switch.Thumb>
@@ -57,6 +62,12 @@ an ordinary `textbutton` — so its `className` is lowered exactly as it would b
 ```
 
 Nothing about this is Lattice-specific. Reach for it when the element is already yours.
+
+Note the `LayoutOrder` prop. A computed class value puts the element on Vela's
+[runtime path](/vela-rbxts/guides/dynamic-class-names/), where the layout families — `order-*`
+among them — are dropped, so the row's `UIListLayout` would sort this button by instance name
+instead. Properties you set as props are untouched by any of that, which makes a prop the reliable
+place for anything a dynamically-classed element still needs from the layout.
 
 ### On the part, with `asChild`
 
@@ -136,13 +147,17 @@ recommend by default; the mistake is expecting a class list to follow a `ThemePr
 
 Two Vela behaviors are worth knowing before you put them near a primitive.
 
-**Dynamic class values.** A computed `className` moves the element onto Vela's
-[runtime path](/vela-rbxts/guides/dynamic-class-names/), where the in-game resolver understands a
-fraction of the utility set and drops the rest silently — layout direction, alignment, text styling
-and position among them. It also stops merging the sizing axes: `w-11 h-6` in a computed string
-leaves one axis at zero. Since primitive state (`checked`, `highlighted`, `disabled`) is exactly the
-thing you want to paint from, this matters here more than usual. Branch between two fully static
-string literals instead of computing one.
+**The layout half of a dynamic class value.** Primitive state (`checked`, `highlighted`, `disabled`)
+is exactly the thing you want to paint from, and a computed `className` is the natural way to do it —
+the Wi-Fi row above does. Colors, backgrounds, radius, spacing and sizing all survive the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/) it puts the element on. What does not is the
+layout half: direction, alignment, `order-*`, position, text styling, constraints, all dropped with
+no diagnostic. Keep those on props, or branch between two fully static string literals so the whole
+element stays on the static path.
+
+On Vela **0.5.1 and earlier** there was a second reason to avoid this on a primitive: a computed
+class value left one sizing axis at zero, so `w-11 h-6` on a track collapsed it and the track's
+`rounded-full` disappeared with it. Fixed in 0.5.2 — the preview above only works because of it.
 
 **Geometry the primitive owns.** Progress fill ratios, slider thumb travel, popper-driven position,
 scroll thumb size, presence-driven `Visible` — those are computed by the primitive and written onto

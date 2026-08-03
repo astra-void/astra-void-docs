@@ -10,9 +10,17 @@ export function LatticeSwitch() {
   return (
     <frame className="flex flex-col gap-3 w-80 h-40 p-4 rounded-lg bg-slate-900 border border-slate-700">
       <frame className="flex flex-row items-center gap-4 w-72 h-8">
-        <textlabel className="order-1 w-44 h-5 text-sm text-slate-100 text-left" Text="Wi-Fi" />
+        <textlabel
+          className="w-44 h-5 text-sm text-slate-100 text-left"
+          LayoutOrder={1}
+          Text="Wi-Fi"
+        />
         <Switch.Root asChild checked={wifi} onCheckedChange={setWifi}>
-          <textbutton className="order-2 w-11 h-6 rounded-full bg-sky-500" Text="">
+          <textbutton
+            className={`w-11 h-6 rounded-full ${wifi ? "bg-sky-500" : "bg-slate-700"}`}
+            LayoutOrder={2}
+            Text=""
+          >
             <Switch.Thumb asChild>
               <frame className="w-5 h-5 rounded-full bg-white" />
             </Switch.Thumb>
