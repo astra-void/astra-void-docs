@@ -30,25 +30,41 @@ export function LatticeSwitch() {
 
       <frame className="flex flex-row items-center gap-4 w-72 h-8">
         <textlabel className="order-1 w-44 h-5 text-sm text-slate-100 text-left" Text="Bluetooth" />
-        <Switch.Root
-          asChild
-          checked={bluetooth}
-          className="order-2 w-11 h-6 rounded-full bg-sky-500"
-          onCheckedChange={setBluetooth}
-        >
-          <textbutton Text="">
-            <Switch.Thumb asChild>
-              <frame className="w-5 h-5 rounded-full bg-white" />
-            </Switch.Thumb>
-          </textbutton>
-        </Switch.Root>
+        {bluetooth ? (
+          <Switch.Root
+            asChild
+            checked
+            className="order-2 w-11 h-6 rounded-full bg-sky-500"
+            onCheckedChange={setBluetooth}
+          >
+            <textbutton Text="">
+              <Switch.Thumb asChild>
+                <frame className="w-5 h-5 rounded-full bg-white" />
+              </Switch.Thumb>
+            </textbutton>
+          </Switch.Root>
+        ) : (
+          <Switch.Root
+            asChild
+            checked={false}
+            className="order-2 w-11 h-6 rounded-full bg-slate-700"
+            onCheckedChange={setBluetooth}
+          >
+            <textbutton Text="">
+              <Switch.Thumb asChild>
+                <frame className="w-5 h-5 rounded-full bg-white" />
+              </Switch.Thumb>
+            </textbutton>
+          </Switch.Root>
+        )}
       </frame>
 
       <frame className="flex flex-row items-center gap-4 w-72 h-8">
         <textlabel className="order-1 w-44 h-5 text-sm text-slate-100 text-left" Text="Airplane mode" />
         <Switch.Root
           checked={airplane}
-          className="order-2 w-11 h-6 rounded-full bg-sky-500 opacity-100"
+          className={`w-11 h-6 rounded-full opacity-100 ${airplane ? "bg-sky-500" : "bg-slate-700"}`}
+          LayoutOrder={2}
           onCheckedChange={setAirplane}
         >
           <Switch.Thumb asChild>

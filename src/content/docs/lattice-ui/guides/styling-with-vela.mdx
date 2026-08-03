@@ -44,8 +44,8 @@ Every row above is `Switch.Root` + `Switch.Thumb` with no styling of its own —
 ### On your own host element, inside `asChild`
 
 The plainest case. `asChild` hands the part's behavior to an element you render, and that element is
-an ordinary `textbutton` — so its `className` is lowered exactly as it would be anywhere else. The
-Wi-Fi row paints its track from `checked`, which makes the class value dynamic:
+an ordinary `textbutton` — so its `className` is lowered exactly as it would be anywhere else. All
+three rows paint their track from `checked`; the Wi-Fi row does it with a computed class value:
 
 ```tsx title="Classes on the element you own"
 <Switch.Root asChild checked={wifi} onCheckedChange={setWifi}>
@@ -93,6 +93,22 @@ Two `GuiObject`-ish children where `asChild` clones exactly one — which is pre
 it as a second slot candidate, so this renders the same tree as the first form. See
 [asChild composition](/lattice-ui/guides/as-child-composition/) for the full rule.
 
+That emit is what the **static** path produces, and the Bluetooth row keeps it by branching the whole
+element between two literal class lists rather than computing one:
+
+```tsx title="Two static branches, so both keep the static emit"
+{bluetooth ? (
+  <Switch.Root asChild checked className="w-11 h-6 rounded-full bg-sky-500" …>…</Switch.Root>
+) : (
+  <Switch.Root asChild checked={false} className="w-11 h-6 rounded-full bg-slate-700" …>…</Switch.Root>
+)}
+```
+
+It reads as duplication, and it buys something concrete: a computed value here — even a ternary
+between two string literals, which Vela does **not** fold — would lower to
+`VelaRuntimeHost __velaTag={Switch.Root}` instead, building the `UICorner` at runtime. The modifier
+never becomes a sibling, so the rule this section is about never comes up.
+
 ### On the part, without `asChild`
 
 Since 0.7.0 every part forwards unknown props onto the instance it renders, so `asChild` is no longer
@@ -102,7 +118,8 @@ required to style one. The part renders its own `textbutton`, Vela's props ride 
 ```tsx title="No asChild — the part renders the host"
 <Switch.Root
   checked={airplane}
-  className="w-11 h-6 rounded-full bg-sky-500 opacity-100"
+  className={`w-11 h-6 rounded-full opacity-100 ${airplane ? "bg-sky-500" : "bg-slate-700"}`}
+  LayoutOrder={2}
   onCheckedChange={setAirplane}
 >
   <Switch.Thumb asChild>
@@ -110,6 +127,11 @@ required to style one. The part renders its own `textbutton`, Vela's props ride 
   </Switch.Thumb>
 </Switch.Root>
 ```
+
+This row is computed, so it lowers to `VelaRuntimeHost __velaTag={Switch.Root}` — the runtime host
+renders the part itself, and the part still receives the resolved props, still forwards them, and
+still renders its children. A dynamic class value on a Lattice part works; it just costs you the
+static path's full utility set, which is why `LayoutOrder` is a prop here too.
 
 That `opacity-100` is not decoration. It is the first of the two disagreements.
 
