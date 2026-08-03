@@ -1,6 +1,6 @@
 ---
 title: Utility reference
-description: Every utility class Vela supports at 0.5.0, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
+description: Every utility class Vela supports at 0.5.2, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-This is the complete list of what Vela compiles as of **0.5.0**. If a class is not on this page,
+This is the complete list of what Vela compiles as of **0.5.2**. If a class is not on this page,
 Vela does not implement it — an unknown family produces `unsupported-utility-family`, a real
 Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`, and a few (anything that
 looks like `text-*`) get misread as a color key instead. See
@@ -316,7 +316,7 @@ values: both scales zero gives `UDim2.fromOffset(x, y)`, both offsets zero gives
 `UDim2.fromScale(x, y)`, and a mix gives the full `UDim2.new(sx, ox, sy, oy)`.
 
 `basis-*` accepts the same values and lowers onto the X axis of `Size`, regardless of the parent's
-fill direction — as of 0.5.0 it is `w-*` under another name. Reach for it only when porting Tailwind
+fill direction — as of 0.5.2 it is `w-*` under another name. Reach for it only when porting Tailwind
 markup; write `w-*`/`h-*` in new code.
 
 ## Constraints
@@ -415,7 +415,7 @@ Anything else in the grid family — `col-span-*`, `row-span-*`, template values
 
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element writes `UIGridLayout.CellPadding`, which is the right target — but as of
-0.5.0 it **also** emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+0.5.2 it **also** emits the ordinary `UIListLayout` carrying the same value, leaving two layout
 instances fighting over the children. Until that is fixed upstream, add the `UIGridLayout` yourself
 when you need cell padding, or accept the default spacing.
 </Callout>

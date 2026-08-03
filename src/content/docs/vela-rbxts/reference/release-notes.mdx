@@ -1,6 +1,6 @@
 ---
 title: Release notes
-description: What changed in each Vela release — the 0.5.0 preflight break, the 0.4.1 breakpoint fix, and the sharp edges still open.
+description: What changed in each Vela release — the 0.5.2 runtime sizing fix, the 0.5.0 preflight break, and the sharp edges still open.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -17,9 +17,28 @@ per-package detail behind this page. If you are installing Vela for the first ti
 current release and none of the upgrade notes below apply to you — skip to
 [what is still open](#still-open).
 
-## 0.5.0
+## 0.5.2
 
 The current release.
+
+**`w-*` and `h-*` stop erasing each other on the runtime path.** `Size` holds both axes, so a runtime
+rule that named one of them used to state a whole `UDim2` and zero the other: `md:w-32 md:h-32` kept
+only the height, a `md:h-32` overlay dropped the base width, and a dynamic class value hit the same
+thing token by token. Variant rules and the runtime host's token resolution now carry each axis on
+its own and compose it over whatever `Size` the element already has, so a variant moves only the axis
+it names and the merge order matches the static path.
+
+Worth re-reading if you worked around this: the axis that lost was left at zero, which also made a
+scale-based `rounded-full` on that element compute to nothing. Both symptoms have the same cause and
+both are gone. [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) has the full runtime
+divergence list, now one shorter.
+
+## 0.5.1
+
+A version-only release — no compiler change. The VS Code extension's marketplace icon was redrawn,
+and lockstep versioning carried every other package along with it.
+
+## 0.5.0
 
 <Callout title="Breaking: preflight neutralizes the Roblox host defaults">
 Roblox paints every `GuiObject` as an opaque gray box with a 1px border, and a framework that only
@@ -42,7 +61,7 @@ behavior wholesale.
 **`order-*` works under `flex`.** Vela's `UIListLayout` did not set `SortOrder`, and the engine
 default is `Name` — so children sorted alphabetically by instance name and every `order-*` was a
 silent no-op, while `grid` set `SortOrder = LayoutOrder` and worked. Both layouts now set it. If you
-still see `order-*` ignored on 0.5.0, the layout instance is one you wrote yourself.
+still see `order-*` ignored on 0.5.0 or later, the layout instance is one you wrote yourself.
 
 **The runtime host no longer emits `table.getn`.** The deprecated call was reaching your output on
 every runtime-path element.
@@ -128,7 +147,7 @@ need it — which is why there is no Vela runtime to place in your DataModel.
 
 ## Still open
 
-These are known and unfixed as of 0.5.0.
+These are known and unfixed as of 0.5.2.
 
 **`gap-*` on a `grid` element emits a conflicting `UIListLayout`** alongside the `UIGridLayout` it
 correctly feeds, leaving two layout instances fighting over the children. Keep `gap-*` off grid
@@ -155,7 +174,7 @@ have to build the compiler crate and the language server from source. The full t
 
 ## See also
 
-- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.5.0.
+- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.5.2.
 - [Configuration](/vela-rbxts/reference/config/#preflight) — the `preflight` opt-out.
 - [Troubleshooting](/vela-rbxts/guides/troubleshooting/) — symptom-first, including the two entries
   that turn out to be version problems.

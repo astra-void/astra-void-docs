@@ -135,7 +135,7 @@ and report `no-roblox-equivalent`.
 
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, which is the right target — but as of
-0.5.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+0.5.2 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
 instances fighting over the children. Until the fix ships, add the `UIGridLayout` yourself when you
 need cell padding.
 </Callout>

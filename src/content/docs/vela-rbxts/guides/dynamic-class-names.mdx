@@ -72,23 +72,26 @@ Note that inlining the template string directly into the attribute does not help
 
 ## The other divergences
 
-Even within the supported families, the runtime path is not the static path with fewer features. Three behaviors differ outright.
+Even within the supported families, the runtime path is not the static path with fewer features. Two behaviors still differ outright, and one did until 0.5.2.
 
 **Arbitrary bracket values work at runtime but not statically.** The runtime resolver parses bracket numerics, so `rounded-[8]`, `p-[10]`, and `w-[240]` all resolve. The static path rejects them with `unsupported-arbitrary-value` — *"Arbitrary value `[8]` is not supported yet; use a theme key from `vela.config.ts` instead."* This is the one case where the runtime path is more permissive, and it makes bracket values a trap in reverse: a class that works in a computed string breaks when you inline it as a literal. (Bracketed hex colors are the exception that does work statically — `bg-[#3b82f6]` is fine.)
 
 **Automatic sizing is dropped at runtime.** Statically, `w-fit`, `h-fit`, `size-fit`, `w-auto`, `h-auto`, and `size-auto` emit `AutomaticSize`. The runtime resolver handles only `px`, `full`, `fit`, fractions, spacing keys and bracket numerics — `fit` resolves to nothing and `auto` matches no branch at all — so automatic sizing silently does not happen for any of them. If an element needs `AutomaticSize`, it must be on the static path.
 
-**`w-` and `h-` overwrite each other at runtime.** On the static path the two axes merge into a single `Size` prop. At runtime each of them emits a whole `Size` prop independently, so the later token wins and the earlier one is lost:
+**`w-` and `h-` overwrote each other at runtime, before 0.5.2.** `Size` holds both axes, so a runtime rule that named one of them used to state a whole `UDim2` and zero the other — the later token won and the earlier one was lost. Since 0.5.2 each axis is carried on its own and composed over whatever `Size` the element already has, so a variant moves only the axis it names and `w-full h-12` in a computed string means what it says.
 
-```tsx title="Runtime path: h-12 wins, w-full is discarded"
+```tsx title="Fixed in 0.5.2 — before it, h-12 won and w-full was discarded"
 <frame className={someComputedString} />
 // where someComputedString === "w-full h-12"
-// → Size is whatever h-12 alone produces
 ```
 
-On the static path the same string produces `UDim2.new(1, 0, 0, 48)`. This one is easy to miss because sizing *is* in the supported list — it is supported, just differently.
-
-It also takes other utilities down with it. The axis that loses is left at zero, and a **scale-based** value on that axis then computes to nothing: an element written `w-11 h-6 rounded-full` ends up 0 pixels wide, so its `UDim(0.5, 0)` corner radius rounds nothing and the class reads as if it had been dropped. A fixed radius like `rounded-md` survives the same collapse, which makes the sizing bug look like a radius bug. Set one axis from the class and the other from a `Size` prop, or keep the element on the static path.
+<Callout title="On 0.5.1 and earlier this looks like a radius bug">
+The axis that lost was left at zero, and a **scale-based** value on that axis then computed to
+nothing: `w-11 h-6 rounded-full` ended up 0 pixels wide, so its `UDim(0.5, 0)` corner radius rounded
+nothing and the class read as if it had been dropped — while a fixed `rounded-md` survived the same
+collapse. If you are pinned below 0.5.2, set one axis from the class and the other from a `Size`
+prop, or keep the element on the static path.
+</Callout>
 
 ## What to do instead
 
