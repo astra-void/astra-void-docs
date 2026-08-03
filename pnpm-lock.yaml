@@ -47,14 +47,14 @@ importers:
         specifier: ^4.3.0
         version: 4.3.0(vite@8.1.5(@types/node@25.9.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       '@vela-rbxts/compiler':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.5.2
+        version: 0.5.2
       '@vela-rbxts/compiler-wasm':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.5.2
+        version: 0.5.2
       '@vela-rbxts/config':
-        specifier: ^0.5.0
-        version: 0.5.0
+        specifier: ^0.5.2
+        version: 0.5.2
       astro:
         specifier: ^7.1.3
         version: 7.1.3(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@25.9.1)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0)
@@ -2399,59 +2399,59 @@ packages:
   '@ungap/structured-clone@1.3.1':
     resolution: {integrity: sha512-mUFwbeTqrVgDQxFveS+df2yfap6iuP20NAKAsBt5jDEoOTDew+zwLAOilHCeQJOVSvmgCX4ogqIrA0mnyr08yQ==}
 
-  '@vela-rbxts/compiler-darwin-arm64@0.5.0':
-    resolution: {integrity: sha512-yEeN42srZkcgfYwjMUkRhoNG3LDq508jc6SOVhKfOPetMaZkAyxXiSaMDD2/5uPBm8OHE3Av/0S5g3kHM+M2wQ==}
+  '@vela-rbxts/compiler-darwin-arm64@0.5.2':
+    resolution: {integrity: sha512-U1AvXGisBhi64KNbHSxl3zLK/fuJKbVPtFVBTgEfXm4L62lqip+gmRIOscHBtKP+I6o7cwSaI4pLrZEp0B8zQQ==}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [darwin]
 
-  '@vela-rbxts/compiler-darwin-x64@0.5.0':
-    resolution: {integrity: sha512-1KWz8XQM5ysmJ2WfwW4PftXjq85PDMulZvfgrfn0xgyVEeWmyKQabggz33X6HXX8G9cMODBugMSIuUxrgWeFYg==}
+  '@vela-rbxts/compiler-darwin-x64@0.5.2':
+    resolution: {integrity: sha512-yAXgoIXTJCnoutjpaCTNiaMTVi9vCyc2IobiLDHX954rTMgk/7KTl3I43+2ZCtRtOX+E1xikq0ftmnits7jr8Q==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [darwin]
 
-  '@vela-rbxts/compiler-linux-arm64-gnu@0.5.0':
-    resolution: {integrity: sha512-E1NEvGtYoNoaOkQ5ZH6V8C+QWqI5uMngh868HFiMhLJJYG5h6GxDxkRN9UMn3JycDTPVmctfIzC2ZIRotkzIew==}
+  '@vela-rbxts/compiler-linux-arm64-gnu@0.5.2':
+    resolution: {integrity: sha512-V7YDy2ZUGKuZLdkbUXX4me2cxHTOrBlOU7dY1McZ6On1UJ/Ow1ZRyr017w+N4b6lBGU+NTsSRPls0GUWWY1G/Q==}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@vela-rbxts/compiler-linux-x64-gnu@0.5.0':
-    resolution: {integrity: sha512-GTGgLLnV2XtES+5rHQR/zOM3Jl/q1jJP/eS8Pc1Yv74Gpd+XZQZD6M41VVAskYgpQkb0Q3Qs+YrPe8tvfcuNiw==}
+  '@vela-rbxts/compiler-linux-x64-gnu@0.5.2':
+    resolution: {integrity: sha512-iOTHvBrJLO6fyWtGXFqCci6QYbQpCKrafVg0aKrKGw0ivwqkh4AuKwZ1VnkIXB3HIilL/nwvMP2EZm0bjWRF/g==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@vela-rbxts/compiler-linux-x64-musl@0.5.0':
-    resolution: {integrity: sha512-38YDnyCfmOJTEUaVkonGrTAw1mp0ea2gsW8oO+U0wMoAawz+v1BzL61jIVaPXUXeeHSHfljsndxw6Cd9aX8kiw==}
+  '@vela-rbxts/compiler-linux-x64-musl@0.5.2':
+    resolution: {integrity: sha512-yDS5uS158YBfcC1bc/oT74IVo1Yh0gWIbekFuB+/THWLqqEVnyLWeXEW0I+HeO/4GL8xrPmLkbDziBNI3ObqGQ==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@vela-rbxts/compiler-wasm@0.5.0':
-    resolution: {integrity: sha512-kQWjQnNOAI9g1ZthTvZKxo1U4o5yjKf88iWqUJYmhYJvIgQCsS3Z5gUdm6J2Mh79xiQbfU8K07kuKZIE2DlU0Q==}
+  '@vela-rbxts/compiler-wasm@0.5.2':
+    resolution: {integrity: sha512-TKrPjUhEeImM4B6Q1OckdSNz2OUHlwHwkWgv4IkT4cu6Z7ByWiLVocF9sStx10XS5hBqd+fa9TG5auUEcJamqQ==}
     engines: {node: '>=20'}
 
-  '@vela-rbxts/compiler-win32-x64-msvc@0.5.0':
-    resolution: {integrity: sha512-2q8Yjhqb5ZybzcVPNofFlKEGUew1d/6Gaotl7gSFNA4AMrksptnP0Wd9gDjwTLfjYgMtYL3r7dThqeSy6wA0Xg==}
+  '@vela-rbxts/compiler-win32-x64-msvc@0.5.2':
+    resolution: {integrity: sha512-Ls01JPM17iaMGVk3JdfCfwJ2vXz/7gyj4yUBMjInDdluMYXx6ZPiFIbMS6och9ZkgDWoz2t9nOt8kfh6ppNEtQ==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [win32]
 
-  '@vela-rbxts/compiler@0.5.0':
-    resolution: {integrity: sha512-I9KgUrLtHPCW9tQXKOjYEXHHrKRiYNgXts/9TZB8mvV5bdCkpP+1HOqTCZqZon5wVoJf6iwhjNfeFJW3nQoxTg==}
+  '@vela-rbxts/compiler@0.5.2':
+    resolution: {integrity: sha512-bxwfof7rr/JSWHzAKIw00a7MSEGmBpkbDQDfzwp9nOwcx8Byf5dnXiD/shDt51phrj0xD6oyYcau6ft+UQjKYg==}
     engines: {node: '>=20'}
 
-  '@vela-rbxts/config@0.5.0':
-    resolution: {integrity: sha512-GDPuCS5SV9KoNDcOUS/gOTW+dZZH1EBTPgFZIrEhPYpK3PVtUZ++OjIFWj7b3jZmLsZjY1UnhWWW4737KRBOAA==}
+  '@vela-rbxts/config@0.5.2':
+    resolution: {integrity: sha512-ULgph9s+mf3GwsRZXhq+pWVNrpyatmGht/xTkQvKUwec7jqXMVPGjfxEMKilwBjHFSmGDftJQ+u6+Nvj142spQ==}
     engines: {node: '>=20'}
 
-  '@vela-rbxts/types@0.5.0':
-    resolution: {integrity: sha512-tPgMgo2tX+aDZVz7xjKanaZzluCdCEn88u8qOgthZ0ibxoXHcXmW/GmLfKtIsgRgDJEbFRD7ZCIcmlwJQBTTjg==}
+  '@vela-rbxts/types@0.5.2':
+    resolution: {integrity: sha512-DhIOw0sPauqqFVI8EJe8hcW+fWMG0+zCgOlCFIbNFUV4f7qnSq65vJYnD5sstnOesC2egXrHntWvfCAuoCgcVw==}
     engines: {node: '>=20'}
 
   '@vitejs/plugin-react@5.2.0':
@@ -7239,40 +7239,40 @@ snapshots:
 
   '@ungap/structured-clone@1.3.1': {}
 
-  '@vela-rbxts/compiler-darwin-arm64@0.5.0':
+  '@vela-rbxts/compiler-darwin-arm64@0.5.2':
     optional: true
 
-  '@vela-rbxts/compiler-darwin-x64@0.5.0':
+  '@vela-rbxts/compiler-darwin-x64@0.5.2':
     optional: true
 
-  '@vela-rbxts/compiler-linux-arm64-gnu@0.5.0':
+  '@vela-rbxts/compiler-linux-arm64-gnu@0.5.2':
     optional: true
 
-  '@vela-rbxts/compiler-linux-x64-gnu@0.5.0':
+  '@vela-rbxts/compiler-linux-x64-gnu@0.5.2':
     optional: true
 
-  '@vela-rbxts/compiler-linux-x64-musl@0.5.0':
+  '@vela-rbxts/compiler-linux-x64-musl@0.5.2':
     optional: true
 
-  '@vela-rbxts/compiler-wasm@0.5.0': {}
+  '@vela-rbxts/compiler-wasm@0.5.2': {}
 
-  '@vela-rbxts/compiler-win32-x64-msvc@0.5.0':
+  '@vela-rbxts/compiler-win32-x64-msvc@0.5.2':
     optional: true
 
-  '@vela-rbxts/compiler@0.5.0':
+  '@vela-rbxts/compiler@0.5.2':
     optionalDependencies:
-      '@vela-rbxts/compiler-darwin-arm64': 0.5.0
-      '@vela-rbxts/compiler-darwin-x64': 0.5.0
-      '@vela-rbxts/compiler-linux-arm64-gnu': 0.5.0
-      '@vela-rbxts/compiler-linux-x64-gnu': 0.5.0
-      '@vela-rbxts/compiler-linux-x64-musl': 0.5.0
-      '@vela-rbxts/compiler-win32-x64-msvc': 0.5.0
+      '@vela-rbxts/compiler-darwin-arm64': 0.5.2
+      '@vela-rbxts/compiler-darwin-x64': 0.5.2
+      '@vela-rbxts/compiler-linux-arm64-gnu': 0.5.2
+      '@vela-rbxts/compiler-linux-x64-gnu': 0.5.2
+      '@vela-rbxts/compiler-linux-x64-musl': 0.5.2
+      '@vela-rbxts/compiler-win32-x64-msvc': 0.5.2
 
-  '@vela-rbxts/config@0.5.0':
+  '@vela-rbxts/config@0.5.2':
     dependencies:
-      '@vela-rbxts/types': 0.5.0
+      '@vela-rbxts/types': 0.5.2
 
-  '@vela-rbxts/types@0.5.0': {}
+  '@vela-rbxts/types@0.5.2': {}
 
   '@vitejs/plugin-react@5.2.0(vite@8.1.5(@types/node@25.9.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:
