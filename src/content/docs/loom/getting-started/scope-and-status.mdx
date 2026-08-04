@@ -27,7 +27,7 @@ Studio before shipping.
 | `@rbxts/react` adapter | Complete: a custom `react-reconciler` host config driving live loom instances. |
 | Layout: list, grid, table, pages, padding, constraints, `AutomaticSize`, text measurement | Complete — every `UIGridStyleLayout` the engine has, as of `0.7.0`. |
 | Visuals: text, `UICorner`, `UIStroke`, `UIShadow`, gradients, clipping, transparency, rotation, scrolling frames | Complete. |
-| Images: every `ScaleType`, 9-slice, tiling, sprite windows, tints, `rbxassetid://` | Complete as of `0.7.0`, including asset ids in a static build. |
+| Images: every `ScaleType`, 9-slice, tiling, sprite windows, tints, `rbxassetid://` | Complete as of `0.7.0`, including asset ids in a static build — ids composed at runtime since `0.9.5`. |
 | Text: `FontFace`, `RichText` markup, wrapping, `LineHeight` and measurement | Complete. |
 | Fonts: `registerFont`, `@loom-dev/renderer/fonts` | Shipped in `0.6.4`. The host installs the engine's typefaces; unbacked families warn. |
 | Flex: `UIListLayout` flex and `Wraps`, `UIFlexItem` | Complete. |
@@ -88,9 +88,10 @@ is still open.
 - **`rbxassetid://` is resolved for you, twice over.** Roblox's thumbnail API sends no CORS headers,
   so a dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A
   [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no server
-  to ask, so as of `0.7.0` the ids the bundle *spells out* are resolved at build time and the images
-  are written into the output. One assembled at runtime still needs a real URL, or your own
-  `setImageResolver`.
+  to ask, so as of `0.7.0` the ids are resolved at build time and the images are written into the
+  output — read out of the bundle, and, since `0.9.5`, by mounting each gallery target and reading
+  the tree, which is what finds an id composed at runtime. An image the first render never reaches
+  still needs a real URL, or your own `setImageResolver`.
 - **The React version is pinned in effect.** The adapter's reconciler targets React 18; the plugin
   aliases bare `react` to one absolute path to guarantee a single instance.
 - **Text metrics are the browser's.** Loom measures with canvas `measureText()`, so shaping and

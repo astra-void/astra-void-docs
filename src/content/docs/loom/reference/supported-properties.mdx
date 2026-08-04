@@ -167,13 +167,15 @@ Roblox's thumbnail API sends no CORS headers, so the browser cannot resolve an a
 
 - **Under a dev server** (`loom preview`, the embedded server, Next dev) the id is resolved
   server-side and answered as a redirect from `<base>__loom/asset/<id>`.
-- **In a static build** (`loom build`, `vite build`) there is no server later, so the ids the bundle
-  mentions are resolved *at build time*, the images are downloaded into the output, and a
-  `__loom/assets.json` manifest points the page at them — see [Static builds and
+- **In a static build** (`loom build`, `vite build`) there is no server later, so the ids are
+  resolved *at build time*, the images are downloaded into the output, and a `__loom/assets.json`
+  manifest points the page at them — see [Static builds and
   embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
 
-Only ids written out as `rbxassetid://<digits>` can be baked; one assembled at runtime is not in the
-output to find. Anywhere else, install your own resolver with `setImageResolver` from
+The build finds those ids two ways: it reads the emitted output for `rbxassetid://<digits>`, and —
+since `0.9.5` — it mounts each gallery target in node and reads the live tree, which is what catches
+an id composed at runtime (`` `rbxassetid://${iconId}` ``). An image the first render never reaches
+is still missed. Anywhere else, install your own resolver with `setImageResolver` from
 `@loom-dev/renderer`.
 </Callout>
 

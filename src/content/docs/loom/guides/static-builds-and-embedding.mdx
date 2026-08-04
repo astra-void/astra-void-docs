@@ -71,9 +71,9 @@ each — then the shell. Globals-first is why a built gallery never throws `UDim
 ## `rbxassetid://` in a static build
 
 A page served from a bucket has no dev server to resolve asset ids for it, so until `0.7.0` they
-simply did not paint outside `loom preview`. The build now does the work up front: it scans the
-emitted bundle for ids, resolves each one through Roblox's thumbnail API, downloads the image into
-the output, and writes a manifest the page reads on first use.
+simply did not paint outside `loom preview`. The build now does the work up front: it works out
+which ids the page will ask for, resolves each one through Roblox's thumbnail API, downloads the
+image into the output, and writes a manifest the page reads on first use.
 
 ```text title="dist-preview/"
 __loom/assets.json              # { "6031075938": "__loom/asset/6031075938.png" }
@@ -83,13 +83,29 @@ __loom/asset/6031075938.png     # the downloaded image
 Nothing else changes: `Image="rbxassetid://6031075938"` paints from your own origin, with no runtime
 request to Roblox.
 
-Two things are worth knowing before you rely on it:
+Working out *which* ids takes two passes, because reading the bundle is not enough on its own.
 
-- **Only ids the bundle spells out** as `rbxassetid://<digits>` can be found. One assembled at
-  runtime (`` `rbxassetid://${id}` ``) is not in the output to look for, and stays unresolved — give
-  those a real URL, or install your own `setImageResolver`.
+- **The scan** reads the emitted output for `rbxassetid://<digits>`, which finds every id a source
+  spells out.
+- **The prerender** *(`0.9.5`)* covers the ids a source builds at runtime. A component library
+  composes them — `` `rbxassetid://${iconId}` `` over a table of ids — and after bundling that is a
+  prefix and a few hundred bare numbers no scan can tell from any other number, so a gallery built
+  from a real UI library used to paint none of its icons. Instead, the build *runs* your scenes:
+  every gallery target is mounted in node and its live tree is read for the images it actually
+  holds. A 700-icon set contributes the dozen icons your scenes render, not all 700.
+
+Three things are worth knowing before you rely on it:
+
+- **The first render is what gets baked.** An image the initial mount never reaches — one behind a
+  hover state, or supplied by a later fetch — stays unresolved. Give those a real URL, or install
+  your own `setImageResolver`.
+- **The prerender needs targets.** It runs for gallery builds — `loom build`, a plugin configured
+  with `targets`, the Astro and Next embeds. A build configured with a single client `entry` keeps
+  the scan alone, since that entry mounts itself on import rather than exposing a scene to mount.
 - **A build never fails over an image.** An id that will not resolve — offline, deleted, moderated —
-  is warned about and left out of the manifest.
+  is warned about and left out of the manifest, and so is a target that will not render during the
+  prerender. Composition the prerender could not account for is warned about as well, rather than
+  leaving a blank image unexplained.
 
 To keep a build off the network entirely, turn the bake off wherever the build is configured —
 `loomPreview({ assets: false })`, `loom build --no-assets`, or `assets: false` on `buildGallery` and

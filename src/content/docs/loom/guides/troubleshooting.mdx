@@ -34,7 +34,7 @@ come up.
 | Text or buttons spill out of their container | Content wider than the parent allows | Expected as of `0.6.4` — [`AutomaticSize` is bounded](/loom/reference/supported-properties/#automaticsize-is-bounded-by-the-parent) and the engine overflows rather than widening |
 | A narrow desktop window stopped scaling | Deliberate as of `0.6.4` | It reflows instead. `?base=960` restores the old behaviour |
 | A list reordered itself after upgrading to `0.7.0` | `SortOrder` now defaults to `Name`, as it does in Studio | The engine ordered it that way all along — set `SortOrder={Enum.SortOrder.LayoutOrder}` for the old order |
-| `rbxassetid://` images are blank in a static build | The id is assembled at runtime, so the build could not find it to bake | Pass a real URL, or install your own `setImageResolver` — see [static builds](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) |
+| `rbxassetid://` images are blank in a static build | Loom older than `0.9.5` could only bake an id the source spells out; from `0.9.5` the build mounts each target too, so what is left is an image the first render never reaches — behind a hover state, or from a later fetch | Upgrade. Beyond that, render it on load, pass a real URL, or install your own `setImageResolver` — see [static builds](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) |
 
 ## Blank page, `nothing mounted into #loom-root after 2s`
 
