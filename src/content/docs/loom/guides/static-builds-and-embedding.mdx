@@ -55,6 +55,7 @@ assets/index-<hash>.css         # gallery chrome
 assets/loom_layout_wasm_bg-<hash>.wasm
 assets/CardScene.loom-<hash>.js     # one async chunk per target
 assets/CounterScene.loom-<hash>.js
+assets/roboto-latin-400-normal-<hash>.woff2   # …and ~110 more, since 0.9.0
 ```
 
 Each target becomes its own lazily-imported chunk, so a gallery with fifty scenes still loads one
@@ -62,6 +63,11 @@ scene's code per view. The `.wasm` binary dominates the transfer size — about 
 gzipped, from the `wasm-opt`-processed build published packages ship — and it is fetched once and
 cached. A binary built locally with the default `dev` profile skips `wasm-opt` and is roughly four
 times larger.
+
+As of `0.9.0` the [engine's typefaces](/loom/guides/fonts/) are part of that output: ~2.8 MB of
+`woff2` across the whole set, in about 110 files. What a *page* downloads is unchanged — Fontsource
+declares per-script `unicode-range` subsets, so a browser fetches only the families and scripts a
+scene actually paints with.
 
 Under the hood the plugin hands Rollup a genuine module graph rather than the dev server's virtual
 modules: a generated `index.html` as the build input, whose script is a generated entry that imports
@@ -113,7 +119,7 @@ To keep a build off the network entirely, turn the bake off wherever the build i
 
 ## The URL contract
 
-The built page reads five query parameters. This is the whole embedding API.
+The built page reads six query parameters. This is the whole embedding API.
 
 | Parameter | Values | Effect |
 | --- | --- | --- |
@@ -122,6 +128,7 @@ The built page reads five query parameters. This is the whole embedding API.
 | `theme` | `light` \| `dark` | Sets the stage background and seeds `PlayerGui.LoomTheme`. Anything other than `light` is treated as `dark`. |
 | `background` | a CSS colour | *(`0.6.2`)* Paints the stage backdrop, overriding the one `theme` would have used and leaving the rest of the palette alone. |
 | `base` | px, or `none` / `off` / `0` | *(`0.6.4`)* The logical viewport the scene lays out against — see [Previews on a phone](/loom/guides/mobile-previews/#base-sets-the-logical-viewport). |
+| `debug` | present, or `0`/`false`/`off`/`no`/`none` for off | *(`0.10.0`)* Opens the [debug panel](/loom/guides/debug-panel/) on load. A bare `?debug` counts as on, so a host page can template a boolean straight through. |
 
 ```text title="Deep-link one scene, chromeless, light"
 /loom-preview/index.html?target=src%2Fscenes%2FCounter.loom.tsx&chrome=none&theme=light
@@ -129,6 +136,10 @@ The built page reads five query parameters. This is the whole embedding API.
 
 In chromeless mode there is no hash routing — the mount is fixed to `?target=`. In full-chrome mode
 the shell uses `#/<relPath>` and `?target=` only seeds the initial selection.
+
+`?debug=1` is the only way a debug panel appears in a `chrome=none` embed: the toggle is remembered
+per tab so an HMR reload does not close it, and an embed deliberately opts out of that memory so a
+panel never turns up unasked on somebody's docs page.
 
 ### `?background=` for a backdrop that is not either theme
 

@@ -153,6 +153,14 @@ into an inline red panel with the stack, while the sidebar stays interactive:
 Switching to another target clears the panel. A target that throws on purpose is a reasonable thing
 to keep in a gallery as a regression check for exactly this behavior.
 
+## Inspecting a target
+
+The sidebar header carries a **`debug`** button (also **Ctrl+Alt+D**, also `?debug=1`) that opens a
+panel over the stage reporting what the mounted target is actually doing — import and first-frame
+timings, the logical viewport it laid out against, the live instance tree, which typefaces really
+loaded, and a hover inspector for the scene. It is off by default and runs nothing while closed. See
+[The debug panel](/loom/guides/debug-panel/).
+
 ## Routing
 
 In full-chrome mode the shell uses hash routing: selecting a target sets `#/<relPath>`, and the hash

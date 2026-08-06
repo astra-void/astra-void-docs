@@ -1,0 +1,97 @@
+---
+title: The debug panel
+description: What a preview is actually doing — the mounted target's timings, the logical viewport, the live instance tree, which typefaces really loaded, and a stage inspector that reaches click-through frames.
+product: loom
+section: guides
+sidebar:
+  order: 28
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+A preview that renders the wrong thing rarely tells you why. The tree is a WASM layout result painted
+into a DOM that does not resemble it, so a browser inspector shows you `div`s and CSS transforms
+rather than a `Frame` with a `Size`. As of `0.10.0` every gallery carries a panel that reports the
+scene in its own terms.
+
+## Opening it
+
+Three ways, all equivalent:
+
+- the **`debug` button** in the sidebar header,
+- **Ctrl+Alt+D**,
+- **`?debug=1`** on any gallery URL.
+
+It is off by default, and while it is closed **nothing it does runs at all** — no observers, no
+timers, no tree walks. Everything it reads is read-only and outside the render path, so a scene
+behaves the same with the panel open as without it.
+
+The `?debug=` parameter takes the spellings a flag usually gets typed with: a bare `?debug` is on,
+`?debug=0`, `false`, `off`, `no` and `none` are off, and anything else present is on — so a host page
+templating the parameter can pass a boolean straight through.
+
+<Callout title="The toggle survives an HMR reload, except in an embed">
+The gallery takes a full reload on every edit, so the state is remembered for the tab — otherwise the
+panel would close behind you on each save. An embed (`chrome=none`) deliberately does *not* remember
+it: a debug panel on somebody's docs page should only ever be one the URL asked for. See
+[static builds and embedding](/loom/guides/static-builds-and-embedding/).
+</Callout>
+
+## What it reports
+
+Each section folds away and keeps reporting its one headline number while folded.
+
+**target** — the target's path and title, how long its `import()` took, and how long from the mount to
+the first frame on screen. The panel's `↻` button re-mounts the active target, which is how you take
+those timings for a target that was already up when the panel opened.
+
+**viewport** — four numbers that agree on a desktop and diverge on a phone, which is the reason all
+four are shown: the stage in real pixels, the **logical viewport the scene actually laid out
+against**, `Workspace.CurrentCamera.ViewportSize`, and the mobile scale factor with the `?base=` width
+behind it. Plus the device pixel ratio and the theme. [Mobile previews](/loom/guides/mobile-previews/)
+explains why those diverge.
+
+**scene** — live instances, how many are GuiObjects, and how many of *those* are invisible, which is
+usually the answer when a scene looks empty. Then tree depth, the DOM nodes it became, a count per
+class, and each layer with its `DisplayOrder` and size.
+
+**fonts** — every typeface the scene's text resolved to, the weights asked for, and whether the browser
+really **loaded** it or fell back to another face. A family that never arrived still paints, just at
+the wrong metrics, so this is the row that explains a layout which only differs on one machine. See
+[Fonts and text metrics](/loom/guides/fonts/).
+
+**frame** — frame rate, DOM patches committed since the panel opened, and a count of what loom logged.
+Its warnings usually explain a scene, and nobody reads the console.
+
+**inspect** — covered below.
+
+## Inspecting the stage
+
+Hover the stage and the panel names the `GuiObject` under the pointer, outlines it with its size, and
+lists its ancestry, absolute geometry, `UI*` modifiers, resolved typeface and properties — colors as
+swatches, everything else typed and colored.
+
+- **Alt+click pins** the selection so it stops following the pointer. Escape releases it.
+- The **ancestry trail** and the **under** rows — everything else the pointer is over — are clickable,
+  so the tree can be walked from the panel.
+- The hit test is the scene's own `PlayerGui:GetGuiObjectsAtPosition`, **not** the browser's. A
+  click-through frame that no browser inspector can reach is still inspectable here.
+
+## Taking a snapshot out
+
+`copy` puts the readout on the clipboard as text. `json` downloads the whole thing as a file — every
+section as data, plus the complete instance tree with each object's absolute position and size, which
+is what a bug report wants instead of a screenshot of a panel.
+
+The same object is available while the panel is open as `loomDebug.snapshot()`, so a devtools session
+or a headless harness can take one too:
+
+```js title="In the devtools console, panel open"
+copy(loomDebug.snapshot());
+```
+
+## See also
+
+- [Gallery targets](/loom/guides/gallery-targets/) — what the panel's **target** section is reporting on.
+- [Mobile previews](/loom/guides/mobile-previews/) — the logical viewport and `?base=`.
+- [Troubleshooting](/loom/guides/troubleshooting/) — symptom-first, and most entries have a row in this panel.
