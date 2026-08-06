@@ -23,13 +23,16 @@ Studio before shipping.
 | Area | Status |
 | --- | --- |
 | Scene IR + WASM layout + DOM renderer | Complete — the vertical slice all frontends share. |
-| Roblox datatypes, `Instance` model, signals, services, scheduler, Luau globals | Complete enough to run real component libraries. |
+| Roblox datatypes, `Instance` model, signals, services, scheduler | Complete enough to run real component libraries. |
+| [Luau standard library](/loom/reference/luau-globals/) | Complete as of `0.8.0` — `table`, `string`, `math`, `os`, `bit32`, `utf8`, `debug`, `buffer` and the free functions, installed before your entry. Metatables are the deliberate omission. |
 | `@rbxts/react` adapter | Complete: a custom `react-reconciler` host config driving live loom instances. |
 | Layout: list, grid, table, pages, padding, constraints, `AutomaticSize`, text measurement | Complete — every `UIGridStyleLayout` the engine has, as of `0.7.0`. |
 | Visuals: text, `UICorner`, `UIStroke`, `UIShadow`, gradients, clipping, transparency, rotation, scrolling frames | Complete. |
 | Images: every `ScaleType`, 9-slice, tiling, sprite windows, tints, `rbxassetid://` | Complete as of `0.7.0`, including asset ids in a static build — ids composed at runtime since `0.9.5`. |
-| Text: `FontFace`, `RichText` markup, wrapping, `LineHeight` and measurement | Complete. |
-| Fonts: `registerFont`, `@loom-dev/renderer/fonts` | Shipped in `0.6.4`. The host installs the engine's typefaces; unbacked families warn. |
+| Text: `FontFace`, `RichText` markup, wrapping, `LineHeight` and measurement | Complete, and calibrated against the engine as of `0.9.5` — `TextSize` as a face height, half-pixel advances, kerning, one wrap authority for measurement and paint. |
+| Fonts: the engine's typefaces, `registerFont` | The preview loads 28 of Roblox's families as of `0.9.0`, and names the rest; unbacked families warn, and since `0.9.6` a registered face that never arrived warns too. |
+| Scrolling: `ScrollingFrame`, canvas growth, scroll bars | Complete as of `0.9.3` — before it, a canvas never outgrew its window and no bar was drawn. |
+| [Debug panel](/loom/guides/debug-panel/) | As of `0.10.0` — timings, viewport, live tree, loaded typefaces, and a stage inspector. Off unless asked for. |
 | Flex: `UIListLayout` flex and `Wraps`, `UIFlexItem` | Complete. |
 | `TweenService`, `TextService`, `Debris`, bindings, `@rbxts/ripple` | Complete. |
 | Pointer and keyboard input, focus, `UserInputService` | Complete, with Roblox input-sinking semantics. |
@@ -53,9 +56,15 @@ a scaled subtree renders at 1×. (`UIFlexItem`, which used to sit in this row, i
 **`TextScaled`.** Accepted on every text class and never applied — text renders at `TextSize`
 whether or not it fits.
 
-**`Gotham`, out of the box.** Roblox's default family is proprietary and cannot be redistributed, so
-`@loom-dev/renderer/fonts` covers only the openly licensed families. A project that has the files
-registers them itself — see [Fonts and text metrics](/loom/guides/fonts/).
+**`Gotham` and `BuilderSans`, out of the box.** Roblox's default family, and the Builder faces behind
+it today, are proprietary and cannot be redistributed, so the preview loads only the openly licensed
+families. Both are still *named*, so they resolve to a stack and warn rather than drifting silently,
+and a project that has the files registers them itself — see [Fonts and text
+metrics](/loom/guides/fonts/).
+
+**Metatables.** `setmetatable` / `getmetatable` / `newproxy` are not installed. Loom runs the
+author's TypeScript, whose classes are JavaScript classes, and there is no faithful way to give a
+plain object a metatable's `__index` behaviour without proxying every table in the program.
 
 **A roblox-ts compiler transform.** The preview path deliberately skips `rbxtsc` and lets esbuild
 transpile. A standalone transform, which would let loom consume compiled output rather than source,
@@ -94,10 +103,13 @@ is still open.
   still needs a real URL, or your own `setImageResolver`.
 - **The React version is pinned in effect.** The adapter's reconciler targets React 18; the plugin
   aliases bare `react` to one absolute path to guarantee a single instance.
-- **Text metrics are the browser's.** Loom measures with canvas `measureText()`, so shaping and
-  rounding differ from the engine by a glyph here and there even with the right typeface installed.
-  Installing it is the part that matters: without it the fallback is a *different* typeface per OS,
-  and the layout moves with it.
+- **Text metrics are the browser's, corrected toward the engine's.** Loom measures with canvas
+  `measureText()`, so shaping and hinting are not Roblox's. Three things narrow the gap: the preview
+  loads the right typeface itself as of `0.9.0`, `TextSize` is divided by the face box rather than
+  spent as a `font-size` as of `0.9.3`, and advances are quantized to the half pixel and kerned the
+  way the engine spends them as of `0.9.4`–`0.9.5`. Against `GetTextBoundsAsync` at 50 widths, the
+  wrapped line count now matches 49 times; what is left is a measurement about a percent roomy, so
+  text wraps a hair early rather than overflowing. [The detail](/loom/guides/fonts/#where-a-line-breaks).
 
 ## Versioning
 
