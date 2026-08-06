@@ -12,6 +12,19 @@ const currentTheme = () =>
   document.documentElement.classList.contains("dark") ? "dark" : "light"
 
 /**
+ * The target this frame should be showing right now.
+ *
+ * Most previews have one target and follow the theme at runtime. A Facet
+ * preview cannot: Vela resolves its colors at compile time, so light and dark
+ * are two different builds of the scene and `data-src-light` names the other
+ * one. Switching those frames is a reload, not a message.
+ */
+const srcFor = (frame: HTMLIFrameElement) =>
+  currentTheme() === "light" && frame.dataset.srcLight
+    ? frame.dataset.srcLight
+    : frame.dataset.src
+
+/**
  * Point every not-yet-loaded frame at its target once it approaches the
  * viewport, and wire the tab strip of each preview figure.
  */
@@ -21,7 +34,7 @@ export function mountLoomFrames() {
   )
 
   const load = (frame: HTMLIFrameElement) => {
-    const src = frame.dataset.src
+    const src = srcFor(frame)
     if (!src || frame.dataset.loaded) return
     frame.src = `${src}&theme=${currentTheme()}`
     frame.dataset.loaded = "true"
@@ -81,6 +94,16 @@ export function watchLoomTheme() {
     for (const frame of document.querySelectorAll<HTMLIFrameElement>(
       "[data-loom-frame][data-loaded]",
     )) {
+      // A frame with a second target is a compile-time-themed one: the running
+      // scene has no way to repaint itself, so point it at the other build.
+      if (frame.dataset.srcLight) {
+        const next = `${srcFor(frame)}&theme=${theme}`
+        if (frame.src !== next) {
+          frame.src = next
+        }
+        continue
+      }
+
       frame.contentWindow?.postMessage({ type: "loom-theme", theme }, "*")
     }
   })

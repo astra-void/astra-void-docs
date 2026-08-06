@@ -25,6 +25,16 @@ const links = [
     name: "lattice-ui",
     source: process.env.LATTICE_REPO ?? resolve(workspace, "rojo/lattice-ui"),
   },
+  // Facet's registry components are never published to npm — they are text on a
+  // static registry that its CLI copies into a project — so the only way to
+  // render one is to read it out of the repo, the same way lattice's scenes are
+  // read out of theirs. Nothing in the checkout has to be installed: the
+  // registry sources import only `@lattice-ui/*` and `@facet-ui/react-variants`,
+  // and both are supplied as Loom shims.
+  {
+    name: "facet",
+    source: process.env.FACET_REPO ?? resolve(workspace, "typescript/facet"),
+  },
 ]
 
 mkdirSync(previewSrc, { recursive: true })

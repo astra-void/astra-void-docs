@@ -1,5 +1,6 @@
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
+import facetPreview from "./src/integrations/facet-preview";
 import loomPreview from "./src/integrations/loom-preview";
 import velaPreview from "./src/integrations/vela-preview";
 import astroExpressiveCode from "astro-expressive-code";
@@ -40,6 +41,10 @@ export default defineConfig({
     // Lowers the Vela examples in preview/vela/ with the real compiler and
     // serves the result as a second gallery (dist/vela-preview/ after a build).
     velaPreview(),
+    // Lowers the Facet registry components out of the .preview-src/facet
+    // checkout, once per theme mode, and serves the scenes in preview/facet/
+    // against them as a third gallery (dist/facet-preview/ after a build).
+    facetPreview(),
   ],
   vite: {
     resolve: {

@@ -16,3 +16,7 @@ digest.txt
 # Generated gallery root: the Vela examples in preview/vela/ after the
 # compiler has lowered them (see src/integrations/vela-preview.ts).
 .vela-preview
+
+# Generated gallery root: the Facet registry components and the scenes in
+# preview/facet/, lowered once per theme mode (src/integrations/facet-preview.ts).
+.facet-preview

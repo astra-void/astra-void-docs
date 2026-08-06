@@ -40,6 +40,17 @@ jobs:
           repository: astra-void/lattice-ui
           path: .preview-src/lattice-ui
 
+      # Facet's registry components are never published to npm — they are text
+      # on a static registry its CLI copies into a project — so the Facet
+      # previews are rendered straight out of the repo. Nothing here is
+      # installed: the registry sources import only `@lattice-ui/*` and
+      # `@facet-ui/react-variants`, and both reach Loom as shims.
+      - name: Checkout facet
+        uses: actions/checkout@v7
+        with:
+          repository: astra-void/facet
+          path: .preview-src/facet
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 

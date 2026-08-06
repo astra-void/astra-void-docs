@@ -1,0 +1,162 @@
+---
+/**
+ * Embeds a live preview of a Facet component, plus the two sources behind it.
+ *
+ * What the frame renders is the real registry component out of the Facet
+ * checkout, lowered by the real Vela compiler against the real
+ * `@facet-ui/theme` tokens — not a hand-written web imitation. The two tabs are
+ * the two halves a reader needs: how the component is *used*, and the source
+ * `facet add` would drop into their project.
+ *
+ * Facet resolves colors at compile time, so a theme toggle cannot repaint a
+ * preview: the integration lowers every scene twice and the frame is pointed at
+ * the other build instead. That is why this passes two `data-src`s — see
+ * src/lib/loom-frame.ts, which does the swap.
+ */
+import { Code } from "astro-expressive-code/components"
+import {
+  compileFacetScene,
+  facetSceneTarget,
+  getFacetCheckout,
+  readRegistrySource,
+  stripFacetBoilerplate,
+} from "@/lib/facet-source"
+
+interface Props {
+  /** Scene name, e.g. "ButtonScene" (the file is `<scene>.facet.tsx`). */
+  scene: string
+  /** Registry path whose source backs it, e.g. "ui/button.tsx". */
+  source?: string
+  /** Iframe height in px. Match it to the scene's own stage height plus room. */
+  height?: number
+  /** Short caption under the frame. */
+  label?: string
+}
+
+const {
+  scene,
+  source: registryPath,
+  height = 200,
+  label,
+} = Astro.props as Props
+
+const built = compileFacetScene(scene, "dark")
+const hasCheckout = Boolean(getFacetCheckout())
+
+const frameSrc = (mode: "dark" | "light") =>
+  `${import.meta.env.BASE_URL}facet-preview/index.html?target=${encodeURIComponent(
+    facetSceneTarget(scene, mode),
+  )}&chrome=none`
+
+// The usage tab drops the gallery harness — the stage import and the `preview`
+// export — so it reads as the markup someone would actually write. The import
+// path is left exactly as the scene has it, because `../ui/button` is what a
+// project that ran `facet add` with the default config really writes.
+const usage = built ? stripFacetBoilerplate(built.source) : undefined
+const registrySource = registryPath ? readRegistrySource(registryPath) : undefined
+const registryTitle = registryPath
+  ? `src/shared/${registryPath}`
+  : undefined
+---
+
+{hasCheckout ? (
+  <figure class="not-prose my-6" data-loom-preview>
+    <div class="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+      <div class="flex items-center justify-between border-b border-border bg-muted/40 px-2 py-1.5">
+        <div class="flex items-center gap-1" role="tablist">
+          <button
+            aria-selected="true"
+            class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+            data-active="true"
+            data-loom-tab="preview"
+            role="tab"
+            type="button"
+          >
+            Preview
+          </button>
+          {usage ? (
+            <button
+              aria-selected="false"
+              class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+              data-active="false"
+              data-loom-tab="code"
+              role="tab"
+              type="button"
+            >
+              Usage
+            </button>
+          ) : null}
+          {registrySource ? (
+            <button
+              aria-selected="false"
+              class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+              data-active="false"
+              data-loom-tab="output"
+              role="tab"
+              type="button"
+            >
+              Source
+            </button>
+          ) : null}
+        </div>
+        <span class="hidden px-1 font-mono text-[0.7rem] text-muted-foreground/70 sm:inline">
+          Roblox UI · Lattice + Vela
+        </span>
+      </div>
+      <div data-loom-panel="preview">
+        <iframe
+          class="block w-full bg-white dark:bg-[#09090b]"
+          data-loom-frame
+          data-src={frameSrc("dark")}
+          data-src-light={frameSrc("light")}
+          height={height}
+          loading="lazy"
+          style={`height:${height}px`}
+          title={`Live preview of ${scene}`}
+        >
+        </iframe>
+      </div>
+      {usage ? (
+        <div class="loom-code max-h-96 overflow-auto" data-loom-panel="code" hidden>
+          <Code code={usage} lang="tsx" title="src/client/App.tsx" />
+        </div>
+      ) : null}
+      {registrySource ? (
+        <div class="loom-code max-h-96 overflow-auto" data-loom-panel="output" hidden>
+          <Code code={registrySource} lang="tsx" title={registryTitle} />
+        </div>
+      ) : null}
+    </div>
+    {label ? (
+      <figcaption class="mt-2 text-center text-sm text-muted-foreground">
+        {label}
+      </figcaption>
+    ) : null}
+  </figure>
+) : (
+  <div class="not-prose my-6 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+    Live preview unavailable — this build had no Facet checkout at
+    <code class="mx-1 font-mono text-xs text-foreground">.preview-src/facet</code>.
+  </div>
+)}
+
+<style>
+  /* The embedded expressive-code block should sit flush inside the card. */
+  .loom-code :global(.expressive-code) {
+    margin: 0;
+  }
+  .loom-code :global(.expressive-code .frame) {
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+  }
+</style>
+
+<script>
+  // Shared with LoomPreview and VelaPreview — the same kind of frame.
+  import { mountLoomFrames, watchLoomTheme } from "@/lib/loom-frame"
+
+  mountLoomFrames()
+  watchLoomTheme()
+  document.addEventListener("astro:after-swap", mountLoomFrames)
+</script>

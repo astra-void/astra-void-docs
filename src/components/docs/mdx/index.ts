@@ -1,4 +1,5 @@
 export { default as Callout } from "./Callout.astro";
+export { default as FacetPreview } from "./FacetPreview.astro";
 export { default as ForwardedProps } from "./ForwardedProps.astro";
 export { default as LoomPreview } from "./LoomPreview.astro";
 export { default as PackageMeta } from "./PackageMeta.astro";
