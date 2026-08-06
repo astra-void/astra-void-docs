@@ -13,7 +13,7 @@ import { Callout } from "@/components/docs/mdx";
 level. This page answers "does `AutomaticCanvasSize` work?" at the property level, so you know
 exactly how far a preview can be trusted before you open Studio.
 
-Everything below describes loom `0.7.0`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
+Everything below describes loom `0.10.0`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
 `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
 
 ## How to read this
@@ -28,6 +28,15 @@ Everything below describes loom `0.7.0`: the JSX intrinsics in `@loom-dev/react`
 **Accepted** is the row that costs you time, so it is spelled out rather than omitted. Those props
 exist so real component code — which sets them for the Roblox build — runs under the preview without
 edits.
+
+<Callout title="An enum prop can be written as a bare string">
+The engine takes the string wherever it takes the item — `AutomaticSize="XY"` *is*
+`Enum.AutomaticSize.XY`, and roblox-ts's own React typings offer both spellings. Loom reads either,
+everywhere, as of `0.9.1`. Before that release the Scene IR encoded a string happily but every place
+the adapters read one *back* off an instance insisted on an `EnumItem`: a label written
+`AutomaticSize="XY"` was auto-sized by the layout and measured by nobody, so it collapsed to zero and
+spilled its text. `FontSize` written as a string was ignored the same way.
+</Callout>
 
 ## Instances
 
@@ -83,12 +92,12 @@ Shared by every visual class.
 
 | Property | Status | Notes |
 | --- | --- | --- |
-| `Text` `TextColor3` `TextSize` `TextTransparency` | Supported | |
+| `Text` `TextColor3` `TextSize` `TextTransparency` | Supported | A newline in `Text` breaks the line and a run of spaces stays a run of spaces, as in Roblox — since `0.9.3`, when the paint stopped folding both away through HTML's defaults. |
 | `TextXAlignment` `TextYAlignment` | Supported | |
 | `TextWrapped` | Supported | `white-space: normal` vs `nowrap`, and applied during measurement — see [below](#automaticsize-on-text). The deprecated `TextWrap` alias reads as the same property and is declared on the props type as of `0.6.3`. |
-| `LineHeight` | Supported | The multiplier, clamped to the 1…3 Studio allows and spent *between* lines: `n` lines measure `TextSize + (n - 1) * TextSize * LineHeight`, so a one-line label is exactly `TextSize` tall however high its `LineHeight`. CSS's own leading is cropped off the two outer edges so the paint lands where `AutomaticSize` measured it. |
+| `LineHeight` | Supported | The multiplier, clamped to the 1…3 Studio allows and spent *between* lines: `n` lines measure `TextSize + (n - 1) * TextSize * LineHeight`, so a one-line label is exactly `TextSize` tall however high its `LineHeight`. The browser's taller line boxes are handled by the clip rect rather than by cropping the glyphs — see [below](#textsize-is-a-face-height-not-a-font-size). |
 | `FontFace` | Supported | `new Font(family, weight, style)` resolved to a CSS family/weight/slant, including for text measurement. Preferred over the legacy `Font` enum when both are set. |
-| `Font` | Partial | The legacy enum, mapped to a family by name prefix — `Gotham*`, `SourceSans*`, `Roboto*`, `RobotoMono*`, `Inconsolata`, `Arial`, `Code` — with the weight read off the name suffix. What that family *resolves to* is the host's to install: see [Fonts and text metrics](/loom/guides/fonts/). Unregistered, it falls back to a system stack and loom warns once per family. |
+| `Font` | Supported | The legacy enum — all 53 items in the engine's own order as of `0.9.0` — mapped to a family by name prefix, with the weight read off the name suffix. 28 families load a real face; the eight the engine licenses privately (`Gotham`, `BuilderSans`, `Bodoni`, …) resolve to a stack and warn. See [Fonts and text metrics](/loom/guides/fonts/). |
 | `FontSize` | Supported | The legacy `Enum.FontSize` — the pixel size is read out of the enum name, so `Size24` paints and measures at 24px. `TextSize` wins when both are set, as in Roblox. |
 | `RichText` | Supported | `<b>`, `<i>`, `<u>`, `<s>`, `<br/>`, `<font>` (colour, size, face, family, weight, transparency), `<uppercase>` / `<smallcaps>` and the character entities. With the flag off — or on a tag the engine would not recognise either — the markup stays literal, as in Roblox. Measurement uses each run's own font. |
 | `TextScaled` | **Accepted** | Never applied. Text renders at `TextSize` whether or not it fits its box. |
@@ -102,7 +111,14 @@ metrics do not exist inside the engine. Which typeface that is, and why it is wo
 [Fonts and text metrics](/loom/guides/fonts/).
 
 `TextWrapped` is honored: the runs are laid into lines at word boundaries rather than measured as one
-long line. **The wrap width is the nearest ancestor that has a width of its own**, less every
+long line. Since `0.9.5` **one function decides every wrap** — measurement asks it how many lines a
+label needs, and the text layer asks it where to put the breaks it paints. Before that the box came
+from the measurer while the glyphs inside it were left to CSS, which wraps on its own kerned run
+widths, so a label could reserve nine lines and paint eight, breaking at different words than Studio.
+The advances behind it are the engine's: half-pixel per grapheme since `0.9.4`, plus the run's kerning
+since `0.9.5`.
+
+**The wrap width is the nearest ancestor that has a width of its own**, less every
 `UIPadding` in between — not the immediate parent. A parent that is itself `AutomaticSize` was sized
 *by* the label, so wrapping against it is the same circle as wrapping against the label's own width,
 and the text never wraps at all. The library idiom stacks two or three such containers (a padded body
@@ -123,6 +139,36 @@ Both adapters do this. The `vide` adapter measured by splitting on newlines only
 `TextWrapped` did nothing there and the same scene laid out differently through vide than through
 react — the one thing a shared Scene IR is supposed to rule out.
 
+The wrap width also carries the `UIPadding` insets in between, **including scale ones**: the layout
+engine resolves a scale inset against the node's own width where its X axis is a real one, and
+against zero where the axis is automatic (a scale inset on an automatic axis is circular — the width
+sets the padding sets the width). Until `0.8.1` the adapter read offsets only, which is the right
+answer for the automatic case and wrong for the other, so a wrapped label under a
+`PaddingLeft={new UDim(0.15, 0)}` ancestor was measured against a width that ignored the inset and
+came out with a box built for fewer lines than it was then painted with.
+
+### `TextSize` is a face height, not a font size
+
+`TextSize` means different things to the two renderers. Roblox fits the whole face into it —
+ascender to descender, which is why one line measures exactly that tall — while CSS `font-size` sets
+the em square, and a face's ascent plus descent runs well past 1em.
+
+Until `0.9.3` loom painted `font-size: TextSize` straight through, so every glyph came out too big by
+its own face's ratio: 17% for Roboto, 25% for Merriweather, 47% for Oswald. Text then measured that
+much wider, wrapped that much earlier, and `AutomaticSize` boxes came out taller and wider than the
+engine's. Loom now divides by the face box, and `LineHeight` sets the line box in pixels off
+`TextSize` because the pitch the engine spends is `TextSize`-relative rather than font-size relative.
+Which ratio to divide by is itself calibrated per family — see
+[`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
+
+Until `0.8.1` the text overlay was also clipped to the box the layout computed, so the browser's
+taller line boxes had nowhere to go and the clip took the difference out of the glyphs — a
+paragraph's last line lost the tails of its `y`, `p` and `g`, and at a large `TextSize` the first line
+lost the tops of its ascenders. The clip rect carries that overhang now, with padding handing the
+content box its original height straight back. Nothing about the layout moves: `TextBounds`,
+`AbsoluteSize` and every rect around the label are the values they were, and a label still clips its
+own text at its left and right edges.
+
 ### `AutomaticSize` is bounded by the parent
 
 Roblox bounds automatic growth: an object with `AutomaticSize` on an axis grows up to the maximum
@@ -136,6 +182,12 @@ between. `Size` remains the floor even when it is itself past that ceiling, and 
 `UIListLayout` on an automatic fill axis wraps against the same ceiling rather than measuring as one
 run. Content that still does not fit **overflows**, which is what the engine does — it does not widen
 the object to make room.
+
+**A `ScrollingFrame` is the exception**, since `0.9.3`. A canvas free to grow is one whose entire
+point is outgrowing the window, so children of a `ScrollingFrame` get no ceiling on an axis carrying
+`AutomaticCanvasSize` or a `CanvasSize` of 0. A `CanvasSize` that gives the axis a real extent is
+still the ceiling it always was. Before that release the ceiling applied here too, so the canvas came
+out exactly the window's size and nothing ever scrolled.
 
 ## Image properties
 
@@ -194,9 +246,25 @@ is still missed. Anywhere else, install your own resolver with `setImageResolver
 | `CanvasSize` | Supported | Children lay out against the canvas, not the window. |
 | `CanvasPosition` | Supported | Applied as the DOM scroll offset by the renderer, not by the layout engine. |
 | `AutomaticCanvasSize` | Supported | `X` / `Y` / `XY`. The affected axis grows to the union bounding box of the frame's **direct** children, then `max()`ed with the resolved `CanvasSize`. |
-| `ScrollingDirection` `ScrollingEnabled` | Supported | |
-| `ScrollBarThickness` | **Accepted** | Loom draws no native scrollbar, so `AbsoluteWindowSize` is the full rect — never reduced by the bar. A layout that budgets for the scrollbar will be that many pixels wider here than in Studio. |
-| `ScrollBarImageTransparency` | **Accepted** | Nothing to make transparent. |
+| `ScrollingDirection` `ScrollingEnabled` | Supported | Decide which axes can scroll, and therefore which bars can appear. |
+| `ScrollBarThickness` | Supported | The bar's width, default `12`. A thickness of `0` shows no bar, as in Roblox. |
+| `ScrollBarImageColor3` | Supported | Tints the thumb. Untinted, loom draws the engine's grey rather than the property's own white default — the engine tints grey sprites loom does not fetch, and a white bar would be invisible on most surfaces. |
+| `ScrollBarImageTransparency` | **Accepted** | The thumb is drawn opaque. |
+| `VerticalScrollBarInset` `HorizontalScrollBarInset` | **Accepted** | The bar is always painted *over* the canvas — Roblox's `ScrollBarInset.None`, which is also the engine's default. `AbsoluteWindowSize` reserves nothing for it, so a layout that budgets for an inset bar comes out that many pixels wider here than in Studio. |
+
+<Callout title="Scrolling only started working in `0.9.3`">
+A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, and
+loom capped every child's automatic growth at its parent's box — right for a `45%` column, wrong for
+a canvas, where outgrowing the window is the whole point. The column came out exactly the window's
+height, so the canvas equalled the window, nothing overflowed and nothing scrolled. And with no bar
+drawn, a frame that *did* have something to scroll looked like a static clipped box.
+
+A `ScrollingFrame` now leaves its children no ceiling on an axis whose canvas is free to grow —
+`AutomaticCanvasSize`, or a `CanvasSize` of 0 on that axis. A `CanvasSize` that gives the axis a real
+extent is still the ceiling it always was. The bar is drawn from the same window/canvas math the
+adapters feed back as `AbsoluteWindowSize`/`AbsoluteCanvasSize`, so it cannot disagree with the
+numbers a component sized itself against.
+</Callout>
 
 <Callout title="AutomaticSize plus an explicit CanvasSize">
 `AutomaticSize` on a `ScrollingFrame` that also sets `CanvasSize` is explicitly deferred in the
@@ -212,7 +280,7 @@ layout engine. The combination will not error; it will not size the way Studio d
 | `uitablelayout` | `MajorAxis`, `Padding`, `FillEmptySpaceColumns`, `FillEmptySpaceRows`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | See [`UITableLayout`](#uitablelayout). |
 | `uipagelayout` | `FillDirection`, `Padding`, `Circular`, `HorizontalAlignment`, `VerticalAlignment`, `SortOrder` | `Animated`, `TweenTime`, `EasingStyle`, `EasingDirection` and the gamepad/touch/scroll input flags are **accepted**: a preview shows the settled layout, so page changes are instant. See [`UIPageLayout`](#uipagelayout). |
 | `uiflexitem` | `FlexMode` (`Grow` / `Fill` / `Custom`), `GrowRatio` | — |
-| `uipadding` | `PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight` | Scale padding on an `AutomaticSize` axis is treated as **offset-only**, so measurement and placement agree. |
+| `uipadding` | `PaddingTop`, `PaddingBottom`, `PaddingLeft`, `PaddingRight` | A scale inset resolves against the node's own size on a real axis, and against **zero** on an `AutomaticSize` axis — where it would be circular. Text measurement asks the same question as of `0.8.1`. |
 | `uisizeconstraint` | `MinSize`, `MaxSize` | — |
 | `uiaspectratioconstraint` | `AspectRatio`, `DominantAxis` | `AspectType` — `ScaleWithParentSize` is deferred. |
 | `uicorner` | `CornerRadius`, `TopLeftRadius`, `TopRightRadius`, `BottomLeftRadius`, `BottomRightRadius` | Each per-corner radius overrides `CornerRadius` for its own corner — that is how a card rounds only its top while its footer rounds only its bottom. The `UIStroke` ring and the `UIShadow` are box-shadows, so they follow the radius for free. |
@@ -306,7 +374,7 @@ click-through so a transparent positioning layer does not swallow clicks.
 
 ## What this list is not
 
-It is a description of loom `0.7.0`, not a compatibility promise. The project is pre-1.0 and rows
+It is a description of loom `0.10.0`, not a compatibility promise. The project is pre-1.0 and rows
 move — an **Accepted** here is a gap someone can close without a breaking change. When a preview and
 Studio disagree and the property is not on this page, treat Studio as correct and
 [file it](https://github.com/astra-void/loom/issues).
