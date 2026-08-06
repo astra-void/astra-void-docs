@@ -1,6 +1,6 @@
 ---
 title: Diagnostics
-description: Every diagnostic code Vela can emit at 0.5.2, how it reaches your build or editor, and the caveats that make some of them easy to miss.
+description: Every diagnostic code Vela can emit at 0.10.0, how it reaches your build or editor, and the caveats that make some of them easy to miss.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -63,15 +63,15 @@ Every code is a warning unless marked otherwise.
 |---|---|
 | `unsupported-utility-family` | The token does not match any known utility family — including typos |
 | `no-roblox-equivalent` | A real Tailwind family that cannot be expressed in Roblox UI (`tracking-*`, `blur-*`, `cursor-*`, …); the message names the family |
-| `unknown-variant` | A colon prefix that is not one of the nine variants; the message lists the supported set |
-| `unsupported-arbitrary-value` | A `[...]` payload on a theme-backed utility — `p-[12px]`, `rounded-[8]`, `border-[3]` (non-hex color brackets land here too) |
+| `unknown-variant` | A colon prefix that is not one of the twelve variants; the message lists the supported set |
+| `unsupported-arbitrary-value` | A `[...]` payload the family cannot read — `w-[abc]`, `bg-[notacolor]`, `font-[600]`. Since 0.7.0 most length families *do* read brackets; see [arbitrary values](/vela-rbxts/reference/utilities/#arbitrary-values) |
 | `unsupported-opacity-modifier` | A `/N` opacity modifier on a family with no transparency channel |
 
 ### Theme and color
 
 | Code | Fires when |
 |---|---|
-| `unknown-theme-key` | A color, radius, or spacing key is absent from the theme |
+| `unknown-theme-key` | A color, radius, spacing, or font-family key is absent from the theme |
 | `unsupported-color-key` | `current` or `inherit`, or `transparent` on a property with no transparency channel |
 | `color-missing-shade` | A palette family referenced without a shade, and that palette has no `DEFAULT` |
 | `color-invalid-shade` | A literal given a shade, or a palette missing that shade |
@@ -100,7 +100,7 @@ which family rejected what:
 | `unsupported-divide-value` | An unresolvable `divide-*` payload |
 | `unsupported-line-height-value` | A `leading-*` outside the six named keys |
 | `unsupported-text-size` | A `text-{size}` that cannot be resolved (not reachable in practice) |
-| `unsupported-font-weight` | `font-{x}` is not a known weight name |
+| `unsupported-font-weight` | `font-{x}` is not a known weight name (not reachable since 0.7.0 — see below) |
 | `unsupported-text-alignment` | `text-justify`, or an `align-*` outside top/middle/bottom |
 | `unsupported-whitespace-value` | A `whitespace-*` outside `normal`/`nowrap` |
 | `unsupported-gradient-direction` | `bg-gradient-to-{x}` with a direction outside the eight |
@@ -110,12 +110,27 @@ which family rejected what:
 | `unsupported-object-fit-value` | An `object-*` outside `cover`/`contain`/`fill`/`tile` |
 | `unsupported-pointer-events-value` | A `pointer-events-*` outside `none`/`auto` |
 | `unsupported-overscroll-value` | An `overscroll-*` outside `auto`/`contain`/`none` |
-| `unsupported-transition-value` | An unresolvable transition/duration/delay/ease payload |
+| `unsupported-scroll-value` | A `scroll-*` outside `x`/`y`/`xy`/`none` — which is where Tailwind's `scroll-smooth` and `scroll-m-*` land |
+| `unsupported-transition-value` | An unresolvable transition/duration/delay/ease payload, including `transition-shadow` |
 | `unsupported-animation-value` | An `animate-*` outside the presets |
 
 Z-index gets four codes of its own, so the message tells you exactly what went wrong: `z-auto` is
-`unsupported-z-index-auto`, a negative `-z-N` is `unsupported-negative-z-index`, `z-[N]` is
-`unsupported-arbitrary-z-index`, and any other number is `unsupported-z-index-value`.
+`unsupported-z-index-auto`, a negative `-z-N` or `-z-[N]` is `unsupported-negative-z-index`, a
+fractional `z-[1.5]` is `unsupported-arbitrary-z-index`, and any other unbracketed number is
+`unsupported-z-index-value`. A whole-number `z-[15]` resolves.
+
+**`font-*` now falls through to `unknown-theme-key`.** Since 0.7.0 the prefix resolves the fixed
+weight names first and reads anything else as a key in
+[`theme.fontFamily`](/vela-rbxts/reference/config/#fontfamily), so an unrecognized payload is a
+missing theme key rather than a bad weight: `font-nope`, `font-600` and `font-extrablack` all report
+`unknown-theme-key` in the `fontFamily` family. `unsupported-font-weight` still exists in the code
+table but no payload reaches it.
+
+`unsupported-scroll-value` and the `transition-shadow` case of `unsupported-transition-value` both
+arrived in 0.7.0 with the [scrolling families](/vela-rbxts/reference/utilities/#scrolling) and the
+[transition property filters](/vela-rbxts/reference/utilities/#motion). Before that, Tailwind's
+`scroll-*` reported the generic `no-roblox-equivalent` and `transition-shadow` was silently accepted
+as `transition-all`.
 
 ### Contextual warnings
 
@@ -165,12 +180,17 @@ only see it when you compile.
 
 `unsupported-host-utility` never appears in a build. The per-element restrictions it reports —
 text properties only on `textlabel`/`textbutton`/`textbox`, `image-*` and `object-*` only on
-`imagelabel`/`imagebutton`, `placeholder-*` only on `textbox`, `overscroll-*` only on
-`scrollingframe` — are checked by the editor surface alone. The transform pipeline never consults
-them, so `<frame className="text-red-500" />` compiles and emits a `TextColor3` assignment on a
-Frame with no complaint at all. Treat this one as a lint rule you only get in the editor. It is also
-never raised on a component: the host element behind `<Panel />` is unknown, so every utility is
-allowed inside its `className`.
+`imagelabel`/`imagebutton`, `placeholder-*` only on `textbox`, `overscroll-*` and the scrolling
+families only on `scrollingframe` — are checked by the editor surface alone. The transform pipeline
+never consults them, so `<frame className="text-red-500" />` compiles and emits a `TextColor3`
+assignment on a Frame with no complaint at all. Treat this one as a lint rule you only get in the
+editor. It is also never raised on a component: the host element behind `<Panel />` is unknown, so
+every utility is allowed inside its `className`.
+
+Since 0.8.0 the **runtime path** does enforce the rule, silently: a utility the host element cannot
+carry is dropped rather than written, because the assignment would be a hard Roblox error. So the
+same class list can behave differently on the two paths — statically it emits an invalid property,
+dynamically it emits nothing. Neither reports anything at build time.
 
 ## The ones you will actually hit
 

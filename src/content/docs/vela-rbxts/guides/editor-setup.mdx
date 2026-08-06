@@ -13,7 +13,7 @@ Vela ships a language server, `vela-rbxts-lsp`, and a VS Code extension that dri
 
 ## VS Code
 
-Install **Vela LSP** from the marketplace, id `astra-void.vela-rbxts-lsp`, published by `astra-void`. It requires VS Code `^1.90.0`.
+Install **Vela LSP** from the marketplace, id `astra-void.vela-rbxts-lsp`, published by `astra-void`. It requires VS Code `^1.91.0` — raised from `1.90` in 0.4.2, when the client moved to `vscode-languageclient` 10.
 
 The extension activates on TypeScript and TypeScript React documents and attaches to `file:`-scheme documents in those two languages. There is nothing to enable per project — open a `.tsx` file and the server starts.
 
@@ -51,11 +51,44 @@ The declared capability set is small and deliberate.
 
 **Document colors and color presentations.** Color utilities get a swatch in the gutter and can be edited through the editor's color picker.
 
-**Code actions.** Quickfix only, driven by diagnostics whose source is `vela-rbxts`. Each diagnostic offers up to three ranked replacement suggestions plus a "remove token" action.
+**Code actions.** Two kinds. Quickfixes are driven by diagnostics whose source is `vela-rbxts` — each offers up to three ranked replacement suggestions plus a "remove token" action. Since 0.7.0 there is also a **source action**, `source.sortVelaClasses`, described below.
 
 **Document highlight.** Highlights other occurrences of the token under the cursor.
 
 That is the complete list. The server does **not** provide go-to-definition, references, rename, formatting, semantic tokens, inlay hints, or signature help. Those requests are not advertised, so your editor falls back to its TypeScript language service for them, which is the correct behavior — Vela only understands the inside of `className`.
+
+### Sorting class names
+
+The compiler exposes a canonical class order, and the server offers it as the source action
+`source.sortVelaClasses`. It rewrites every `className` in the document at once — layout first, then
+sizing, spacing, colors, radius, typography, with variant-prefixed tokens last:
+
+```tsx title="before"
+<frame className="text-lg bg-blue-600 flex p-4 hover:bg-blue-700 rounded-lg w-full" />
+```
+
+```tsx title="after"
+<frame className="flex w-full p-4 bg-blue-600 rounded-lg text-lg hover:bg-blue-700" />
+```
+
+**The sort never changes what your classes do.** Utilities that can write the same Roblox property
+are treated as one group and keep their relative order within it, so a `px-4` written after `p-2` — a
+collision the later token wins — stays after it.
+
+Run it from the editor's source-action menu, or on save:
+
+```json title=".vscode/settings.json"
+{
+  "editor.codeActionsOnSave": {
+    "source.sortVelaClasses": "explicit"
+  }
+}
+```
+
+Any LSP client that supports source actions can invoke it by that kind. The underlying API is
+`sortClassNames` on `@vela-rbxts/compiler`, which takes `{ source, fileName }` and returns
+`{ edits: [{ range: { start, end }, text }] }` — the same offsets the server turns into workspace
+edits, if you would rather run the sort in your own tooling.
 
 Text synchronization is incremental and the position encoding is UTF-16.
 

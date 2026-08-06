@@ -133,11 +133,31 @@ This is the tool to reach for where CSS would use `flex-row-reverse`.
 vertically. There are no spans — `col-span-*` and `row-span-*` have no `UIGridLayout` counterpart
 and report `no-roblox-equivalent`.
 
+**The grid is the one layout that sizes its own children.** `UIGridLayout` stamps `CellSize` onto
+every child and ignores whatever `Size` the child set for itself, so a `w-*` on a cell does nothing
+— the track count decides the width. Since 0.6.0 `grid-cols-N` divides the axis it fills into N
+tracks and gives each cell back its share of the gap:
+
+```tsx title="grid grid-cols-2 gap-2.5"
+<uigridlayout FillDirectionMaxCells={2} CellSize={new UDim2(0.5, -5, 0, 100)} CellPadding={UDim2.fromOffset(10, 10)} />
+```
+
+The cross axis is not implied by a column count, so it stays at Roblox's 100px default until you name
+it with `auto-rows-*` (or `auto-cols-*` under `grid-rows-*`). Both read the spacing scale, so
+`auto-rows-24` is a 96px row.
+
+<Callout title="Before 0.6.0, grid cells were unusable">
+`grid-cols-*` set only `FillDirection`, `FillDirectionMaxCells` and `CellPadding`, so every cell fell
+back to the engine's 100×100 default — a `grid-cols-2` of 430px cards collapsed into 100px squares
+whose content spilled across the neighbouring track. If you built a grid against that behavior and
+compensated for it, re-check the layout after upgrading.
+</Callout>
+
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, which is the right target — but as of
-0.5.2 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
-instances fighting over the children. Until the fix ships, add the `UIGridLayout` yourself when you
-need cell padding.
+0.10.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+instances fighting over the children. Until the fix ships, set `CellPadding` as a prop on the grid
+element and leave `gap-*` off it.
 </Callout>
 
 ## Padding and `UIPadding`
@@ -253,8 +273,9 @@ are zero:
 // Size = UDim2.fromOffset(160, 32)
 ```
 
-`w-` and `h-` on the same element always merge into one `Size`. That merge is a property of the
-static path; the runtime path behaves differently, which is covered in
+`w-` and `h-` on the same element always merge into one `Size`, on both lowering paths. The runtime
+path used to state a whole `UDim2` per token and zero the axis it did not name — fixed for dynamic
+class values in 0.5.2 and for variant rules in 0.6.0, so `md:w-32 md:h-32` keeps both axes now. See
 [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
 
 ## Min and max size

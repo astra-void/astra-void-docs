@@ -1,6 +1,6 @@
 ---
 title: Theming
-description: How the Vela theme works — three families of roblox-ts expression strings, the extend-versus-replace merge rules, and what ships by default.
+description: How the Vela theme works — four axes of roblox-ts expression strings, the extend-versus-replace merge rules, and what ships by default.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -10,7 +10,7 @@ draft: false
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-A Vela theme has exactly three families: `colors`, `radius`, and `spacing`. There is nothing else. No `content`, no `plugins`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them.
+A Vela theme has exactly four axes: `colors`, `radius`, `spacing`, and — since 0.7.0 — `fontFamily`. There is nothing else in `theme`. No `content`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them. (`plugins` does exist since 0.7.0, but it sits beside `theme` rather than inside it; see [the config reference](/vela-rbxts/reference/config/#plugins).)
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -77,7 +77,7 @@ The config file itself is discovered by walking up from the source file being co
 
 ## Extend merges, top-level replaces
 
-Each of the three families can be set in two places, and the two places mean different things.
+Each of the four axes can be set in two places, and the two places mean different things.
 
 `theme.extend.X` merges over the built-in defaults. Your keys win on collision, everything else you did not mention survives.
 
@@ -88,7 +88,7 @@ For colors the merge is deeper than a key swap: `extend` merges family by family
 <Callout title="theme.colors silently discards theme.extend.colors">
 When a top-level `theme.colors` is present, `theme.extend.colors` is **thrown away without a warning.** The resolved theme contains only what you put in `theme.colors`.
 
-This is not how real Tailwind behaves — there, `extend` is applied on top of a replaced `colors`. In Vela it is not. The same trap applies to `radius` and `spacing`: a top-level entry replaces the whole scale and its `extend` counterpart never runs.
+This is not how real Tailwind behaves — there, `extend` is applied on top of a replaced `colors`. In Vela it is not. The same trap applies to `radius`, `spacing` and `fontFamily`: a top-level entry replaces the whole scale and its `extend` counterpart never runs.
 
 **Use `theme.extend.colors` alone to add colors.** If you set both, every built-in palette disappears *and* the colors you thought you were adding under `extend` never resolve, so classes like `bg-brand-500` fail with `unknown-theme-key`.
 </Callout>
@@ -180,8 +180,25 @@ Two consequences worth internalising. First, you almost never need to add spacin
 Completions offer a familiar-looking scale — `0`, `0.5`, `1`, `1.5`, `2`, `3`, `4`, `6`, `8`, `12`, `16`, `20`, `24`, `32`, `40`, `64`, `80`. That list is hardcoded editor sugar to make autocomplete useful. It is not theme data, and any other multiple of `0.5` works just as well.
 </Callout>
 
+### Font family
+
+`theme.fontFamily` ships three keys, and it is the newest axis — added in 0.7.0, when `font-*` stopped being hard-coded to Source Sans Pro.
+
+| Key | Value |
+| --- | --- |
+| `sans` | `rbxasset://fonts/families/SourceSansPro.json` |
+| `serif` | `rbxasset://fonts/families/Merriweather.json` |
+| `mono` | `rbxasset://fonts/families/RobotoMono.json` |
+
+`sans` is the family an element gets when it names no other, so redefining it changes the default typeface everywhere.
+
+This axis breaks the rule the rest of the page is built on: **these values are not expression strings.** A font family value is the plain asset path that goes into `Font`'s first argument, so `"rbxassetid://12345678"` is correct as written, and the [runtime re-parsing caveat](#values-are-source-code-not-values) does not apply — there is nothing to parse.
+
+Keys are looked up by `font-*` after the fixed weight names, so avoid naming one after a weight: a `fontFamily.bold` would never resolve, because `font-bold` is a weight first.
+
 ## See also
 
-- [Configuration reference](/vela-rbxts/reference/config/) — the full schema, config discovery, and load behavior.
+- [Configuration reference](/vela-rbxts/reference/config/) — the full schema, config discovery, load behavior, and [plugins](/vela-rbxts/reference/config/#plugins).
 - [Colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/) — the utilities that consume `theme.colors` and `theme.radius`.
 - [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities that consume `theme.spacing`.
+- [Text and fonts](/vela-rbxts/guides/text-and-fonts/#family) — the utilities that consume `theme.fontFamily`.

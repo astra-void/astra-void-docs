@@ -1,6 +1,6 @@
 ---
 title: Responsive and input variants
-description: The nine variant prefixes including hover, the exact breakpoints, how orientation and input mode are detected, and the compile-time cost of using a variant at all.
+description: The twelve variant prefixes including hover, active, focus and dark, the exact breakpoints, how orientation and input mode are detected, and the compile-time cost of using a variant at all.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela supports nine variant prefixes. Each one is a condition evaluated at runtime on the player's
+Vela supports twelve variant prefixes. Each one is a condition evaluated at runtime on the player's
 client, and a token only applies when its condition matches.
 
 | Variant | Matches when |
@@ -23,6 +23,9 @@ client, and a token only applies when its condition matches.
 | `mouse` | the active input mode is mouse |
 | `gamepad` | the active input mode is gamepad |
 | `hover` | the pointer is over this element |
+| `active` | this element is being pressed |
+| `focus` | this element holds focus or selection |
+| `dark` | the local player carries `VelaColorScheme = "dark"` |
 
 You write a variant as a colon prefix on a utility, exactly as in Tailwind:
 
@@ -36,10 +39,10 @@ Prefixes chain, and a chained token requires **all** of its conditions to match:
 <frame className="hidden touch:portrait:visible" />
 ```
 
-There is no `not-` form, no arbitrary variant, no `focus:`/`active:`/`dark:`, and no group or peer
-variants. Order within the chain does not matter — the conditions are combined as a set. An
-unrecognized prefix is its own diagnostic, `unknown-variant`, whose message lists the supported
-nine; the token is dropped.
+`active:`, `focus:` and `dark:` arrived in 0.7.0. There is still no `not-` form, no arbitrary
+variant, no `disabled:`, and no group or peer variants. Order within the chain does not matter — the
+conditions are combined as a set. An unrecognized prefix is its own diagnostic, `unknown-variant`,
+whose message lists the supported twelve; the token is dropped.
 
 ## Breakpoints are min-width only
 
@@ -84,26 +87,55 @@ Exactly one mode is active at a time. On a device that reports both a gamepad an
 player who plugs in a controller mid-session flips to `gamepad` because the helper subscribes to the
 `TouchEnabled`, `MouseEnabled`, and `GamepadEnabled` change signals.
 
-## Hover is per-element
+## Hover, active and focus are per-element
 
-`hover:` is the one variant whose condition lives on the element rather than in the environment. The
-runtime helper attaches `MouseEnter`/`MouseLeave` handlers — composing with any handlers you wrote
-yourself, not replacing them — and only when the element actually has a hover rule, so unhovered
-elements pay nothing extra.
+Three variants have conditions that live on the element rather than in the environment. In each case
+the runtime helper attaches its listeners **only when the element actually carries a rule for that
+variant**, and composes with any handlers you wrote yourself rather than replacing them.
 
-Hover is where the [motion utilities](/vela-rbxts/reference/utilities/#motion) earn their keep: a
-`transition` on the same element tweens the properties a hover rule changes instead of snapping
-them.
+| Variant | Tracked through | Notes |
+| --- | --- | --- |
+| `hover` | `MouseEnter` / `MouseLeave` | |
+| `active` | `InputBegan` / `InputEnded` | Mouse and touch; also clears on `MouseLeave` |
+| `focus` | `Focused` / `FocusLost` on a `textbox`, `SelectionGained` / `SelectionLost` elsewhere | |
 
-```tsx title="A tweened hover state"
+`active:` clears on `MouseLeave` because a release that happens outside the element never reaches it
+— without that, dragging off a pressed button would leave it stuck in its pressed state.
+
+`focus:` splits by host because Roblox does: a `textbox` has real keyboard focus, while every other
+element only has gamepad/controller selection. Both map to the same variant.
+
+These are where the [motion utilities](/vela-rbxts/reference/utilities/#motion) earn their keep: a
+`transition` on the same element tweens the properties a rule changes instead of snapping them.
+
+```tsx title="A button with all three"
 <textbutton
-  className="w-28 h-10 rounded-md bg-sky-500 hover:bg-sky-600 transition duration-150"
+  className="w-28 h-10 rounded-md bg-sky-500 hover:bg-sky-600 active:bg-sky-700 focus:ring-2 transition duration-150"
   Text="Play"
 />
 ```
 
 Remember that a gamepad or touch player may never hover. Treat `hover:` styling as feedback, never
-as the only signal for something important.
+as the only signal for something important — `focus:` is what a controller player actually gets.
+
+## Dark mode is state your app owns
+
+Roblox exposes no color scheme to a running game, so `dark:` cannot read one. It matches when
+**`Players.LocalPlayer` carries a `VelaColorScheme` attribute set to `"dark"`**, and the runtime host
+follows that attribute's change signal, so flipping it restyles every `dark:` element immediately.
+
+```tsx title="Somewhere your settings UI can reach"
+Players.LocalPlayer.SetAttribute("VelaColorScheme", prefersDark ? "dark" : "light");
+```
+
+```tsx title="And then, anywhere"
+<frame className="bg-white dark:bg-zinc-900" />
+```
+
+Anything other than `"dark"` — including the attribute being absent, which is the default — is
+treated as light. An instance attribute is the only mechanism that works here: the runtime helper is
+inlined **per module**, so there is no single shared Vela runtime to hold the flag, and the local
+player is the one instance every copy of the helper can reach.
 
 ## The cost: any variant forces the runtime path
 
@@ -124,9 +156,12 @@ string literal — is enough. One variant-prefixed token anywhere in the file ca
 helper module to be inlined at the top of that file's output.
 </Callout>
 
-That helper is roughly 2,300 lines of generated roblox-ts. It imports `@rbxts/react` and
-`{ TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your theme's
-color and spacing strings into `Color3` and `UDim` values at module load, and installs
+That helper is roughly 5,000 lines of generated roblox-ts at 0.10.0 — it grew as the runtime path
+reached parity with the static one, and again when `opacity-*` learned to cross a component boundary.
+Since 0.10.0 it arrives grouped into thirteen namespaces, which is what keeps it from crowding Luau's
+200-local-register limit; it does not make the emit smaller. It imports `@rbxts/react` and
+`{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your
+theme's color and spacing strings into `Color3` and `UDim` values at module load, and installs
 `useState`/`useEffect` subscriptions on each element that uses it.
 
 The practical consequences:
@@ -135,10 +170,15 @@ The practical consequences:
   `md:` across twenty component files inlines the helper twenty times.
 - **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment
   changes, instead of being a fixed set of props.
-- **Fewer compile-time diagnostics.** Variant-prefixed tokens are still analyzed statically, so you
-  keep your warnings for those. But the moment an element is on the runtime path for other reasons,
-  the utility coverage narrows sharply — see
-  [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
+- **Theme values are re-parsed from text.** The runtime path reads your theme from serialized JSON
+  through two narrow Luau parsers, so a value that is valid roblox-ts but not shaped like
+  `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades silently in game. This is the one runtime
+  divergence that can still bite a fully static class list, because a variant is enough to trigger
+  it — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
+
+Diagnostics are **not** on that list: variant-prefixed tokens are analyzed statically, so you keep
+your warnings for them. Coverage is not on it either, as of 0.10.0 — the runtime path resolves every
+utility family the static path does.
 
 The recommendation follows directly: use variants where they earn their keep — a handful of
 top-level layout containers that genuinely need to reflow between phone and desktop, an input hint
@@ -183,7 +223,7 @@ export function Shell(props: { children?: React.Element }) {
 ## See also
 
 - [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — the other way onto the runtime
-  path, and the much sharper limits that come with it.
+  path, and what that path costs you.
 - [Utilities reference — Motion](/vela-rbxts/reference/utilities/#motion) — transitions and
   animations that pair with variants.
 - [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities you will most often

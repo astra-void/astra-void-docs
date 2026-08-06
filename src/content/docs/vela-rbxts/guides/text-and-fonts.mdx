@@ -26,7 +26,7 @@ Text utilities write to the text properties of Roblox's text instances — `Text
 />
 
 <Callout title="Weights are approximated in the preview">
-The **Lowered** tab shows what Vela really emits for `font-*`: a `FontFace` carrying a Source Sans Pro `Font` value. The browser renderer behind these previews has no `Font` datatype, so the preview maps each weight onto the nearest legacy `Font` enum member instead. Relative weights read correctly; the exact face does not.
+The **Lowered** tab shows what Vela really emits for `font-*`: a `FontFace` carrying a `Font` value built from the theme's family, the weight, and the style. The browser renderer behind these previews has no `Font` datatype, so the preview maps each weight onto the nearest legacy `Font` enum member instead. Relative weights read correctly; the exact face does not.
 </Callout>
 
 ## The host restriction is editor-only
@@ -86,9 +86,18 @@ So when you misspell a size and see a theme-key warning, that is why. Reading `u
 
 The set is fixed and does not come from the theme, so there is no way to add or change a size key. Anything outside the list falls through to the color branch as described above.
 
-## Weight
+## Weight, family and style
 
-`font-{weight}` sets `FontFace` to a complete `Font` value:
+`font-*` is one prefix over three axes. It resolves the fixed weight names first and reads anything
+else as a **font family key**, so weight, family and style merge into a single `FontFace`.
+
+```tsx title="font-mono font-bold italic"
+FontFace={new Font("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Bold, Enum.FontStyle.Italic)}
+```
+
+### Weight
+
+`font-{weight}` sets the weight axis of that `Font` value:
 
 ```lua
 new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)
@@ -110,12 +119,46 @@ Two names do not match their class: `font-normal` produces `Regular`, and `font-
 
 `italic` rides in the same `FontFace` value as a third argument — `font-bold italic` emits
 `new Font("…/SourceSansPro.json", Enum.FontWeight.Bold, Enum.FontStyle.Italic)` — and `not-italic`
-resets the style axis. Weight and style are the only two axes; the family is fixed either way.
+resets the style axis.
 
-<Callout title="The font family is hard-coded">
-Every `font-*` class emits the **Source Sans Pro** family asset. The family is baked into the utility and there is no class, no theme key, and no config option that changes it — `font-*` controls weight only.
+### Family
 
-To use a different typeface, set `FontFace` directly as a prop on the instance and leave `font-*` off that element:
+Since 0.7.0 the family is a theme axis. `theme.fontFamily` ships three keys, and `font-{key}` selects
+one:
+
+| Class | Family |
+| --- | --- |
+| `font-sans` | Source Sans Pro — the default when no family class is present |
+| `font-serif` | Merriweather |
+| `font-mono` | Roboto Mono |
+
+Add your own the way you add any other theme key. The value is a Roblox font family asset path, not
+an expression — an uploaded font works as well as a built-in one:
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: {
+    extend: {
+      fontFamily: {
+        display: "rbxassetid://12345678",
+        body: "rbxasset://fonts/families/Nunito.json",
+      },
+    },
+  },
+});
+```
+
+```tsx
+<textlabel className="font-display font-bold" Text="Match found" />
+```
+
+Because the family lookup is the fallback branch of `font-*`, a payload that is neither a weight nor
+a configured family key reports **`unknown-theme-key`**, not `unsupported-font-weight`.
+
+<Callout title="Before 0.7.0 the family was hard-coded">
+Every `font-*` class emitted the Source Sans Pro asset, and no class, theme key or config option
+changed it — `font-*` controlled weight only. The workaround was to set `FontFace` directly as a prop
+and leave `font-*` off that element:
 
 ```tsx
 <textlabel
@@ -124,7 +167,8 @@ To use a different typeface, set `FontFace` directly as a prop on the instance a
 />
 ```
 
-An unrecognised weight reports `unsupported-font-weight`.
+That still works, and is still the answer for a font you do not want in the theme. But it does not
+compose with `font-bold` or `italic`, because those emit a whole `FontFace` of their own.
 </Callout>
 
 ## Alignment

@@ -1,6 +1,6 @@
 ---
 title: Scope and status
-description: What Vela covers at 0.5.2, which Tailwind families are permanently out, and where enforcement has gaps.
+description: What Vela covers at 0.10.0, which Tailwind families are permanently out, and where enforcement has gaps.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -15,7 +15,7 @@ that cannot mean anything. What Vela ships instead is a Roblox-oriented mapping:
 correspond to real Roblox properties and helper instances, a few structural emulations where the
 correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes separator
 frames — and loud rejection of everything that cannot be expressed at all. This page is the honest
-map of where the edges are at **0.5.2**.
+map of where the edges are at **0.10.0**.
 
 ## What is in scope
 
@@ -33,13 +33,18 @@ Anything that is neither is skipped, keeps its `className` verbatim, and reports
 `classname-on-unsupported-host` — lowercase intrinsics Vela does not implement, such as `screengui`,
 and namespaced tags such as `<svg:rect />`, which never count as components.
 
-Within those eight, the covered ground at 0.5.2 is wide: colors (including arbitrary hex and `/N`
+Within those eight, the covered ground at 0.10.0 is wide: colors (including arbitrary hex and `/N`
 opacity modifiers), gradients, borders, rings and outlines, corner radius, shadows, padding,
 margins, gap and `space-*`, `divide-*` separators, sizing and min/max constraints, position on all
 four edges, anchor point, translation, z-index, layout order, rotation, scale, opacity, aspect
-ratio, flex layout and flex items, grid, typography from size and weight through line height, case
-transforms and decorations, visibility, overflow, image scaling, interactivity, overscroll, and a
-`TweenService`-backed motion layer with nine runtime variants including `hover:`. The
+ratio, flex layout and flex items, grid with real cell sizing, typography from family and size and
+weight through line height, case transforms and decorations, visibility, overflow, the ScrollingFrame
+families, image scaling, interactivity, overscroll, arbitrary length values across most of it, and a
+`TweenService`-backed motion layer with twelve runtime variants including `hover:`, `active:`,
+`focus:` and `dark:`. `opacity-*` is the one utility that reaches past the element it is written on:
+it fades every channel that element paints and every instance under it, across component boundaries
+included ([how far, and where it stops](/vela-rbxts/reference/utilities/#effects)). A config can add utilities of its own through
+[plugins](/vela-rbxts/reference/config/#plugins). The
 [utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it with the exact accepted
 values.
 
@@ -58,24 +63,27 @@ what Roblox is missing, so a warning there is an answer rather than a dead end.
 Most of Vela's edges produce a diagnostic. The ones below do not, and they are worth reading twice.
 
 <Callout title="Four silent gaps">
-**Host-element restrictions are editor-only.** Vela knows which utilities make sense on which tag —
-text utilities on `textlabel`/`textbutton`/`textbox`, `image-*` and `object-*` on image elements,
-`placeholder-*` on `textbox`, `overscroll-*` on `scrollingframe`. That table drives completions,
-hover, and the `unsupported-host-utility` diagnostic in the language server. **The transform
-pipeline never consults it.** So `<frame className="text-red-500" />` compiles clean, emits
-`TextColor3` on a Frame, and produces no compile-time warning at all. Install the
-[editor tooling](/vela-rbxts/guides/editor-setup/) if you want this caught.
+**Host-element restrictions are editor-only on the static path.** Vela knows which utilities make
+sense on which tag — text utilities on `textlabel`/`textbutton`/`textbox`, `image-*` and `object-*`
+on image elements, `placeholder-*` on `textbox`, `overscroll-*` and the scrolling families on
+`scrollingframe`. That table drives completions, hover, and the `unsupported-host-utility` diagnostic
+in the language server. **The static transform never consults it.** So
+`<frame className="text-red-500" />` compiles clean, emits `TextColor3` on a Frame, and produces no
+compile-time warning at all. Install the [editor tooling](/vela-rbxts/guides/editor-setup/) if you
+want this caught. Since 0.8.0 the runtime path *does* apply the rule, but by dropping the utility
+without saying so, which means the same class list behaves differently on the two paths.
 
 **Components that drop what they are handed.** Vela emits the resolved props on the component and
 prepends helper instances as its children; if the component does not forward its unrecognized props
 to a host element and render `children`, all of it vanishes. Nothing warns you, in the editor or in
 the build.
 
-**The runtime subset.** When a `className` is a dynamic expression, the in-game resolver handles
-colors, backgrounds, radius, padding, margins, gap, sizing, `divide-*`, case transforms,
-decorations, and motion — and **silently drops everything else**. Layout, alignment, text size and
-color, position, and constraints all vanish with no warning of any kind. A `flex-col` that works in
-a string literal disappears when you move it into a ternary.
+**The runtime path is unchecked.** When a `className` is a dynamic expression, the compiler never
+sees the final string, so nothing warns about anything in it. Coverage is no longer the problem —
+since 0.8.0 the in-game resolver handles every family the static path does — but a typo like
+`bg-blu-600` is a diagnostic in a literal and total silence in a computed string. The theme is also
+re-parsed from serialized text there, so a value that is not shaped like `Color3.fromRGB(r, g, b)` or
+`new UDim(a, b)` degrades silently in game.
 [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence.
 
 **Gradient stops set to `transparent`.** `from-transparent`, `via-transparent`, and `to-transparent`
@@ -107,24 +115,29 @@ the rest of the upgrade path.
 ## Sharp edges still open
 
 `gap-*` on a `grid` element emits a conflicting `UIListLayout` alongside the `UIGridLayout` it feeds
-([utilities reference](/vela-rbxts/reference/utilities/#grid)). And `divide-*` separators remain
-sensitive to explicit `LayoutOrder` and still double-count the parent's `gap-*`, which is a
-consequence of separators being list items rather than a defect
-([utilities reference](/vela-rbxts/reference/utilities/#divide)).
+([utilities reference](/vela-rbxts/reference/utilities/#grid)) — 0.6.0 gave the grid real cell sizing
+without touching this. And `divide-*` separators remain sensitive to explicit `LayoutOrder` and still
+double-count the parent's `gap-*`, which is a consequence of separators being list items rather than
+a defect ([utilities reference](/vela-rbxts/reference/utilities/#divide)).
 
-Neither is a regression, and both are tracked in the
-[release notes](/vela-rbxts/reference/release-notes/) alongside what changed in each version.
+Neither is a regression. Three newer edges sit beside them: the static path emits `<uishadow>` in
+lowercase, which `Instance.new` rejects; a plugin utility that reaches back into itself expands to
+nothing without a diagnostic; and an `opacity-*` arriving from an ancestor component composes over a
+`BackgroundTransparency` you set as a prop, which the static path would have left alone. All five are
+tracked in the
+[release notes](/vela-rbxts/reference/release-notes/#still-open) alongside what changed in each
+version.
 
 ## Release state
 
-Every package in the repo is at **0.5.2**, versioned in lockstep: `vela-rbxts` itself and the
+Every package in the repo is at **0.10.0**, versioned in lockstep: `vela-rbxts` itself and the
 `@vela-rbxts/*` scope covering the compiler, config, core, IR, types, host adapter and language
 server, plus the `vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix
 anywhere moves everything. Releases are tagged from `v0.3.0` onward.
 
 Two consequences follow from the version being what it is. First, nothing is enforced at install
 time: no package declares `peerDependencies`, and the only `engines` field anywhere is the VS Code
-extension's `vscode: ^1.90.0`, so a mismatched roblox-ts or TypeScript will fail at build rather
+extension's `vscode: ^1.91.0`, so a mismatched roblox-ts or TypeScript will fail at build rather
 than at install. Second, prebuilt native binaries do not cover every platform — notably there is no
 `aarch64-pc-windows-msvc` target, so Windows on ARM is not supported, and no linux arm64 musl build.
 

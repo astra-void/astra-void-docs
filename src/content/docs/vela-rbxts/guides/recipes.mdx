@@ -39,7 +39,7 @@ A button is a `textbutton` with sizing, a radius, a background, and text styling
 difference between the filled and outlined variants is one `border border-slate-600` pair, which
 lowers to a `UIStroke` child — there is no separate "outline button" concept to learn.
 
-Hover feedback comes straight from the [`hover:` variant](/vela-rbxts/guides/responsive-and-input-variants/#hover-is-per-element),
+Hover feedback comes straight from the [`hover:` variant](/vela-rbxts/guides/responsive-and-input-variants/#hover-active-and-focus-are-per-element),
 and pairing it with `transition` tweens the change instead of snapping it:
 
 ```tsx title="Hovering tweens the fill over 150ms"
@@ -86,8 +86,8 @@ export function ActionButton(props: { label: string; onClick: () => void }) {
 ```
 
 The duplication is the point: one computed string would push the element onto the
-[runtime path](/vela-rbxts/guides/dynamic-class-names/), where `font-semibold` and `text-sm` are
-silently dropped. Two literals cost nothing at runtime.
+[runtime path](/vela-rbxts/guides/dynamic-class-names/), which resolves the same utilities since
+0.8.0 but checks none of them. Two literals cost nothing at runtime and keep their diagnostics.
 
 **Buttons do not size to their label.** A bare `textbutton` is zero-sized; `w-fit`/`h-fit` lower to
 `AutomaticSize` if you want Roblox to measure the text, but a fixed `w-28 h-10` is the predictable

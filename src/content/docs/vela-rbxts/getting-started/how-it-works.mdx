@@ -100,7 +100,7 @@ Any one of these conditions is sufficient:
 
 **A `className` expression that cannot collapse to static tokens.** A template literal with an interpolation, a variable, a ternary whose branches Vela cannot fold, an array or object `ClassValue` built at runtime, an empty expression container — anything the compiler cannot reduce to a known list of strings.
 
-**Any token carrying a variant prefix.** This one catches people out. The nine runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, and `hover`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
+**Any token carrying a variant prefix.** This one catches people out. The twelve runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, `hover`, `active`, `focus`, and `dark`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
 
 ```tsx title="Static string, runtime path"
 <frame className="w-full sm:w-1/2" />
@@ -135,10 +135,10 @@ These five habits keep that from happening, and they are the whole of what you n
    in a plain literal — and they sum with the parent's gap.
 
 Variants are the deliberate exception. `hover:` on a control, a breakpoint on a handful of top-level
-layout containers — those earn the runtime helper. What does not earn it is a computed string that
-carries layout or text classes, because those are the ones the runtime resolver drops without a
-word.
+layout containers — those earn the runtime helper. What does not earn it is a computed string written
+where a literal would do: since 0.8.0 the runtime resolver lowers everything the static path does, so
+what you lose is not the classes but every check on them.
 
 ## Next step
 
-Get the honest boundaries of the project at 0.5.2 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).
+Get the honest boundaries of the project at 0.10.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).
