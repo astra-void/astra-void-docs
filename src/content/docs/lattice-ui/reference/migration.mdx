@@ -11,6 +11,55 @@ import { LATTICE_VERSION } from "@/lib/lattice-version";
 
 Lattice UI is pre-1.0, so `0.x` minors may break. This page carries the code changes each breaking release needs; [Releases](/lattice-ui/reference/releases/) carries the summaries and the reasoning.
 
+## 0.7.x → 0.8.0
+
+A small release with one shape change: every motion host that was a `CanvasGroup` is now a `Frame`. Nothing about placement, presence timing, exit-before-unmount, dismissal boundaries, focus scoping or layering moves.
+
+### 1. The `CanvasGroup`-only props stop compiling
+
+`Dialog.Content`, `Popover.Content`, `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`, `Select.Content`, `Combobox.Content` and `Toast.Root` forward props onto a `Frame` now, so `GroupTransparency` and `GroupColor3` are compile errors on those parts. Both were the only reason to know the host was a `CanvasGroup` in the first place.
+
+The reason to change it: a `CanvasGroup` flattens its whole subtree into one offscreen composited layer, so children could not carry their own transparency — and every menu and tooltip paid for that layer whether or not anything faded.
+
+### 2. A `GroupTransparency` fade becomes a `BackgroundTransparency` fade
+
+Swap the recipe for its `Frame` counterpart:
+
+| Was | Now |
+| --- | --- |
+| `createCanvasGroupRevealRecipe()` | `createSurfaceRevealRecipe()` |
+| `createCanvasGroupPopperEntranceRecipe(placement)` | `createPopperEntranceRecipe(placement)` |
+
+Both canvas-group recipes stay exported, for a `canvasgroup` you slot in yourself through `asChild`. `createToastRevealRecipe` already fades `BackgroundTransparency` to match its new host.
+
+`BackgroundTransparency` fades one instance's own background, not its children — so labels and icons inside a surface stay opaque while the surface fades. Fade them alongside it (`TextTransparency`, `ImageTransparency`), or bring the composited layer back deliberately:
+
+```tsx title="Opt back into a one-layer fade"
+import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
+
+<Popover.Content asChild transition={createCanvasGroupRevealRecipe()}>
+  <canvasgroup>{/* … */}</canvasgroup>
+</Popover.Content>
+```
+
+### 3. `Dialog.Content` is the one part with no drop-in replacement
+
+Its motion host spans the whole layer, so animating `BackgroundTransparency` there paints a full-screen rectangle rather than fading the panel. Two ways out, and `Dialog.Content` accepts `asChild` as of this release specifically to make the second one possible:
+
+- Give the content a `Position`-only config for the rise and put the fade on the overlay dim or on your own panel elements.
+- Pass `asChild` with your own `canvasgroup` and `createCanvasGroupRevealRecipe()`, which fades the surface as one layer the way the primitive used to. The outside-press boundary moves down to that element's first host child — the same panel a plain dialog renders directly under `Content` — and the dialog still owns `Size` and `Visible` on whatever element it renders.
+
+### 4. `asChild` starts working on Vela-styled subtrees
+
+Not work, a fix to stop working around. The `Slot` runtime matched UI modifiers by their JSX tag, but roblox-ts labels a host element with its Roblox class — `<uicorner />` arrives as `"UICorner"` — so every modifier missed the lookup and counted as a second target candidate. Any subtree carrying a `UICorner`, `UIPadding` or `UIListLayout` sibling, which is what a Tailwind-style `className` transform emits, failed with "expected exactly one child element besides any UI modifiers". Delete whatever you did to avoid it.
+
+### Upgrade checklist
+
+1. `npx lattice-ui upgrade`.
+2. Typecheck. Every error is a `GroupTransparency` or `GroupColor3` on a part that is now a `Frame`.
+3. Swap each canvas-group recipe for its surface counterpart, and decide per surface whether the children should fade with it.
+4. Re-do the dialog's reveal — position on the content, fade on the overlay, or a slotted `canvasgroup`.
+
 ## 0.6.x → 0.7.0
 
 0.7.0 is the largest breaking release so far. It strips every primitive down to behavior: colors, fixed sizes, font sizes, literal text and decorative children are gone. In exchange, any prop the underlying instance accepts now forwards straight through, so styling no longer requires `asChild`.
@@ -167,7 +216,7 @@ const toast = useToast();
 Not everything here is work. Three fixes remove workarounds you may currently be carrying:
 
 - **16 leaf parts now render `children`.** Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay` previously dropped children unless `asChild` was set, so attaching a `UICorner` or `UIPadding` silently did nothing. Delete any `asChild` you added only to work around that.
-- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits — is now re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
+- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits — is re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error. Note that the 0.7.0 implementation matched modifiers by their JSX tag and therefore never fired — this only works from 0.8.0. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 - **Highlight state is readable.** `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext` return `{ highlighted, disabled }`. `highlighted` reports hover *or* managed focus, which is what you need to render the highlight the primitive used to draw.
 
 ### 7. Focus additions

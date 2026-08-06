@@ -17,13 +17,13 @@
  */
 
 /** Current stable release the docs are written against. */
-export const LATTICE_VERSION = "0.7.0"
+export const LATTICE_VERSION = "0.8.0"
 
 /** The `0.x` line that release belongs to. */
-export const LATTICE_MINOR = "0.7"
+export const LATTICE_MINOR = "0.8"
 
 /** ISO date of that release, as the changelog records it. */
-export const LATTICE_RELEASE_DATE = "2026-07-20"
+export const LATTICE_RELEASE_DATE = "2026-08-04"
 
 /** Pre-1.0 marker shown next to the version. */
 export const LATTICE_STABILITY = "pre-1.0"

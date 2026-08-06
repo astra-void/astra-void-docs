@@ -49,9 +49,9 @@ Crucially, reaching `v1` for the main UI layer does **not** automatically stabil
 
 ## What is coming
 
-The current release is `v{LATTICE_VERSION}`. The `v{LATTICE_MINOR}.x` line drew the line between behavior and appearance: every primitive now ships unstyled, props forward onto the instance a part renders and are type-checked against it, and motion only runs when you pass a `transition`. That settles the question each primitive's API was previously answering inconsistently — how much of the look belongs to the library — and it is what the stable-direction surface will carry into `v1.0`. See [Migration](/lattice-ui/reference/migration/) if you are coming from `0.6`.
+The current release is `v{LATTICE_VERSION}`. It finishes what `v0.7.0` started: `0.7` drew the line between behavior and appearance — every primitive ships unstyled, props forward onto the instance a part renders and are type-checked against it, and motion only runs when you pass a `transition` — and `v{LATTICE_MINOR}.0` takes the last appearance decision out of the primitives, rendering every motion host as a `Frame` rather than a `CanvasGroup` so no part flattens your content into a composited layer you did not ask for. Together they settle the question each primitive's API was answering inconsistently, and that is what the stable-direction surface carries into `v1.0`. See [Migration](/lattice-ui/reference/migration/) if you are coming from `0.6` or `0.7`.
 
-The `v0.6.x` line before it focused on hardening: more reliable layered and composite primitives, steadier motion and exit transitions, a real keyboard-navigation foundation rather than leaning on Roblox default selection, stronger focus restoration and trapping, and wider regression coverage.
+The `v0.6.x` line before them focused on hardening: more reliable layered and composite primitives, steadier motion and exit transitions, a real keyboard-navigation foundation rather than leaning on Roblox default selection, stronger focus restoration and trapping, and wider regression coverage.
 
 After `v1.0`, the feature-limited packages continue maturing independently and are promoted to stable versioning only once their APIs and behavior are ready.
 

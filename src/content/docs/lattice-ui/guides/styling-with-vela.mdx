@@ -89,8 +89,11 @@ JSX attributes on `Switch.Root`, and helper instances are prepended as its child
 ```
 
 Two `GuiObject`-ish children where `asChild` clones exactly one — which is precisely the case Lattice
-0.7.0 added. `Slot` re-parents the modifier under the element the props land on instead of treating
-it as a second slot candidate, so this renders the same tree as the first form. See
+0.7.0 added, and **0.8.0 is the release where it works**. `Slot` re-parents the modifier under the
+element the props land on instead of treating it as a second slot candidate, so this renders the same
+tree as the first form. On 0.7.x the rule shipped keyed by the JSX tag rather than the Roblox class
+roblox-ts actually emits, so every modifier missed it and the whole shape raised "expected exactly one
+child element besides any UI modifiers". See
 [asChild composition](/lattice-ui/guides/as-child-composition/) for the full rule.
 
 That emit is what the **static** path produces, and the Bluetooth row keeps it by branching the whole
@@ -169,17 +172,19 @@ recommend by default; the mistake is expecting a class list to follow a `ThemePr
 
 Two Vela behaviors are worth knowing before you put them near a primitive.
 
-**The layout half of a dynamic class value.** Primitive state (`checked`, `highlighted`, `disabled`)
-is exactly the thing you want to paint from, and a computed `className` is the natural way to do it —
-the Wi-Fi row above does. Colors, backgrounds, radius, spacing and sizing all survive the
-[runtime path](/vela-rbxts/guides/dynamic-class-names/) it puts the element on. What does not is the
-layout half: direction, alignment, `order-*`, position, text styling, constraints, all dropped with
-no diagnostic. Keep those on props, or branch between two fully static string literals so the whole
-element stays on the static path.
+**Anything you cannot afford to get wrong silently.** Primitive state (`checked`, `highlighted`,
+`disabled`) is exactly the thing you want to paint from, and a computed `className` is the natural way
+to do it — the Wi-Fi row above does. As of Vela **0.8.0** every utility family resolves on the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/) that a computed value puts the element on, so
+this is no longer about losing classes. It is about losing *checking*: nothing validates a class
+string the compiler never sees, so a typo in a computed value is silent where the same typo in a
+literal is a diagnostic.
 
-On Vela **0.5.1 and earlier** there was a second reason to avoid this on a primitive: a computed
-class value left one sizing axis at zero, so `w-11 h-6` on a track collapsed it and the track's
-`rounded-full` disappeared with it. Fixed in 0.5.2 — the preview above only works because of it.
+Two version notes if you are not current. On **0.7.x and earlier** the layout half of a computed class
+value — direction, alignment, `order-*`, position, text styling, constraints — was dropped outright
+with no diagnostic. And on **0.5.1 and earlier** a computed class value left one sizing axis at zero,
+so `w-11 h-6` on a track collapsed it and the track's `rounded-full` disappeared with it. Fixed in
+0.5.2 — the preview above only works because of it.
 
 **Geometry the primitive owns.** Progress fill ratios, slider thumb travel, popper-driven position,
 scroll thumb size, presence-driven `Visible` — those are computed by the primitive and written onto

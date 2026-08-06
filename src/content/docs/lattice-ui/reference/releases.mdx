@@ -17,9 +17,33 @@ All `@lattice-ui/*` packages version in lockstep, so a single release number des
   per-package stability tiers before upgrading.
 </Callout>
 
+## 0.8.0
+
+The current stable release. Every motion host that used to be a `CanvasGroup` is now a `Frame`, so no primitive flattens its content into an offscreen composited layer behind your back.
+
+**Migration** — see [Migration](/lattice-ui/reference/migration/#07x--080). In short:
+
+- `Dialog.Content`, `Popover.Content`, `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`, `Select.Content`, `Combobox.Content` and `Toast.Root` forward props onto a `Frame`. The `CanvasGroup`-only `GroupTransparency` and `GroupColor3` no longer compile there.
+- A `transition` that faded a host through `GroupTransparency` has to animate `BackgroundTransparency` instead. `createSurfaceRevealRecipe` and `createPopperEntranceRecipe` are the `Frame` counterparts of `createCanvasGroupRevealRecipe` and `createCanvasGroupPopperEntranceRecipe`, which stay exported for a `canvasgroup` you slot yourself.
+- `Dialog.Content` is the one part with no direct replacement for a whole-surface fade, because its host spans the layer. Pass `asChild` with your own `canvasgroup`, or move the fade to the overlay dim and your own panel elements.
+
+<Callout title="Why a `CanvasGroup` was the wrong default">
+A `CanvasGroup` composites its whole subtree into one offscreen layer so `GroupTransparency` can fade it as a unit. That is exactly right for the one effect, and wrong for everything else: children could not carry their own transparency, and every dialog, menu and tooltip paid for the layer whether or not it faded. Rendering a `Frame` makes the composite opt-in.
+</Callout>
+
+**Highlights**
+
+- `Dialog.Content` accepts `asChild` — it was the last content part without it. Pass a `canvasgroup` and it becomes the motion host, so `createCanvasGroupRevealRecipe()` fades the surface as one layer again, opt-in rather than paid for by every dialog. The outside-press boundary moves down to that element's first host child, which is the same panel a plain dialog renders directly under `Content`. See [Dialog](/lattice-ui/components/dialog/).
+- `createToastRevealRecipe` fades `BackgroundTransparency` to match its new host.
+- Popper measurement and placement, presence timing, exit-before-unmount, outside-dismissal boundaries, focus scoping and layer stacking are all unchanged.
+
+**Fixes**
+
+- `asChild` works on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by the JSX tag, but roblox-ts labels a host element with its Roblox class — `<uicorner />` reaches `Slot` as `"UICorner"` — so every modifier missed the lookup, counted as a second target candidate, and `asChild` failed with "expected exactly one child element besides any UI modifiers". Any component recipe that emits a `UIListLayout` or a `UICorner` hit this on every use. See [styling with Vela](/lattice-ui/guides/styling-with-vela/) and [`asChild` composition](/lattice-ui/guides/as-child-composition/).
+
 ## 0.7.0
 
-The current stable release, and the largest breaking one so far. It strips every primitive down to behavior and rebuilds the CLI around the same idea.
+The release before it, and the largest breaking one so far. It strips every primitive down to behavior and rebuilds the CLI around the same idea.
 
 **Migration** — see [Migration](/lattice-ui/reference/migration/) for the full walkthrough. In short:
 
