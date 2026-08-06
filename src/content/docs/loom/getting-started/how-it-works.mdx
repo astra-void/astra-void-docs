@@ -111,10 +111,13 @@ alike, which is what makes the plugin a complete `vite.config.ts` on its own.
    instance exists.
 
 2. **Globals injection.** `installGlobals()` runs before your entry, defining `UDim2`, `Color3`,
-   `Enum`, `game`, `task` and the rest — because roblox-ts code references them with no import. Under
-   the dev server this is a script tag injected into `<head>`; under `vite build` the import is
+   `Enum`, `game`, the [Luau standard library](/loom/reference/luau-globals/) and the rest — because
+   roblox-ts code references them with no import. Under the dev server this is a script tag injected
+   into `<head>`; under `vite build` the import is
    [prepended to the page's entry modules](/loom/guides/vite-integration/#5-vite-build-produces-a-static-preview),
-   since a tag injected after bundling would never join the graph.
+   since a tag injected after bundling would never join the graph. The same module pulls in
+   [the engine's typefaces](/loom/guides/fonts/), so a `vide` preview loads the faces a React one
+   does.
 
 3. **Import-equals rewriting.** roblox-ts sources use TypeScript's `import X = require("m")`, which
    esbuild lowers to a bare `require()` call that throws in a browser. A pre-transform rewrites it to

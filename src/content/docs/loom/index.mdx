@@ -14,7 +14,8 @@ screenshot.
 
 The delivery mechanism is Vite. A single plugin — `loomPreview()` — aliases `@rbxts/react`,
 `@rbxts/react-roblox` and `@rbxts/services` onto browser adapters, installs the Roblox datatype
-globals (`UDim2`, `Color3`, `Enum`, `game`) before your entry evaluates, rewrites roblox-ts
+globals (`UDim2`, `Color3`, `Enum`, `game`) and the Luau standard library before your entry
+evaluates, rewrites roblox-ts
 `import X = require(...)` statements to ESM, and resolves roblox-ts packages whose `main` points at
 uncompiled Luau straight to their TypeScript source. There is no roblox-ts build step in the loop:
 esbuild transpiles the same TSX, and HMR works.
