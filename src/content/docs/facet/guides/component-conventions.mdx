@@ -1,0 +1,198 @@
+---
+title: Component conventions
+description: The ten rules every registry component follows — each one correcting a web instinct that is wrong on Roblox.
+product: facet
+section: guides
+sidebar:
+  order: 40
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+These are the conventions every component in the registry follows. They matter to you for two
+reasons: you are going to edit the copied files, and you are going to write components of your own
+next to them.
+
+Most of them exist because a web instinct is wrong here. Each one says which instinct it corrects.
+
+## 1. Declare both axes. Always.
+
+Vela resolves a frame's size starting from `UDim2.new(0, 0, 0, 0)`. Nothing infers a size from
+content unless you ask for it, and **`UIPadding` does not grow a frame** — it insets its children.
+
+So `h-9 px-4`, a perfectly good shadcn button, renders **zero pixels wide**. That is not
+hypothetical; it is what the first published `button` did.
+
+```
+h-9 px-4        → 0 × 36. Invisible.
+h-9 w-fit px-4  → hugs its content. Correct.
+h-9 w-9         → fixed square. Also correct.
+```
+
+Every leaf declares a width *and* a height: a concrete class on each axis, or `w-fit` / `h-fit` /
+`size-fit` for the axis that should hug.
+
+## 2. `AutomaticSize` is a chain
+
+A container set to hug its content can only measure children that already know their own size. One
+child with an unresolved axis and the parent collapses.
+
+When a component nests — button → label, card → header → title — **every level** needs an answer,
+not just the outermost one. `card` is the clearest example: every part carries `w-full h-fit`, width
+from the parent and height from the content, all the way down.
+
+## 3. Nothing inherits
+
+There is no cascade. `text-sm` on a button does not reach the label inside it; text properties belong
+to the instance that draws the text.
+
+The consequence: **a component with a label needs a second recipe for that label.**
+`buttonVariants` sizes the button, `buttonLabelVariants` styles the text, both keyed off the same
+`size` prop. Covered in [Text and labels](/facet/guides/text-and-labels/#a-label-needs-its-own-recipe).
+
+## 4. Text arrives as a prop, renders as a child instance
+
+`Text?: string` on every component that draws a string; `children` stays composition. `~/lib/text`'s
+`TextSlot` picks between them. See
+[Text and labels](/facet/guides/text-and-labels/) for the whole story, including why the prop is
+uppercase and why `TextSlot` takes no `className`.
+
+**Every text recipe declares a `font-*`** — rule 1 in a different costume. Vela leaves `FontFace`
+untouched when no `font-*` token appears, and Roblox's untouched default is LegacyArial: a different
+typeface, not a weight.
+
+## 5. Layout is an instance, not a property
+
+`flex-row`, `items-*`, `justify-*` and `gap-*` all lower onto a single `UIListLayout` child, and
+**one instance can hold one layout**.
+
+A component that sets any of them owns the arrangement of its children. A consumer who wants a
+different one has to *replace* the component's layout classes rather than add to them.
+
+Corollary: do not add a wrapper frame just to get a second layout. Restructure the parts instead —
+which is something you can do freely, because the file is yours.
+
+## 6. Flat named exports
+
+`Card`, `CardHeader`, `CardTitle` — not `Card.Root`. Lattice uses namespace objects and that is
+right for a library; this is source someone pastes and edits, so it matches shadcn, where each part
+reads independently and can be deleted on its own.
+
+Facet components wrap Lattice's namespaces rather than re-exporting them:
+
+```tsx
+import { Dialog as DialogPrimitive } from "@lattice-ui/react-dialog";
+
+export const Dialog = DialogPrimitive.Root;
+export function DialogContent(props: DialogContentProps) { /* styled */ }
+```
+
+<Callout title="Exported names are not free">
+Vela inlines its runtime into every file with a computed `className`, leaving a component only a
+slice of Luau's 200-register limit for its own module-scope locals. Six separate exported recipes
+put `card` over it and the module stopped loading —
+`Out of local registers when trying to allocate CardHeader`. Each exported name costs a register;
+one object costs one, which is why `card` exports a single `cardVariants` object.
+
+Vela 0.9.0 cut emitted files from ~106 module-scope locals to ~24, so the headroom is much larger
+now. It is still finite.
+</Callout>
+
+## 7. Icons are text glyphs, replaceable by slot
+
+Roblox has no icon font and no free lunch: shipping images means uploading assets to somebody's
+account and owning the moderation and licensing forever. Facet renders `▾`, `✓`, `✕` as text and
+exposes the slot, so a project that wants real artwork passes its own through `children`.
+
+## 8. Roles, never ramp steps
+
+`bg-muted`, not `bg-zinc-800`. This is what makes `facetTheme({ base: "slate" })` retheme every
+copied component without editing one of them.
+
+Enforced by review, not by tooling — the class strings are just text. If changing your theme base
+requires editing a component, this rule was broken somewhere in it.
+
+## 9. `ClassValue` is a reserved name
+
+Vela's inlined runtime declares a local `ClassValue`, so a component importing that name gets
+`TS2440: Import declaration conflicts with local declaration`. `~/lib/utils` re-exports it as
+**`ClassName`**. Use that.
+
+## 10. Every import is declared
+
+An import a component makes must appear in the registry entry as a `dependency` (npm) or a
+`registryDependency` (another item). An undeclared one ships a file that cannot compile in a project
+that did not happen to have the package already.
+
+This one only binds you if you are [running your own registry](/facet/guides/custom-registry/) —
+but if you are, `registry:check` catches unresolvable registry dependencies and cannot catch a
+missing npm one. That part is on the author.
+
+## Anatomy
+
+Everything above, in one file:
+
+```tsx
+import { fv, type VariantProps } from "@facet-ui/react-variants";
+import { getPassthroughProps, React } from "@lattice-ui/react-runtime";
+import { TextSlot } from "~/lib/text";
+import { cn } from "~/lib/utils";
+
+// 1. geometry + surface on the root, both axes resolved
+export const thingVariants = fv("flex-row items-center w-fit h-9 rounded-md", {
+  variants: { /* … */ },
+});
+
+// 2. a matching recipe for any text this component draws itself
+export const thingLabelVariants = fv("font-medium text-foreground", {
+  variants: { /* … */ },
+});
+
+export type ThingProps = VariantProps<typeof thingVariants> & { Text?: string };
+
+const OWN_PROPS = ["variant", "size", "className", "Text", "children"] as const;
+
+// 3. neutralize Roblox's own look, never the consumer's
+const NEUTRAL_PROPS = { BackgroundTransparency: 1, BorderSizePixel: 0 };
+
+export function Thing(props: ThingProps) {
+  const passthrough = getPassthroughProps<Frame>(props, OWN_PROPS);
+
+  return (
+    <frame
+      className={thingVariants({ variant: props.variant, className: props.className })}
+      {...NEUTRAL_PROPS}
+      {...passthrough}
+    >
+      <TextSlot Text={props.Text} className={thingLabelVariants({ size: props.size })}>
+        {props.children}
+      </TextSlot>
+    </frame>
+  );
+}
+```
+
+## Two things about spread order
+
+**Neutral defaults first.** Roblox instance defaults are themselves a look — a bare `textbutton` is
+an opaque grey box labelled "Button". `BackgroundTransparency`, `BorderSizePixel`, `Text` and
+`AutoButtonColor` get cleared before anything visual is applied.
+
+**Then consumer passthrough, then behavior props.** Behavior is never overridable — event handlers
+are *composed* rather than replaced:
+
+```tsx
+Event: composeEvents(passthrough.Event, { Activated: handleActivated })
+```
+
+Appearance is a weaker promise than the ordering suggests. Vela emits a component's class-derived
+props *after* every spread, whatever order the author wrote them in, so a consumer's passthrough
+value loses to anything the recipe sets. What survives is any property the classes do not touch —
+`LayoutOrder`, `Position`, `Visible`, `ZIndex`. See
+[Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+
+## Readability is a feature
+
+Prefer a readable 60-line component over a clever 20-line one. The consumer reads this code — it is
+the product, not an implementation detail. A copied file that is hard to edit has failed at the one
+thing the copy-in model is for.

@@ -1,0 +1,101 @@
+---
+title: Badge
+description: A status pill that hugs its label — four variants, and a lesson in size-fit.
+product: facet
+section: components
+sidebar:
+  order: 10
+  group: Display
+---
+
+import { FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add badge
+```
+
+Copies `ui/badge.tsx`, plus `lib/utils.ts` and `lib/text.tsx`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import { Badge } from "../shared/ui/badge";
+
+<Badge Text="New" />
+<Badge variant="secondary" Text="Beta" />
+<Badge variant="destructive" Text="Banned" />
+<Badge variant="outline" Text="Draft" />
+```
+
+<FacetPreview
+  scene="BadgeScene"
+  source="ui/badge.tsx"
+  height={120}
+  label="Four variants, each hugging its own label."
+/>
+
+<ForwardedProps instance="Frame" />
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "Text",
+      type: "string",
+      description:
+        "The label. Drawn as a styled child textlabel through TextSlot; children renders instead when it is absent.",
+    },
+    {
+      name: "variant",
+      type: '"default" | "secondary" | "destructive" | "outline"',
+      description: "Surface and label colour. Defaults to default.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description:
+        "Composition — an icon glyph, a dot. Laid out in a row with gap-1 alongside nothing else, since Text and children are exclusive.",
+    },
+  ]}
+/>
+
+Everything else is forwarded onto the `Frame`.
+
+## Variants
+
+| `variant` | Surface | Label |
+| --- | --- | --- |
+| `default` | `bg-primary` | `text-primary-foreground` |
+| `secondary` | `bg-secondary` | `text-secondary-foreground` |
+| `destructive` | `bg-destructive` | `text-destructive-foreground` |
+| `outline` | `border border-input` | `text-foreground` |
+
+Both recipes are exported — `badgeVariants` and `badgeLabelVariants` — because nothing inherits and
+the label's colour has to live on the instance that draws the text.
+
+## `size-fit` is the whole geometry
+
+```tsx
+export const badgeVariants = fv(
+  "flex-row items-center justify-center gap-1 size-fit rounded-full px-2 py-1",
+  { variants: { … }, defaultVariants: { variant: "default" } },
+);
+```
+
+There is no `h-*` and no `w-*` here. `size-fit` resolves both axes to automatic sizing, which is the
+only correct answer for a pill that has to be exactly as wide as its text plus its padding. The rule
+it satisfies is [declare both axes](/facet/guides/component-conventions/#1-declare-both-axes-always)
+— `size-fit` is an answer on each, not an absence of one.
+
+That also makes the badge the clearest case of the `AutomaticSize` chain: it can only measure itself
+because `TextSlot` renders its label with `size-fit` too. A label with an unresolved axis and the
+badge collapses with it.
+
+`rounded-full` is a pill rather than a rounded rectangle; `px-2 py-1` insets the label without
+growing the frame, which is exactly what `UIPadding` does and exactly why the frame needs `size-fit`
+to grow around it.

@@ -1,0 +1,239 @@
+---
+title: Button
+description: Six variants, four sizes, two recipes — and the one thing asChild does not carry across.
+product: facet
+section: components
+sidebar:
+  order: 10
+  group: Form
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add button
+```
+
+Copies `ui/button.tsx`, plus `lib/utils.ts` and `lib/text.tsx` as registry dependencies. Needs
+`@facet-ui/react-variants` and `@lattice-ui/react-runtime@^0.8.0`.
+
+```tsx
+import { Button } from "../shared/ui/button";
+
+<Button Text="Save" onClick={() => print("saved")} />
+<Button variant="outline" size="sm" Text="Cancel" />
+<Button variant="destructive" Text="Delete" />
+<Button size="icon" Text="✕" />
+<Button disabled Text="Unavailable" />
+```
+
+<FacetPreview
+  scene="ButtonScene"
+  source="ui/button.tsx"
+  height={150}
+  label="Every variant and size, plus the disabled fade — rendered from the registry source."
+/>
+
+<ForwardedProps
+  instance="TextButton"
+  owns={["Active", "Selectable"]}
+  ownedBecause="from the disabled state"
+/>
+
+`Text`, `AutoButtonColor`, `BackgroundTransparency` and `BorderSizePixel` are set as *neutral
+defaults* before the passthrough spread, so you can override those — see
+[Neutral defaults](#neutral-defaults). `Event` is composed rather than replaced, so a handler you
+pass still fires alongside the component's own.
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "Text",
+      type: "string",
+      description:
+        "The label. Drawn as a styled child textlabel, not as this instance's Text — so it can be sized and coloured independently and sit beside an icon.",
+    },
+    {
+      name: "variant",
+      type: '"default" | "destructive" | "outline" | "secondary" | "ghost" | "link"',
+      description: "Surface and label colour. Defaults to default.",
+    },
+    {
+      name: "size",
+      type: '"sm" | "md" | "lg" | "icon"',
+      description: "Height, padding, and label size. Defaults to md.",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      description:
+        "Dims to opacity-50, clears Active and Selectable, and swallows onClick. Not a Vela variant — Facet's own state.",
+    },
+    {
+      name: "onClick",
+      type: "() => void",
+      description:
+        "Composed onto Activated rather than replacing it, so a passthrough Event handler still fires.",
+    },
+    {
+      name: "asChild",
+      type: "boolean",
+      description:
+        "Render the single child element instead of a textbutton, merging the recipe and behavior onto it. Errors if there is no child element.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description:
+        "Composition — an icon, a nested element. Rendered instead of the label when Text is absent.",
+    },
+  ]}
+/>
+
+Everything else is forwarded onto the `TextButton` and type-checked against it.
+
+## Variants
+
+| `variant` | Surface | Label |
+| --- | --- | --- |
+| `default` | `bg-primary`, `hover:bg-primary/90` | `text-primary-foreground` |
+| `destructive` | `bg-destructive`, `hover:bg-destructive/90` | `text-destructive-foreground` |
+| `outline` | `border border-input bg-background`, `hover:bg-accent` | `text-foreground` |
+| `secondary` | `bg-secondary`, `hover:bg-secondary/80` | `text-secondary-foreground` |
+| `ghost` | none, `hover:bg-accent` | `text-foreground` |
+| `link` | none | `text-primary` |
+
+| `size` | Geometry | Label size |
+| --- | --- | --- |
+| `sm` | `h-8 px-3` | `text-sm` |
+| `md` | `h-9 px-4` | `text-sm` |
+| `lg` | `h-10 px-6` | `text-base` |
+| `icon` | `h-9 w-9` | `text-sm` |
+
+## Two recipes, and why
+
+```tsx
+export const buttonVariants = fv(
+  "flex-row items-center justify-center gap-2 w-fit rounded-md transition duration-150",
+  { variants: { variant: { … }, size: { … } }, defaultVariants: { variant: "default", size: "md" } },
+);
+
+export const buttonLabelVariants = fv("font-medium", {
+  variants: { variant: { … }, size: { … } },
+  defaultVariants: { variant: "default", size: "md" },
+});
+```
+
+Nothing inherits on Roblox — `text-sm` on the button does not reach the label inside it, because
+text properties belong to the instance that draws the text. So the label needs its own recipe,
+keyed off the same two props. Both are exported, which matters for `asChild` below.
+
+`w-fit` in the base is load-bearing: padding does not grow a frame on Roblox, so without an
+automatic width this renders **zero pixels wide**. The `icon` size overrides it with a concrete
+`w-9`, and the later token wins.
+
+## Disabled
+
+Vela has no `disabled:` variant — disabled is Facet's state, not the host's — so the dimming is
+applied rather than selected:
+
+```tsx
+const className = buttonVariants({
+  variant: props.variant,
+  size: props.size,
+  className: cn(disabled && "opacity-50", props.className),
+});
+```
+
+Note where it goes: **inside the recipe's `className` slot, ahead of the consumer's**. Resolution is
+last-token-wins, so anything appended after `props.className` is an override the consumer cannot
+undo. `button` had this backwards until it was written down as a rule —
+[Variants and classes](/facet/guides/variants-and-classes/#the-one-rule).
+
+<Callout title="The label states its own fade, as a prop">
+`opacity-*` composes into everything the compiler can see underneath an element — but a *component*
+child is exactly what it cannot see, because the instances that component renders are created
+somewhere else. Left alone, a disabled button sat at `BackgroundTransparency` 0.5 with its label at
+`TextTransparency` 0: half a faded button.
+
+Putting `opacity-50` on the label's own recipe does not fix it either. The class resolves against
+`__velaTag = TextSlot`, and the runtime cannot know which instance a component will render, so it
+drops the text-only half and keeps a background that was already invisible. The emitted Luau carried
+the token; the label still measured 0.
+
+So this is the one place a class genuinely cannot express the intent in either direction, and
+`TextTransparency={disabled ? 0.5 : 0}` says it instead. Both halves were measured in Studio rather
+than assumed.
+</Callout>
+
+The label fades rather than merely recolouring to `text-muted-foreground`, because that is what
+`opacity` does on the web: CSS fades an element and its text together, so a shadcn
+`disabled:opacity-50` button dims its label too. Recolouring would be the more legible option, and
+it would make `disabled` mean two different things depending on which component you are looking at.
+Parity won; legibility is the price.
+
+## `asChild`
+
+Renders the single child element instead of a `textbutton`, merging the recipe and the behavior
+props onto it through Lattice's `Slot`.
+
+```tsx
+<Button asChild variant="secondary" size="sm">
+  <textbutton key="AsChild" Text="AsChild" />
+</Button>
+```
+
+Verified in Studio against a bare `<textbutton>`, which carries no styling of its own: the cloned
+instance came out with `BackgroundColor3` 0.153/0.153/0.165 (`bg-secondary`), `Size` `{0,0},{0,32}`
+and `AutomaticSize.X` (`h-8 w-fit`), `bg-secondary/80` on hover, and `UIListLayout`, `UICorner` and
+`UIPadding` re-parented underneath it. **The recipe crosses `Slot` whole.**
+
+<Callout title="What asChild does not carry is the label">
+`TextSlot` never renders on this path — the child draws its own text — so `buttonLabelVariants` is
+not applied and the text falls back to Roblox's 8px near-black default. On a dark surface that is
+invisible.
+
+This is "nothing inherits" once more. A consumer reaching for `asChild` states the text styling on
+their own element, and `buttonLabelVariants` is exported for exactly that:
+
+```tsx
+<Button asChild variant="secondary" size="sm">
+  <textbutton className={buttonLabelVariants({ variant: "secondary", size: "sm" })} Text="AsChild" />
+</Button>
+```
+
+Whether the registry should make this easier is [still open](/facet/getting-started/scope-and-status/#decisions-that-are-open).
+</Callout>
+
+`asChild` needs `@lattice-ui/react-runtime@^0.8.0`, and that floor is not about the feature existing.
+It was broken for a reason unrelated to `className`: Lattice keyed its UI modifier table by the
+lowercase JSX tag, while roblox-ts labels a host element with its Roblox class name, so `<uicorner />`
+arrived as `"UICorner"`, missed the lookup, and counted as a second slot target. Every Facet recipe
+emits at least a `UIListLayout` or a `UICorner`, so **no component could use `asChild` at all** until
+0.8.0 fixed it upstream.
+
+## Neutral defaults
+
+A bare `<textbutton>` renders an opaque grey box labelled "Button". That is a look, and it has to be
+cleared before styling means anything:
+
+```tsx
+const NEUTRAL_PROPS = {
+  AutoButtonColor: false,
+  BackgroundTransparency: 1,
+  BorderSizePixel: 0,
+  Text: "",
+};
+```
+
+Spread order is **neutral defaults → consumer passthrough → behavior props**. Consumers can override
+appearance; they can never override behavior. `Text` is cleared because the label is a child
+instance, not this instance's property.

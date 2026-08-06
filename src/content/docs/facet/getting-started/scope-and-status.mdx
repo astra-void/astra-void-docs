@@ -1,0 +1,124 @@
+---
+title: Scope and status
+description: What exists at 0.3.0, what has actually been looked at in Studio, and which decisions are still open.
+product: facet
+section: getting-started
+sidebar:
+  order: 40
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Facet is early. The whole chain works end to end — all three packages are on npm, the registry is
+live, and `npm i -D facet-rbxts` → `facet init` → `facet add button` → `rbxtsc` compiles in a
+project set up from scratch — but the registry holds seven items, and the roadmap is longer than the
+implementation.
+
+## What ships at 0.3.0
+
+**Every command the CLI advertises is written.** `list`, `init`, `add`, `remove`, `diff`, `doctor` —
+all implemented, all covered by tests that put a fixture project through them offline against a
+registry built into a temporary directory. See the [CLI reference](/facet/reference/cli/).
+
+**The registry holds seven items** — five components and the two helpers they import:
+
+| Item | Type | |
+| --- | --- | --- |
+| [`button`](/facet/components/button/) | `registry:ui` | variant × size recipes, `asChild`, disabled |
+| [`badge`](/facet/components/badge/) | `registry:ui` | status pill that hugs its label |
+| [`card`](/facet/components/card/) | `registry:ui` | six flat parts — root, header, title, description, content, footer |
+| [`label`](/facet/components/label/) | `registry:ui` | form label |
+| [`separator`](/facet/components/separator/) | `registry:ui` | one-pixel divider, either orientation |
+| `utils` | `registry:lib` | `cn`, and `ClassValue` re-exported as `ClassName` |
+| `text` | `registry:lib` | `TextSlot` |
+
+**All five have been rendered in Studio.** That matters more here than it sounds: compiling is a
+static result, and Roblox runtime behavior does not show up in it. Reading the emitted Luau was not
+enough either — `card`'s description had no `font-*` in it, so it kept Roblox's LegacyArial default
+and was the only thing on screen in another typeface. Nobody caught that from the source.
+
+## What is not covered
+
+<Callout title="A preview is not Studio">
+Every component page carries a live preview, and it is the real thing as far as it goes: the actual
+registry source, lowered by the actual Vela compiler against the actual `@facet-ui/theme` tokens,
+rendered by [Loom](/loom/). What it is *not* is Roblox. Loom reimplements Roblox's layout and text
+measurement; it does not run the engine, and its fidelity is
+[deliberately partial](/loom/getting-started/scope-and-status/).
+
+So a preview is strong evidence and weak proof. Where these pages state what something looks like on
+screen, it is because someone opened Studio and looked — that is still the only claim worth making
+about runtime behavior, and it is a different and stronger claim than "the preview looks right".
+</Callout>
+
+- **No `rbxtsc` check in the CLI's own test suite.** `test/e2e.test.ts` runs `init`, `add` and
+  `doctor` against a temporary registry, offline, with packages faked into `node_modules` at chosen
+  versions — which is the only way to assert on a project sitting below a floor. What it does not do
+  is compile the result. The playground app build is what checks that, and CI runs both on every
+  branch and pull request.
+- **No icons.** shadcn leans on lucide; Roblox has no icon font, and icons are image assets or a
+  sprite sheet. Facet renders `▾`, `✓`, `✕` as text glyphs and exposes the slot, so a project that
+  wants real artwork passes its own. A position on shipping actual assets — which means uploading to
+  somebody's account and owning the moderation and licensing forever — is still owed before any
+  component that wants a chevron.
+- **No blocks.** `login-form`, `settings-panel`, `inventory-grid`, `shop-row` are on the roadmap,
+  after the singles settle.
+- **No registry versioning.** `main` overwrites one live registry, so an edit to a component reaches
+  everyone immediately, including a project that ran `facet add` months ago. See
+  [Updating copied components](/facet/guides/updating-copied-components/).
+
+## What is coming, in order
+
+The build order is by what each component needs underneath it, because that is how the conventions
+get proven before anything complicated depends on them.
+
+**Nothing beneath them** — pure recipe plus a host element:
+`skeleton` · `kbd` · `alert` · `aspect-ratio`
+
+**One Lattice primitive**:
+`avatar` · `checkbox` · `switch` · `progress` · `slider` · `toggle` · `toggle-group` · `tabs` ·
+`accordion` · `text-field` · `textarea` · `radio-group` · `scroll-area`
+
+**Layered** — needs portals, focus trapping, or popper:
+`dialog` · `alert-dialog` · `popover` · `tooltip` · `dropdown-menu` · `context-menu` · `select` ·
+`combobox` · `toast` · `sheet` · `command`
+
+**Roblox-native, with no shadcn counterpart**, worth their own pass rather than being wedged into
+that list: `viewport` (a `ViewportFrame` with a model), `billboard`, `surface`, `player-list`,
+`hotbar`.
+
+## Decisions that are settled
+
+Each of these is written down in the repo with the reasoning kept where it can be argued with.
+
+| Decision | Short version |
+| --- | --- |
+| **Text is a prop** | `Text?: string` on every component that draws a string; `children` stays composition. The compiler leaves no other option. [→](/facet/guides/text-and-labels/) |
+| **`cn` does not merge conflicts** | Vela's last-token-wins is what `tailwind-merge` exists to fake, so ordering discipline replaces a merge pass. [→](/facet/guides/variants-and-classes/#the-one-rule) |
+| **One registry style** | The `style` field stays in `facet.json`, pinned to `"default"`. A second style does not arrive. |
+| **Nothing is recorded at copy time** | No `facet.lock`, no hashes. A hash answers *whether* a file changed; a diff has to show *how*. [→](/facet/guides/updating-copied-components/#why-there-is-no-lock-file) |
+| **npm OIDC trusted publishing** | No `NPM_TOKEN` in repository settings. Publishes from GitHub Actions with provenance attestations. |
+
+## Decisions that are open
+
+- **Runtime theming.** Vela resolves classes at compile time, so a build carries one mode. A
+  settings menu with a light/dark toggle has no answer today. The leaning is: do nothing now, and
+  eventually get a Vela-side token indirection — which Facet cannot make unilaterally. The tempting
+  middle option, a runtime `ThemeProvider` alongside classes, is probably the trap: it buys runtime
+  theming at the cost of the property that makes copy-in work, which is that a component's
+  appearance is entirely described by its classes.
+- **Registry versioning**, and with it whether `facet diff` can ever fetch the text a component was
+  copied from.
+- **Icons**, as above.
+- **`facet create`** — scaffolding a new roblox-ts project preconfigured for Facet, as Lattice's CLI
+  does.
+- **What to do about the inert `className` prop.** Every component advertises one, and a class
+  passed to it from a Vela-compiled call site is dropped in silence —
+  [why](/facet/guides/variants-and-classes/#overriding-from-the-call-site). The options are to stop
+  advertising it, to keep it as the internal composition slot it actually is, or to push for a Vela
+  change that hands a component its `className` as a string instead of pre-resolving it. Nothing is
+  decided.
+- **Whether the registry should make `asChild`'s missing label easier.** The chrome crosses `Slot`
+  whole; the label does not, because `TextSlot` never renders on that path. `buttonLabelVariants` is
+  exported so a consumer can state it themselves, but whether that pairing should be documented,
+  automated, or something else is unresolved. See [Button](/facet/components/button/#aschild).

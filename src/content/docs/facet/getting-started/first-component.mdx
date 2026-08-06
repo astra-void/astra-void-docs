@@ -1,0 +1,151 @@
+---
+title: Your first component
+description: Copy a button in, render it, and read the three things about it that are not the shadcn version.
+product: facet
+section: getting-started
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+This assumes a roblox-ts project that already builds, with Vela's transformer registered and
+`facet init` run once — see [Installation](/facet/getting-started/installation/).
+
+## Add it
+
+```bash title="One component, three files"
+npx facet-rbxts add button
+```
+
+```
+✔ write  src/shared/lib/utils.ts
+✔ write  src/shared/lib/text.tsx
+✔ write  src/shared/ui/button.tsx
+```
+
+Three files for one component, because `button` declares `utils` and `text` as registry
+dependencies and `add` resolves those transitively. `utils` was already there if you ran `init`, in
+which case it is listed as `exists` and left alone — `add` never overwrites without `--overwrite`.
+
+The npm packages the entry declares (`@facet-ui/react-variants`, `@lattice-ui/react-runtime`) are
+installed at the same time, through whichever package manager your lockfile implies. `--no-deps`
+skips that; `--dry-run` resolves and reports without writing anything.
+
+## Render it
+
+```tsx title="src/client/main.client.tsx"
+import React, { StrictMode } from "@rbxts/react";
+import { createPortal, createRoot } from "@rbxts/react-roblox";
+import { Players } from "@rbxts/services";
+import { Button } from "../shared/ui/button";
+
+function App() {
+  return (
+    <frame className="h-full w-full flex-col items-center justify-center gap-2 bg-background">
+      <Button Text="Save" onClick={() => print("saved")} />
+      <Button variant="outline" size="sm" Text="Cancel" />
+    </frame>
+  );
+}
+
+const playerGui = Players.LocalPlayer.WaitForChild("PlayerGui");
+const root = createRoot(new Instance("Folder"));
+
+root.render(
+  <StrictMode>
+    {createPortal(
+      <screengui ResetOnSpawn={false} IgnoreGuiInset>
+        <App />
+      </screengui>,
+      playerGui,
+    )}
+  </StrictMode>,
+);
+```
+
+```bash title="Build"
+npx rbxtsc
+```
+
+## The three things that are not shadcn
+
+If you have written shadcn/ui, two of these will bite you within the hour.
+
+### 1. Text is a prop, not children
+
+```tsx
+<Button>Save</Button>       // TS2747. Not a Facet choice.
+<Button Text="Save" />      // this
+```
+
+roblox-ts React's `ReactNode` has no string member — host instances draw text from a `Text`
+property rather than from a text node — so a bare string child is a type error no matter what the
+component declares. `children` keeps its shadcn meaning: composition, for an icon or a nested
+element beside the label.
+
+The prop is spelled uppercase, matching the Roblox instance property it shadows. That is the point:
+`Text` is already a member of `PassthroughProps<TextButton>`, so if Facet declared a lowercase
+`text` instead, a developer writing the obvious `<Button Text="Save" />` would have it land on the
+host instance and draw Roblox's 8px near-black default *underneath* the styled label. Declaring
+`Text` intercepts it. See [Text and labels](/facet/guides/text-and-labels/).
+
+### 2. Both axes, always
+
+`UIPadding` does not grow a frame on Roblox — it insets children. And Vela resolves a frame's size
+starting from `UDim2.new(0, 0, 0, 0)`, so nothing hugs its content unless you ask.
+
+```
+h-9 px-4        → 0 × 36 pixels. Invisible.
+h-9 w-fit px-4  → hugs its content. Correct.
+h-9 w-9         → fixed square. Also correct.
+```
+
+`h-9 px-4` is a perfectly good shadcn button and renders nothing here. This is why `buttonVariants`
+carries `w-fit` in its base classes, and why the `icon` size overrides it with a concrete `w-9`.
+Every class string you write in a copied component needs an answer on both axes.
+
+### 3. Nothing inherits
+
+There is no cascade. `text-sm` on a button does not reach the label inside it: text properties
+belong to the instance that draws the text.
+
+That is why `button.tsx` exports *two* recipes:
+
+```tsx
+export const buttonVariants = fv("… w-fit rounded-md", { /* geometry + surface */ });
+export const buttonLabelVariants = fv("font-medium", { /* colour + size of the text */ });
+```
+
+Both key off the same `variant` and `size` props. It is the single biggest structural difference
+from shadcn, where one class list on the parent styles everything under it.
+
+<Callout title="Every text recipe declares a font-*">
+Rule 2 in another costume. Vela leaves `FontFace` untouched when no `font-*` token appears, and
+Roblox's untouched default is **LegacyArial** — not a weight of the font every other label resolves
+to, a different typeface, visibly larger at the same `TextSize`. `card`'s description had no
+`font-*` and rendered in Arial next to a SourceSansPro title, in the same header, for as long as
+nobody had looked at it. Weight is not optional styling here; it is the only thing that says *which
+font*.
+</Callout>
+
+## Now edit it
+
+That is the whole point of the model. `src/shared/ui/button.tsx` is a file in your repository:
+change the variants, drop the ones you do not use, rename the component. Facet has no mechanism to
+push an update over it, and no record that it ever gave it to you.
+
+Editing is also the *only* override that reliably works. A `className` passed to a Facet component
+from outside is consumed by Vela at the call site and then overwritten by the component's own
+recipe — measured, silent, and covered in
+[Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+
+The one thing to preserve while you edit the class strings is **ordering discipline** — nothing may
+be appended after `props.className` inside the component, because Vela's resolution is
+last-token-wins. See [Variants and classes](/facet/guides/variants-and-classes/#the-one-rule).
+
+## Next step
+
+- [How it works](/facet/getting-started/how-it-works/) — the registry, the rewrite, the layers.
+- [Button](/facet/components/button/) — every prop, variant, and the `asChild` caveat.
+- [Theming](/facet/guides/theming/) — retheme all of it without editing a component.

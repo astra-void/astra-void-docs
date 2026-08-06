@@ -1,0 +1,139 @@
+---
+title: "@facet-ui/theme"
+description: facetTheme(), the nineteen tokens, and the exact ramp step each one resolves to.
+product: facet
+section: reference
+sidebar:
+  order: 30
+---
+
+import { PackageMeta } from "@/components/docs/mdx";
+
+<PackageMeta
+  packageName="@facet-ui/theme"
+  status="stable-direction"
+  importName="facetTheme"
+/>
+
+Facet's semantic tokens, shaped as a Vela config preset. A Node package — only `vela.config.ts`
+imports it, so it is a dev dependency and never reaches the Roblox runtime.
+
+Installed by `facet init`. Currently 0.3.0, versioned in lockstep with the CLI and
+`@facet-ui/react-variants`.
+
+## `facetTheme(options?)`
+
+```ts
+import { facetTheme } from "@facet-ui/theme";
+
+facetTheme({ base: "zinc", mode: "dark", radius: "new UDim(0, 8)" });
+```
+
+Returns a `ThemeExtend` — a plain object with `colors` and `radius` — for spreading into
+`theme.extend`:
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: { extend: { ...facetTheme({ base: "zinc", mode: "dark" }) } },
+});
+```
+
+`extend` rather than `colors`, because Vela's `theme.colors` *replaces* the family set — which would
+strip the ramps (`zinc-500`, `red-400`, …) you reach for outside Facet components.
+
+| Option | Type | Default | |
+| --- | --- | --- | --- |
+| `base` | `"zinc" \| "slate" \| "stone" \| "neutral"` | `"zinc"` | Neutral ramp the tokens derive from |
+| `mode` | `"light" \| "dark"` | `"dark"` | Which side of the ramp they resolve to |
+| `radius` | `string` | `"new UDim(0, 8)"` | What `rounded-*`'s `DEFAULT` resolves to |
+
+`radius` is a string because it is a Luau expression Vela emits verbatim, not a number it interprets.
+
+## Other exports
+
+| Export | |
+| --- | --- |
+| `FACET_TOKENS` | The nineteen token names as a `const` tuple. This is what `facet doctor` checks a registry item's declared tokens against. |
+| `FacetToken` | Union of those names. |
+| `buildTokens(options?)` | The token → colour-expression map, without the `radius` wrapper. |
+| `buildColors(options?)` | Same map, typed as Vela's `ColorInputMap`. |
+| `RAMPS`, `Ramp` | The four neutral ramps, 50 through 950. |
+| `DESTRUCTIVE`, `WHITE` | The red that is not part of any ramp, and white. |
+| `FacetBase`, `FacetMode`, `FacetThemeOptions` | Option types. |
+| `ThemeExtend`, `ThemeScale`, `ColorExpression`, `ColorInputMap`, `ColorPalette` | Structural mirrors of the slice of Vela's config surface this package writes into. |
+
+Those Vela-shaped types are kept local rather than imported so that `@facet-ui/theme` type-checks
+without resolving `vela-rbxts`. They are checked against Vela in the CLI's `doctor` command instead.
+
+## The tokens
+
+```
+background   foreground
+card         card-foreground
+popover      popover-foreground
+primary      primary-foreground
+secondary    secondary-foreground
+muted        muted-foreground
+accent       accent-foreground
+destructive  destructive-foreground
+border       input                 ring
+```
+
+Every Facet component names only these. Nothing in the registry says `zinc-800`, which is what lets
+`base: "slate"` retheme a project without touching a single copied-in component.
+
+## What each token resolves to
+
+### Dark
+
+| Token | Ramp step | | Token | Ramp step |
+| --- | --- | --- | --- | --- |
+| `background` | `950` | | `primary` | `50` |
+| `foreground` | `50` | | `primary-foreground` | `900` |
+| `card` | `900` | | `secondary` | `800` |
+| `card-foreground` | `50` | | `secondary-foreground` | `50` |
+| `popover` | `900` | | `muted` | `800` |
+| `popover-foreground` | `50` | | `muted-foreground` | `400` |
+| `accent` | `800` | | `border` | `700` |
+| `accent-foreground` | `50` | | `input` | `700` |
+| `destructive` | `rgb(220, 38, 38)` | | `ring` | `300` |
+| `destructive-foreground` | `50` | | | |
+
+`border` and `input` sit one step lighter than the dark surfaces they are drawn on. At `800` an
+outline button was almost indistinguishable from a ghost one — a rendered-in-Studio finding, not a
+taste call.
+
+### Light
+
+| Token | Value | | Token | Value |
+| --- | --- | --- | --- | --- |
+| `background` | white | | `primary` | `900` |
+| `foreground` | `950` | | `primary-foreground` | `50` |
+| `card` | white | | `secondary` | `100` |
+| `card-foreground` | `950` | | `secondary-foreground` | `900` |
+| `popover` | white | | `muted` | `100` |
+| `popover-foreground` | `950` | | `muted-foreground` | `500` |
+| `accent` | `100` | | `border` | `200` |
+| `accent-foreground` | `900` | | `input` | `200` |
+| `destructive` | `rgb(239, 68, 68)` | | `ring` | `950` |
+| `destructive-foreground` | `50` | | | |
+
+## The ramps
+
+Standard Tailwind neutrals, as Luau `Color3.fromRGB(…)` expressions:
+
+| | 50 | 500 | 950 |
+| --- | --- | --- | --- |
+| `zinc` | `250, 250, 250` | `113, 113, 122` | `9, 9, 11` |
+| `slate` | `248, 250, 252` | `100, 116, 139` | `2, 6, 23` |
+| `stone` | `250, 250, 249` | `120, 113, 108` | `12, 10, 9` |
+| `neutral` | `250, 250, 250` | `115, 115, 115` | `10, 10, 10` |
+
+Each is a full 50/100/200/300/400/500/600/700/800/900/950 scale; only the ends and midpoint are
+shown here.
+
+## One mode per build
+
+Vela resolves classes at compile time, so `mode` is a build-time choice and a build carries exactly
+one theme. There is no runtime toggle. What the alternatives would cost is in
+[Theming](/facet/guides/theming/#one-mode-per-build).

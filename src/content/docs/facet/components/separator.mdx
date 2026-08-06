@@ -1,0 +1,89 @@
+---
+title: Separator
+description: A one-pixel divider — and the only component whose background is the point.
+product: facet
+section: components
+sidebar:
+  order: 30
+  group: Display
+---
+
+import { FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add separator
+```
+
+Copies `ui/separator.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import { Separator } from "../shared/ui/separator";
+
+<Separator />
+<Separator orientation="vertical" />
+```
+
+<FacetPreview
+  scene="SeparatorScene"
+  source="ui/separator.tsx"
+  height={140}
+  label="Both orientations. The vertical one takes its height from the row."
+/>
+
+<ForwardedProps instance="Frame" />
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "orientation",
+      type: '"horizontal" | "vertical"',
+      description: "Which axis is one pixel. Defaults to horizontal.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+Everything else is forwarded onto the `Frame`. There is no `Text` and no `children` — this is a
+frame with a colour.
+
+## The recipe
+
+```tsx
+export const separatorVariants = fv("bg-border", {
+  variants: {
+    orientation: {
+      horizontal: "w-full h-px",
+      vertical: "h-full w-px",
+    },
+  },
+  defaultVariants: { orientation: "horizontal" },
+});
+```
+
+Both axes are concrete on each orientation — `w-full h-px`, `h-full w-px` — so this is the one
+component in the registry that needs no automatic sizing at all. `h-px` is one literal pixel, not a
+spacing step.
+
+`h-full` on the vertical orientation means the parent has to have a resolved height. Inside a
+`flex-row` container that hugs its content, that is not automatic; give the container a height, or
+give the separator a concrete one through `className`.
+
+## The one component that keeps its background
+
+Every other Facet component clears Roblox's defaults before styling:
+
+```tsx
+const NEUTRAL_PROPS = {
+  BorderSizePixel: 0,
+};
+```
+
+No `BackgroundTransparency: 1` here, unlike everywhere else — the background **is** the separator.
+`bg-border` is the whole visual, and clearing it would leave a one-pixel invisible frame.

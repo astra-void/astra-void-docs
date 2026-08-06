@@ -1,0 +1,139 @@
+---
+title: facet.json
+description: Every field of the project config — what it controls, what the default is, and why.
+product: facet
+section: reference
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Written by `facet init` at the project root, committed with the project, and read by every command
+except `list`.
+
+```json title="facet.json — the defaults"
+{
+  "$schema": "https://facet.astra-void.xyz/schema.json",
+  "style": "default",
+  "theme": { "base": "zinc", "mode": "dark" },
+  "aliases": {
+    "ui": { "dir": "src/shared/ui" },
+    "lib": { "dir": "src/shared/lib" },
+    "hooks": { "dir": "src/shared/hooks" }
+  },
+  "velaConfig": "vela.config.ts"
+}
+```
+
+The file is parsed loosely and normalized against those defaults, so a hand-edited config missing a
+key picks the default up rather than crashing mid-copy.
+
+## `$schema`
+
+The JSON Schema the file advertises, for editor completion and validation. It is **generated** from
+the CLI's `FacetConfig` type by the same deploy that publishes the registry, so it can never be a
+version behind the CLI that writes files pointing at it.
+
+## `style`
+
+`"default"`, and there is no second value.
+
+shadcn shipped two styles and has since deprecated `default`; the field outlived the second style.
+That is most of the argument, and it is worse here: nothing about a Roblox component is verifiable
+by reading it, so a second style doubles the set of components that have to be opened in Studio and
+looked at — which is already the expensive, manual step.
+
+The field stays because `facet.json` is a file you commit, and removing a key from it is a breaking
+change for the benefit of deleting one line. It is also the natural place for a fork to say what it
+serves. Nothing in the CLI branches on it, and it is typed as the literal `"default"` rather than
+`string`, so any code that starts branching has to change the type first.
+
+## `theme`
+
+```json
+"theme": { "base": "zinc", "mode": "dark" }
+```
+
+| Field | Values | |
+| --- | --- | --- |
+| `base` | `"zinc"` · `"slate"` · `"stone"` · `"neutral"` | Neutral ramp the semantic tokens derive from |
+| `mode` | `"dark"` · `"light"` | Which side of the ramp they resolve to |
+
+These are what `init` writes into the generated `vela.config.ts`, and what a later `doctor` uses to
+print the correct `facetTheme({ … })` snippet if the config is unwired.
+
+<Callout title="Editing this does not retheme anything on its own">
+The theme lives in `vela.config.ts`. Changing `facet.json` after `init` changes what the CLI would
+*suggest*, not what your build resolves — `init` never rewrites an existing Vela config. Change both,
+or change the Vela config alone. See [Theming](/facet/guides/theming/).
+</Callout>
+
+## `aliases`
+
+Where each class of file lands, and how other copied files import it.
+
+```json
+"aliases": {
+  "ui":    { "dir": "src/shared/ui",    "import": "shared/ui" },
+  "lib":   { "dir": "src/shared/lib",   "import": "shared/lib" },
+  "hooks": { "dir": "src/shared/hooks", "import": "shared/hooks" }
+}
+```
+
+| Field | |
+| --- | --- |
+| `dir` | Directory from the project root. A **real path**, because roblox-ts projects are laid out by Rojo, not by module resolution. |
+| `import` | The specifier other copied files use to reach this directory. **Omit for relative imports.** |
+
+Which alias a file lands under is decided by its registry item type:
+
+| Item type | Alias |
+| --- | --- |
+| `registry:ui` | `ui` |
+| `registry:lib` | `lib` |
+| `registry:hook` | `hooks` |
+| `registry:block` | `ui` |
+
+**Relative is the default**, because it needs no tsconfig `paths` and therefore works in a roblox-ts
+project nobody configured for this. With `import` set, the rewrite is textual —
+`~/lib/utils` → `shared/lib/utils`. Without it, the CLI computes a relative path from the importing
+file's destination, so `~/lib/utils` inside `src/shared/ui/button.tsx` becomes `../lib/utils`.
+
+If you set `import`, your tsconfig needs a matching `paths` entry. `facet doctor` **fails** on this
+rather than warning, because every copied component imports through it. It accepts the specifier
+itself or any wildcard that would cover it — `"shared/ui"`, `"shared/ui/*"` and `"shared/*"` all
+count.
+
+<Callout title="Changing an alias does not move files already copied">
+It only affects what the next `add` writes. To re-resolve an existing component, re-add it with
+`--overwrite` — and commit first, because that replaces the file wholesale.
+</Callout>
+
+## `velaConfig`
+
+```json
+"velaConfig": "vela.config.ts"
+```
+
+Path to the project's Vela config, from the project root. `init` creates it if it does not exist;
+nothing ever rewrites it. `add` and `doctor` read it to check whether Facet's tokens are supplied.
+
+That check is textual — it looks for `@facet-ui/theme` in the source. A config that spells the
+tokens out by hand instead of spreading `facetTheme` is *unwired* but not necessarily broken, and
+`doctor` then looks for each required token by name as a colour key. That is the most that can be
+checked without evaluating a file that is arbitrary TypeScript.
+
+## `registry`
+
+```json
+"registry": "https://ui.example.com/r"
+```
+
+Optional. A URL or a filesystem path. Omit for the published registry at
+`https://facet.astra-void.xyz/r`.
+
+This is the right place to pin a fork or a private registry for a team — everyone who clones the
+project gets the same source without remembering a `--registry` flag. It is overridden by
+`--registry` on the command line and by `FACET_REGISTRY_DIR` in the environment. See
+[Using another registry](/facet/guides/custom-registry/).

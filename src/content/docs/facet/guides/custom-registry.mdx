@@ -1,0 +1,123 @@
+---
+title: Using another registry
+description: Point the CLI at a fork, a private registry, or a local build — the four-step resolution order and what a registry has to serve.
+product: facet
+section: guides
+sidebar:
+  order: 60
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+The CLI fetches components at runtime rather than bundling them, which means the source of those
+components is a setting. Four ways to change it, in resolution order — most specific first.
+
+## Resolution order
+
+| # | Source | Set by | Use for |
+| --- | --- | --- | --- |
+| 1 | `FACET_REGISTRY_DIR` | env, a local **directory** | Testing a registry build without publishing it |
+| 2 | `--registry <url\|path>`, or `registry` in `facet.json` | flag or config | Forks, private registries, version pins |
+| 3 | `FACET_REGISTRY_URL` | env, a URL | CI, or a machine-wide default |
+| 4 | `https://facet.astra-void.xyz/r` | built in | The published registry |
+
+A value starting with `http://` or `https://` is read as a URL; anything else is resolved as a
+filesystem path.
+
+```bash title="Each of the first three"
+FACET_REGISTRY_DIR=site/r npx facet-rbxts list
+npx facet-rbxts add button --registry https://ui.example.com/r
+FACET_REGISTRY_URL=https://ui.example.com/r npx facet-rbxts list
+```
+
+```json title="facet.json — persistent, and committed with the project"
+{
+  "registry": "https://ui.example.com/r"
+}
+```
+
+The config field is the right one for a team: everyone who clones the project gets the same
+registry without remembering a flag.
+
+<Callout title="The default URL is baked into every released CLI">
+`https://facet.astra-void.xyz/r` is a constant in the published package, which is why the Facet
+repo's own deploy generates a `CNAME` file as part of the site artifact — deploying from a GitHub
+Actions artifact replaces the whole site, and without it GitHub can revert the custom domain to the
+`github.io` default. That outage is not something a patch release fixes quickly.
+</Callout>
+
+## What a registry has to serve
+
+Three kinds of file over plain HTTP (or a directory with the same layout):
+
+```
+<base>/index.json      the index — every item, its files, dependencies, and tokens
+<base>/button.json     one payload per item, source text inlined
+<base>/utils.json
+```
+
+The CLI reads `index.json` first and refuses anything whose `version` is not `1`, telling the user
+to upgrade rather than guessing at a format it does not know. Item payloads are fetched lazily —
+only for what is actually being added, removed, or diffed.
+
+A 404 on an item is treated as a user typo; a 404 on the index means the registry moved. Requests
+carry `accept: application/json` and time out after 15 seconds.
+
+The full shape is in the [registry format reference](/facet/reference/registry-format/).
+
+## Running a fork
+
+The Facet repo builds its registry with one script, and a fork inherits it:
+
+```bash title="In a fork of astra-void/facet"
+pnpm registry:check     # structural validation — names, types, dependency resolution
+pnpm registry:build     # registry/ → site/
+```
+
+`site/` is generated and never committed, so the published registry cannot drift from `registry/`.
+The build emits the index, one JSON per item, a landing page listing what exists, a `CNAME`, a
+`.nojekyll` (Pages runs Jekyll otherwise, which eats underscore-prefixed paths), and `schema.json`
+— the JSON Schema every `facet.json` names in its own `$schema`.
+
+`schema.json` is generated from the `FacetConfig` type rather than checked in, so it cannot be a
+version behind the CLI that writes the files pointing at it.
+
+Test against the working tree before publishing anything:
+
+```bash title="The CLI, against a local build"
+FACET_REGISTRY_DIR=site/r npx facet-rbxts list
+FACET_REGISTRY_DIR=site/r npx facet-rbxts add button --cwd ../some-project
+```
+
+<Callout title="Three places name the host">
+`DEFAULT_REGISTRY_URL` in the CLI's registry source, `$schema` in its config module, and
+`CUSTOM_DOMAIN` in the build script. They must agree — a mismatch between the last one and the first
+two means the CLI asks a host the site no longer claims.
+</Callout>
+
+## Adding your own components to a fork
+
+Three edits, and it is not done until all three are made:
+
+1. **The source** in `registry/src/ui` (or `lib`, `hooks`), addressing other registry files with
+   `~/` — never a relative path, because the CLI rewrites `~/` and cannot rewrite `../lib/utils`.
+2. **An entry** in `registry/registry.ts` declaring every import as a `dependency` (npm) or a
+   `registryDependency` (another item), plus the semantic `tokens` its classes name so `facet
+   doctor` can check them.
+3. **A scene** in `apps/playground` — the only place anyone sees it render.
+
+`registry:check` enforces the structural half: unique names, known item types, resolvable registry
+dependencies, no file claimed by two items, and **one spec per npm package across the whole
+registry**. That last one exists because `facet add` unions dependency strings across the install
+set, so `@lattice-ui/react-runtime` and `@lattice-ui/react-runtime@^0.8.0` in two entries would
+survive as two entries and both reach the package manager.
+
+What it cannot check is a missing npm dependency — an import the entry never declared. That is on
+the author, and it ships a file that cannot compile in a project that did not happen to have the
+package already.
+
+## A private registry
+
+Nothing about the format requires GitHub Pages. Any static host works, and so does a directory on
+disk. If it is behind auth, the CLI has no credential support — point `FACET_REGISTRY_DIR` at a
+checkout your build process already has access to.

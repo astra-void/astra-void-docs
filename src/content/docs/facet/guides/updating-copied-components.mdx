@@ -1,0 +1,124 @@
+---
+title: Updating copied components
+description: There is no facet upgrade. What diff and remove can tell you, what they deliberately cannot, and why there is no lock file.
+product: facet
+section: guides
+sidebar:
+  order: 50
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+The copy-in model means Facet can never push an update. A component in your project is a file in
+your repository; nothing reaches back into it. What the CLI offers instead is visibility — and it is
+careful about how much it claims.
+
+## `facet diff`
+
+```bash
+npx facet-rbxts diff            # every installed component
+npx facet-rbxts diff button     # one
+```
+
+Compares each copied file against what the registry would write there **today**, replaying the `~/`
+rewrite first so your project's alias and directory choices are not reported as changes.
+
+The direction is registry → project: `-` is what the registry has, `+` is what your file says. That
+way applying the `+` side is what "keep mine" means, and a diff of your own edits reads the way
+`git diff` would have shown you making them.
+
+<Callout title="It cannot tell your edit from an upstream change">
+Facet records nothing at copy time — no lock file, no hashes, no note of which registry version a
+file came from. So a difference here is your edit, a change upstream, or both, and `diff` says so in
+its own output rather than implying the change came from upstream.
+
+Your version control already knows which lines you wrote. That is the tool for the other half of
+the question.
+</Callout>
+
+A component in the registry that is not in your project is reported as such and skipped. A component
+you never added produces nothing — that is not news.
+
+## Taking an upstream change
+
+There is no command for this, and that is the model working as intended:
+
+1. `facet diff button` — see what moved.
+2. Decide. Most upstream changes to a component you have edited are not worth taking.
+3. If you want it: `facet add button --overwrite` replaces the file wholesale, and your edits are
+   gone. Commit first, then reapply what you want from the diff.
+
+`--overwrite` is deliberately blunt. There is no three-way merge because there is no base text to
+merge against — see below.
+
+## `facet remove`
+
+```bash
+npx facet-rbxts remove badge
+npx facet-rbxts remove badge --force
+```
+
+Two refusals, and they are not the same kind of refusal.
+
+**A file that differs from the registry** is refused without `--force`. "Differs" is the closest
+available stand-in for "you changed this", and it also fires when only upstream moved — so in the
+worst case you are asked about a file you never touched. That is the safe direction to be wrong in:
+asking too often is recoverable, deleting someone's edited component is not.
+
+**A component another installed component still imports** is refused, and `--force` does not cover
+it. Deleting `utils` out from under an installed `button` leaves a project that does not compile,
+and you asked to remove one component, not to break another.
+
+That second check runs to a fixed point, which matters more than it sounds:
+
+```bash
+npx facet-rbxts remove button utils
+```
+
+If `button` turns out to be modified and so stays, `utils` is suddenly still imported — and a single
+pass would already have cleared it. The plan is recomputed until nothing changes.
+
+Directories are left alone, and so is anything you added next to the removed files.
+
+## Why there is no lock file
+
+A `facet.lock` of per-file content hashes is the obvious fix for what `diff` cannot say, and it was
+the plan. Three reasons it was dropped:
+
+**A hash answers *whether*, and a diff has to show *how*.** Showing what a merge would involve needs
+the text you started from — three-way, base included. So the record that would actually satisfy
+`facet diff` is not a hash but a second copy of every component, committed to your repository and
+kept in step with the first. That is vendoring the registry into the project the CLI just copied out
+of, to serve one command.
+
+**Even the yes/no is weaker than it looks.** The hash goes stale for reasons that are not edits: a
+project-wide formatter pass over `src/shared/ui`, a rename, a move to another directory. Facet would
+then report that you changed everything — true, useless, and indistinguishable from the report it
+would give if upstream had rewritten every component.
+
+**It is a file you commit, never edit, and cannot read.** The promise of the model is that a copied
+file is yours. A lock file is Facet keeping a ledger about files it gave away, and the first time it
+disagrees with reality — and it will — it is a puzzle in your repository that Facet put there.
+
+## The registry has no versions yet
+
+Today `main` overwrites one live registry, so an edit to a component reaches everyone immediately,
+including a project that ran `facet add` months ago and will next run `facet diff`. There is no
+`r/v1/` prefix and no per-release snapshots.
+
+That is [an open question](/facet/getting-started/scope-and-status/#decisions-that-are-open), and it
+is the one that would change the shape of the provenance problem rather than the answer to it. With
+addressable snapshots, the base text becomes something the CLI can *fetch* rather than something you
+have to store, and the only thing needing a record is which snapshot was used — one field, in
+`facet.json`, a file Facet already owns.
+
+**In the meantime**, if you need a stable registry, pin one: point `facet.json`'s `registry` field
+at a fork or a local build you control. See [Using another registry](/facet/guides/custom-registry/).
+
+## What to actually do
+
+- **Commit the copied files.** They are source, not build output.
+- **Do not expect updates.** If a component is a starting point you rewrote, `diff` will be noisy
+  forever and that is fine — stop running it on that component.
+- **Run `facet doctor` after upgrading anything.** It is the check that catches a project set up by
+  an older CLI: the copied files are current and the versions under them are not.

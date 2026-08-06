@@ -20,7 +20,7 @@ import { mdxToMarkdown } from "@/lib/mdx-to-markdown"
 const SITE_TITLE = "astra-void docs"
 
 const SITE_SUMMARY =
-  "Documentation for the astra-void libraries for Roblox UI built with roblox-ts and @rbxts/react: Lattice UI (headless behavior primitives), Vela (Tailwind-style className compilation), and Loom (a live web preview renderer)."
+  "Documentation for the astra-void libraries for Roblox UI built with roblox-ts and @rbxts/react: Lattice UI (headless behavior primitives), Vela (Tailwind-style className compilation), Loom (a live web preview renderer), and Facet (copy-in components composed from the other three)."
 
 const FALLBACK_ORIGIN = "https://docs.astra-void.xyz"
 

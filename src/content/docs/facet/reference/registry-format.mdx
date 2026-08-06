@@ -1,0 +1,186 @@
+---
+title: Registry format
+description: The published JSON contract — index, item payloads, and the validation rules an authored registry has to pass.
+product: facet
+section: reference
+sidebar:
+  order: 50
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+This is a **published format**. `facet add` consumes it, forks emit it, and changing it
+incompatibly means bumping `RegistryIndex.version`.
+
+## What a registry serves
+
+```
+<base>/index.json      the index the CLI reads first
+<base>/<name>.json     one payload per item, source text inlined
+```
+
+Plus, at the site root rather than under the registry base, a `schema.json` — the JSON Schema every
+`facet.json` names in its own `$schema`.
+
+The CLI reads `index.json` first and item payloads lazily, only for what is being added, removed, or
+diffed. Remote reads send `accept: application/json` and time out after 15 seconds.
+
+## `index.json`
+
+```json
+{
+  "version": 1,
+  "generatedBy": "0.3.0",
+  "items": [
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "description": "Button with variant and size recipes",
+      "files": ["ui/button.tsx"],
+      "registryDependencies": ["utils", "text"],
+      "dependencies": [
+        "@facet-ui/react-variants@^0.1.1",
+        "@lattice-ui/react-runtime@^0.8.0"
+      ],
+      "tokens": ["primary", "primary-foreground", "…"]
+    }
+  ]
+}
+```
+
+| Field | |
+| --- | --- |
+| `version` | Registry format version. `1` today. A CLI that meets a higher one refuses and says to upgrade, rather than guessing at a format it does not know. |
+| `generatedBy` | Version of the `facet-rbxts` release that produced the index. Informational. |
+| `items` | Every item, with its files as **bare strings**. |
+
+## Item fields
+
+| Field | Type | |
+| --- | --- | --- |
+| `name` | `string` | Unique across the registry. What you type after `facet add`. |
+| `type` | `registry:ui` · `registry:lib` · `registry:hook` · `registry:block` | Decides which `facet.json` alias the files land under |
+| `description` | `string?` | Shown by `facet list` |
+| `files` | see below | |
+| `dependencies` | `string[]?` | npm packages the source imports, as `name` or `name@range` |
+| `devDependencies` | `string[]?` | Same, installed as dev |
+| `registryDependencies` | `string[]?` | Other **items** — never files. Resolved transitively by `add` |
+| `tokens` | `string[]?` | Semantic theme tokens the classes name, so `doctor` can check them against the consumer's Vela theme |
+
+### Item types and where they land
+
+| Type | `facet.json` alias | Default directory |
+| --- | --- | --- |
+| `registry:ui` | `ui` | `src/shared/ui` |
+| `registry:lib` | `lib` | `src/shared/lib` |
+| `registry:hook` | `hooks` | `src/shared/hooks` |
+| `registry:block` | `ui` | `src/shared/ui` |
+
+## Item payloads
+
+`<name>.json` is the index entry with the file list expanded from strings into objects carrying the
+source text:
+
+```json
+{
+  "name": "utils",
+  "type": "registry:lib",
+  "files": [
+    {
+      "path": "lib/utils.ts",
+      "type": "registry:lib",
+      "content": "export { type ClassValue as ClassName, cn } from \"@facet-ui/react-variants\";\n…"
+    }
+  ],
+  "dependencies": ["@facet-ui/react-variants@^0.1.1"]
+}
+```
+
+| File field | |
+| --- | --- |
+| `path` | Path under the registry's `src`, e.g. `ui/button.tsx`. The **first segment names the alias**. |
+| `type` | Per-file item type, which can differ from the item's own |
+| `target` | Overrides the alias-derived destination entirely. Rare; blocks use it |
+| `content` | The source text, inlined |
+
+A path's first segment is the alias and the rest is kept, so a multi-file block stays a directory
+rather than collapsing into the alias root.
+
+<Callout title="target does not survive into the index">
+The index carries files as bare strings, so neither the per-file `type` nor a `target` override is
+visible there — the first segment is read as the type instead, falling back to the item's own.
+
+A file that overrides its destination with `target` therefore cannot be located from the index at
+all. Only `facet doctor` reads files that way, and it reports what it could not find rather than
+pretending it looked.
+</Callout>
+
+## What `~/` means in the content
+
+Registry sources address each other with a `~/` prefix, and the first segment is an alias name:
+
+```tsx
+import { TextSlot } from "~/lib/text";
+import { cn } from "~/lib/utils";
+```
+
+`facet add` rewrites these for the consumer's project — textually when the alias has an `import`
+specifier, otherwise as a relative path computed from where the importing file lands. An unknown
+alias segment is left alone deliberately, so it fails loudly at typecheck rather than being silently
+rewritten to something wrong.
+
+**Relative paths in registry source are a bug.** The CLI can rewrite `~/lib/utils`; it cannot
+rewrite `../lib/utils`.
+
+## What a component may import
+
+Anything else will not resolve once copied:
+
+- `@rbxts/*`
+- `@lattice-ui/*`
+- `@facet-ui/react-variants`
+- `~/…`
+
+## Validation rules
+
+`validateRegistry()` runs in `registry:check`, so a broken registry fails CI rather than `facet add`:
+
+| Rule | |
+| --- | --- |
+| Unique `name` | |
+| Known `type` | |
+| At least one file per item | |
+| No file claimed by two items | |
+| Every `registryDependencies` entry resolves | |
+| **One spec per npm package across the whole registry** | |
+
+That last one is the non-obvious one. `facet add` **unions** dependency strings across the install
+set, so `@lattice-ui/react-runtime` in one item and `@lattice-ui/react-runtime@^0.8.0` in another
+survive as two entries and both reach the package manager. A dependency carries a floor when the
+source needs behavior a specific version introduced, and then the same package carries the *same*
+spec in every entry.
+
+What validation **cannot** catch is a missing npm dependency — an import the entry never declared.
+That is on the author, and it ships a file that cannot compile in a project that did not happen to
+have the package already.
+
+## Specs
+
+Dependency strings are `name` or `name@range`. The CLI splits on the **last** `@` so a scoped
+package's leading one survives: `@facet-ui/theme` is a name, `vela-rbxts@^0.9.0` is a name and a
+range, `@lattice-ui/react-runtime@^0.8.0` is both at once.
+
+Range comparison is deliberately not a semver implementation. It answers one question — is what is
+installed at least the version this needs — for the shapes Facet writes (`^0.9.0`, `>=0.8.0`,
+`0.1.1`), and reports anything else as unverifiable rather than guessing.
+
+## Errors
+
+| Message | Cause |
+| --- | --- |
+| `The registry at … is format version N, which this CLI does not understand` | `version` above `1` |
+| `Could not reach the registry at …` | Network, or a wrong base |
+| `The registry returned N for …` | Non-404 HTTP failure |
+| `The registry returned something that is not JSON at …` | A host serving an HTML error page |
+| `Component "x" was not found at …` | An index that disagrees with the files beside it |
+| `Circular registry dependency: a -> b -> a` | An authoring bug; throws rather than being silently broken |

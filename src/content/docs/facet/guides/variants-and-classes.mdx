@@ -1,0 +1,229 @@
+---
+title: Variants and classes
+description: fv() recipes, why cn does not merge conflicts, and the one ordering rule the whole model rests on.
+product: facet
+section: guides
+sidebar:
+  order: 20
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+`@facet-ui/react-variants` is Facet's [`class-variance-authority`](https://cva.style/) equivalent,
+and the only runtime package a copied component imports from Facet. Two exports:
+
+- **`fv()`** — build a recipe: a base class string plus variant axes, returning a resolver from a
+  selection to a flat class string.
+- **`cn()`** — flatten `ClassValue`s into a class string.
+
+Full signatures in the [reference](/facet/reference/variants/).
+
+## Recipes
+
+```tsx
+import { fv, type VariantProps } from "@facet-ui/react-variants";
+
+const buttonVariants = fv("flex-row items-center justify-center w-fit rounded-md", {
+  variants: {
+    variant: {
+      default: "bg-primary hover:bg-primary/90",
+      outline: "border border-input bg-background hover:bg-accent",
+      ghost: "hover:bg-accent",
+    },
+    size: {
+      sm: "h-8 px-3",
+      md: "h-9 px-4",
+    },
+  },
+  defaultVariants: { variant: "default", size: "md" },
+});
+
+type ButtonVariants = VariantProps<typeof buttonVariants>;
+// → { variant?: "default" | "outline" | "ghost"; size?: "sm" | "md" }
+
+buttonVariants({ variant: "outline", size: "sm", className: "w-full" });
+```
+
+Resolution order inside a recipe: **base → each matching variant → matching compound variants →
+the caller's `className`**. The caller lands last, on purpose. That is the whole story of the next
+section.
+
+Recipes hold no colour, size, or font value of their own. They name tokens; Vela resolves those from
+your `vela.config.ts` at compile time. That is what makes a copied component themeable without you
+editing the component.
+
+### Compound variants
+
+```tsx
+const badgeVariants = fv("rounded-full", {
+  variants: {
+    variant: { default: "bg-primary", outline: "border border-input" },
+    size: { sm: "px-2 py-0.5", md: "px-3 py-1" },
+  },
+  compoundVariants: [{ variant: "outline", size: "sm", className: "px-1.5" }],
+  defaultVariants: { variant: "default", size: "md" },
+});
+```
+
+Matched against the *resolved* selection — defaults included — so a compound fires whether the axis
+came from the caller or from `defaultVariants`.
+
+## `cn` does not resolve conflicts
+
+shadcn's `cn` is `clsx` + `twMerge`. Facet's is only the flattener, and the reason `twMerge` exists
+does not survive the port.
+
+**On the web**, class order in the attribute means nothing. Tailwind emits utilities in a canonical
+stylesheet order and the later *rule* wins, so `p-4 p-2` is 1rem of padding and so is `p-2 p-4`.
+`tailwind-merge` exists to make attribute order mean what everyone assumes it already means — without
+it, a consumer's `className` cannot reliably override a recipe.
+
+**In Vela**, tokens resolve left to right into instance properties and a later token overwrites an
+earlier one. Class order *is* specificity. `fv()` already appends the caller's `className` last, so
+within one class list a later token wins by construction — the behaviour `twMerge` simulates is
+native.
+
+("The caller" here means whatever code calls the recipe, which is the component itself. A `className`
+passed in from *outside* the component is a different story — see
+[Overriding from the call site](#overriding-from-the-call-site).)
+
+The cross-family cases agree too:
+
+```
+px-4 p-2    → p-2 wins on both axes       (twMerge drops px-4; same result)
+p-2 px-4    → x from px-4, y from p-2     (twMerge keeps both; same result)
+w-fit w-9   → w-9                          (same family, later wins)
+```
+
+A merge pass would cost a token table tracking every Vela family, kept in sync with a compiler that
+is still adding families, to reproduce an outcome that is already correct.
+
+## The one rule
+
+<Callout title="Nothing may be appended after the consumer's className">
+This is the entire price of not having a merge pass, and it is a rule you inherit the moment you
+edit a copied component.
+</Callout>
+
+State-derived classes go through the recipe's `className` slot, **ahead** of the consumer's:
+
+```tsx
+// wrong — the consumer cannot override the disabled look
+cn(buttonVariants({ variant, size, className: props.className }), disabled && "bg-muted")
+
+// right
+buttonVariants({ variant, size, className: cn(disabled && "bg-muted", props.className) })
+```
+
+`button` had this backwards until it was written down. The failure is quiet: a consumer passes
+`className="bg-red-500"`, nothing happens, and there is nothing in either file explaining why.
+
+The same rule is why `TextSlot` takes no `className` — see
+[Text and labels](/facet/guides/text-and-labels/#textslot-takes-no-classname).
+
+### When to revisit this
+
+If Vela ever stops resolving last-token-wins, or grows a mechanism that lets a recipe's tokens land
+after the consumer's, this breaks silently — a consumer override that simply does nothing. It is
+worth re-reading whenever Vela's resolution order changes.
+
+## Overriding from the call site
+
+<Callout title="A className passed to a Facet component does nothing">
+This is measured, not predicted: a `<Button className="bg-destructive" Text="Override" />` rendered
+in the docs' own preview gallery comes out `bg-primary` — white on the default dark theme, exactly
+like a `<Button />` with no `className` at all. The class is dropped in silence, with no diagnostic
+on either side.
+</Callout>
+
+Two Vela behaviors compose into it, and neither is wrong on its own:
+
+**1. `className` on a component is consumed at the call site.** Vela lowers it where it is written,
+so the component never receives a string:
+
+```tsx
+<Label className="text-muted-foreground" Text="1,200 coins" />
+// emitted:
+<Label Text="1,200 coins" TextColor3={Color3.fromRGB(161, 161, 170)} />
+```
+
+`props.className` inside `Label` is `undefined`. The recipe slot it would have been threaded into
+never sees it. (This is the same mechanism that makes
+[`TextSlot` take no `className`](/facet/guides/text-and-labels/#textslot-takes-no-classname) —
+there it is load-bearing, here it is in the way.)
+
+**2. A component's own class-derived props are emitted after its spreads.** Whatever the author
+wrote, Vela moves the resolution to the end of the prop list:
+
+```tsx
+// as authored in label.tsx
+<textlabel className={cn(labelVariants({ className: props.className }))} {...passthrough} />
+// as emitted
+<VelaRuntimeHost {...passthrough} className={…} __velaTag={"textlabel"} />
+```
+
+So the `TextColor3` from step 1 arrives through `passthrough` and is then overwritten by the
+component's own recipe. Both halves of the override lose.
+
+### What that means for a copied component
+
+**The answer is the model's answer: edit the file.** That is what a copied component is for, and it
+is the only override that reliably works. `variant` and `size` cover the cases the component
+anticipated; anything else is a change to source you own.
+
+What still crosses the boundary is any instance property the component's classes do not set —
+`LayoutOrder`, `Position`, `Visible`, `ZIndex`, event handlers. Those arrive through passthrough and
+survive, because nothing overwrites them.
+
+### Why the `className` prop exists at all
+
+It is not decoration. Inside the component it is a real slot that a *sibling* recipe or a wrapper in
+the same file threads through, and `fv()`'s ordering discipline is what makes that composition
+correct. It is also what a copied component uses on itself once you edit it. It just cannot be
+driven from outside by a Vela-compiled caller.
+
+Whether Facet should keep advertising it as a public prop, drop it, or push for a Vela change that
+hands components their `className` as a string is
+[open](/facet/getting-started/scope-and-status/#decisions-that-are-open).
+
+## `ClassValue` is a reserved name
+
+Vela inlines its runtime into every file it transforms, and that runtime declares a local
+`ClassValue`. A component importing that name gets:
+
+```
+TS2440: Import declaration conflicts with local declaration of 'ClassValue'.
+```
+
+`~/lib/utils` re-exports it as **`ClassName`** for this reason. Use that:
+
+```tsx
+import { type ClassName, cn } from "~/lib/utils";
+```
+
+## Dynamic classes are a different code path
+
+Every Facet class string comes out of `fv()`, which makes it a computed expression — and Vela
+resolves computed `className` at **runtime**, not at compile time. For a long time that runtime path
+implemented a strict subset of the static lowering, and the missing families did nothing at all
+rather than erroring:
+
+| Vela version | What the computed path gained |
+| --- | --- |
+| 0.7.0 | `flex-*`, `items-*`, `justify-*`, `fit`/`auto`, `text-<size>`, `text-<align>`, `font-<weight>` |
+| 0.8.0 | `opacity-*`, `whitespace-*`, `leading-*` — the last holdouts |
+| 0.9.0 | no new families; scoped the inlined runtime so `card` compiles at all |
+
+That history is why the first published `button` shipped zero pixels wide and every label sat on
+Roblox's 8px default. No component carries a workaround for a missing family any more, and the CLI's
+`^0.9.0` floor keeps you above the whole list.
+
+<Callout title="When a class does nothing, suspect the path before the class">
+The rule that outlives the specific gaps. Check what the emitted runtime actually resolves:
+
+```bash
+grep -o 'startsWith(token, "[a-z0-9-]*")' out/shared/ui/button.luau | sort -u
+```
+
+Whatever is missing there is missing at runtime, whatever the static path or the docs say.
+</Callout>

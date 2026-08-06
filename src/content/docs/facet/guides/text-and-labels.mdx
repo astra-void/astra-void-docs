@@ -1,0 +1,162 @@
+---
+title: Text and labels
+description: Why text is an uppercase prop, what TextSlot does, and the two rules every text recipe obeys.
+product: facet
+section: guides
+sidebar:
+  order: 30
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+## `<Button>Save</Button>` does not compile
+
+```tsx
+<Button>Save</Button>
+// TS2747: 'Button' components don't accept text as child elements.
+```
+
+roblox-ts React's `ReactNode` is `ReactElement | ReactFragment | ReactPortal | boolean | undefined`
+— no string member, because host instances draw text from a `Text` property rather than from a text
+node. And TypeScript intersects a component's `children` with `React.Attributes["children"]`, so
+widening the component's own type does not help either. It is `TS2747` either way.
+
+This is not a Facet decision. It is the shape of the platform, and the only question left is how to
+spell the escape hatch and how consistently.
+
+## The answer: `Text?: string`
+
+```tsx
+<Button Text="Save" />
+<Badge Text="New" />
+<CardTitle Text="Shop" />
+```
+
+Three rules make it consistent:
+
+1. **`Text?: string` on every component that draws a string itself.** Always listed in that
+   component's `OWN_PROPS`, so it never reaches the host instance by accident.
+2. **`children` keeps shadcn's meaning** — composition. An icon, a nested element, anything that is
+   not a bare string.
+3. **Two text regions means two components, never two props.** shadcn splits `CardTitle` /
+   `CardDescription`; Facet follows. A component that grows a second string prop — `Text` plus
+   `Description` — is a component that should have been split.
+
+### Why uppercase, when every other Facet prop is lowercase
+
+`variant`, `size`, `asChild`, `disabled` are lowercase because they belong to Facet. Uppercase is
+the Roblox namespace, and `Text` belongs to it: it is already a member of
+`PassthroughProps<TextButton>` and `PassthroughProps<TextLabel>`.
+
+<Callout title="The name to take is the name you would have to defend against">
+Declare the prop as lowercase `text` and the name `Text` stays live on the passthrough path. A
+Roblox developer writes `<Button Text="Save" />` — the obvious thing to write — it lands on the host
+instance, and Roblox's 8px near-black default is drawn *underneath* the styled label, with nothing
+in the source explaining why.
+
+Declaring `Text` shadows that and intercepts it. This is also what retired `TextSlot`'s lowercase
+`text` prop: it wrote `Text={props.text}` *before* spreading passthrough, so a stray `Text` silently
+won the very label the component was trying to style.
+</Callout>
+
+This is not a claim that `Text` is the nicer API. It is the only one the compiler allows, made
+uniform. If roblox-ts React ever accepts string children, `TextSlot` already prefers `children` when
+`Text` is absent — components would keep working while the registry moved over.
+
+## `TextSlot`
+
+```bash
+npx facet-rbxts add text     # usually arrives as a dependency of button or badge
+```
+
+```tsx
+export function TextSlot(props: TextSlotProps) {
+  if (props.Text === undefined) {
+    return <>{props.children}</>;
+  }
+
+  return (
+    <textlabel
+      className="size-fit"
+      Text={props.Text}
+      BackgroundTransparency={1}
+      BorderSizePixel={0}
+      {...getPassthroughProps<TextLabel>(props, OWN_PROPS)}
+    />
+  );
+}
+```
+
+Given `Text` it draws the styled label; otherwise it renders `children`. That is the whole component.
+
+The text is a **child instance**, not the parent's own `Text` property, and that is what lets the
+label be sized and coloured independently of the button around it, and sit beside an icon:
+
+```tsx
+<Button Text="Save" />
+<Button Text="Save"><Icon glyph="check" /></Button>
+```
+
+`size-fit` on that label is not decoration. A label with no resolved size collapses its parent's
+automatic sizing along with it — a `w-fit` button around an unmeasured label is a zero-pixel button.
+
+### `TextSlot` takes no `className`
+
+<Callout title="Vela lowers className at the call site">
+`<TextSlot className={buttonLabelVariants(…)}>` becomes a **runtime host**, and the resolved
+`TextColor3` / `TextSize` / `FontFace` arrive inside `TextSlot` as ordinary props. `TextSlot` only
+has to forward them onto its `textlabel`.
+
+Accepting a `className` prop and re-applying it inside would put `TextSlot` *after* the call site in
+resolution order and drop those props on the floor instead — which is exactly what put every button
+label on Roblox's 8px near-black default.
+
+The same trap waits for any component that wraps another component and expects to re-read
+`className` from its own props.
+</Callout>
+
+## Every text recipe declares a `font-*`
+
+The rule that costs the most to learn by accident.
+
+Vela leaves `FontFace` untouched when no `font-*` token appears, and Roblox's untouched default is
+**LegacyArial**. That is not a weight of the font every other label resolves to — it is a different
+typeface, visibly larger at the same `TextSize`.
+
+`card`'s description had no `font-*`. It rendered in Arial next to a SourceSansPro title, inside the
+same header, for as long as nobody had opened it in Studio. Reading the emitted Luau did not catch
+it, because the emitted Luau was correct — it simply never set `FontFace`.
+
+**Weight is not optional styling here. It is the only thing that says which font.**
+
+## A label needs its own recipe
+
+Nothing inherits. `text-sm` on a button does not reach the label inside it, because text properties
+belong to the instance that draws the text.
+
+```tsx
+export const buttonVariants = fv("… w-fit rounded-md");        // the button
+export const buttonLabelVariants = fv("font-medium", { … });   // the text
+```
+
+Both key off the same `variant` and `size` props. This is the single biggest structural difference
+from shadcn, where one class list on the parent styles everything under it — and it is why every
+Facet component that draws a label exports two recipes rather than one.
+
+## Where a class cannot express it at all
+
+There is exactly one case in the current registry, and it is worth knowing because you will hit it
+the moment you write a component that fades:
+
+`opacity-*` composes into everything the compiler can see under an element — but not into a
+*component* child, whose instances are created elsewhere. And a class on `TextSlot` resolves against
+a tag the runtime cannot identify, so it drops the text-only half.
+
+So a disabled `Button` states the label's fade as an instance prop:
+
+```tsx
+<TextSlot Text={props.Text} TextTransparency={disabled ? 0.5 : 0} className={…} />
+```
+
+`props.children` are unreachable for the same reason. A component that renders children onto a faded
+surface has to state it there too.

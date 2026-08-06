@@ -1,0 +1,169 @@
+---
+title: Theming
+description: Nineteen semantic tokens, four neutral ramps, and why a build carries exactly one mode.
+product: facet
+section: guides
+sidebar:
+  order: 10
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Roblox has no CSS variables. The indirection that makes shadcn/ui themeable — `:root { --primary }`,
+re-read by the browser on every paint — has no equivalent, so Facet puts it one layer down, in
+`vela.config.ts`, and resolves it at compile time.
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+import { facetTheme } from "@facet-ui/theme";
+
+export default defineConfig({
+  theme: {
+    extend: {
+      ...facetTheme({ base: "zinc", mode: "dark" }),
+    },
+  },
+});
+```
+
+`facet init` writes exactly this. `facetTheme()` returns a plain object — a `colors` map and a
+`radius` scale — that you spread into `theme.extend`.
+
+<Callout title="extend, not colors">
+Vela's `theme.colors` **replaces** the family set, which would strip the ramps (`zinc-500`,
+`red-400`, …) you reach for outside Facet components. `theme.extend` adds to them. That is why
+`facetTheme()` is documented as something you spread into `extend` and not as a `colors` value.
+</Callout>
+
+## The tokens
+
+Nineteen, and every Facet component names only these:
+
+| Role | Pair |
+| --- | --- |
+| Page | `background` · `foreground` |
+| Raised surface | `card` · `card-foreground` |
+| Floating surface | `popover` · `popover-foreground` |
+| Emphasis | `primary` · `primary-foreground` |
+| Second emphasis | `secondary` · `secondary-foreground` |
+| Recessive | `muted` · `muted-foreground` |
+| Hover / highlight | `accent` · `accent-foreground` |
+| Danger | `destructive` · `destructive-foreground` |
+| Lines | `border` · `input` · `ring` |
+
+Nothing in the registry says `zinc-800`. That is the whole mechanism: because components name roles,
+`base: "slate"` rethemes every copied component without editing one of them.
+
+`facet doctor` checks this from the other side — it collects the tokens the installed components
+declare and verifies they resolve in your config, so a missing one is reported by name instead of
+surfacing later as a Vela diagnostic on a file you never wrote.
+
+## Bases
+
+Four neutral ramps, each a full 50–950 scale: **`zinc`** (default), **`slate`**, **`stone`**,
+**`neutral`**. `destructive` comes from a red that is not part of the ramp — `rgb(239, 68, 68)` in
+light, `rgb(220, 38, 38)` in dark.
+
+The mapping is mechanical. In dark mode:
+
+```
+background   ramp[950]      primary              ramp[50]
+foreground   ramp[50]       primary-foreground   ramp[900]
+card         ramp[900]      secondary            ramp[800]
+muted        ramp[800]      muted-foreground     ramp[400]
+border       ramp[700]      input                ramp[700]      ring   ramp[300]
+```
+
+`border` and `input` sit one step lighter than the dark surfaces they are drawn on. At `ramp[800]`
+an outline button was almost indistinguishable from a ghost one, which is a rendered-in-Studio
+finding rather than a taste call.
+
+Light mode inverts it: `background` and `card` are white, `foreground` is `ramp[950]`, `primary` is
+`ramp[900]`, `border` and `input` are `ramp[200]`.
+
+## Radius
+
+```ts
+facetTheme({ radius: "new UDim(0, 12)" })
+```
+
+Sets what `rounded-*`'s `DEFAULT` resolves to. Defaults to `new UDim(0, 8)`. The value is a string
+because it is a Luau expression that Vela emits verbatim, not a number it interprets.
+
+## Overriding
+
+`facetTheme()` returns a plain object, so overriding is spreading:
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+import { facetTheme } from "@facet-ui/theme";
+
+const base = facetTheme({ base: "slate", mode: "dark" });
+
+export default defineConfig({
+  theme: {
+    extend: {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: "Color3.fromRGB(88, 101, 242)",
+        "primary-foreground": "Color3.fromRGB(255, 255, 255)",
+      },
+    },
+  },
+});
+```
+
+Spread `base.colors` before your overrides, not after — dropping it replaces the whole map and every
+token you did not restate stops resolving.
+
+Colour values are Luau expressions as strings. `Color3.fromRGB(…)`, `Color3.fromHex("#5865F2")`,
+anything Vela will emit.
+
+## One mode per build
+
+<Callout title="mode is a build-time choice, not a switch">
+Vela resolves `className` at compile time: `bg-primary` becomes a literal `Color3` in the emitted
+Luau. A build therefore carries exactly one theme, and `facetTheme({ mode: "dark" })` is a decision
+made by the compiler, not by the running game.
+
+There is no `useTheme()` and no way to flip a settings toggle to light mode with the components as
+they are.
+
+The previews on this site are built the same way, and show it: flipping the docs' own light/dark
+toggle **reloads the frame against a different build** rather than repainting the one that is
+running, because there is nothing in a running Facet tree that a theme signal could reach.
+</Callout>
+
+This is a real gap and it is [an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open),
+not an oversight. The three options on the table:
+
+1. **Do nothing.** One mode per build. Simplest, and correct for most games, which pick a look and
+   keep it. This is where Facet is.
+2. **A runtime `ThemeProvider` alongside classes.** A React context supplies `Color3` values;
+   components read it for the handful of props that need to change and use classes for everything
+   else. This is the tempting one and probably the trap — it splits the styling story in two, and
+   the failure mode is a component whose background is themeable and whose border is not, with
+   nothing in the source explaining which is which.
+3. **Vela emits a token indirection.** Lower `bg-primary` to a read from a runtime token table the
+   consumer can swap, instead of to a literal. This is the honest fix, and it is a Vela change —
+   which means Facet cannot make it unilaterally.
+
+The leaning is 1 now, 3 eventually. If 3 becomes real, `@facet-ui/theme` is the natural place to
+define which tokens are runtime-swappable, and no registry component changes.
+
+**Until then**, if you need a runtime toggle: it belongs in your copy of the components, applied as
+instance props rather than classes, the same way `Button` handles its disabled fade. That is the
+escape hatch the copy-in model gives you, and taking it is a decision to maintain those components
+yourself.
+
+## Retheming without touching a component
+
+```bash title="Try another ramp"
+# edit vela.config.ts: base: "zinc" → base: "stone"
+npx rbxtsc
+```
+
+That is the whole procedure. If changing a ramp requires editing a component, that component named a
+ramp step somewhere it should have named a role — see
+[Component conventions](/facet/guides/component-conventions/#8-roles-never-ramp-steps).

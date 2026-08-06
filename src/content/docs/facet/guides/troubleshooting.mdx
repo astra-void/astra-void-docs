@@ -1,0 +1,219 @@
+---
+title: Troubleshooting
+description: The failures that produce no error — unstyled UI, zero-pixel components, labels in the wrong font — and the ones that do.
+product: facet
+section: guides
+sidebar:
+  order: 70
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Start here:
+
+```bash
+npx facet-rbxts doctor
+```
+
+It checks the config, the import aliases, the transformer, the theme, which components are
+installed, whether the tokens they name resolve, and whether the packages underneath them meet the
+floors those files need. Most of what follows is something `doctor` would have told you.
+
+## Nothing is styled at all
+
+Everything renders as grey Roblox defaults. No error, no warning, and the build succeeded.
+
+**The Vela transformer is not registered.** Without it, every `className` a component sets is inert.
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "plugins": [{ "transform": "vela-rbxts/transformer" }]
+  }
+}
+```
+
+`facet init` and `facet doctor` both check for this textually and neither edits the file for you —
+roblox-ts tsconfigs are routinely JSONC, and a pattern-matched edit that mangles one is worse than a
+printed snippet.
+
+## A component renders zero pixels wide
+
+**One axis has no answer.** `UIPadding` does not grow a frame on Roblox — it insets children — and
+Vela starts a frame at `UDim2.new(0, 0, 0, 0)`.
+
+```
+h-9 px-4        → 0 × 36. Invisible.
+h-9 w-fit px-4  → correct.
+```
+
+If the component is a container, check the whole chain rather than the outermost level: a container
+that hugs its content can only measure children that already know their own size, so one label with
+an unresolved axis collapses everything above it.
+
+## A class compiles but does nothing
+
+**Suspect the code path before the class.** Every Facet class string comes out of `fv()`, so it is a
+computed expression, and Vela resolves those at runtime rather than at compile time. That runtime
+path implemented a strict subset of the static lowering for a long time:
+
+| Below Vela | These silently do nothing |
+| --- | --- |
+| 0.7.0 | `flex-*`, `items-*`, `justify-*`, `fit`/`auto`, `text-<size>`, `text-<align>`, `font-<weight>` |
+| 0.8.0 | `opacity-*`, `whitespace-*`, `leading-*` |
+
+Check what the emitted runtime actually resolves:
+
+```bash
+grep -o 'startsWith(token, "[a-z0-9-]*")' out/shared/ui/button.luau | sort -u
+```
+
+Whatever is missing there is missing at runtime, whatever the static path says. The CLI's
+`vela-rbxts@^0.9.0` floor keeps you above the whole list — `facet doctor` is what verifies you are
+actually on it.
+
+## `Out of local registers`
+
+```
+Out of local registers when trying to allocate CardHeader
+```
+
+Pointing at generated code nobody wrote. **You are on Vela 0.8.x.** That release inlined Vela's
+runtime into every transformed file, spending roughly 96 of Luau's 200 local registers before the
+file declared anything of its own — and `card` does not fit in what is left.
+
+Upgrade to `vela-rbxts@^0.9.0`, which scopes the runtime into one initializer; emitted files drop
+from ~106 module-scope locals to ~24.
+
+If you hit this on a component you wrote, the same limit is the cause: each exported name costs a
+register. `card` exports one `cardVariants` object rather than six separate recipes for exactly this
+reason.
+
+## One label is in a different font
+
+Larger, and visibly not the typeface everything else uses. **That text recipe has no `font-*`
+token.** Vela leaves `FontFace` untouched when none appears, and Roblox's untouched default is
+LegacyArial.
+
+Add a weight — `font-normal` counts. This is not optional styling; it is the only thing that says
+which font. `card`'s description shipped this way until someone opened Studio.
+
+## A button's label is 8px and near-black
+
+Two causes, both about `className` arriving at the wrong place.
+
+**You are using `asChild`.** `TextSlot` never renders on that path, so the label recipe is not
+applied and the child draws its own text at Roblox's default. Style the child yourself —
+`buttonLabelVariants` is exported for it. See [Button](/facet/components/button/#aschild).
+
+**Or a wrapper re-applied `className` internally.** Vela lowers `className` at the *call site*, so
+`<TextSlot className={…}>` becomes a runtime host whose resolved `TextColor3` / `TextSize` /
+`FontFace` arrive as ordinary props. A component that accepts a `className` prop and re-applies it
+inside drops those props instead. `TextSlot` takes no `className` for this reason.
+
+## A `className` I pass to a component is ignored
+
+**Expected — it cannot work.** `<Button className="bg-destructive" />` renders exactly like
+`<Button />`, silently. Vela consumes the class at the call site and lowers it into instance props,
+and the component's own class-derived props are emitted after its spreads, so they overwrite what
+arrived. Both halves of the override lose.
+
+The answer is the one the copy-in model is built on: **edit the copied file**. Full explanation, and
+what does still cross the boundary, in
+[Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+
+## A `className` inside a component I edited is ignored
+
+Different problem, and this one is a bug you can fix. **Something is appended after
+`props.className`.** Vela resolves last-token-wins, so a class landing after it is an override
+nothing can undo:
+
+```tsx
+// wrong
+cn(buttonVariants({ variant, className: props.className }), disabled && "bg-muted")
+
+// right
+buttonVariants({ variant, className: cn(disabled && "bg-muted", props.className) })
+```
+
+`cn` deliberately does not resolve conflicts —
+[why](/facet/guides/variants-and-classes/#cn-does-not-resolve-conflicts).
+
+## `TS2747` on a string child
+
+```tsx
+<Button>Save</Button>     // TS2747
+<Button Text="Save" />    // this
+```
+
+roblox-ts React's `ReactNode` has no string member. Not a Facet choice —
+[the whole story](/facet/guides/text-and-labels/).
+
+## `TS2440: Import declaration conflicts with local declaration`
+
+On `ClassValue`. Vela inlines a runtime that declares a local by that name. Import
+**`ClassName`** from `~/lib/utils`, which re-exports it under a name that does not collide.
+
+## `facet add` writes nothing
+
+```
+Everything requested is already here. Pass --overwrite to replace it.
+```
+
+`add` never overwrites by default. `--overwrite` replaces wholesale — commit first, your edits are
+gone.
+
+## `facet remove` refuses
+
+**"differs from the registry"** — the file is not what the registry would write there today. That
+means you edited it, *or* upstream moved; Facet records nothing at copy time and cannot tell them
+apart. `--force` deletes it anyway.
+
+**"is still imported by …"** — another installed component depends on it. `--force` does not cover
+this one, because deleting `utils` out from under `button` leaves a project that does not compile.
+Remove the dependents first.
+
+## Registry errors
+
+| Message | Means |
+| --- | --- |
+| `Could not reach the registry at …` | Network, or a wrong `registry` value. `add` needs the network; the registry is fetched, not bundled. |
+| `… is format version N, which this CLI does not understand` | Upgrade `facet-rbxts`. |
+| `Unknown component "x"` | Run `facet list`. |
+| `Component "x" was not found at …` | A registry serving an index that disagrees with its own files — a fork's build problem. |
+
+## `No package.json found above …`
+
+`facet` walks up from the current directory to the nearest `package.json` and treats it as the
+project root. Run it inside your roblox-ts project, or pass `--cwd`.
+
+## Tokens do not resolve
+
+```
+tokens  4 token(s) installed components name are not defined: card, card-foreground, …
+```
+
+Your `vela.config.ts` does not spread `facetTheme`. `doctor` reads the config as text when it does
+not — naming a token as a colour key counts — because a Vela config is arbitrary TypeScript and the
+alternative to reading it is evaluating it.
+
+The fix is in [Theming](/facet/guides/theming/). If a token is reported as not being in
+`@facet-ui/theme` either, that is a Facet bug rather than a project one — upgrade the theme package
+or report it.
+
+## Imports do not resolve after copying
+
+If `facet.json` sets an `import` specifier on an alias, your tsconfig needs a matching `paths`
+entry; `doctor` fails on this rather than warning, because every copied component imports through
+it. Either add the entry, or clear `"import"` in `facet.json` and let the CLI write relative imports
+— which need no `paths` and work anywhere.
+
+Changing that setting does not rewrite files already copied. `facet add <name> --overwrite` rewrites
+them with the new resolution.
+
+<Callout title="Studio is still the only place some of this shows up">
+Compiling is a static result. A component can compile clean, emit exactly the properties you expect,
+and still look wrong — that is how `card`'s description shipped in Arial and how the first `button`
+shipped zero pixels wide. If a component is behaving strangely and nothing above explains it, open
+Studio and look at the instance tree.
+</Callout>

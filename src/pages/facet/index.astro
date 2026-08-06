@@ -1,0 +1,202 @@
+---
+import { getCollection, render } from "astro:content"
+import { Code } from "astro-expressive-code/components"
+import DocsCard from "@/components/docs/DocsCard.astro"
+import DocsLayout from "@/layouts/DocsLayout.astro"
+import { getDocPathFromId, getDocs, getProductIndexId } from "@/lib/docs"
+
+const PRODUCT_ID = "facet" as const
+
+const docs = await getCollection("docs")
+const entry = docs.find((doc) => doc.id === getProductIndexId(PRODUCT_ID))
+
+if (!entry) {
+  throw new Error("Missing Facet docs home entry.")
+}
+
+const { Content } = await render(entry)
+const currentPath = getDocPathFromId(entry.id, PRODUCT_ID)
+
+const navDocs = await getDocs(PRODUCT_ID)
+
+const components = navDocs.filter((doc) => doc.section === "components")
+const guides = navDocs.filter((doc) => doc.section === "guides")
+const reference = navDocs.filter((doc) => doc.section === "reference")
+
+const installationHref = getDocPathFromId(
+  "getting-started/installation",
+  PRODUCT_ID,
+)
+
+const themingHref = getDocPathFromId("guides/theming", PRODUCT_ID)
+
+const scopeHref = getDocPathFromId(
+  "getting-started/scope-and-status",
+  PRODUCT_ID,
+)
+
+const heroCode = `# One command, and a file appears in your project.
+npx facet-rbxts init
+npx facet-rbxts add button
+
+# src/shared/ui/button.tsx is now yours — edit it, rename it, delete half of it.
+# There is no upgrade that will overwrite it, because there is no upgrade.`
+
+const pillars = [
+  {
+    title: "Source, not a dependency",
+    description:
+      "The registry is fetched at runtime and copied in. The only Facet code you install is fv() and the theme preset.",
+  },
+  {
+    title: "Behavior from Lattice, styling from Vela",
+    description:
+      "A Facet component is a Lattice primitive wearing Vela classes. The hard parts stay in packages that are dependencies.",
+  },
+  {
+    title: "Roles, never ramp steps",
+    description:
+      "Components name bg-primary, never bg-zinc-900. Switching the theme base rethemes every copied file without editing one.",
+  },
+] as const
+---
+
+<DocsLayout
+  currentPath={currentPath}
+  description={entry.data.description}
+  productId={PRODUCT_ID}
+  title={entry.data.title}
+>
+  <div class="relative">
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-72 w-[36rem] -translate-x-1/2 opacity-25 blur-3xl dark:opacity-15"
+      style="background:
+        radial-gradient(24rem 14rem at 30% 40%, #7c3aed 0%, transparent 70%),
+        radial-gradient(22rem 13rem at 70% 35%, #f5a623 0%, transparent 70%),
+        radial-gradient(20rem 12rem at 55% 75%, #06b6d4 0%, transparent 70%);"
+    >
+    </div>
+
+    <a
+      class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 font-mono text-xs text-muted-foreground transition-colors hover:text-foreground"
+      href={scopeHref}
+    >
+      <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-[#f5a623]"></span>
+      facet-rbxts · v0.3.0 · pre-1.0
+    </a>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a
+        class="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground no-underline transition-opacity hover:opacity-90"
+        href={installationHref}
+      >
+        Get started
+      </a>
+      <a
+        class="inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-medium text-foreground no-underline transition-colors hover:bg-muted"
+        href={themingHref}
+      >
+        Theming
+      </a>
+    </div>
+
+    {/* .docs-prose only spaces its direct children, and Content is nested here. */}
+    <div class="mt-10 space-y-4">
+      <Content />
+    </div>
+
+    <div class="mt-8">
+      <Code code={heroCode} lang="bash" title="The whole model" />
+    </div>
+  </div>
+
+  <div class="mt-10 grid gap-3 sm:grid-cols-3">
+    {pillars.map((pillar) => (
+      <DocsCard title={pillar.title} description={pillar.description} />
+    ))}
+  </div>
+
+  <section class="mt-14">
+    <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+      Components
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+      What the registry holds today.
+    </h2>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+      {components.map((component) => (
+        <DocsCard
+          description={component.description}
+          href={component.url}
+          title={component.title}
+        />
+      ))}
+    </div>
+  </section>
+
+  <section class="mt-14">
+    <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+      Guides
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+      Own the code you copied.
+    </h2>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+      {guides.map((guide) => (
+        <DocsCard
+          description={guide.description}
+          href={guide.url}
+          title={guide.title}
+        />
+      ))}
+    </div>
+  </section>
+
+  <section class="mt-14">
+    <p class="font-mono text-xs uppercase tracking-wide text-muted-foreground">
+      Reference
+    </p>
+    <h2 class="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">
+      Every command, field, and token.
+    </h2>
+    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+      {reference.map((item) => (
+        <DocsCard
+          description={item.description}
+          href={item.url}
+          title={item.title}
+        />
+      ))}
+    </div>
+  </section>
+
+  <section class="mt-14 rounded-xl border border-border bg-card p-6 shadow-card">
+    <h2 class="text-lg font-semibold tracking-[-0.02em] text-foreground">
+      Every preview here is the real component.
+    </h2>
+    <p class="mt-2 text-sm leading-6 text-muted-foreground">
+      The frames on the component pages render the actual registry source,
+      lowered by the actual Vela compiler against the actual <code
+        class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.8em]"
+        >@facet-ui/theme</code
+      > tokens — the same file <code
+        class="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[0.8em]"
+        >facet add</code
+      > would copy into your project, not a web imitation of it. Flip the site's
+      light/dark toggle and the frame reloads a different build, because Facet
+      resolves its colors at compile time and a build carries exactly one mode.
+    </p>
+    <p class="mt-3 text-sm leading-6 text-muted-foreground">
+      What a preview is not is Roblox. Loom reimplements Roblox layout; it does
+      not run the engine. Studio is still the only place a component is really
+      confirmed.
+    </p>
+    <a
+      class="mt-4 inline-flex text-sm font-medium text-link underline decoration-link/40 underline-offset-4 hover:decoration-link"
+      href={scopeHref}
+    >
+      Scope and status →
+    </a>
+  </section>
+</DocsLayout>

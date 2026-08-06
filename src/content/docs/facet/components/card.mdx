@@ -1,0 +1,145 @@
+---
+title: Card
+description: Six flat parts, one shared recipe object, and the Luau register limit that forced it.
+product: facet
+section: components
+sidebar:
+  order: 20
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add card
+```
+
+Copies `ui/card.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import {
+  Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter,
+} from "../shared/ui/card";
+import { Button } from "../shared/ui/button";
+
+<Card>
+  <CardHeader>
+    <CardTitle Text="Shop" />
+    <CardDescription Text="Everything here is a copied-in component." />
+  </CardHeader>
+  <CardContent>
+    <Label Text="Nothing for sale yet." />
+  </CardContent>
+  <CardFooter>
+    <Button size="sm" Text="Buy" />
+    <Button size="sm" variant="outline" Text="Cancel" />
+  </CardFooter>
+</Card>
+```
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `Card` | `Frame` | `flex-col w-full h-fit rounded-lg border border-border bg-card` |
+| `CardHeader` | `Frame` | `flex-col w-full h-fit gap-1 p-6` |
+| `CardTitle` | `TextLabel` | `w-full h-fit whitespace-normal text-left text-xl font-semibold text-card-foreground` |
+| `CardDescription` | `TextLabel` | `w-full h-fit whitespace-normal leading-tight text-left text-xs font-normal text-muted-foreground` |
+| `CardContent` | `Frame` | `flex-col w-full h-fit gap-2 px-6 pb-6` |
+| `CardFooter` | `Frame` | `flex-row items-center w-full h-fit gap-2 px-6 pb-6` |
+
+Flat named exports, not `Card.Header`. Lattice uses namespace objects and that is right for a
+library; this is source you paste and edit, so each part reads — and can be deleted — on its own.
+
+<FacetPreview
+  scene="CardScene"
+  source="ui/card.tsx"
+  height={300}
+  label="All six parts, composed with Badge, Label and Button."
+/>
+
+<ForwardedProps instance="Frame" />
+
+The frame parts (`Card`, `CardHeader`, `CardContent`, `CardFooter`) forward onto a `Frame` and take
+`children`. The text parts (`CardTitle`, `CardDescription`) forward onto a `TextLabel` and take
+`Text`.
+
+<PropTable
+  rows={[
+    {
+      name: "Text",
+      type: "string",
+      description: "Text parts only. Drawn as the instance's own Text — these are leaves.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description: "Frame parts only.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+## `w-full h-fit`, all the way down
+
+Every part carries it, and that is the entire layout strategy: **width comes from the parent, height
+from the content**. Break the chain at any level — one part with no resolved height — and the card
+above it collapses.
+
+That is the `AutomaticSize` chain in its most visible form. A container set to hug its content can
+only measure children that already know their own size, so it is not enough for `Card` to say
+`h-fit`; every level under it has to answer too.
+
+## Six parts, one recipe object
+
+```tsx
+export const cardVariants = {
+  root: fv("flex-col w-full h-fit rounded-lg border border-border bg-card"),
+  header: fv("flex-col w-full h-fit gap-1 p-6"),
+  title: fv("w-full h-fit whitespace-normal text-left text-xl font-semibold text-card-foreground"),
+  description: fv("w-full h-fit whitespace-normal leading-tight text-left text-xs font-normal text-muted-foreground"),
+  content: fv("flex-col w-full h-fit gap-2 px-6 pb-6"),
+  footer: fv("flex-row items-center w-full h-fit gap-2 px-6 pb-6"),
+};
+```
+
+<Callout title="This is not a style choice">
+Vela inlines its whole runtime into every file with a computed `className`, which leaves a component
+only a slice of Luau's 200-register limit for its own module-scope locals. Six separate
+`export const`s put this file over it and the module stopped loading entirely —
+`Out of local registers when trying to allocate CardHeader`. Each exported name costs a register; one
+object costs one.
+
+Vela 0.9.0 scoped that runtime into a single initializer and the emitted files dropped from ~106
+module-scope locals to ~24, which is why `^0.9.0` is the floor the CLI installs. The object shape
+stayed: it is cheap, and the headroom is worth keeping.
+</Callout>
+
+## Wrapping and alignment are classes
+
+Roblox centres text and leaves it on one line by default. `text-left` and `whitespace-normal`
+correct both, on every text part. Without them a card description is one centred line running off
+the edge.
+
+`leading-tight` on the description is the one place `card` leans on a Vela family that only landed
+in 0.8.0 on the computed-`className` path — below that floor it compiles and silently does nothing.
+
+`font-normal` on the description looks redundant next to `font-semibold` on the title, and is not.
+Vela leaves `FontFace` alone when no `font-*` token appears, and Roblox's untouched default is
+LegacyArial. This exact line is why: the description rendered in Arial next to a SourceSansPro
+title, inside the same header, for as long as nobody had opened it in Studio.
+
+## One layout per instance
+
+`flex-col`, `items-*`, `justify-*` and `gap-*` all lower onto a single `UIListLayout` child, and one
+instance can hold one layout. So a part that sets any of them owns the arrangement of its children;
+a consumer who wants a different one **replaces** the part's layout classes rather than adding to
+them.
+
+If you find yourself wanting a second layout inside `CardContent`, do not add a wrapper frame for
+it. Restructure the parts — that is what they are for, and they are yours to restructure.

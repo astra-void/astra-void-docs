@@ -7,7 +7,9 @@ const docs = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    product: z.enum(["lattice-ui", "vela-rbxts", "loom"]).default("lattice-ui"),
+    product: z
+      .enum(["lattice-ui", "vela-rbxts", "loom", "facet"])
+      .default("lattice-ui"),
     draft: z.boolean().default(false),
     section: z.enum([
       "home",

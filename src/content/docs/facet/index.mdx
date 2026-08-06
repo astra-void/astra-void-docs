@@ -1,0 +1,24 @@
+---
+title: Facet
+description: Copy-in UI components for roblox-ts, composed from Lattice UI and Vela.
+product: facet
+section: home
+---
+
+Facet is not a component library. You do not install a `Button` — you run one command and a
+`button.tsx` appears in your project, imports resolved and theme wired up. It is yours from that
+moment: edit it, delete half of it, rename it. Nothing will overwrite your changes, because nothing
+ever updates it.
+
+What makes that model work is that the hard parts are not in the copied file. Behavior — focus,
+layering, presence, controlled state, `asChild` — comes from [Lattice UI](/lattice-ui/), which is a
+real dependency. Styling comes from [Vela](/vela-rbxts/), which lowers `className` to Roblox
+properties at compile time, so a component holds no `Color3` and no `UDim2` of its own. A Facet
+component is a Lattice primitive wearing Vela classes; the file you own is the composition, and it
+is short enough to read in one sitting.
+
+Two small packages and a CLI are all that is published. `@facet-ui/react-variants` is the `cva`
+equivalent every component imports, `@facet-ui/theme` supplies the semantic tokens as a Vela config
+preset, and `facet-rbxts` fetches components from a
+[hosted registry](https://facet.astra-void.xyz) rather than bundling them — so adding a component
+does not require a CLI release.

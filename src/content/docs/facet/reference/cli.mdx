@@ -1,0 +1,198 @@
+---
+title: CLI
+description: Every command and flag of facet-rbxts, and what each one checks before it writes.
+product: facet
+section: reference
+sidebar:
+  order: 10
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+The package installs as **`facet-rbxts`** and the command is **`facet`**. Node 20+, ESM.
+
+```bash
+npx facet-rbxts <command> [options]
+```
+
+| Command | What it does |
+| --- | --- |
+| [`init`](#init) | Writes `facet.json`, creates `vela.config.ts` if absent, installs build dependencies |
+| [`add`](#add) | Copies components in, with their registry dependencies |
+| [`list`](#list) | Shows every component in the registry |
+| [`remove`](#remove) | Deletes copied components |
+| [`diff`](#diff) | Shows how a copied component differs from the registry |
+| [`doctor`](#doctor) | Checks the project matches what components assume |
+
+## Global options
+
+| Option | |
+| --- | --- |
+| `--cwd <dir>` | Run against another directory. The project root is the nearest `package.json` at or above it. |
+| `--registry <url\|path>` | Read from another registry — see [Using another registry](/facet/guides/custom-registry/) |
+| `--version`, `-v` | |
+| `--help`, `-h` | |
+
+Every command resolves the project root by walking up from `--cwd` (or the current directory) to the
+nearest `package.json`, and fails with `No package.json found above …` if there is none.
+
+## `init`
+
+```bash
+npx facet-rbxts init [-y] [--force] [--no-deps]
+```
+
+| Option | |
+| --- | --- |
+| `--yes`, `-y` | Accept every default instead of prompting |
+| `--force` | Overwrite an existing `facet.json` |
+| `--no-deps` | Skip every package install |
+
+Prompts for the theme base (`zinc` / `slate` / `stone` / `neutral`), the mode (`dark` / `light`),
+the three directories, and an optional import alias — leaving the alias blank means relative
+imports, which need no tsconfig `paths`.
+
+Then, in order:
+
+1. Writes `facet.json`.
+2. Creates `vela.config.ts` pre-wired with `facetTheme()` **only if it does not exist**. An existing
+   one is never rewritten — if it does not use `facetTheme`, the exact lines to add are printed.
+3. Installs `@facet-ui/theme` and `vela-rbxts@^0.9.0` as dev dependencies.
+4. Runs `add utils`, because every component imports `~/lib/utils`. This is also what installs
+   `@facet-ui/react-variants`.
+5. Checks `tsconfig.json` for `vela-rbxts/transformer` and prints the snippet if it is absent.
+
+Refuses to run if `facet.json` already exists, unless `--force`.
+
+## `add`
+
+```bash
+npx facet-rbxts add <names...> [--overwrite] [--dry-run] [--no-deps]
+```
+
+| Option | |
+| --- | --- |
+| `--overwrite` | Replace files that already exist instead of skipping them |
+| `--dry-run` | Resolve and report, write nothing |
+| `--no-deps` | Skip the package install |
+
+Resolves the named items plus their `registryDependencies`, transitively and in dependency order.
+For each file: rewrites `~/` imports for where the file will land, then writes it. All writes go
+through one transaction that commits or rolls back as a unit.
+
+Files that already exist are **skipped**, not overwritten, and reported as `exists`. `--overwrite`
+replaces them wholesale — there is no merge.
+
+The union of the install set's npm `dependencies` is then installed, through whichever package
+manager your lockfile implies (`pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lockb`/`bun.lock` →
+bun, `package-lock.json` → npm; then the `packageManager` field; then npm).
+
+Finally, if `vela.config.ts` does not use `facetTheme` and the added components name tokens, it says
+so with the token list — rather than letting the next build be the messenger with a Vela diagnostic
+on a file you never wrote.
+
+<Callout title="Lockfile over the packageManager field">
+The field states intent; the lockfile states what the project actually installed with. Installing
+with the wrong one leaves two lockfiles disagreeing.
+</Callout>
+
+## `list`
+
+```bash
+npx facet-rbxts list [--registry <url|path>]
+```
+
+Every item in the registry with its description, alphabetically, plus which registry was read. Needs
+no project — this is the one command you can run anywhere.
+
+## `remove`
+
+```bash
+npx facet-rbxts remove <names...> [--force]
+```
+
+| Option | |
+| --- | --- |
+| `--force` | Delete a file that differs from the registry |
+
+Removes exactly what you name. Dependencies are **not** pulled in — that would delete `utils`
+because you removed `button`.
+
+Two refusals:
+
+- **A file that differs from the registry**, compared after replaying the same `~/` rewrite `add`
+  applied on the way in, so a file that was only ever copied reads as untouched. `--force` overrides
+  this.
+- **A component another installed component still imports.** `--force` does **not** override this
+  one. The check runs to a fixed point: if one item stays behind because it was modified, anything it
+  imports stops being free to delete.
+
+Directories are left alone, and so is anything you added next to the removed files.
+
+## `diff`
+
+```bash
+npx facet-rbxts diff [name]
+```
+
+With no argument, walks everything the registry knows about that also exists in the project.
+
+Compares each file against what the registry would write there today, replaying the `~/` rewrite
+first so your alias and directory choices are not reported as changes. Direction is registry →
+project: `-` is the registry, `+` is your file.
+
+Facet records nothing at copy time, so this **cannot tell your edit from an upstream change** — and
+it says so in its own output rather than implying otherwise. See
+[Updating copied components](/facet/guides/updating-copied-components/).
+
+## `doctor`
+
+```bash
+npx facet-rbxts doctor
+```
+
+Seven checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-zero.
+
+| Check | Fails when |
+| --- | --- |
+| **`facet.json`** | never — reports style, theme, and whether each alias directory exists |
+| **import alias** | `facet.json` sets an `import` and tsconfig declares no `paths` entry that could resolve it |
+| **transformer** | `tsconfig.json` does not register `vela-rbxts/transformer` |
+| **theme** | `vela.config.ts` does not exist (a config that exists but does not use `facetTheme` is a warning) |
+| **components** | never — lists what is installed; warns when an item is missing some of its files |
+| **tokens** | an installed component names a token the theme does not define |
+| **packages** | a package is missing, or older than the floor the copied files need |
+
+The packages check is the one that catches a project set up by an older CLI: the copied files are
+current and the versions under them are not. It reads the version actually sitting in
+`node_modules` — walking up, because a project inside a workspace has its dependencies hoisted —
+rather than the declared range, since the two differ exactly when someone installed once and never
+again.
+
+A registry it cannot reach is a **gap in the report**, not the end of it: the first four checks
+stand on their own, and the last three are skipped with a warning saying so.
+
+<Callout title="Half an item is not a missing item">
+An item counts as present the moment one of its files does. Deleting a copied file is allowed — it
+is your file — so a half-installed item is reported, not treated as absent. Its tokens and packages
+are still needed by whatever is left.
+</Callout>
+
+### Version comparison is deliberately not semver
+
+The comparison answers one question — *is what is installed at least the version this needs?* — for
+the shapes Facet actually writes (`^0.9.0`, `>=0.8.0`, `0.1.1`). Anything it cannot read is reported
+as **unverifiable** rather than guessed at, because a doctor that invents a failure is worse than one
+that admits a gap.
+
+## Environment variables
+
+| Variable | |
+| --- | --- |
+| `FACET_REGISTRY_DIR` | A local directory. Wins over everything, including `--registry`. |
+| `FACET_REGISTRY_URL` | A URL. Loses to `--registry` and to `facet.json`. |
+
+## Exit codes
+
+`0` on success. `1` on a user-facing error — an unknown command, an unreachable registry, a failed
+`doctor`. Anything else is a bug and throws with a stack.

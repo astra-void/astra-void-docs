@@ -1,0 +1,92 @@
+---
+title: Label
+description: A form label — one recipe, no variants, and the smallest component in the registry.
+product: facet
+section: components
+sidebar:
+  order: 20
+  group: Form
+---
+
+import { FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add label
+```
+
+Copies `ui/label.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import { Label } from "../shared/ui/label";
+
+<Label Text="Display name" />
+```
+
+A second text colour is a second element, not a `className` on this one — a class written here is
+lowered before `Label` ever sees it, and then overwritten by the component's own recipe. See
+[Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+
+<FacetPreview
+  scene="LabelScene"
+  source="ui/label.tsx"
+  height={120}
+  label="The recipe, and a second text colour stated on its own element."
+/>
+
+<ForwardedProps instance="TextLabel" />
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "Text",
+      type: "string",
+      description:
+        "The label. Drawn as this instance's own Text — unlike Button, there is nothing to compose around, so there is no TextSlot.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+Everything else is forwarded onto the `TextLabel`.
+
+## The recipe
+
+```tsx
+export const labelVariants = fv("text-foreground text-sm font-medium");
+```
+
+That is the whole thing — no variant axes. `fv()` with no config is still worth using over a bare
+string: it gives you the `className` slot with the right ordering, and it is the seam a variant axis
+grows into if you add one.
+
+`font-medium` is not optional. Vela leaves `FontFace` untouched when no `font-*` token appears, and
+Roblox's untouched default is LegacyArial — a different typeface at a visibly different size from
+the SourceSansPro everything else resolves to. Every text recipe in the registry declares a weight
+for that reason. See [Text and labels](/facet/guides/text-and-labels/#every-text-recipe-declares-a-font-).
+
+## A leaf, so it draws its own text
+
+`Button` and `Badge` delegate to `TextSlot` because they compose — a label beside an icon, a child
+element instead of a string. `Label` has nothing to compose around, so it draws `Text` directly:
+
+```tsx
+<textlabel
+  className={cn(labelVariants({ className: props.className }))}
+  Text={props.Text ?? ""}
+  {...NEUTRAL_PROPS}
+  AutomaticSize={Enum.AutomaticSize.XY}
+  {...passthrough}
+/>
+```
+
+`AutomaticSize` is set as an instance prop rather than through a class, and it sits *before* the
+passthrough spread so a consumer can override it. Without a resolved size, a label collapses the
+automatic sizing of whatever contains it — see
+[Component conventions](/facet/guides/component-conventions/#2-automaticsize-is-a-chain).

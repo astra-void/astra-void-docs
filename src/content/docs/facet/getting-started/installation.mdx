@@ -1,0 +1,155 @@
+---
+title: Installation
+description: What Facet publishes, what your project has to already be, and what facet init writes.
+product: facet
+section: getting-started
+sidebar:
+  order: 10
+---
+
+import { Callout, PackageInstall } from "@/components/docs/mdx";
+
+Facet publishes three packages, and **the components are not among them**. They are text on a
+static registry that the CLI fetches and copies into your project.
+
+| Package | What it is | Installed as |
+| --- | --- | --- |
+| `facet-rbxts` | The CLI. Command is `facet`. Node, dev dependency. | `-D`, or `npx` |
+| `@facet-ui/theme` | Semantic tokens shaped as a Vela config preset. Only `vela.config.ts` imports it. | `-D`, by `facet init` |
+| `@facet-ui/react-variants` | `fv()` and `cn()` — the one runtime package copied components import. | runtime, by `facet add` |
+
+All three are versioned in lockstep (`fixed` in the changesets config), published under MIT, and
+currently at **0.3.0**. You install the CLI; it installs the other two at the moment they are
+actually needed.
+
+<PackageInstall packageName="facet-rbxts" dev />
+
+Or skip installing it at all — every command works through `npx`:
+
+```bash title="No install"
+npx facet-rbxts init
+npx facet-rbxts add button
+```
+
+## What your project has to be first
+
+Facet copies files into a project; it does not create one. Before `facet init` is useful, the
+project needs to be a [roblox-ts](https://roblox-ts.com/) project that already builds, with three
+things in place:
+
+| Requirement | Why |
+| --- | --- |
+| **`@rbxts/react`** | Components are `@rbxts/react` function components. Vide is not supported. |
+| **[Vela](/vela-rbxts/getting-started/installation/), with its transformer registered in `tsconfig.json`** | Every visual property a component has arrives through `className`. Without the transformer the build still succeeds and the UI comes out completely unstyled. |
+| **A `package.json` at the project root** | `facet` walks up from the current directory to the nearest one and treats it as the project root. |
+
+Lattice is *not* on that list: `facet add` installs the Lattice packages a component needs, because
+the registry entry declares them.
+
+<Callout title="The transformer is the failure nobody notices">
+`facet init` and `facet doctor` both check `tsconfig.json` for `vela-rbxts/transformer` — textually,
+because roblox-ts tsconfigs are routinely JSONC. Neither of them edits it. If the check fails, add
+it yourself:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "plugins": [{ "transform": "vela-rbxts/transformer" }]
+  }
+}
+```
+
+Without it, `className` is inert. Nothing errors. You get a screen of grey Roblox defaults and no
+explanation.
+</Callout>
+
+## Version floors
+
+The CLI installs `vela-rbxts@^0.9.0` as a build dependency, and that floor is not decorative:
+
+- **Below 0.7.0**, `w-fit` and `font-*` silently do nothing on the computed-`className` path that
+  every `fv()` recipe produces — which is how the first published `button` shipped zero pixels wide.
+- **Below 0.8.0**, `opacity-*`, `whitespace-*` and `leading-*` join them.
+- **Below 0.9.0**, `card` does not compile *at all*. Vela 0.8.0 inlined its runtime into every
+  transformed file, spending roughly 96 of Luau's 200 local registers before the file declared
+  anything of its own; `card` failed with `Out of local registers` pointing at generated code nobody
+  wrote. 0.9.0 scopes that runtime into a single initializer.
+
+The caret is npm's 0.x caret, so `^0.9.0` means `>=0.9.0 <0.10.0` — a floor on a fresh `init` and a
+ceiling on the next Vela minor. That is deliberate while Vela is pre-1.0 and every minor so far has
+moved class resolution. Raising it is a CLI release, which is the point at which the registry has
+actually been built against the new minor.
+
+Registry components separately declare `@lattice-ui/react-runtime@^0.8.0`. 0.8.0 is what made
+`asChild` work at all — see [Components](/facet/components/button/#aschild).
+
+## `facet init`
+
+```bash title="Set the project up"
+npx facet-rbxts init
+```
+
+It asks four things (or takes the defaults with `-y`), then does five:
+
+1. **Writes `facet.json`** — theme base and mode, where components land, which registry to read.
+   See the [`facet.json` reference](/facet/reference/facet-json/).
+2. **Creates `vela.config.ts` if there is none**, pre-wired with `facetTheme()`. If one already
+   exists it is never rewritten — only reported on, with the exact lines to add.
+3. **Installs the build dependencies** — `@facet-ui/theme` and `vela-rbxts@^0.9.0`, as dev
+   dependencies.
+4. **Adds the `utils` registry item**, because every component imports `~/lib/utils`. That also
+   pulls in `@facet-ui/react-variants`.
+5. **Reports on `tsconfig.json`** — the transformer check above.
+
+<Callout title="init creates, but never edits">
+Both `vela.config.ts` and `tsconfig.json` belong to you and are routinely non-trivial — JSONC,
+comments, spreads, plugins, computed values. A pattern-matched edit that mangles one is worse than a
+printed snippet, so `init` prints. This changes only if it grows a real parser, not a smarter regex.
+</Callout>
+
+The defaults, if you pass `-y`:
+
+```json title="facet.json"
+{
+  "$schema": "https://facet.astra-void.xyz/schema.json",
+  "style": "default",
+  "theme": { "base": "zinc", "mode": "dark" },
+  "aliases": {
+    "ui": { "dir": "src/shared/ui" },
+    "lib": { "dir": "src/shared/lib" },
+    "hooks": { "dir": "src/shared/hooks" }
+  },
+  "velaConfig": "vela.config.ts"
+}
+```
+
+No `import` specifier is set on those aliases by default, which means copied files reach each other
+through **relative** imports. That needs no tsconfig `paths` and therefore works in a project nobody
+configured for this. If your project already has an alias, answer the prompt with it and the CLI
+writes `shared/ui`-style specifiers instead.
+
+## Verify
+
+```bash title="Smoke test"
+npx facet-rbxts doctor
+```
+
+`doctor` is the one command that checks the whole setup rather than one part of it: the config, the
+import aliases, the transformer, the theme, which components are installed, whether the tokens they
+name resolve, and whether the packages underneath them meet the floors those files need. A clean run
+means a copied component will compile and look like it is supposed to.
+
+Then add something and build:
+
+```bash title="First component"
+npx facet-rbxts add button
+npx rbxtsc
+```
+
+See [Your first component](/facet/getting-started/first-component/) for what to do with it.
+
+## Next step
+
+- [Your first component](/facet/getting-started/first-component/) — render a `Button`.
+- [How it works](/facet/getting-started/how-it-works/) — what `add` actually does to the files.
+- [Scope and status](/facet/getting-started/scope-and-status/) — what exists at 0.3.0, and what does not.
