@@ -1,6 +1,6 @@
 ---
 title: Colors and surfaces
-description: Color utilities and the Roblox properties they write — fills, text, strokes, corner radius, shadows, gradients, and background transparency.
+description: Color utilities and the Roblox properties they write — fills, text, strokes, corner radius, shadows, gradients, and element opacity.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -206,13 +206,19 @@ Color stops come from `from-*`, `via-*`, and `to-*`, and how many you write chan
 When a gradient is present, Vela sets `BackgroundColor3` to `Color3.fromRGB(255, 255, 255)`. `UIGradient` multiplies against the instance's background color, so anything other than white would tint every stop. This means a `bg-*` class on the same element is overwritten — pick the gradient or the fill, not both.
 </Callout>
 
-## Background transparency
+## Element opacity
 
-`opacity-N` maps to `BackgroundTransparency`. It accepts **any integer from 0 to 100** — not a fixed step scale — and inverts it, because Roblox measures transparency where CSS measures opacity. `opacity-100` is fully opaque (`BackgroundTransparency = 0`), `opacity-0` is fully transparent (`= 1`), and `opacity-40` emits `0.6`.
+`opacity-N` accepts **any integer from 0 to 100** — not a fixed step scale — and inverts it, because Roblox measures transparency where CSS measures opacity. `opacity-100` is fully opaque, `opacity-0` is fully transparent, and `opacity-40` emits `0.6`.
 
 A non-integer or out-of-range value reports `unsupported-opacity-value`. The editor's completion list shows a shorter set of round numbers, but that list is suggestion sugar — `opacity-37` compiles fine.
 
-Note that `opacity-N` only touches the background. It does not fade text, images, strokes, or shadows; each of those has its own transparency property, and the only class-level control over them is `transparent` on the matching family.
+**It fades everything the element draws, and everything under it.** Since 0.9.0 the value reaches every transparency channel the host paints — `BackgroundTransparency` on any element, `TextTransparency` on the text hosts, `ImageTransparency` on the image hosts, and the `Transparency` of a `UIStroke` or `UIShadow` the same class list drew — and is then handed down the subtree as a running product, `1 - (1 - own) * alpha`. Since 0.10.0 that descent crosses component boundaries as well, travelling as a React context through `{props.children}` and component children. Before 0.9.0 `opacity-*` was `BackgroundTransparency` and nothing else.
+
+Reach for the `/N` modifier instead when you want a *single* family faded — `text-slate-100/80` fades the text and leaves the surface alone. The two multiply rather than fight: `opacity-50 bg-blue-600/50` lands at 0.75 transparency, and since 0.9.0 the order of the two tokens does not matter.
+
+<Callout title="A `canvasgroup` is the real composite">
+`opacity-*` on a `canvasgroup` lowers to `GroupTransparency`, which composites the subtree in one pass and ends the descent there. Everywhere else Vela fades each instance individually, which is close enough for most surfaces but visibly different when siblings overlap — the overlap darkens, because each layer is faded on its own. Wrap them in a `canvasgroup` when that shows.
+</Callout>
 
 ## See also
 

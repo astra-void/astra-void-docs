@@ -1,6 +1,6 @@
 ---
 title: Dynamic class names
-description: Computing className is allowed, but the runtime resolver supports a fraction of the utility set and silently drops everything else — here is how to stay on the static path.
+description: Computing className is allowed and, since 0.8.0, loses no utilities — but it moves the element onto the runtime path, which costs you every compile-time diagnostic.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -11,106 +11,79 @@ import { Callout } from "@/components/docs/mdx";
 
 `className` is typed as `ClassValue`, so you can compute it: template strings, ternaries, arrays, values from props or state. The type system will not stop you, and neither will the compiler.
 
-What changes is *how* the class string is lowered. When Vela can collapse the expression to a fixed set of tokens at compile time, it takes the **static path** and the full utility set is available. When it cannot, the element falls onto the **runtime path**, where a much smaller resolver runs inside your game. The gap between those two sets is large, undocumented in the README, and — this is the important part — silent.
+What changes is *how* the class string is lowered. When Vela can collapse the expression to a fixed set of tokens at compile time, it takes the **static path** and lowers straight to props. When it cannot, the element falls onto the **runtime path**, where a resolver inlined into your game does the same work while the game is running.
 
-## What the runtime resolver understands
+Until 0.8.0 those two paths supported very different utility sets, and the difference was silent. That is over — the question now is cost, not coverage.
 
-When an element is on the runtime path, its className is tokenized in-game and each token is passed
-to a resolver that handles exactly these families:
+## The two paths resolve the same utilities
 
-`border` (bare) · `border-*` · `bg-*` · `rounded-*` · `p-` · `px-` · `py-` · `pt-` · `pr-` · `pb-` ·
-`pl-` · `gap-` · `w-` · `h-` · `size-` · the positive margins (`m-`, `mx-`, `my-`, `mt-`, `mr-`,
-`mb-`, `ml-`) · `divide-*` · the case transforms (`uppercase`, `lowercase`, `capitalize`,
-`normal-case`) · the decorations (`underline`, `line-through`, `no-underline`) · `animate-*` · and
-the `transition` / `duration-` / `delay-` / `ease-` family.
+As of **0.8.0** every utility family the [reference](/vela-rbxts/reference/utilities/) documents resolves on both paths, with the same semantics: opacity modifiers (`bg-blue-600/50`), arbitrary values (`w-[120px]`, `text-[13px]`), and the families that only meet at the end — the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a grid track and the gap it gives back — all composed the way the static path composes them.
 
-That is the complete list. Colors, backgrounds, radius, spacing, sizing, and the structural and
-motion families survive.
+One asymmetry remains, and it favours the runtime path: **a utility the host element cannot carry is dropped rather than written.** Writing `TextColor3` onto a `Frame` is a hard Roblox error, so the runtime host checks the tag first. The static path does not — `<frame className="text-lg" />` emits `TextSize` on a `Frame` with no diagnostic and fails in game.
 
-<Callout title="Everything else is silently dropped">
-Any other utility inside a dynamic `className` is discarded at runtime with **no diagnostic** — no
-compile warning, no editor squiggle, no runtime error. The flex direction and alignment classes
-(`flex`, `flex-row`, `flex-col`, `justify-*`, `items-*`), text size, weight, and color, position and
-anchor, rotation and scale, visibility, shadows, gradients, and constraints all vanish. The element
-simply renders without them.
+`opacity-*` is the one family where the paths deliberately hand off to each other. As of **0.10.0** the compiler stops fading the subtree under a computed `className` at compile time and leaves the whole class list to the host, which resolves it and hands its children one alpha — so a fade written inside a variant recipe reaches the subtree it is written over, exactly as a literal one would. See [`opacity-*`](/vela-rbxts/reference/utilities/#effects).
 
-Note the asymmetry inside the layout family: `gap-*` is supported and creates a `UIListLayout`, but
-the classes that *configure* that layout are not. A dynamically-classed `gap-2` list falls back to
-`UIListLayout`'s default fill direction — vertical — whatever direction you asked for.
+<Callout title="If you are on an older release, coverage is the problem">
+The parity work landed over three releases, and on anything earlier a computed `className` loses
+utilities **with no diagnostic at all** — no compile warning, no editor squiggle, no runtime error.
+
+- **Before 0.6.0**, every `text-{color}` in a computed string was dropped, so labels kept Roblox's
+  near-black default and went invisible on dark surfaces.
+- **Before 0.7.0**, `flex-row`, `items-*`, `justify-*`, `w-fit`/`h-auto`/`size-fit`, `text-<size>`,
+  `text-left|center|right` and `font-<weight>` were dropped. A computed `flex items-center gap-2`
+  produced a `UIListLayout` at its default **vertical** fill direction, so the row rendered as an
+  uncentered column.
+- **Before 0.8.0**, positioning, the box constraints, the grid, gradients, `ring-*`/`outline-*`,
+  shadows, `z-*`, `rotate-*`, `scale-*`, `opacity-*`, `order-*`, `leading-*`, `self-*`, `content-*`,
+  `object-*`, `pointer-events-*`, `space-*`, `whitespace-*` and the ScrollingFrame families were
+  dropped.
+
+Upgrading is the fix. If you cannot, keep the affected element on the static path.
 </Callout>
 
-## The trap, concretely
+## What the runtime path still costs
 
-Here is code that looks correct, compiles clean, and produces a broken layout:
+Parity is not equivalence. Four things follow from resolving classes in-game rather than at build time, and none of them are going away.
 
-```tsx title="Broken — the row silently becomes a column"
-import React from "@rbxts/react";
+**No diagnostics.** The compiler never sees the final string, so nothing checks it. A typo like `bg-blu-600` is a `unknown-theme-key` warning on the static path and complete silence on the runtime path — the token resolves to nothing and the element renders without a background. This is the single strongest reason to prefer a static class list.
 
-interface RowProps {
-  emphasized: boolean;
-}
+**No editor support.** Completions, hover, and the color swatches all work from the literal text. A class name assembled at runtime is a string to the LSP, not a class list.
 
-export function Row({ emphasized }: RowProps) {
-  const classes = `flex items-center gap-2 p-2 rounded-md ${
-    emphasized ? "bg-slate-700" : "bg-slate-800"
-  }`;
+**The runtime helper is inlined into the module.** It is a substantial block of code, emitted once per module that needs it, and the element renders as `VelaRuntimeHost` rather than your tag. It no longer *costs* much in Luau's local-register budget — 0.9.0 folded it into a single initializer and 0.10.0 split that into thirteen namespaces, taking the busiest register file in an emitted file from 177 of the 200 Luau allows down to 65. Below 0.9.0 a large enough component could fail to compile because of it; see [troubleshooting](/vela-rbxts/guides/troubleshooting/#out-of-local-registers).
 
-  return (
-    <frame className={classes}>
-      <imagelabel Image="rbxassetid://123456" />
-      <textlabel Text="astra" />
-    </frame>
-  );
-}
-```
+**Theme values are re-parsed from text.** This is the sharpest remaining edge. The static path splices your theme's roblox-ts expression into the output; the runtime path serializes the resolved config to JSON and re-parses it in Luau with two hand-written parsers that accept exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with numeric arguments. A theme value that is valid roblox-ts but not in one of those shapes — `Color3.new(0.1, 0.2, 0.3)`, `Color3.fromHex(...)`, `new UDim(0, PADDING)` — compiles fine and then **silently degrades in game**: unparseable colors drop out of the runtime scale, unparseable radius and spacing values fall back to `new UDim(0, 0)`. See [configuration](/vela-rbxts/reference/config/#values-are-roblox-ts-expression-strings).
 
-The expression cannot be collapsed to static tokens, so the whole element is on the runtime path. Of the six utilities, only `gap-2`, `p-2`, `rounded-md`, and the background survive. `flex` and `items-center` are dropped — and while `gap-2` does create a `UIListLayout`, nothing configures it, so it keeps its default **vertical** fill direction. The avatar and the name render stacked in a column, uncentered, instead of side by side.
+## What puts an element on the runtime path
 
-Nothing warns you. You find out by looking at the screen.
+Not just a computed `className`. Any of these is enough:
 
-Note that inlining the template string directly into the attribute does not help. What matters is whether the *expression* collapses to fixed tokens, not where it is written. As long as any part of the string is computed, the whole element is on the runtime path and every unsupported token in it — including the literal `flex items-center` prefix — is dropped. The working fix is in [What to do instead](#what-to-do-instead).
+| Trigger | Note |
+|---|---|
+| A `className` expression that does not collapse | Including a ternary between two string *literals* |
+| Any variant prefix | `sm:`, `touch:`, `hover:`, `active:`, `focus:`, `dark:` — even in a plain literal |
+| The structural utilities | Margins, `divide-*`, `animate-*` build wrappers and separators no static prop can express |
 
-## The other divergences
+Variant-prefixed tokens are analyzed statically and serialized as **rules**, so they were never subject to the old coverage gap — it was the dynamic `className` case specifically that narrowed.
 
-Even within the supported families, the runtime path is not the static path with fewer features. Two behaviors still differ outright, and one did until 0.5.2.
+<Callout title="A ternary between two literals is not folded">
+`className={on ? "bg-blue-600" : "bg-zinc-800"}` looks like something the compiler could collapse to
+two static branches, and it does not: the element goes to the runtime path. The only way to keep both
+branches static is to branch the whole JSX element.
 
-**Arbitrary bracket values work at runtime but not statically.** The runtime resolver parses bracket numerics, so `rounded-[8]`, `p-[10]`, and `w-[240]` all resolve. The static path rejects them with `unsupported-arbitrary-value` — *"Arbitrary value `[8]` is not supported yet; use a theme key from `vela.config.ts` instead."* This is the one case where the runtime path is more permissive, and it makes bracket values a trap in reverse: a class that works in a computed string breaks when you inline it as a literal. (Bracketed hex colors are the exception that does work statically — `bg-[#3b82f6]` is fine.)
-
-**Automatic sizing is dropped at runtime.** Statically, `w-fit`, `h-fit`, `size-fit`, `w-auto`, `h-auto`, and `size-auto` emit `AutomaticSize`. The runtime resolver handles only `px`, `full`, `fit`, fractions, spacing keys and bracket numerics — `fit` resolves to nothing and `auto` matches no branch at all — so automatic sizing silently does not happen for any of them. If an element needs `AutomaticSize`, it must be on the static path.
-
-**`w-` and `h-` overwrote each other at runtime, before 0.5.2.** `Size` holds both axes, so a runtime rule that named one of them used to state a whole `UDim2` and zero the other — the later token won and the earlier one was lost. Since 0.5.2 each axis is carried on its own and composed over whatever `Size` the element already has, so a variant moves only the axis it names and `w-full h-12` in a computed string means what it says.
-
-```tsx title="Fixed in 0.5.2 — before it, h-12 won and w-full was discarded"
-<frame className={someComputedString} />
-// where someComputedString === "w-full h-12"
-```
-
-<Callout title="On 0.5.1 and earlier this looks like a radius bug">
-The axis that lost was left at zero, and a **scale-based** value on that axis then computed to
-nothing: `w-11 h-6 rounded-full` ended up 0 pixels wide, so its `UDim(0.5, 0)` corner radius rounded
-nothing and the class read as if it had been dropped — while a fixed `rounded-md` survived the same
-collapse. If you are pinned below 0.5.2, set one axis from the class and the other from a `Size`
-prop, or keep the element on the static path.
+An **array** of literals *is* collapsed — `className={["flex", "gap-2"]}` stays on the static path.
 </Callout>
 
-## What to do instead
+## How to tell which path an element took
 
-Two patterns keep you out of trouble.
+There is no diagnostic and no flag, so check the emitted roblox-ts. A static-path element keeps its original tag and gains plain props plus helper children. A runtime-path element is rendered as `VelaRuntimeHost` and carries `__velaTag` and, when variants are involved, `__velaRules`. If you see `VelaRuntimeHost` on an element you expected to be static, something in its `className` did not collapse.
 
-### Keep the variable part inside the supported prefixes
+## Staying static when it matters
 
-If the only thing that changes is a color, a radius, a padding, or a size, a computed string is fine. Those are exactly the prefixes the runtime resolver handles, so nothing is lost:
+Coverage no longer forces the choice, so the rule is softer than it used to be: reach for a static class list where losing compile-time checking would hurt, and compute freely elsewhere.
 
-```tsx title="Safe — only the background varies"
-const tone = disabled ? "bg-slate-800" : "bg-blue-600";
-return <frame className={`w-full ${tone}`} />;
-```
+### Branch the element, not the string
 
-Be aware that you are still paying for the runtime path — the helper module is inlined and the element becomes a `VelaRuntimeHost` — but the output is correct.
-
-### Branch between two fully static string literals
-
-This is the pattern to reach for by default. Instead of computing one string, choose between two complete literals. Each literal is a static string, so each branch takes the static path with the full utility set, full compile-time diagnostics, and no runtime helper:
+Instead of computing one string, choose between two complete literals. Each branch is a static string, so each takes the static path with full diagnostics and no runtime helper:
 
 ```tsx title="src/client/Card.tsx"
 import React from "@rbxts/react";
@@ -132,25 +105,40 @@ export function Card({ emphasized, children }: CardProps & { children?: React.El
 }
 ```
 
-It is more verbose, and the duplication is real. That is the trade: two literal strings that both compile down to plain props, versus one clever string that quietly loses half its utilities. When the shared part grows large enough that duplication becomes a maintenance problem, push the shared layout onto a static wrapper element and let only the varying element branch.
+The duplication is real. That is the trade: two literals that both compile to plain props and are both checked, versus one computed string that is checked by nothing. When the shared part grows large enough to be a maintenance problem, push the shared layout onto a static wrapper and let only the varying element branch.
 
-## How to tell which path an element took
+### Or use a variant instead of computing
 
-There is no diagnostic and no flag, so check the emitted Luau or the intermediate roblox-ts output. A static-path element keeps its original tag and gains plain props plus helper children. A runtime-path element is rendered as `VelaRuntimeHost` and carries `__velaTag` and, if variants are involved, `__velaRules`. If you see `VelaRuntimeHost` on an element you expected to be static, something in its `className` did not collapse.
+If the thing driving the class is something Vela can observe — pointer, press, focus, viewport, input device, color scheme — a variant expresses it without any computation, and variants keep the full utility set:
+
+```tsx title="No computed string needed"
+<textbutton className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 transition" Text="Play" />
+```
+
+### Computing is fine for the rest
+
+A computed `className` for state your app owns is a normal thing to write, and at 0.10.0 it does what it says:
+
+```tsx title="Fine — resolves fully, just without compile-time checking"
+const tone = disabled ? "bg-slate-800 text-slate-500" : "bg-blue-600 text-white";
+return <frame className={`flex items-center gap-2 p-2 rounded-md ${tone}`} />;
+```
+
+Every token here resolves, including the `flex items-center` that would have been dropped before 0.7.0. What you give up is the typo check.
 
 ## Components take the same two paths
 
-Everything on this page applies to `className` on your own components too — `<Panel className={classes} />` is lowered exactly like `<frame className={classes} />`, with the same narrow runtime resolver and the same silent drops.
+Everything on this page applies to `className` on your own components too — `<Panel className={classes} />` is lowered exactly like `<frame className={classes} />`.
 
 The one visible difference is the tag. On the runtime path the component is swapped for `VelaRuntimeHost` as usual, but `__velaTag` carries a live reference rather than a string: `__velaTag={Panel}`, or `__velaTag={Switch.Root}` for a member expression. The helper then renders your component with the resolved props and the helper children.
 
 Which means the component has to forward what it does not consume, or none of it lands. That is the trap worth internalizing before you reach for a computed `className` on a component — it is described in full in [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components), and there is no diagnostic for getting it wrong.
 
-The other ways onto the runtime path are variants — a single `sm:`, `touch:`, or `hover:` prefix, even in a plain literal, is enough — and the structural utilities (margins, `divide-*`, `animate-*`). Those cases are covered in [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) and the [utilities reference](/vela-rbxts/reference/utilities/). Note that variant-prefixed tokens are analyzed statically and serialized as rules, so they keep the full utility set; it is the *dynamic className* case specifically that narrows to the resolver's subset.
+Note also that a component only emits the modifier-sibling shape — `<Switch.Root …><uicorner /><textbutton /></Switch.Root>` — on the **static** path. Go dynamic and the `UICorner` is built at runtime instead, so an element that exists to demonstrate that emit needs to stay static.
 
 ## See also
 
 - [The five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path) — this page compressed to what you have to remember while writing code.
 - [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) — the other trigger for the runtime path.
-- [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the static-path behavior of the utilities most often lost here.
+- [Release notes](/vela-rbxts/reference/release-notes/#080) — the parity work, release by release.
 - [How it works](/vela-rbxts/getting-started/how-it-works/) — the compile pipeline and where the two paths diverge.
