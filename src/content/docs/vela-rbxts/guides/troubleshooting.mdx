@@ -18,20 +18,26 @@ symptom; each entry gives the most likely cause first and the quickest way to co
 
 Work down this list in order — it is sorted by how often each one turns out to be the answer.
 
-**1. The element is on the runtime path, and the class is outside the runtime subset.**
+**1. You are below 0.8.0 and the element is on the runtime path.**
 A computed `className`, any variant prefix, or a margin/`divide-*`/`animate-*` utility moves the
-element onto the [runtime path](/vela-rbxts/guides/dynamic-class-names/), where the in-game resolver
-understands only colors, backgrounds, radius, spacing, sizing, and the structural and motion
-families. Everything else — layout direction, alignment, text styling, position, transforms,
-constraints — is **dropped with no diagnostic**. Confirm by checking the compiled output of that
-file: a runtime-path element renders as `VelaRuntimeHost` instead of its original tag. Fix by
-branching between two fully static string literals instead of computing one.
+element onto the [runtime path](/vela-rbxts/guides/dynamic-class-names/). Before 0.8.0 the in-game
+resolver implemented only part of the static path and **dropped the rest with no diagnostic** —
+text colors before 0.6.0, layout and alignment and text sizing before 0.7.0, and positioning,
+constraints, grid, gradients, shadows and transforms before 0.8.0. Confirm with `npm ls
+@vela-rbxts/compiler`; fix by upgrading. If you cannot, branch between two fully static string
+literals instead of computing one.
+
+At 0.8.0 this is no longer a coverage problem — but the runtime path is still **unchecked**, so a
+typo that would warn in a literal is silent in a computed string. A runtime-path element renders as
+`VelaRuntimeHost` instead of its original tag in the compiled output.
 
 **2. The utility does not belong on that host element.**
 `<frame className="text-red-500" />` compiles cleanly and emits `TextColor3` onto a Frame, which
-ignores it. The per-host rules are enforced **only in the editor** — the build never checks them.
-Confirm by opening the file in an editor with the [LSP installed](/vela-rbxts/guides/editor-setup/);
-`unsupported-host-utility` appears there and only there.
+rejects it. The per-host rules are enforced **only in the editor** on the static path — the build
+never checks them. Confirm by opening the file in an editor with the
+[LSP installed](/vela-rbxts/guides/editor-setup/); `unsupported-host-utility` appears there and only
+there. On the runtime path the utility is dropped instead, so the same class list can behave
+differently depending on how the `className` was written.
 
 **3. The class is on a component that does not forward it.**
 `<Panel className="p-4" />` hands `Panel` resolved props and helper children. If `Panel` does not
@@ -66,10 +72,10 @@ variants and `hover:` were never affected.
 
 ## "The layout is wrong"
 
-**A row renders as a column.** The classic runtime-path signature. `gap-*` in a dynamic `className`
-creates a `UIListLayout`, but the `flex`/`flex-row`/`items-*` classes that configure it are dropped,
-and the layout falls back to its default **vertical** fill.
-See [the trap, concretely](/vela-rbxts/guides/dynamic-class-names/#the-trap-concretely).
+**A row renders as a column.** The classic pre-0.7.0 runtime-path signature. `gap-*` in a dynamic
+`className` created a `UIListLayout`, but the `flex`/`flex-row`/`items-*` classes that configure it
+were dropped, so the layout fell back to its default **vertical** fill. Fixed in 0.7.0 — if you see
+this on 0.7.0 or later, the parent is a plain frame with no layout at all.
 
 **`left-*` / `top-*` are ignored.** The parent has a `UIListLayout` — any `flex`, `gap-*`, or
 `space-*` on it — and a list layout owns its children's positions. Position the element only if its
@@ -87,7 +93,7 @@ the layout solver rather than one winning. Pick one. See
 **Spacing is bigger than you asked for.** Margins are wrappers that participate in the parent's
 list, so they **sum** with its `gap-*`. Prefer gap alone for list spacing.
 
-**A grid stops laying out when you add `gap-*`.** Still open in 0.5.2: gap on a `grid` element
+**A grid stops laying out when you add `gap-*`.** Still open in 0.10.0: gap on a `grid` element
 also emits a conflicting `UIListLayout`. Keep gap off grid elements until the fix ships.
 
 **Children shuffle when `divide-*` is present.** Separators are inserted by child position and
@@ -120,6 +126,23 @@ palette — add colors through `extend` alone. And config discovery walks up fro
 a stray `vela.config.ts` in a subdirectory shadows the root one for files beneath it. See
 [merge semantics](/vela-rbxts/reference/config/#merge-semantics).
 
+**`opacity-*` does nothing on a label, or does not reach the children under it.** Below 0.9.0 the
+family lowered to `BackgroundTransparency` alone — invisible on a label whose background is already
+transparent — and reached nothing below the instance it was written on. 0.9.0 fades every channel the
+element paints and walks the JSX beneath it; 0.10.0 carries the alpha across component boundaries too,
+so `{props.children}` and component children are no longer out of reach. Confirm with `npm ls
+@vela-rbxts/compiler`. On 0.9.x specifically, the compiler tells you: an unreachable child reports
+`opacity-unreachable-child`.
+
+**`opacity-*` fades a transparency you set yourself.** Expected on 0.10.0 when the fade comes from an
+ancestor *component*: the alpha arrives as a React context, and a consumer reading it cannot tell your
+`BackgroundTransparency` prop from one Vela lowered, so it composes over both. The static path can,
+and leaves yours alone. Write the fade on the element itself, or push the value into a class.
+
+**Overlapping siblings darken where they overlap.** `opacity-*` fades each instance rather than
+compositing the group, which is where it parts ways with CSS. Put them inside a `canvasgroup` and
+fade that — `GroupTransparency` is one real composite pass.
+
 **A themed color works statically but not on a dynamically-classed element.** The runtime path
 re-parses theme values from text and accepts exactly two shapes — `Color3.fromRGB(r, g, b)` and
 `new UDim(a, b)` with numeric literals. Anything else (`Color3.fromHex`, a constant in the
@@ -145,6 +168,31 @@ Any other `compiler-invocation-failed` means the native compiler call itself thr
 platform has a [prebuilt binary](/vela-rbxts/reference/api/#prebuilt-compiler-binaries) — Windows on
 ARM and linux arm64 musl do not.
 
+## "Out of local registers"
+
+`Out of local registers when trying to allocate <name>: exceeded limit 200`, against generated code
+you never wrote. Luau caps a function at 200 local registers and a module body *is* a function, so
+before 0.9.0 the ~96 top-level declarations the inlined runtime helper contributed were charged to
+every transformed file before it declared anything of its own. A component with enough parts crossed
+the line and failed to compile outright — a six-part `card` was enough.
+
+0.9.0 folds the runtime into a single initializer (96 module-scope locals down to 12) and 0.10.0
+splits that initializer into thirteen namespaces (177 registers down to 65), with a budget of 120
+asserted in the repo's own tests. **The fix is to upgrade.** If you are pinned below 0.9.0, split the
+module until each file's own declarations fit in what is left.
+
+## "Configuring a motion driver takes the whole UI down at mount"
+
+Fixed in 0.10.0. A driver written the documented way — `transition(instance, goal, spec) { … }` —
+compiles to a method carrying an implicit `self`, and the runtime read it off the table and called it
+detached, so every argument landed one place to the left and the driver died on `spec.time`. React
+caught that at mount and unwound the tree, so the symptom was the entire interface disappearing rather
+than an animation misbehaving.
+
+Upgrade. On 0.10.0 the driver type states its members as methods, so roblox-ts rejects the arrow form
+outright instead of silently shifting arguments — if your driver was written with arrows, it becomes a
+compile error you can see. See [the motion driver](/vela-rbxts/reference/config/#motion-driver).
+
 ## "Nothing is being transformed at all"
 
 - The file must end in `.tsx` — a `className` built in a `.ts` helper is invisible to Vela.
@@ -156,8 +204,10 @@ ARM and linux arm64 musl do not.
 
 ## "The build got slower, or the output got bigger"
 
-Every file with a variant-prefixed token or other runtime trigger carries its own ~2,300-line copy
-of the runtime helper — concentrate variants in a few container components. And
+Every file with a variant-prefixed token or other runtime trigger carries its own copy of the runtime
+helper — a few thousand lines of generated roblox-ts — so concentrate variants in a few container
+components. Since 0.10.0 that copy is grouped into namespaces, which is what keeps it from crowding
+Luau's [local register limit](#out-of-local-registers); it does not make the emit smaller. And
 `vela.config.ts` is re-read, re-transpiled, and re-executed for **every** eligible source file, so
 keep it a plain `defineConfig` call with literal values.
 

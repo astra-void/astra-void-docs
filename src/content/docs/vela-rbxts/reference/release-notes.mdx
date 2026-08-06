@@ -1,6 +1,6 @@
 ---
 title: Release notes
-description: What changed in each Vela release — the 0.5.2 runtime sizing fix, the 0.5.0 preflight break, and the sharp edges still open.
+description: What changed in each Vela release — the 0.10.0 opacity model, the 0.8.0 runtime parity pass, the 0.7.0 plugin API, the 0.6.0 grid break, and the sharp edges still open.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -17,9 +17,229 @@ per-package detail behind this page. If you are installing Vela for the first ti
 current release and none of the upgrade notes below apply to you — skip to
 [what is still open](#still-open).
 
-## 0.5.2
+## 0.10.0
 
-The current release.
+The current release. It finishes the `opacity-*` work 0.9.0 started, and stops the inlined runtime
+from crowding Luau's local register limit.
+
+**`opacity-*` crosses a component boundary, in both directions.** 0.9.0 fades a subtree by walking
+the JSX at compile time, and that walk ends where the JSX does. A fade written *around* a component
+reached nothing the component rendered, and a fade written *on* one —
+`<Label className="opacity-50" />` — lowered to `BackgroundTransparency` and stopped: the tag is
+unknown at that point, so the channel that actually paints a label was never named and its text
+stayed opaque.
+
+React context is the one thing that crosses that boundary, so the alpha now travels as one. The
+transformer wraps what it cannot reach — `{props.children}`, a component child, a component element
+carrying the utility itself — in a provider that renders no instance, so the tree keeps its shape,
+its keys and the names Roblox gives them. The provider is *relative*: it multiplies its alpha by the
+fade it is nested in, so two fades compose rather than the inner one winning. An `opacity-*` written
+on a component element now lowers to no property at all — it becomes that alpha.
+
+Reaching back down into a subtree that was already lowered at compile time needs a consumer, since an
+instance cannot read a context. Every component definition gets its root routed through one, unless
+that root is a runtime host or another component, both of which read the context themselves. The
+consumer walks the instances below it and composes the alpha onto each channel they paint, stopping
+at anything that resolves against the context on its own — fading those from outside as well would
+apply the same alpha twice.
+
+**A class value that settles at render time is left whole to the runtime.** The transformer no longer
+fades the subtree under a `className={cn(…)}`; the host resolves all of it and hands its children one
+alpha, so an `opacity-*` written inside a recipe reaches the subtree it is written over.
+
+**`opacity-unreachable-child` is gone**, along with the limitation it described. One difference
+between the two paths remains: the static path leaves a transparency *you* declared as a prop alone,
+while a fade arriving as context cannot tell that prop from one Vela lowered, so it composes over
+both.
+
+**A configured motion driver no longer takes the tree down at mount.** A driver written the
+documented way — `transition(instance, goal, spec) { … }` — compiles to a method carrying an implicit
+`self`, and the runtime read it off the table and called it detached, so every argument landed one
+place to the left and the driver died on `spec.time`. React caught that at mount and unwound
+everything. The runtime calls the driver's methods as methods now, and the driver type states them as
+methods, so roblox-ts rejects the arrow form outright instead of silently shifting arguments. See
+[the motion driver](/vela-rbxts/reference/config/#motion-driver).
+
+**The inlined runtime is grouped into namespaces.** 0.9.0 moved the runtime's declarations off module
+scope into one initializer, which did not shrink them — the initializer is itself a function, and it
+had grown to 177 of the 200 local registers Luau allows one. Roughly one more utility family's worth
+of helpers and *every* transformed file would have failed to compile against generated code you never
+wrote. The helpers now live in thirteen namespaces, which roblox-ts lowers to
+`local Group = {} do … end`, so a group costs one lasting register and frees its members at the end of
+the block. The busiest register file in an emitted file went from 177 to 65, and both the harness and
+the compiler crate now assert a budget of 120, so crowding the limit again fails a test rather than
+your build.
+
+## 0.9.0
+
+**`opacity-*` fades everything the element draws.** It lowered to `BackgroundTransparency` alone,
+which is invisible on a label whose background is already transparent. It now fades every channel the
+host paints: `BackgroundTransparency` everywhere, `TextTransparency` on the text hosts,
+`ImageTransparency` on the image hosts, and the `Transparency` of a `UIStroke` or `UIShadow` drawn
+alongside it. A `canvasgroup` still takes `GroupTransparency` alone, which already covers all of them.
+
+**And into the subtree written under it.** Roblox has no inherited transparency — CSS fades a subtree
+by compositing it once and multiplying alpha over the result, and the closest thing that stays a
+property is handing every instance below the class the running product. The transformer walks the JSX
+with that alpha and applies `1 - (1 - own) * alpha` to each element it reaches, including children
+written inside an expression: `{cond && <X />}` and `{items.map(…)}` are nested JSX as far as the AST
+is concerned. A `canvasgroup` on the way down ends the walk. A child whose `className` is only known
+at render time is handed the alpha as `__velaOpacity`, so the runtime host composes what it resolves,
+variant rules included — the statically known half composes at compile time and neither side does it
+twice.
+
+**`opacity-*` stopped being order-dependent.** `bg-slate-700` clears `BackgroundTransparency`, so
+`opacity-50 bg-slate-700` came out opaque while `bg-slate-700 opacity-50` did not. Tailwind reads
+`opacity-*` as independent of a color's own alpha and multiplies the two, so the utility is now held
+until the whole class list is read, then composed over whatever alpha the colors settled on.
+
+Where this parts ways with a real composite is overlapping siblings: it fades each of them rather
+than the group, so the overlap darkens.
+
+<Callout title="`opacity-unreachable-child`, added here and removed in 0.10.0">
+Two shapes stayed out of the compile-time walk — `{props.children}`, and a component child whose
+instances are created elsewhere — and 0.9.0 reported `opacity-unreachable-child` on them rather than
+silently fading half a subtree. 0.10.0 carries the alpha across both through React context, so the
+diagnostic no longer exists. If you are on 0.9.x, that warning is telling you the truth; the fix is
+to upgrade.
+</Callout>
+
+**The inlined runtime stopped costing every file 96 registers.** Luau caps a function at 200 local
+registers, and a module body is a function. The runtime arrived as ~96 top-level declarations that
+every transformed file paid before declaring anything of its own, so a component with enough parts
+crossed the limit and failed to compile at all — reporting `Out of local registers when trying to
+allocate <name>: exceeded limit 200` against code you never wrote. A six-part `card` hit it at the
+second part. The runtime now arrives as a single initializer, spending one register instead of
+ninety-six (module-scope locals in an emitted file went from 96 to 12), and 0.10.0 narrows the
+initializer itself.
+
+The runtime source also moved out of a string literal in the Rust crate and into
+`packages/runtime/src/index.ts`. It is not published and you install nothing new — the point is that
+it is now real TypeScript the repo typechecks and formats, which it could never be while it was a
+string.
+
+## 0.8.0
+
+**Every utility family resolves on the runtime class path.** The inlined runtime host implemented
+roughly a third of what the static path lowers, so a component whose `className` arrived as a *value*
+— the normal shape for a variant recipe — silently lost whatever the subset did not cover. What was
+missing: positioning (`left-*`, `inset-*`, `translate-*`, `origin-*`, `mx-auto`), the box constraints
+(`min-w-*`, `max-h-*`, `aspect-*`), the grid, gradients, `ring-*`/`outline-*`, shadows, `z-*`,
+`rotate-*`, `scale-*`, `opacity-*`, `order-*`, `leading-*`, `self-*`, `content-*`, `object-*`,
+`pointer-events-*`, `space-*`, `whitespace-*`, the whole ScrollingFrame family, and the rest of the
+text families.
+
+All of them resolve dynamically now, with the static path's semantics: opacity modifiers
+(`bg-blue-600/50`), arbitrary values (`bg-[#ff0000]`, `w-[120px]`, `text-[13px]`), and the families
+that only meet at the end — the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a grid
+track and the gap it gives back — composed the way the static path composes them. `font-<family>`
+resolves too, because `theme.fontFamily` now reaches the runtime theme.
+
+This is the release where [dynamic class names](/vela-rbxts/guides/dynamic-class-names/) stopped
+being a reduced dialect. What is left there is a short list of genuine differences, not a coverage
+gap.
+
+**A utility the host element cannot carry is dropped at runtime rather than applied.** Writing
+`TextColor3` onto a `Frame` is a hard Roblox error, not a no-op, so the runtime host now checks the
+tag before it assigns. The static path does not do this yet — see [still open](#still-open).
+
+**The runtime host names `UIShadow` by its real class.** `@rbxts/react` hands a tag it does not know
+straight to `Instance.new`, which is case sensitive, so the lowercase spelling failed to instantiate
+and unwound the whole tree. Fixed on the runtime path only; the static path still emits the lowercase
+tag through JSX.
+
+## 0.7.0
+
+**Plugins.** A config can register class names of its own through `addUtilities` — either as a list
+of existing utilities (`btn: "bg-blue-600 rounded-lg px-4"`) or as Roblox properties written directly
+(`panel: { BorderSizePixel: "0" }`) — and read the resolved theme through `theme()`. Plugin functions
+run while the config resolves, so the compiler, the runtime helper and the LSP all receive the same
+plain utility table, which is also why `vela.config.json` can state it directly as
+`plugins.utilities`. Registered utilities take variants, resolve on both paths, may reach through
+each other, and sort *ahead* of the plain utilities, so a `bg-*` written beside one still wins. See
+[`plugins`](/vela-rbxts/reference/config/#plugins).
+
+**A motion driver seam.** `transition` and `animate-*` no longer have to run on TweenService: a
+plugin names a module through `setMotionDriver`, the inlined runtime host imports it, and its
+`transition`/`animate` methods take over. Each method is taken over on its own, so a driver that only
+springs transitions keeps the built-in `animate-*` presets.
+
+**`dark:` variant.** Roblox exposes no color scheme to a running game, so the app owns it: `dark:`
+matches when `Players.LocalPlayer` carries a `VelaColorScheme = "dark"` attribute, and the runtime
+host follows that attribute's change signal. An instance attribute is the only shared source that
+works, since the runtime helper is inlined per module rather than existing once.
+
+**`active:` and `focus:` variants.** `active:` follows mouse and touch presses through
+`InputBegan`/`InputEnded`, clearing on `MouseLeave` — a release outside the element never reaches it.
+`focus:` follows `Focused`/`FocusLost` on a `textbox` and `SelectionGained`/`SelectionLost`
+everywhere else. Both compose with your own `Event` handlers and tween when the element carries
+`transition`.
+
+**`theme.fontFamily` and the `font-{family}` utilities.** The scale ships `sans` (Source Sans Pro),
+`serif` (Merriweather) and `mono` (Roboto Mono), and takes any Roblox font family asset, uploaded
+`rbxassetid://` fonts included. `font-*` resolves the fixed weight names first and reads anything
+else as a family key, so family, weight and style merge into one `FontFace`.
+
+**Scrolling frame utilities.** `scroll-{x,y,xy}`/`scroll-none`, `scrollbar-w-*`/`scrollbar-none`,
+`scrollbar-{color}` and `canvas-{auto,auto-x,auto-y,none}`. Tailwind's own `scroll-*` utilities
+(`scroll-smooth`, `scroll-m-*`) now report `unsupported-scroll-value` naming the supported values,
+instead of the generic `no-roblox-equivalent`.
+
+**Arbitrary length values.** `[16px]`, `[16]`, `[50%]` and their negatives resolve on the spacing,
+size, position, radius and scrollbar-width families, on both paths. `text-[13px]`, `leading-[1.6]`,
+`rotate-[17deg]`, `z-[15]` and `border-[3px]`/`ring-[3px]`/`outline-[3px]` each read the number in
+their own unit. A payload the family cannot read still reports `unsupported-arbitrary-value`, and a
+fractional `z-[1.5]` still reports `unsupported-arbitrary-z-index`, since `ZIndex` is an integer.
+
+**`transition-colors`, `transition-opacity` and `transition-transform` narrow the tween** to their
+property group instead of all three behaving as `transition-all`. `transition-shadow` reports
+`unsupported-transition-value`: a shadow lives on a helper instance, which applies instantly, so
+there is nothing for the filter to hold back.
+
+**`opacity-*` on a `canvasgroup` lowers to `GroupTransparency`**, fading the whole subtree the way
+CSS `opacity` does. Every other host keeps `BackgroundTransparency`.
+
+**Class sorting.** The compiler exposes a canonical class order as per-`className` edits, and the LSP
+offers it as the `source.sortVelaClasses` source action, which editors can run on save. Utilities
+that can write the same Roblox property sort as one group, so the sort never changes which one wins.
+See [editor setup](/vela-rbxts/guides/editor-setup/#sorting-class-names).
+
+**Layout, sizing and text utilities on the runtime class path** — `flex-row`, `items-*`, `justify-*`,
+`w-fit`/`h-auto`/`size-fit`, `text-<size>`, `text-left|center|right` and `font-<weight>`. This was the
+first half of the parity work 0.8.0 finished.
+
+## 0.6.0
+
+<Callout title="Breaking-ish: grid cells are sized now">
+`UIGridLayout` stamps `CellSize` onto every child and ignores whatever `Size` the child set for
+itself. Vela's grid utilities only ever set `FillDirection`, `FillDirectionMaxCells` and
+`CellPadding`, so every cell fell back to Roblox's 100×100 default — a `grid-cols-2` of 430px cards
+collapsed to 100px squares whose content spilled into the neighbouring track. `grid-cols-*` was not
+imprecise, it was unusable.
+
+`grid-cols-N` now divides the axis it fills into N tracks and hands each cell back its share of the
+gap: `grid grid-cols-2 gap-2.5` lowers to `CellSize = new UDim2(0.5, -5, 0, 100)`. `grid-rows-N` does
+the same vertically.
+
+The cross axis needs its own answer — a column count says nothing about row height — so
+**`auto-rows-*` and `auto-cols-*`** set it from the spacing scale. Without one it stays at the 100px
+the engine already used, which is why this is a minor rather than a patch: existing grids keep their
+row extent and gain correct track widths. Anything that was compensating for 100px cells needs
+re-checking.
+</Callout>
+
+**`text-{color}` resolves on the runtime path.** The runtime resolver had no `text-` branch at all,
+so every text color in a dynamic class value was dropped without a diagnostic — the label kept
+Roblox's near-black default and went invisible on any dark surface, while the identical class string
+lowered correctly when it happened to be static. Colors reach `TextColor3` (and `text-transparent`
+reaches `TextTransparency`) on both paths now. The overloaded non-color halves of the prefix,
+`text-lg` and `text-left`, were still falling through here; 0.7.0 finished them.
+
+**`w-*` and `h-*` stop erasing each other in variant rules.** The 0.5.2 fix covered dynamic class
+values; this carries the same per-axis composition into variant rules, so `md:w-32 md:h-32` keeps
+both and a `md:h-32` overlay no longer drops the base width.
+
+## 0.5.2
 
 **`w-*` and `h-*` stop erasing each other on the runtime path.** `Size` holds both axes, so a runtime
 rule that named one of them used to state a whole `UDim2` and zero the other: `md:w-32 md:h-32` kept
@@ -147,11 +367,12 @@ need it — which is why there is no Vela runtime to place in your DataModel.
 
 ## Still open
 
-These are known and unfixed as of 0.5.2.
+These are known and unfixed as of 0.10.0.
 
 **`gap-*` on a `grid` element emits a conflicting `UIListLayout`** alongside the `UIGridLayout` it
-correctly feeds, leaving two layout instances fighting over the children. Keep `gap-*` off grid
-elements and set `CellPadding` yourself
+correctly feeds, leaving two layout instances fighting over the children. 0.6.0 made the grid usable
+but did not touch this. `gap-*` is still how you set `CellPadding`, so the workaround is to set
+`CellPadding` as a prop and leave `gap-*` off
 ([utilities reference](/vela-rbxts/reference/utilities/#grid)).
 
 **`divide-*` separators are sensitive to explicit `LayoutOrder`** and double-count the parent's
@@ -159,6 +380,26 @@ elements and set `CellPadding` yourself
 ([utilities reference](/vela-rbxts/reference/utilities/#divide)).
 
 Neither of these is a regression; both have been true since the families shipped.
+
+**The static path emits `<uishadow>` in lowercase.** 0.8.0 fixed the casing on the runtime path only.
+`@rbxts/react` passes an unknown tag straight to `Instance.new`, which is case sensitive, so a
+statically lowered `shadow-*` can fail to instantiate and unwind the tree around it. A dynamic class
+value on the same element takes the runtime path and is unaffected.
+
+**Neither host guards are symmetric.** The runtime path drops a utility the host element cannot carry
+(0.8.0); the static path still writes it. `<frame className="text-lg" />` lowers to `TextSize` on a
+`Frame` with no diagnostic, and the scrolling families lower onto a `frame` the same way. Roblox
+rejects the assignment at runtime, so the failure surfaces far from the class list that caused it.
+
+**A fade that arrives as context composes over a transparency you declared yourself.** The static
+path can tell your `BackgroundTransparency` prop from one Vela lowered and leaves yours alone; a
+consumer reading the alpha at runtime cannot, so an `opacity-*` written on an ancestor component
+multiplies into it. Overlapping siblings under one `opacity-*` also darken where they overlap, since
+each is faded rather than the group — put them in a `canvasgroup` if you need the real composite.
+
+**A plugin utility that reaches back into itself expands to nothing.** The depth cap that stops
+`{ a: "b", b: "a" }` from recursing terminates the expansion silently — no diagnostic, and the
+element comes out with only its preflight props.
 
 **TypeScript 7 is not supported.** The host adapter calls into the `typescript` it resolves from your
 project, and 7.x fails that call — `compiler-invocation-failed: Cannot read properties of undefined
@@ -174,7 +415,8 @@ have to build the compiler crate and the language server from source. The full t
 
 ## See also
 
-- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.5.2.
-- [Configuration](/vela-rbxts/reference/config/#preflight) — the `preflight` opt-out.
+- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.10.0.
+- [Configuration](/vela-rbxts/reference/config/#preflight) — the `preflight` opt-out, and
+  [`plugins`](/vela-rbxts/reference/config/#plugins).
 - [Troubleshooting](/vela-rbxts/guides/troubleshooting/) — symptom-first, including the two entries
   that turn out to be version problems.

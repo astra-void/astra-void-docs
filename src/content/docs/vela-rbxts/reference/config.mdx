@@ -89,9 +89,9 @@ export default defineConfig({
 
 ## Schema
 
-The schema is two optional keys: `preflight` and `theme`. There is no `content`, `plugins`,
-`presets`, `darkMode`, `prefix`, `important`, `corePlugins`, `safelist`, or `variants` option. Those
-keys do not exist in the type and are ignored if you write them anyway.
+The schema is three optional keys: `preflight`, `theme`, and — since 0.7.0 — `plugins`. There is no
+`content`, `presets`, `darkMode`, `prefix`, `important`, `corePlugins`, `safelist`, or `variants`
+option. Those keys do not exist in the type and are ignored if you write them anyway.
 
 <PropTable
   rows={[
@@ -120,6 +120,18 @@ keys do not exist in the type and are ignored if you write them anyway.
         "Replaces the entire spacing scale. Each value is a roblox-ts expression producing a UDim.",
     },
     {
+      name: "theme.fontFamily",
+      type: "Record<string, string>",
+      description:
+        "Replaces the entire font family scale. Each value is a Roblox font family asset path — a rbxasset:// font JSON or an uploaded rbxassetid://. Added in 0.7.0; the keys are what font-{family} looks up.",
+    },
+    {
+      name: "plugins",
+      type: "VelaPlugin[] | { utilities, motion }",
+      description:
+        "Plugins that register utility classes of their own and can replace the motion driver. Added in 0.7.0. In vela.config.json, state the resolved object form directly.",
+    },
+    {
       name: "theme.extend.colors",
       type: 'Record<string, string | Partial<Record<Shade | "DEFAULT", string>>>',
       description:
@@ -134,6 +146,11 @@ keys do not exist in the type and are ignored if you write them anyway.
       name: "theme.extend.spacing",
       type: "Record<string, string>",
       description: "Shallow-merges over the default spacing scale by key.",
+    },
+    {
+      name: "theme.extend.fontFamily",
+      type: "Record<string, string>",
+      description: "Shallow-merges over the default font family scale by key.",
     },
   ]}
 />
@@ -224,9 +241,9 @@ two literal forms with numeric arguments.
 
 ## Merge semantics
 
-For `radius` and `spacing`: a top-level key replaces the whole scale; `extend` shallow-merges over
-the defaults by key. For `colors`: `extend` merges per family, and per shade when both the default
-and your value are palettes. A literal replaces a palette wholesale, and vice versa.
+For `radius`, `spacing` and `fontFamily`: a top-level key replaces the whole scale; `extend`
+shallow-merges over the defaults by key. For `colors`: `extend` merges per family, and per shade when
+both the default and your value are palettes. A literal replaces a palette wholesale, and vice versa.
 
 <Callout title="theme.colors silently discards theme.extend.colors">
 If `theme.colors` is present, `theme.extend.colors` is **not applied at all** — it is dropped
@@ -237,8 +254,9 @@ So a config with `theme.colors.surface` and `theme.extend.colors.brand` resolves
 containing only `surface`. `brand-500` will not resolve, and neither will `slate-700`.
 
 Add colors with `theme.extend.colors` alone. Only use top-level `theme.colors` when you genuinely
-want to throw the default palette away. The same replace-wholesale rule applies to `theme.radius` and
-`theme.spacing`.
+want to throw the default palette away. **Every axis behaves this way** — a top-level `theme.radius`,
+`theme.spacing` or `theme.fontFamily` discards both the defaults and its own `extend` counterpart in
+exactly the same silence.
 </Callout>
 
 ## The default theme
@@ -295,6 +313,158 @@ The practical effect is that a lookup only fails for values that break the arith
 negative number, a fraction finer than `0.5`, or a non-numeric word. Those give `unknown-theme-key`
 in the `spacing` family. Adding named spacing keys through `theme.extend.spacing` is how you get
 `p-gutter`-style tokens.
+
+### fontFamily
+
+Three keys, added in 0.7.0. Each value is a Roblox font family asset path, not an expression.
+
+| Key | Value |
+|---|---|
+| `sans` | `rbxasset://fonts/families/SourceSansPro.json` |
+| `serif` | `rbxasset://fonts/families/Merriweather.json` |
+| `mono` | `rbxasset://fonts/families/RobotoMono.json` |
+
+`sans` is what an element gets when no `font-{family}` is present — before 0.7.0 that family was
+hard-coded and there was no way to change it through a utility. Any Roblox font family works,
+including one you uploaded:
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: {
+    extend: {
+      fontFamily: {
+        display: "rbxassetid://12345678",
+        body: "rbxasset://fonts/families/Nunito.json",
+      },
+    },
+  },
+});
+```
+
+That gives you `font-display` and `font-body`. The `font-*` prefix resolves the fixed weight names
+(`bold`, `medium`, …) first and reads anything else as a key here, so a payload that is neither
+reports `unknown-theme-key`.
+
+Unlike the other three axes, these values are **not** roblox-ts expressions — they are the string
+that goes into `Font`'s first argument, so the runtime path carries them through unchanged and the
+[re-parsing caveat](#values-are-roblox-ts-expression-strings) below does not apply to them.
+
+## Plugins
+
+Added in 0.7.0. A plugin is a function that receives an API object and registers things on it. The
+`plugin()` helper from `@vela-rbxts/config` wraps one, with an optional name.
+
+```ts title="vela.config.ts"
+import { defineConfig, plugin } from "@vela-rbxts/config";
+
+export default defineConfig({
+  plugins: [
+    plugin(({ addUtilities, theme }) => {
+      addUtilities({
+        btn: "bg-blue-600 rounded-lg px-4 py-2",
+        panel: { BorderSizePixel: "0", BackgroundColor3: theme("colors.zinc.950") },
+      });
+    }, { name: "acme" }),
+  ],
+});
+```
+
+Plugin functions run **while the config resolves**, not while a file compiles. What the compiler, the
+inlined runtime host and the LSP each receive is the same plain table of utilities, which is why the
+JSON form can state it directly.
+
+### addUtilities
+
+A registered utility is either a **utility class list** or a **Roblox property map**.
+
+| Form | Example | Meaning |
+|---|---|---|
+| Class list | `btn: "bg-blue-600 rounded-lg px-4"` | Expands to those utilities |
+| Property map | `panel: { BorderSizePixel: "0" }` | Assigns those properties directly |
+
+Property-map values follow the same rule as theme values: they are
+[roblox-ts expression strings](#values-are-roblox-ts-expression-strings), not numbers or objects.
+
+Four things are true of a registered utility:
+
+- **It takes variants.** `hover:btn` builds a hover rule out of everything `btn` expands to.
+- **It resolves on both paths.** A `btn` inside a dynamic `className` works.
+- **It can reach through another.** `"btn-lg": "btn text-lg"` expands `btn` in turn.
+- **It sorts ahead of the plain utilities**, so a `bg-*` written beside one still wins:
+  `className="btn bg-rose-600"` is rose, regardless of token order.
+
+<Callout title="A cycle expands to nothing, silently">
+The expansion has a depth cap so `{ a: "b", b: "a" }` cannot recurse forever — but reaching the cap
+terminates the expansion rather than reporting it. There is no diagnostic and no build error; the
+element simply comes out carrying none of the utilities the cycle named. If a plugin utility appears
+to do nothing at all, check whether it reaches back into itself.
+</Callout>
+
+### theme()
+
+`theme("colors.blue.600")` reads the **resolved** theme — defaults merged, `extend` applied — and
+returns the roblox-ts expression string for that key, so a plugin builds on the same palette the
+utilities do. It takes an optional second argument used when the path is missing.
+
+### Motion driver
+
+`setMotionDriver` replaces TweenService as what executes
+[`transition` and `animate-*`](/vela-rbxts/reference/utilities/#motion).
+
+```ts title="vela.config.ts"
+plugin(({ setMotionDriver }) => {
+  setMotionDriver({ module: "@acme/springs", export: "driver" });
+});
+```
+
+The inlined runtime host imports that module and calls its `transition` and `animate` methods.
+**Each method is taken over on its own**, so a driver that implements only `transition` keeps the
+built-in `animate-*` presets on TweenService.
+
+They have to be **methods**, not properties holding arrows:
+
+```ts title="@acme/springs"
+export const driver = {
+  transition(instance: Instance, goal: object, spec: { time: number }) { … },
+  animate(instance: Instance, preset: string) { … },
+};
+```
+
+roblox-ts compiles a method with an implicit `self`, and an arrow without one, so the two shapes are
+not interchangeable across the call. Before 0.10.0 the runtime read the method off the table and
+called it detached, which shifted every argument one place to the left and killed the driver on
+`spec.time` — React caught it at mount and took the whole tree down. 0.10.0 calls them as methods and
+types them as methods, so the arrow form is now a compile error rather than a tree that disappears.
+
+The specifier is imported by a helper that is inlined into *every* transformed module, so it has to
+resolve from any of them: a package name, or a path relative to your `baseUrl`. A relative `./`
+specifier would resolve differently per file and is rejected while the config loads:
+
+```
+plugins.motion set the motion driver module to "./driver". A relative path cannot resolve
+from every module the runtime host is inlined into; use a package name or a baseUrl-relative path.
+```
+
+Omit `export` to import the module's default export.
+
+### The JSON form
+
+`vela.config.json` cannot hold functions, so it states the **resolved** shape that plugins produce:
+
+```json title="vela.config.json"
+{
+  "plugins": {
+    "utilities": {
+      "btn": "bg-blue-600 rounded-lg px-4 py-2",
+      "panel": { "BorderSizePixel": "0" }
+    },
+    "motion": { "module": "@acme/springs" }
+  }
+}
+```
+
+This is the same object the TypeScript form produces after its plugin functions have run, so the two
+are interchangeable — you give up `theme()` and any logic, not any capability.
 
 ## tsconfig plugin options
 

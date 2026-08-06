@@ -180,7 +180,12 @@ rather than silent. Plugin options are documented in
 For almost every project the answer is the same: install `vela-rbxts`, add the transformer to
 `tsconfig.json`, and install the VS Code extension. Everything else arrives as a dependency.
 
-All packages are versioned in lockstep at **0.5.2**, including the VS Code extension. There is no
+`@vela-rbxts/runtime` is deliberately not on that list. Since 0.9.0 the inlined runtime helper lives
+there as real TypeScript the repo typechecks and formats — it used to be a string literal inside the
+Rust crate — and the compiler reads it at build time. The package is private and never published, so
+there is still nothing of Vela's to install or to place in your DataModel.
+
+All packages are versioned in lockstep at **0.10.0**, including the VS Code extension. There is no
 scenario in which you should mix versions across the `@vela-rbxts/*` scope. What changed in each
 release is in the [release notes](/vela-rbxts/reference/release-notes/).
 
