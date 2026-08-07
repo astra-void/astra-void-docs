@@ -108,8 +108,8 @@ importers:
         specifier: ^0.9.9
         version: 0.9.9(prettier@3.8.3)(typescript@6.0.3)
       '@facet-ui/theme':
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.3.1
+        version: 0.3.1
       '@types/react':
         specifier: ^19.2.15
         version: 19.2.15
@@ -859,8 +859,8 @@ packages:
   '@expressive-code/plugin-text-markers@0.44.1':
     resolution: {integrity: sha512-B3BsJoJ8CFMlcIX9f+X9tcI3C4zPDO601+YuLi9GheSTNro7ZfqSjLptMQKBHOWZvxnAtY5zvIX7iO/qtBhNBg==}
 
-  '@facet-ui/theme@0.3.0':
-    resolution: {integrity: sha512-H8Utl+nk7RbrTEGto+JFAJD+Scxf3WK08Xul42e5Hv0YZ6noNmklYi9TtuKqZ6r2efAhhjPvEhAGMDp7ZfQ5+Q==}
+  '@facet-ui/theme@0.3.1':
+    resolution: {integrity: sha512-jUqOvq3RDRLgcss8IUARYspI1NMEC30cnPs0SKXyVyU/+gond98L8n19VrhKLJJNxwVfjWi5jcVdOkwQ1fPq9g==}
     engines: {node: '>=20'}
     peerDependencies:
       vela-rbxts: '>=0.9.0'
@@ -5903,7 +5903,7 @@ snapshots:
     dependencies:
       '@expressive-code/core': 0.44.1
 
-  '@facet-ui/theme@0.3.0': {}
+  '@facet-ui/theme@0.3.1': {}
 
   '@floating-ui/core@1.7.5':
     dependencies:
