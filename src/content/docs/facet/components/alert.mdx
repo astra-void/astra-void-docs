@@ -1,0 +1,163 @@
+---
+title: Alert
+description: Three parts, one recipe object, and a variant that has to be repeated on every part that draws something.
+product: facet
+section: components
+sidebar:
+  order: 40
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add alert
+```
+
+Copies `ui/alert.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import { Alert, AlertTitle, AlertDescription } from "../shared/ui/alert";
+
+<Alert>
+  <AlertTitle Text="Saved" />
+  <AlertDescription Text="Your loadout is stored on the server." />
+</Alert>
+```
+
+<FacetPreview
+  scene="AlertScene"
+  source="ui/alert.tsx"
+  height={220}
+  label="Both variants. Note that destructive is stated three times, once per part."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `Alert` | `Frame` | `flex-col w-full h-fit gap-1 rounded-lg border p-4` |
+| `AlertTitle` | `TextLabel` | `w-full h-fit whitespace-normal text-left text-sm font-medium` |
+| `AlertDescription` | `TextLabel` | `w-full h-fit whitespace-normal leading-tight text-left text-xs font-normal` |
+
+Flat named exports, like [Card](/facet/components/card/#the-parts) — this is source you paste and
+edit, so each part reads and deletes on its own.
+
+<ForwardedProps instance="Frame" />
+
+`Alert` forwards onto a `Frame` and takes `children`. The two text parts forward onto a `TextLabel`
+and take `Text`.
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "variant",
+      type: '"default" | "destructive"',
+      description:
+        "Takes it on every part, not just the root. Defaults to default. See below — this is the thing to notice if you are coming from shadcn.",
+    },
+    {
+      name: "Text",
+      type: "string",
+      description: "Text parts only. Drawn as the instance's own Text — these are leaves.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description: "Root only.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+## `variant` goes on every part
+
+This is the one surprise in the component, and it is not an oversight:
+
+```tsx
+<Alert variant="destructive">
+  <AlertTitle variant="destructive" Text="Kicked" />
+  <AlertDescription variant="destructive" Text="You were removed from the server." />
+</Alert>
+```
+
+In shadcn the variant is set once on the root and a descendant selector colours the title. Roblox
+has no descendant selectors and **nothing inherits** — a `TextLabel`'s colour lives on that
+`TextLabel` — so `variant` has to reach every part that draws something.
+
+Verbose on purpose. The alternative is a React context, and a context is a thing you then own and
+have to keep wired up through your own edits, for a component whose entire body is three instances.
+If you find the repetition annoying in your project, the file is yours: add the context, or collapse
+the three parts into one component that takes two strings.
+
+<Callout title="Forgetting it on a part is silent">
+`<Alert variant="destructive">` with a plain `<AlertTitle />` compiles, renders, and gives you a
+destructive border around a default-coloured title. Nothing warns — there is no relationship between
+the parts for anything to check.
+</Callout>
+
+| `variant` | Root | Title | Description |
+| --- | --- | --- | --- |
+| `default` | `bg-card border-border` | `text-card-foreground` | `text-muted-foreground` |
+| `destructive` | `bg-card border-destructive` | `text-destructive` | `text-destructive` |
+
+The destructive surface is the *same* `bg-card` as the default — only the border and the text
+change. A red fill behind body text is a contrast problem the theme cannot solve, and the border
+carries the signal on its own.
+
+## Three parts, one recipe object
+
+```tsx
+export const alertVariants = {
+  root: fv("flex-col w-full h-fit gap-1 rounded-lg border p-4", { variants: { … } }),
+  title: fv("w-full h-fit whitespace-normal text-left text-sm font-medium", { variants: { … } }),
+  description: fv("w-full h-fit whitespace-normal leading-tight text-left text-xs font-normal", { variants: { … } }),
+};
+```
+
+One object rather than three `export const`s, for the reason
+[Card](/facet/components/card/#six-parts-one-recipe-object) is written the same way: every exported
+name costs a Luau register, Vela inlines its runtime into any file with a computed `className`, and
+`card` went over the 200-register limit and stopped loading entirely. Three parts is nowhere near
+that ceiling — the shape is the convention, kept because it is free.
+
+See [the register limit](/facet/guides/component-conventions/#6-flat-named-exports).
+
+## `w-full h-fit`, all the way down
+
+Every part carries it, exactly as `card` does: **width from the parent, height from the content**.
+A part that fails to resolve a height collapses the alert above it.
+
+`whitespace-normal` and `text-left` are on both text parts because Roblox centres text and keeps it
+on one line by default — an alert description is the case where that matters most, since it is the
+part most likely to wrap.
+
+`font-normal` on the description is not redundant next to `font-medium` on the title. Vela leaves
+`FontFace` alone when no `font-*` token appears, and Roblox's untouched default is LegacyArial —
+which is [the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes)
+before anyone opened it in Studio.
+
+## The root keeps its background
+
+```tsx
+<frame
+  className={cn(alertVariants.root({ variant, className }))}
+  BorderSizePixel={0}
+  …
+/>
+```
+
+No `BackgroundTransparency: 1` on the root, unlike most components — the surface *is* the alert.
+Only Roblox's 1px border is cleared, because `border` in the recipe is what draws the real one. The
+two text parts do clear their backgrounds, since a `TextLabel` with an opaque default would paint a
+box behind every line.
+
+That is the same rule [Separator](/facet/components/separator/#the-one-component-that-keeps-its-background)
+follows, reached from the other direction.

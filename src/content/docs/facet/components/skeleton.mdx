@@ -1,0 +1,143 @@
+---
+title: Skeleton
+description: A placeholder block — and the component defined by what it deliberately does not do.
+product: facet
+section: components
+sidebar:
+  order: 50
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add skeleton
+```
+
+Copies `ui/skeleton.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import { Skeleton } from "../shared/ui/skeleton";
+
+// A line of text, as wide as whatever contains it.
+<Skeleton />
+
+// Narrower, because the parent is narrower — not because the skeleton was told.
+<frame className="w-40 h-fit">
+  <Skeleton />
+</frame>
+```
+
+<FacetPreview
+  scene="SkeletonScene"
+  source="ui/skeleton.tsx"
+  height={180}
+  label="Three identical <Skeleton />s. The width difference is entirely in their parents."
+/>
+
+<ForwardedProps instance="Frame" />
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see below, because for this component it is the whole story.",
+    },
+  ]}
+/>
+
+Everything else is forwarded onto the `Frame`. There is no `Text` and no `children` — this is a
+frame with a colour, like [Separator](/facet/components/separator/).
+
+## You cannot resize it from the call site
+
+<Callout title="`<Skeleton className=&quot;h-8 w-32&quot; />` does nothing">
+This is measured in the preview above, not predicted. A `className` written at a Vela-compiled call
+site is [consumed there and never reaches the component](/facet/guides/variants-and-classes/#overriding-from-the-call-site),
+so three skeletons written with three different classes come out identical. No diagnostic, on either
+side.
+
+It bites harder here than anywhere else in the registry, because `className` is the only prop
+`Skeleton` has. A component with `variant` and `size` still has an API when `className` is inert;
+this one does not.
+</Callout>
+
+`Size` does not survive as a passthrough prop either — the recipe's own `w-full h-4` resolves *after*
+the spread and overwrites it. So there are two things that actually work:
+
+**State the width on the parent.** `w-full` means "my parent's width", so a skeleton in a `w-40`
+frame is 160px wide. That is what the preview does, and it costs nothing.
+
+**Edit the file for anything else.** Height, corner radius, a circular avatar placeholder — those
+live in the recipe, and the recipe is in your project:
+
+```tsx title="src/shared/ui/skeleton.tsx"
+export const skeletonVariants = fv("w-full h-4 rounded-md bg-muted", {
+  variants: {
+    shape: {
+      line: "",
+      block: "h-8",
+      avatar: "size-12 rounded-full",
+    },
+  },
+  defaultVariants: { shape: "line" },
+});
+```
+
+That is [the model's answer](/facet/guides/variants-and-classes/#what-that-means-for-a-copied-component)
+rather than a workaround: a variant you added is a variant that works, because it is resolved inside
+the file rather than at the call site.
+
+## There is no pulse
+
+shadcn's skeleton is `animate-pulse rounded-md bg-muted`. This is the same thing minus the pulse,
+and that absence is the component's only real design decision.
+
+<Callout title="Vela has no animate-* family">
+The families it does have — `transition-*`, `duration-*`, `ease-*` — animate a *change*: a property
+moving from one resolved value to another, on hover or on a state flip. A pulse is a loop with no
+triggering change, so nothing in the class vocabulary expresses it.
+
+Driving it from the component instead means a `useEffect` and a tween, in a file that is otherwise a
+recipe and a frame. That is runtime behaviour nobody can check by reading the source — the exact
+thing this registry is built to avoid — so it stays out until Facet has an animation primitive worth
+putting under it.
+</Callout>
+
+If you want the pulse in your project today, the file is yours: `TweenService` against
+`BackgroundTransparency` on a `useEffect` is about eight lines, and you are then the person who owns
+those eight lines rather than inheriting them from a registry.
+
+## The recipe
+
+```tsx
+export const skeletonVariants = fv("w-full h-4 rounded-md bg-muted");
+```
+
+No variants, no parts. The default size is **a line of text** — `h-4` — because the overwhelmingly
+common use is standing in for one.
+
+Both axes are declared, which is the [first convention](/facet/guides/component-conventions/#1-declare-both-axes-always).
+`w-full` defers the width to the parent and `h-4` states the height outright, so the component always
+has a resolved size and never collapses the layout above it — which matters more than usual for a
+placeholder, since a skeleton exists precisely when there is no content to measure.
+
+The source comment argues that a consumer's override wins because it lands after the recipe in
+`className`. That is true of `fv()`'s composition and false in practice: the string never arrives.
+See [above](#you-cannot-resize-it-from-the-call-site).
+
+## It keeps its background
+
+```tsx
+const NEUTRAL_PROPS = {
+  BorderSizePixel: 0,
+};
+```
+
+No `BackgroundTransparency: 1`, for the same reason as
+[Separator](/facet/components/separator/#the-one-component-that-keeps-its-background) — `bg-muted`
+is the entire visual, and clearing the background would leave an invisible frame taking up space.

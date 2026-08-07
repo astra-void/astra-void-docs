@@ -1,0 +1,112 @@
+---
+title: Kbd
+description: A key cap — and the one place in the registry where font-* picks a typeface on purpose.
+product: facet
+section: components
+sidebar:
+  order: 60
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add kbd
+```
+
+Copies `ui/kbd.tsx`, plus `lib/utils.ts` and `lib/text.tsx`. Needs `@facet-ui/react-variants` and
+`@lattice-ui/react-runtime`.
+
+```tsx
+import { Kbd } from "../shared/ui/kbd";
+
+<Kbd Text="E" />
+<Kbd Text="Ctrl" />
+<Kbd Text="⌘" />
+```
+
+<FacetPreview
+  scene="KbdScene"
+  source="ui/kbd.tsx"
+  height={150}
+  label="A single letter and a word, each cap exactly as wide as what it holds."
+/>
+
+<ForwardedProps instance="Frame" />
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "Text",
+      type: "string",
+      description:
+        "The key. Drawn as a styled child textlabel through TextSlot; children renders instead when it is absent.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description: "Composition, when the cap holds something that is not a string. Exclusive with Text.",
+    },
+  ]}
+/>
+
+Everything else is forwarded onto the `Frame`.
+
+## `font-mono` is a family, not a weight
+
+```tsx
+export const kbdLabelVariants = fv("text-xs font-mono text-muted-foreground");
+```
+
+<Callout title="The one deliberate typeface in the registry">
+Every other component carries a `font-*` token for a defensive reason: Vela leaves `FontFace` alone
+when no `font-*` appears, and Roblox's untouched default is LegacyArial. So `font-normal` and
+`font-medium` elsewhere are there to *avoid* a default, and they name a weight.
+
+`font-mono` is not that. Vela resolves it against `theme.fontFamily` — to RobotoMono — where the
+weights resolve against something else entirely. This is the one place in the registry where the
+mandatory `font-*` is choosing a typeface because the component wants that typeface.
+</Callout>
+
+A key cap in a proportional face reads as a word in a box. In a monospace face it reads as a key.
+That is the whole justification, and it is worth the one exception.
+
+See [Text and labels](/facet/guides/text-and-labels/) for why `font-*` is mandatory at all.
+
+## `size-fit` with padding, not a fixed square
+
+```tsx
+export const kbdVariants = fv(
+  "flex-row items-center justify-center size-fit rounded-md border border-border bg-muted px-1.5 py-0.5",
+);
+```
+
+The obvious implementation of a key cap is a square — keys are square. It is wrong here, because a
+cap has to hold `Ctrl` as readily as `E`, and Roblox will not infer that width for you.
+
+`size-fit` plus `px-1.5` gives a cap that is as wide as its content and no wider, so `E` comes out
+nearly square and `Ctrl` comes out a rounded rectangle. Same recipe, no variants, no `w-*`.
+
+That makes `kbd` the same `AutomaticSize` story as [Badge](/facet/components/badge/#size-fit-is-the-whole-geometry):
+the frame can only measure itself because `TextSlot` renders its label with `size-fit` too. Break
+that and the cap collapses to nothing.
+
+If you want uniform caps in a row — a shortcut legend where the columns should line up — `<Kbd
+className="w-10" Text="E" />` will **not** do it: a class written at a Vela-compiled call site
+[never reaches the component](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+Add a `size` variant to your copy of the file, or wrap each cap in a fixed-width frame.
+
+## What it does not do
+
+There is no `size` variant and no pressed state. A key cap is a static label for a key that exists
+on a keyboard; a thing that responds to being clicked is a
+[Button](/facet/components/button/). Composing them — a cap inside a button's `children` — is the
+supported way to build a rebindable-key row, and it keeps the interaction in the component that
+already handles it.
