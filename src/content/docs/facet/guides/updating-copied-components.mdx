@@ -100,20 +100,41 @@ would give if upstream had rewritten every component.
 file is yours. A lock file is Facet keeping a ledger about files it gave away, and the first time it
 disagrees with reality — and it will — it is a puzzle in your repository that Facet put there.
 
-## The registry has no versions yet
+## Pinning a registry revision
 
-Today `main` overwrites one live registry, so an edit to a component reaches everyone immediately,
-including a project that ran `facet add` months ago and will next run `facet diff`. There is no
-`r/v1/` prefix and no per-release snapshots.
+The default registry **moves**: `https://facet.astra-void.xyz/r` is republished on every push to
+Facet's `main`, so an edit to a component reaches everyone immediately — including a project that ran
+`facet add` months ago and will next run `facet diff`.
 
-That is [an open question](/facet/getting-started/scope-and-status/#decisions-that-are-open), and it
-is the one that would change the shape of the provenance problem rather than the answer to it. With
-addressable snapshots, the base text becomes something the CLI can *fetch* rather than something you
-have to store, and the only thing needing a record is which snapshot was used — one field, in
-`facet.json`, a file Facet already owns.
+Every push also writes an immutable copy under the commit that produced it, and a project can point
+at one instead:
 
-**In the meantime**, if you need a stable registry, pin one: point `facet.json`'s `registry` field
-at a fork or a local build you control. See [Using another registry](/facet/guides/custom-registry/).
+```json title="facet.json"
+{ "registry": "https://facet.astra-void.xyz/r/a1b2c3d" }
+```
+
+[`revisions.json`](https://facet.astra-void.xyz/revisions.json) lists what exists, newest first.
+`add`, `diff`, `list` and `doctor` all read the field and all print which registry they used.
+
+**What pinning fixes:** `facet diff` stops reporting upstream movement you did not ask for. Against
+a frozen revision, a difference is your edit or nothing — which is most of what
+[the lock file](#why-there-is-no-lock-file) was supposed to buy, without a lock file.
+
+**What it does not fix:** it is per-project, not per-component. Pinning says "this project builds
+against that registry", not "`button` came from that revision and `card` from this one". And a
+pinned project stops receiving fixes until someone moves the pin, which is a decision somebody has
+to remember to make.
+
+<Callout title="It still cannot attribute a change">
+Pinning removes upstream movement as a *source* of drift; it does not record what your file started
+as. Unpin, or move the pin forward, and `diff` is back to reporting a difference it cannot explain.
+The record that would settle it is still a second copy of every component —
+[which is why there is no lock file](#why-there-is-no-lock-file).
+</Callout>
+
+The thing revisions genuinely unlock is that the base text becomes something the CLI could one day
+*fetch* rather than something you store. That is not implemented, and it is the reason the versioning
+scheme was worth building the way it was.
 
 ## What to actually do
 

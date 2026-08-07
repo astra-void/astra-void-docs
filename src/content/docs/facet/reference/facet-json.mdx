@@ -133,7 +133,33 @@ checked without evaluating a file that is arbitrary TypeScript.
 Optional. A URL or a filesystem path. Omit for the published registry at
 `https://facet.astra-void.xyz/r`.
 
-This is the right place to pin a fork or a private registry for a team — everyone who clones the
+This is the right place to point at a fork or a private registry for a team — everyone who clones the
 project gets the same source without remembering a `--registry` flag. It is overridden by
 `--registry` on the command line and by `FACET_REGISTRY_DIR` in the environment. See
 [Using another registry](/facet/guides/custom-registry/).
+
+### Pinning a revision
+
+`https://facet.astra-void.xyz/r` **moves** — every push to Facet's `main` republishes it. The same
+push also writes an immutable copy under the commit that produced it, and this field is how you pin
+one:
+
+```json
+{ "registry": "https://facet.astra-void.xyz/r/a1b2c3d" }
+```
+
+Every command reads it — `add` copies from that revision, `diff` compares against it, `list` shows
+what it holds, `doctor` checks it — and each prints which registry it used.
+[`revisions.json`](https://facet.astra-void.xyz/revisions.json) lists what exists.
+
+<Callout title="No new field, no new flag">
+This is deliberate, and it is the whole reason the versioning scheme is shaped this way. `registry`
+has been in `facet.json` since `init` first wrote one, for forks and private registries — so a CLI
+released long before revisions existed can pin one today. Nothing about the format changed either;
+a pinned revision is an ordinary registry base that happens never to move.
+</Callout>
+
+Pinning trades currency for stability, and the trade is real in both directions: a pinned project
+gets a registry that cannot shift under it, and stops receiving fixes until someone changes this
+line. See [Updating copied components](/facet/guides/updating-copied-components/#pinning-a-registry-revision)
+for when that is worth doing.

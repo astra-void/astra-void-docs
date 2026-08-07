@@ -75,12 +75,25 @@ pnpm registry:build     # registry/ → site/
 ```
 
 `site/` is generated and never committed, so the published registry cannot drift from `registry/`.
-The build emits the index, one JSON per item, a landing page listing what exists, a `CNAME`, a
-`.nojekyll` (Pages runs Jekyll otherwise, which eats underscore-prefixed paths), and `schema.json`
-— the JSON Schema every `facet.json` names in its own `$schema`.
+The build emits the index, one JSON per item, an immutable `r/<sha>/` copy of both, a landing page
+listing what exists, a `CNAME`, a `.nojekyll` (Pages runs Jekyll otherwise, which eats
+underscore-prefixed paths), `schema.json` — the JSON Schema every `facet.json` names in its own
+`$schema` — and `revisions.json`, listing which frozen revisions exist.
 
 `schema.json` is generated from the `FacetConfig` type rather than checked in, so it cannot be a
-version behind the CLI that writes the files pointing at it.
+version behind the CLI that writes the files pointing at it. It is typed to cover every key of that
+type, so a new config field does not compile until it is described.
+
+<Callout title="Revisions need somewhere to accumulate">
+Pages deploys one artifact and the artifact **replaces the entire site**, so a revision written by
+one deploy would be deleted by the next. Facet's published tree therefore lives on a `gh-pages`
+branch that accumulates: the workflow checks it out, copies the new build over it, commits, and
+uploads *that* tree as the artifact.
+
+The branch is storage, not a deployment source — Pages is still deployed from Actions, and `.git` is
+removed before the upload so the accumulator's history is not part of the site. A fork that does not
+care about revisions can skip all of this and upload `site/` directly.
+</Callout>
 
 Test against the working tree before publishing anything:
 

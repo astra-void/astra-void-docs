@@ -102,8 +102,18 @@ with the wrong one leaves two lockfiles disagreeing.
 npx facet-rbxts list [--registry <url|path>]
 ```
 
-Every item in the registry with its description, alphabetically, plus which registry was read. Needs
-no project — this is the one command you can run anywhere.
+Every item in the registry with its description, alphabetically, plus which registry was read.
+
+**Inside a project it reads that project's `registry` field**, so a project pinned to a revision or
+pointed at a fork is shown what it can actually add. **Outside one it falls back to the default** —
+a missing or unreadable `facet.json` is an ordinary outcome here, not an error, because listing what
+exists is what you run *before* `init`.
+
+<Callout title="This was wrong until 0.3.1">
+`list` was the one command that never opened `facet.json`, so a pinned project was still shown the
+moving registry — offering components an `add` in that project could not fetch. Found by pinning a
+real project to a published revision and watching `list` report the registry underneath it.
+</Callout>
 
 ## `remove`
 
