@@ -61,7 +61,7 @@ const TARGETS = "src/preview-targets"
 const MOUNT = "facet-preview/"
 
 /** Version the docs' Facet pages are written against. */
-const DOCUMENTED_VERSION = "0.3.0"
+const DOCUMENTED_VERSION = "0.3.1"
 
 type Report = { scene: string; diagnostics: string[] }
 
