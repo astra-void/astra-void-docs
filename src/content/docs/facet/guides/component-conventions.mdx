@@ -72,6 +72,23 @@ different one has to *replace* the component's layout classes rather than add to
 Corollary: do not add a wrapper frame just to get a second layout. Restructure the parts instead —
 which is something you can do freely, because the file is yours.
 
+The general form of that corollary is **do not add an instance to carry what an existing instance
+can carry**, and it is why the registry has no `AspectRatio` component:
+
+```tsx
+<imagelabel className="w-full aspect-video" Image={thumbnail} />
+```
+
+CSS could not constrain a box's ratio for most of its life, so Radix packaged the
+`padding-bottom: 56.25%` workaround and shadcn re-exported it — the component exists to hide a
+trick. Roblox has `UIAspectRatioConstraint` and Vela lowers straight onto it (`aspect-square`,
+`aspect-video`, `aspect-[4/3]`, `aspect-[1.5]`). A wrapper would add a frame to the tree, a file to
+your project, and a level to the `AutomaticSize` chain, to deliver something you can already write
+on the element you have — and it would be strictly less capable, since the class works on any host
+instance while a component forces whatever it wraps to sit inside a `Frame`.
+
+**Ratio is a class, not a component.**
+
 ## 6. Flat named exports
 
 `Card`, `CardHeader`, `CardTitle` — not `Card.Root`. Lattice uses namespace objects and that is
@@ -87,15 +104,37 @@ export const Dialog = DialogPrimitive.Root;
 export function DialogContent(props: DialogContentProps) { /* styled */ }
 ```
 
-<Callout title="Exported names are not free">
-Vela inlines its runtime into every file with a computed `className`, leaving a component only a
-slice of Luau's 200-register limit for its own module-scope locals. Six separate exported recipes
-put `card` over it and the module stopped loading —
-`Out of local registers when trying to allocate CardHeader`. Each exported name costs a register;
-one object costs one, which is why `card` exports a single `cardVariants` object.
+<Callout title="One recipe object per file — and this is a constraint, not a preference">
+The *parts* stay flat, but the **recipes do not**: a component file exports one recipe object, not
+one export per part.
 
-Vela 0.9.0 cut emitted files from ~106 module-scope locals to ~24, so the headroom is much larger
-now. It is still finite.
+Luau allows 200 local registers per function and a module body is a function, so every
+module-scope `local` in the emitted Luau costs one — including every `export const`, which roblox-ts
+lowers to a local plus an assignment. Vela then inlines its whole runtime into any file with a
+computed `className`, and every Facet class string comes out of `fv()`, so every component file
+carries that copy.
+
+In Vela 0.8.0 the copy declared ~96 module-scope locals before the file's own first line. `card` —
+six exported recipes — went over 200 and stopped loading, with an error naming generated code its
+author never wrote:
+
+```
+Out of local registers when trying to allocate CardHeader
+```
+
+Not a compile error; the module simply failed at load. Six `export const`s cost six registers, one
+object costs one — which is why `card` and `alert` both export a single object.
+
+Vela 0.9.0 scopes the inlined runtime into one initializer and emitted components now sit around
+18–24 module-scope locals, which is why `^0.9.0` is the floor the CLI installs. The headroom is much
+larger. It is still finite, and it is measurable:
+
+```bash
+grep -c "^local " out/shared/ui/card.luau
+```
+
+A number in the twenties is normal. A number near 200 means the next part you add to that component
+is the one that breaks it.
 </Callout>
 
 ## 7. Icons are text glyphs, replaceable by slot
