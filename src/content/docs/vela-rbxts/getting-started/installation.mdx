@@ -11,7 +11,7 @@ import { Callout, PackageInstall } from "@/components/docs/mdx";
 
 Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements and on your own components, and a TypeScript transformer rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
 
-Nothing about Vela is a runtime library you render. It is a transformer you register in `tsconfig.json`, plus a config file it reads from disk. This page gets both in place.
+Nothing about Vela is a runtime library you render. It is a transformer you register in `tsconfig.json`, plus a config file it reads from disk. This page gets both in place. (Since 0.11.0 there is also a [CLI](/vela-rbxts/reference/cli/) that does the lowering ahead of `rbxtsc` instead, for projects that cannot register a plugin — everything else on this page applies to it too.)
 
 ## Install the package
 
@@ -64,6 +64,18 @@ That is the entire tsconfig change. Everything else in the file stays as your ro
 `vela-rbxts/transformer` is a separate export from the package root. The root export (`vela-rbxts`) gives you `defineConfig` and types; the `/transformer` subpath is the callable roblox-ts consumes. Do not swap one for the other.
 
 The plugin entry object is also where transformer options go — file-filter toggles, a diagnostic code base, a project root. The defaults are what you want to start with; the [configuration reference](/vela-rbxts/reference/config/) covers the rest.
+
+<Callout title="If you cannot register a plugin, there is a CLI">
+Since 0.11.0 the package also installs a `vela` command that lowers your sources into a second tree
+ahead of time, so `rbxtsc` compiles ordinary TSX with no plugin registered. It exists for projects
+that cannot load a roblox-ts transform plugin — a pinned toolchain, a build system that drives `tsc`
+itself, a CI step that wants the lowered sources as an artifact. Both paths call the same compiler
+and produce the same output, so this is a choice about your build, not about Vela.
+
+Take the transformer unless something stops you: it is one tsconfig entry against a second process
+to keep running. If something does, [the CLI reference](/vela-rbxts/reference/cli/) is the whole
+setup, and the rest of this page applies to it unchanged.
+</Callout>
 
 ## Add `vela.config.ts`
 

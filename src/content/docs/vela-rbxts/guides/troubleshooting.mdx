@@ -93,7 +93,7 @@ the layout solver rather than one winning. Pick one. See
 **Spacing is bigger than you asked for.** Margins are wrappers that participate in the parent's
 list, so they **sum** with its `gap-*`. Prefer gap alone for list spacing.
 
-**A grid stops laying out when you add `gap-*`.** Still open in 0.10.0: gap on a `grid` element
+**A grid stops laying out when you add `gap-*`.** Still open in 0.11.0: gap on a `grid` element
 also emits a conflicting `UIListLayout`. Keep gap off grid elements until the fix ships.
 
 **Children shuffle when `divide-*` is present.** Separators are inserted by child position and
@@ -134,7 +134,7 @@ so `{props.children}` and component children are no longer out of reach. Confirm
 @vela-rbxts/compiler`. On 0.9.x specifically, the compiler tells you: an unreachable child reports
 `opacity-unreachable-child`.
 
-**`opacity-*` fades a transparency you set yourself.** Expected on 0.10.0 when the fade comes from an
+**`opacity-*` fades a transparency you set yourself.** Expected on 0.11.0 when the fade comes from an
 ancestor *component*: the alpha arrives as a React context, and a consumer reading it cannot tell your
 `BackgroundTransparency` prop from one Vela lowered, so it composes over both. The static path can,
 and leaves yours alone. Write the fade on the element itself, or push the value into a class.
@@ -189,7 +189,7 @@ detached, so every argument landed one place to the left and the driver died on 
 caught that at mount and unwound the tree, so the symptom was the entire interface disappearing rather
 than an animation misbehaving.
 
-Upgrade. On 0.10.0 the driver type states its members as methods, so roblox-ts rejects the arrow form
+Upgrade. Since 0.10.0 the driver type states its members as methods, so roblox-ts rejects the arrow form
 outright instead of silently shifting arguments — if your driver was written with arrows, it becomes a
 compile error you can see. See [the motion driver](/vela-rbxts/reference/config/#motion-driver).
 

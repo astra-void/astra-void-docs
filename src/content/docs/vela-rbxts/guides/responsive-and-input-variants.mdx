@@ -156,8 +156,9 @@ string literal — is enough. One variant-prefixed token anywhere in the file ca
 helper module to be inlined at the top of that file's output.
 </Callout>
 
-That helper is roughly 5,000 lines of generated roblox-ts at 0.10.0 — it grew as the runtime path
-reached parity with the static one, and again when `opacity-*` learned to cross a component boundary.
+That helper is roughly 3,900 lines of generated roblox-ts at 0.11.0, and it is the same 3,900 lines
+whatever your class list is — it grew as the runtime path reached parity with the static one, and
+again when `opacity-*` learned to cross a component boundary.
 Since 0.10.0 it arrives grouped into thirteen namespaces, which is what keeps it from crowding Luau's
 200-local-register limit; it does not make the emit smaller. It imports `@rbxts/react` and
 `{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your
@@ -177,7 +178,7 @@ The practical consequences:
   it — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
 
 Diagnostics are **not** on that list: variant-prefixed tokens are analyzed statically, so you keep
-your warnings for them. Coverage is not on it either, as of 0.10.0 — the runtime path resolves every
+your warnings for them. Coverage is not on it either, as of 0.11.0 — the runtime path resolves every
 utility family the static path does.
 
 The recommendation follows directly: use variants where they earn their keep — a handful of

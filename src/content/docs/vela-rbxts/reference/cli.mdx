@@ -1,0 +1,235 @@
+---
+title: CLI
+description: The vela command — lowering a source tree ahead of rbxtsc instead of registering the transformer, every flag, and what the generated tree costs you.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 25
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Since **0.11.0**, `vela-rbxts` installs a binary. `vela build` lowers your `className` usage into a
+second source tree and `rbxtsc` compiles *that*, with no transformer plugin registered at all.
+
+```bash
+npx vela build
+```
+
+This is an **alternative** to [the transformer](/vela-rbxts/getting-started/installation/#register-the-transformer),
+not an addition to it. Both paths call the same compiler through the same host adapter, so the
+lowered output is the same either way; what changes is when it happens and what `rbxtsc` sees. Reach
+for the CLI when a project cannot register a roblox-ts transform plugin — a pinned toolchain, a build
+system that drives `tsc` itself, or a CI step that wants the lowered sources as a reviewable artifact.
+
+Nothing else about Vela changes. `vela.config.ts`, the [ambient declaration](/vela-rbxts/getting-started/installation/#declare-the-classname-prop),
+the classes you write, and every diagnostic are identical on both paths.
+
+The package installs the command under two names, `vela` and `vela-rbxts`, which do the same thing.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| [`build`](#build) | Transform the source tree once, then exit |
+| [`watch`](#watch) | Transform once, then re-transform on change |
+
+Running `vela` with no command prints help and exits `0`.
+
+## Options
+
+Both commands take the same flags.
+
+| Option | |
+| --- | --- |
+| `-p, --project <dir>` | Project root. Default: the current directory |
+| `--src <dir>` | Source tree to read, resolved against the project root. Default: `src` |
+| `--out <dir>` | Generated tree to write. Default: `.vela/src` |
+| `--clean` | Delete the generated tree before building |
+| `-q, --quiet` | Suppress the header and the summary line |
+| `-h, --help` | |
+| `-v, --version` | Print the `vela-rbxts` version |
+
+Value flags take either form: `--src ui` and `--src=ui` are the same.
+
+`--src` and `--out` may not be the same directory, may not contain each other, and `--out` may not be
+the project root. Each is rejected before anything is written:
+
+```text
+vela: error: --out must differ from --src: the generated tree would overwrite your sources.
+```
+
+<Callout title="--quiet is not --silent">
+`-q` drops the two informational lines — the `src -> .vela/src` header and the
+`1 transformed, 2 copied` summary. Setup warnings and compiler diagnostics still print, because they
+go to stderr and they are the reason to run the thing. There is no flag that silences those.
+</Callout>
+
+## Switching from the transformer
+
+Two edits to `tsconfig.json`. Point `rootDir` and `include` at the generated tree, and drop the
+plugin entry:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "rootDir": ".vela/src",
+    "baseUrl": ".vela/src",
+    "outDir": "out"
+  },
+  "include": [".vela/src"]
+}
+```
+
+Leaving the plugin registered means both paths run and the second finds nothing left to lower —
+wasted work rather than broken output. `vela build` checks for both mistakes on every run and names
+them:
+
+```text
+vela: warning: tsconfig.json compilerOptions.rootDir is "src" but the generated tree is ".vela/src". Point rootDir and include at ".vela/src" so rbxtsc compiles the lowered sources.
+vela: warning: tsconfig.json still registers the "vela-rbxts/transformer" plugin. Remove it — the CLI already lowered these sources.
+```
+
+The check reads `tsconfig.json` at the project root, tolerating comments and trailing commas. It is a
+hint, not validation: a file it cannot parse produces no warnings rather than an error, and `include`
+is not inspected at all — only `rootDir` and `plugins`.
+
+Your build becomes two steps. `vela build` exits non-zero when a file fails to compile, so `&&` is
+the right joint:
+
+```bash title="Build"
+npx vela build && npx rbxtsc -p tsconfig.json
+```
+
+```bash title="Watch"
+npx vela watch & npx rbxtsc -w -p tsconfig.json
+```
+
+<Callout title="TypeScript 7 breaks this too">
+The CLI loads `vela.config.ts` through the same host adapter the transformer uses, so it fails the
+same way on TypeScript 7 — as an error on the first file, naming neither TypeScript nor a version:
+
+```text
+client/App.tsx - error vela/host(compiler-invocation-failed): Cannot read properties of undefined (reading 'Latest')
+```
+
+Pin `typescript@5.9.3`, as [installation](/vela-rbxts/getting-started/installation/#install-the-package)
+covers. A `vela.config.json` sidesteps the transpile entirely.
+</Callout>
+
+## What lands in the generated tree
+
+`--out` is a **mirror** of `--src`, not a subset of it:
+
+- **`.tsx` files are transformed.** A file that uses no `className` passes through unchanged and
+  counts as copied.
+- **Everything else is copied byte for byte** — `.ts`, `.d.ts`, `.lua`, `.json`, assets, anything.
+  Your `vela-env.d.ts` rides along, so the `className` augmentation still loads from inside the tree
+  `rbxtsc` compiles.
+- **Directory structure is preserved**, so relative imports and `baseUrl` resolution work unchanged.
+
+Two bookkeeping files sit beside it, both under `.vela/` and neither inside the mirror:
+
+| File | |
+| --- | --- |
+| `.vela/.gitignore` | Written on first run, containing `*`, so the generated tree stays out of version control. An existing one is never rewritten |
+| `.vela/build-manifest.json` | What the last run emitted — the list that drives pruning |
+
+<Callout title="Edit src, never the generated tree">
+The mirror is a build output. An edit inside it survives exactly until the next run touches that file,
+and there is no diagnostic when it disappears.
+</Callout>
+
+## Rebuilds and pruning
+
+**An unchanged output is never rewritten.** The CLI compares what it is about to write against what
+is on disk and skips the write when they match, which keeps the file's mtime. Without this, every
+`vela build` would touch the whole tree and `rbxtsc -w` would rebuild all of it.
+
+**Pruning is driven by the manifest, not by the directory.** When a source file disappears, the CLI
+deletes its counterpart and removes any directory that emptied out — but only for paths an earlier
+run recorded as its own. A file you put in the generated tree by hand is never deleted, which is
+the safe failure mode for a flag pointed somewhere it should not have been.
+
+`--clean` does not honor that distinction. It removes the `--out` directory outright and resets the
+manifest, so anything else living there goes with it.
+
+## Diagnostics and exit codes
+
+Diagnostics are the compiler's, printed to stderr and anchored to your real sources — the file, line
+and column are the ones you wrote, not positions in the generated tree:
+
+```text
+client/App.tsx:7:29 - warning vela/compiler(unknown-variant): Unknown variant "checked" in "checked:px-4"; supported variants are sm, md, lg, portrait, landscape, touch, mouse, gamepad, hover, active, focus, and dark.
+1 transformed, 2 copied, 2 warnings (381ms)
+```
+
+Paths are relative to `--src`, so the leading `src/` you would see in `rbxtsc` output is absent here.
+The summary counts transformed, copied, and — when non-zero — removed, errors and warnings.
+
+| Exit code | |
+| --- | --- |
+| `0` | Built. Warnings do not fail the run |
+| `1` | A file failed to compile, or `--src` does not exist |
+| `2` | Bad usage — unknown command, unknown option, a flag missing its value, or a `--src`/`--out` conflict |
+
+Every diagnostic keeps the code it has under the transformer, so
+[the diagnostics reference](/vela-rbxts/reference/diagnostics/) applies unchanged. Only the
+presentation differs: `vela/compiler(unknown-variant)` here against roblox-ts's
+`TS89000: [@vela-rbxts/compiler] unknown-variant` there, because the CLI is not routing through
+roblox-ts's numbered diagnostics.
+
+## `build`
+
+```bash
+npx vela build [options]
+```
+
+Walks `--src`, emits every file, then drops whatever the manifest lists that no longer has a source.
+
+## `watch`
+
+```bash
+npx vela watch [options]
+```
+
+Builds everything once, prints `vela watch: waiting for changes...`, then rebuilds incrementally.
+Changes are debounced 60ms and the summary is prefixed:
+
+```text
+vela watch: 1 transformed, 0 copied (26ms)
+```
+
+A **deleted** source prunes its counterpart. An **edited `vela.config.ts` or `vela.config.json`
+rebuilds the whole tree** and clears the host's config cache first, so a theme edit reaches every
+file that reads it rather than only the next file you touch. Only the project root is watched for
+those two names.
+
+Watching uses recursive `fs.watch`. Where the platform does not support it, the CLI says so and falls
+back to polling every 400ms:
+
+```text
+vela: warning: Recursive file watching is unavailable; polling every 400ms instead.
+```
+
+`SIGINT` and `SIGTERM` stop the watchers and exit with the status of the last build.
+
+## What you give up
+
+Two consequences are worth knowing before you switch.
+
+**Your editor and `tsc --noEmit` see the generated tree.** That is what `rootDir` and `include` name,
+so type errors, stack traces and go-to-definition land in `.vela/src`. The
+[language server](/vela-rbxts/guides/editor-setup/) is unaffected — it reads your real sources, so
+completions, hover and colors on `className` are exactly as they were.
+
+**It is a second thing to keep running.** The transformer cannot be out of date with your sources
+because it runs inside the build. `vela watch` can — if it dies, `rbxtsc` keeps happily compiling the
+last tree it wrote.
+
+## Related
+
+- [Installation](/vela-rbxts/getting-started/installation/) — the transformer path, and the
+  TypeScript pin both paths need.
+- [Configuration](/vela-rbxts/reference/config/) — `vela.config.ts`, which the CLI reads identically.
+- [Diagnostics](/vela-rbxts/reference/diagnostics/) — every code either path can report.

@@ -1,6 +1,6 @@
 ---
 title: API
-description: Everything importable from vela-rbxts, the two different createTransformer functions, the published packages, and what versions Vela is tested against.
+description: Everything importable from vela-rbxts, the two different createTransformer functions, the published packages and CLI binaries, and what versions Vela is tested against.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -166,7 +166,7 @@ rather than silent. Plugin options are documented in
 
 | Package | What it is | Install directly? |
 |---|---|---|
-| `vela-rbxts` | The entry point: config helpers, types, the global augmentation, and the transformer subpath | **Yes** — this is the only one an app installs |
+| `vela-rbxts` | The entry point: config helpers, types, the global augmentation, the transformer subpath, and — since 0.11.0 — the `vela` CLI | **Yes** — this is the only one an app installs |
 | `@vela-rbxts/compiler` | The Rust compiler behind an N-API binding: transform, completions, hover, diagnostics, document colors | No, pulled in transitively |
 | `@vela-rbxts/compiler-wasm` | The same compiler built to WebAssembly, for hosts that cannot load the native addon — a browser, most usefully | Only if you are lowering classes outside Node |
 | `@vela-rbxts/config` | The theme schema, `defineConfig`, `defaultConfig`, and the color merge helpers | Only to reach a helper the root package does not re-export |
@@ -180,12 +180,16 @@ rather than silent. Plugin options are documented in
 For almost every project the answer is the same: install `vela-rbxts`, add the transformer to
 `tsconfig.json`, and install the VS Code extension. Everything else arrives as a dependency.
 
+Since 0.11.0 the root package also declares two `bin` entries, `vela` and `vela-rbxts`, pointing at
+the same CLI. It lowers a source tree ahead of `rbxtsc` for projects that cannot register the
+transformer — see [the CLI reference](/vela-rbxts/reference/cli/).
+
 `@vela-rbxts/runtime` is deliberately not on that list. Since 0.9.0 the inlined runtime helper lives
 there as real TypeScript the repo typechecks and formats — it used to be a string literal inside the
 Rust crate — and the compiler reads it at build time. The package is private and never published, so
 there is still nothing of Vela's to install or to place in your DataModel.
 
-All packages are versioned in lockstep at **0.10.0**, including the VS Code extension. There is no
+All packages are versioned in lockstep at **0.11.0**, including the VS Code extension. There is no
 scenario in which you should mix versions across the `@vela-rbxts/*` scope. What changed in each
 release is in the [release notes](/vela-rbxts/reference/release-notes/).
 

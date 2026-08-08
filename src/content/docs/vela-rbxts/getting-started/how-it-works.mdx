@@ -9,7 +9,9 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela has no runtime you install and no build step of its own. It is a TypeScript program transformer that roblox-ts loads, plus a native compiler that does the actual class-name work. Understanding the order of those pieces explains most of Vela's behavior, including the parts that surprise people.
+Vela has no runtime you install. It is a TypeScript program transformer that roblox-ts loads, plus a native compiler that does the actual class-name work. Understanding the order of those pieces explains most of Vela's behavior, including the parts that surprise people.
+
+This page describes the transformer path, which is the default and the one to read first. Since 0.11.0 the same work can also run as a build step of its own, ahead of `rbxtsc` — see [the CLI](/vela-rbxts/reference/cli/). It calls the same host adapter and the same compiler, so everything below applies to it too, from the file filter onward.
 
 ## The pipeline
 
@@ -141,4 +143,4 @@ what you lose is not the classes but every check on them.
 
 ## Next step
 
-Get the honest boundaries of the project at 0.10.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).
+Get the honest boundaries of the project at 0.11.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).

@@ -44,7 +44,24 @@ That preview is compiled against exactly that config. Because it extends rather 
 
 The single most surprising thing about the config: **every theme value is an expression string written in the roblox-ts dialect.** It is not a color object, not a hex string, not a number. On the static path Vela parses the string you write and splices the resulting expression into the TSX it emits, where roblox-ts compiles it like any other expression in your source, so it has to be an expression that evaluates in Roblox.
 
-That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"` — roblox-ts syntax, not the `UDim.new(0, 6)` you would write in Luau. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is taken at face value: nothing checks that it is a valid roblox-ts expression. When the string does not parse as one, Vela falls back to emitting it as a *string literal*, so the output is `BackgroundColor3={"#3b82f6"}` — not pasted garbage, but a roblox-ts type error that surfaces on the next build rather than as a config error.
+That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"` — roblox-ts syntax, not the `UDim.new(0, 6)` you would write in Luau. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is never rejected at all: Vela parses it as an expression and splices in **the first expression that parses**, discarding whatever follows. Nothing is validated, and no diagnostic is ever emitted for any of this.
+
+<Callout title="A bad theme string fails in one of three ways, none of them loud">
+Which one you get depends on how the text parses, and the difference is easy to mistake for a rule
+that does not exist. Measured at 0.11.0:
+
+| You write | Emitted | Why |
+|---|---|---|
+| `"Color3.fromRGB(1, 2, 3)"` | `Color3.fromRGB(1, 2, 3)` | Parses. The intended case |
+| `"#3b82f6"` | `{"#3b82f6"}` | `#` then a digit parses as nothing, so it falls back to a string literal — a roblox-ts type error on the next build |
+| `"#a1b2c3"` | `{#a1b2c3}` | `#` then a *letter* is a valid TypeScript private name, so it parses and is emitted bare |
+| `"Color3.fromRGB(1, 2, 3) // blue"` | `Color3.fromRGB(1, 2, 3)` | The call parses; the trailing text is dropped without a word |
+| `"foo bar"` | `foo` | First expression wins, `bar` is discarded |
+
+So a hex color is a type error or a mystery identifier depending on whether its first character after
+the `#` is a digit or a letter, and trailing junk in an otherwise valid value disappears silently
+rather than failing. Only the first row is worth relying on.
+</Callout>
 
 ```ts title="vela.config.ts"
 export default defineConfig({

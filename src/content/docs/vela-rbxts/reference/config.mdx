@@ -220,9 +220,15 @@ export default defineConfig({
 
 `"#111111"` and `4` are not valid values, and they fail at different times. `4` is not a string, and
 every theme value must be one, so it is rejected while the config is being loaded. `"#111111"` is a
-string, and nothing checks that a string is a valid roblox-ts expression. When the string does not
-parse as an expression, Vela falls back to emitting it as a *string literal*, so the output is
-`BackgroundColor3={"#111111"}` — a roblox-ts type error on the next build, rather than a config error.
+string, and nothing checks that a string is a valid roblox-ts expression. Vela parses it and splices
+in the first expression that parses, dropping anything after it; only when nothing parses does it
+fall back to a *string literal*, so `"#111111"` emits `BackgroundColor3={"#111111"}` — a roblox-ts
+type error on the next build, rather than a config error.
+
+That fallback is narrower than it looks: `"#a1b2c3"` emits bare as `BackgroundColor3={#a1b2c3}`,
+because `#` followed by a letter is a valid TypeScript private name and therefore parses. The
+[theming guide](/vela-rbxts/guides/theming/#values-are-source-code-not-values) has the three failure
+shapes side by side.
 
 <Callout title="The runtime path re-parses theme values from text">
 The splice above is the **static** path only. A class resolved at runtime goes through the runtime

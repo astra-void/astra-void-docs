@@ -155,7 +155,7 @@ compensated for it, re-check the layout after upgrading.
 
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, which is the right target — but as of
-0.10.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+0.11.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
 instances fighting over the children. Until the fix ships, set `CellPadding` as a prop on the grid
 element and leave `gap-*` off it.
 </Callout>

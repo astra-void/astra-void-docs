@@ -1,6 +1,6 @@
 ---
 title: Release notes
-description: What changed in each Vela release — the 0.10.0 opacity model, the 0.8.0 runtime parity pass, the 0.7.0 plugin API, the 0.6.0 grid break, and the sharp edges still open.
+description: What changed in each Vela release — the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, the 0.7.0 plugin API, and the sharp edges still open.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -17,10 +17,37 @@ per-package detail behind this page. If you are installing Vela for the first ti
 current release and none of the upgrade notes below apply to you — skip to
 [what is still open](#still-open).
 
+## 0.11.0
+
+The current release, and the first that does not change how a single class lowers. It makes the
+transformer optional.
+
+**There is a `vela` command now.** Registering a roblox-ts transform plugin was the only way to run
+Vela, which shuts out any project that cannot register one — a pinned toolchain, a build system that
+drives `tsc` itself, a CI step that wants the lowered sources as a reviewable artifact. `vela build`
+mirrors `src` into `.vela/src`, transforming the `.tsx` files that use `className` and copying
+everything else through byte for byte; `vela watch` re-transforms on change. Point `rootDir` and
+`include` at the generated tree, drop the plugin entry, and `rbxtsc` compiles ordinary TSX. Both
+paths call the same compiler through the same host adapter, so the output does not depend on which
+one you pick.
+
+Two details make it safe to leave running. An identical output is never rewritten, or `rbxtsc -w`
+would rebuild the whole tree on every pass. And pruning reads a manifest of what an earlier run
+emitted, so a file the CLI never wrote is never deleted. See [the CLI reference](/vela-rbxts/reference/cli/).
+
+**A whole-tree build stops re-evaluating `vela.config.ts` once per file.** Every source file resolves
+its own config — that is what makes per-directory configs work — and the `rbxtsc` host was
+transpiling and running the file again for each one. The loaded config is now keyed on the file's
+text, which collapses that to once per distinct config while leaving resolution alone. This lands on
+the transformer path too, not only under the CLI.
+
+Nothing else moved: no utility, variant, diagnostic or config key changed, and the inlined runtime is
+byte-identical to 0.10.0's. Upgrading from 0.10.0 cannot change your output.
+
 ## 0.10.0
 
-The current release. It finishes the `opacity-*` work 0.9.0 started, and stops the inlined runtime
-from crowding Luau's local register limit.
+It finishes the `opacity-*` work 0.9.0 started, and stops the inlined runtime from crowding Luau's
+local register limit.
 
 **`opacity-*` crosses a component boundary, in both directions.** 0.9.0 fades a subtree by walking
 the JSX at compile time, and that walk ends where the JSX does. A fade written *around* a component
@@ -367,7 +394,7 @@ need it — which is why there is no Vela runtime to place in your DataModel.
 
 ## Still open
 
-These are known and unfixed as of 0.10.0.
+These are known and unfixed as of 0.11.0.
 
 **`gap-*` on a `grid` element emits a conflicting `UIListLayout`** alongside the `UIGridLayout` it
 correctly feeds, leaving two layout instances fighting over the children. 0.6.0 made the grid usable
@@ -400,6 +427,13 @@ each is faded rather than the group — put them in a `canvasgroup` if you need 
 **A plugin utility that reaches back into itself expands to nothing.** The depth cap that stops
 `{ a: "b", b: "a" }` from recursing terminates the expansion silently — no diagnostic, and the
 element comes out with only its preflight props.
+
+**A theme value that is not a valid expression fails three different ways, none of them loud.** Vela
+splices in the first expression that parses out of your string and drops the rest, so
+`"Color3.fromRGB(1, 2, 3) // blue"` silently loses the comment, `"#3b82f6"` falls back to a string
+literal and becomes a type error, and `"#a1b2c3"` parses as a TypeScript private name and emits bare.
+Nothing validates a theme string and no diagnostic is ever reported
+([theming guide](/vela-rbxts/guides/theming/#values-are-source-code-not-values)).
 
 **TypeScript 7 is not supported.** The host adapter calls into the `typescript` it resolves from your
 project, and 7.x fails that call — `compiler-invocation-failed: Cannot read properties of undefined
