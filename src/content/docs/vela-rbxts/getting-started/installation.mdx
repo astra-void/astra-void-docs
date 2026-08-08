@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Add the Vela transformer to a roblox-ts project — packages, tsconfig plugin, config file, and the ambient declaration.
+description: Add Vela to a roblox-ts project — packages, the two ways to run it, the config file, and the ambient declaration.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -9,9 +9,9 @@ sidebar:
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements and on your own components, and a TypeScript transformer rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
+Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements and on your own components, and Vela rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
 
-Nothing about Vela is a runtime library you render. It is a transformer you register in `tsconfig.json`, plus a config file it reads from disk. This page gets both in place. (Since 0.11.0 there is also a [CLI](/vela-rbxts/reference/cli/) that does the lowering ahead of `rbxtsc` instead, for projects that cannot register a plugin — everything else on this page applies to it too.)
+Nothing about Vela is a runtime library you render. It is a compiler that runs over your `.tsx` files, plus a config file it reads from disk. **Where that compiler runs is yours to pick** — as a plugin inside `rbxtsc`, or as a command that runs before it. This page installs the package, sets up whichever you choose, and gets the config and the type declaration in place.
 
 ## Install the package
 
@@ -47,9 +47,36 @@ The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0
 `@rbxts/services ^1.6.0`.
 </Callout>
 
-## Register the transformer
+## Choose how Vela runs
 
-Vela runs as a roblox-ts transformer plugin. Add one entry to `compilerOptions.plugins` in your existing `tsconfig.json`:
+There are two ways to run it, and they are the same compiler either way. **The transformer** registers
+a plugin so the lowering happens inside `rbxtsc`. **The CLI** lowers your sources into a second tree
+first, and `rbxtsc` then compiles ordinary TSX with no plugin at all.
+
+Neither is a lesser mode. They differ in where the work sits in your build, and that decides which one
+fits:
+
+| | Transformer | CLI |
+|---|---|---|
+| Setup | One `tsconfig.json` plugin entry | `rootDir`/`include` point at the generated tree |
+| Build command | `rbxtsc` | `vela build && rbxtsc` |
+| Watch | `rbxtsc -w` | `vela watch` beside `rbxtsc -w` |
+| Sources `rbxtsc` sees | Yours | The generated mirror |
+| Lowered output | Never written to disk | A reviewable tree you can read and diff |
+| Needs a plugin-capable toolchain | Yes | No |
+| Processes to keep running | One | Two |
+| Available since | 0.1.0 | 0.11.0 |
+
+Pick the transformer when `rbxtsc` is your build and you want one moving part. Pick the CLI when a
+plugin is not an option — a pinned toolchain, a build system that drives `tsc` itself — or when you
+positively want the lowered sources as an artifact to inspect in review or in CI.
+
+Everything after this section is shared: the config file, the type declaration, and the smoke test all
+work the same on both.
+
+### Track A — the transformer
+
+Add one entry to `compilerOptions.plugins` in your existing `tsconfig.json`:
 
 ```json title="tsconfig.json"
 {
@@ -65,16 +92,38 @@ That is the entire tsconfig change. Everything else in the file stays as your ro
 
 The plugin entry object is also where transformer options go — file-filter toggles, a diagnostic code base, a project root. The defaults are what you want to start with; the [configuration reference](/vela-rbxts/reference/config/) covers the rest.
 
-<Callout title="If you cannot register a plugin, there is a CLI">
-Since 0.11.0 the package also installs a `vela` command that lowers your sources into a second tree
-ahead of time, so `rbxtsc` compiles ordinary TSX with no plugin registered. It exists for projects
-that cannot load a roblox-ts transform plugin — a pinned toolchain, a build system that drives `tsc`
-itself, a CI step that wants the lowered sources as an artifact. Both paths call the same compiler
-and produce the same output, so this is a choice about your build, not about Vela.
+### Track B — the CLI
 
-Take the transformer unless something stops you: it is one tsconfig entry against a second process
-to keep running. If something does, [the CLI reference](/vela-rbxts/reference/cli/) is the whole
-setup, and the rest of this page applies to it unchanged.
+Point `rbxtsc` at the tree the CLI generates, and register no plugin:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "rootDir": ".vela/src",
+    "baseUrl": ".vela/src",
+    "outDir": "out"
+  },
+  "include": [".vela/src"]
+}
+```
+
+`vela build` mirrors `src` into `.vela/src`, transforming the `.tsx` files that use `className` and
+copying everything else through byte for byte. It writes a `.gitignore` beside the tree, so nothing
+generated lands in version control:
+
+```bash title="Build"
+npx vela build && npx rbxtsc -p tsconfig.json
+```
+
+If a plugin entry is still registered, or `rootDir` still points at `src`, `vela build` says so on
+every run rather than letting the two paths quietly duplicate each other. The
+[CLI reference](/vela-rbxts/reference/cli/) has every flag, the watch behavior, and the exit codes.
+
+<Callout title="Edit src, never the generated tree">
+On track B the mirror is a build output. An edit inside `.vela/src` survives exactly until the next
+run touches that file, and nothing warns you when it disappears. Your editor and `tsc --noEmit` will
+point at the generated tree too, since that is what `rootDir` names — the language server still reads
+your real sources, so completions and hover on `className` are unaffected.
 </Callout>
 
 ## Add `vela.config.ts`
@@ -145,9 +194,9 @@ Roblox host elements have no `className` prop in `@rbxts/types`. Vela adds one b
 import "vela-rbxts";
 ```
 
-That single import pulls in `declare global { namespace React { interface Attributes { className?: ClassValue } } }`. Without it, every `className` you write is a type error, even though the transformer would still have processed it.
+That single import pulls in `declare global { namespace React { interface Attributes { className?: ClassValue } } }`. Without it, every `className` you write is a type error, even though Vela would still have processed it.
 
-Keep the file inside `rootDir` so TypeScript picks it up with the rest of your sources.
+Keep the file inside `src` so TypeScript picks it up with the rest of your sources. On track B you still write it in `src` — the CLI copies `.d.ts` files through unchanged, so it arrives inside the generated tree that `rootDir` names.
 
 <Callout title="Do not name the file src/vela-rbxts.d.ts">
 A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` before `node_modules` for a bare specifier. Under that name, `import "vela-rbxts"` resolves to the declaration file itself rather than the package, so the augmentation never loads and `className` stays a type error — with no diagnostic pointing at the cause. Any other name works.
@@ -155,13 +204,19 @@ A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` befo
 
 ## Build and serve
 
-There is no Vela-specific build step. Compile with roblox-ts as usual:
+On track A there is no Vela-specific build step — compile with roblox-ts as usual:
 
-```bash title="Build"
+```bash title="Build — track A"
 npx rbxtsc
 ```
 
-Then sync `out/` into Studio with Rojo the same way you already do:
+On track B, lower first. `vela build` exits non-zero when a file fails to compile, so `&&` is the right joint:
+
+```bash title="Build — track B"
+npx vela build && npx rbxtsc
+```
+
+Either way, sync `out/` into Studio with Rojo the same way you already do:
 
 ```bash title="Serve"
 rojo serve
@@ -178,28 +233,35 @@ deliberately broken class on any `.tsx` element:
 <frame className="bg-nope-500 p-4" />
 ```
 
-Build, and read the output. You are looking for exactly this — a roblox-ts warning, numbered from
-the diagnostic code base, with the offending token underlined:
+Build, and read the output. You are looking for a warning naming `nope-500`. The two tracks present
+the same diagnostic differently — track A routes it through roblox-ts's numbered diagnostics, track B
+prints it itself:
 
-```text title="rbxtsc output"
+```text title="Track A — rbxtsc output"
 src/client/Smoke.tsx:4:28 - warning TS89000: [@vela-rbxts/compiler] unknown-theme-key: Unknown theme key "nope-500" for background color utility in className literal.
 
 4   return <frame className="bg-nope-500 p-4" />;
                             ~~~~~~~~~~~
 ```
 
-- **You get the warning.** Everything is wired: the plugin is loading, the compiler is running, and
-  diagnostics are reaching you. Delete the file.
-- **No warning, and `className` is a type error in your editor.** The ambient declaration is not
-  loading — check the `.d.ts` file exists inside `rootDir` and is not named `src/vela-rbxts.d.ts`.
-- **No warning, and `className` type-checks fine.** Either the transformer is not running (check the
-  `plugins` entry spells the `/transformer` subpath, and that the file ends in `.tsx`), or your
-  roblox-ts version does not expose `context.addDiagnostic` and is discarding every Vela warning.
-  The second case is the dangerous one — it makes broken classes look clean forever — so upgrade
-  roblox-ts rather than living with it.
+```text title="Track B — vela build output"
+client/Smoke.tsx:4:28 - warning vela/compiler(unknown-theme-key): Unknown theme key "nope-500" for background color utility in className literal.
+```
 
-Then check the emitted file. `p-4` should have become a `<uipadding>` child and the `className`
-attribute should be gone entirely; if the attribute survived verbatim, the element was skipped.
+- **You get the warning.** Everything is wired: Vela is running and diagnostics are reaching you.
+  Delete the file.
+- **No warning, and `className` is a type error in your editor.** The ambient declaration is not
+  loading — check the `.d.ts` file exists inside `src` and is not named `src/vela-rbxts.d.ts`.
+- **No warning, and `className` type-checks fine.** On track A, either the transformer is not running
+  (check the `plugins` entry spells the `/transformer` subpath, and that the file ends in `.tsx`), or
+  your roblox-ts version does not expose `context.addDiagnostic` and is discarding every Vela warning.
+  That second case is the dangerous one — it makes broken classes look clean forever — so upgrade
+  roblox-ts rather than living with it. On track B, check that you actually ran `vela build`, and that
+  its header names the directory you expected: `vela build: src -> .vela/src`.
+
+Then check the emitted file — `out/` on track A, `.vela/src` on track B. `p-4` should have become a
+`<uipadding>` child and the `className` attribute should be gone entirely; if the attribute survived
+verbatim, the element was skipped.
 
 ## Next steps
 
