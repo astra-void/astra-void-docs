@@ -4,6 +4,7 @@ import { Code } from "astro-expressive-code/components"
 import DocsCard from "@/components/docs/DocsCard.astro"
 import DocsLayout from "@/layouts/DocsLayout.astro"
 import { getDocPathFromId, getDocs, getProductIndexId } from "@/lib/docs"
+import { VELA_VERSION_LABEL } from "@/lib/vela-version"
 
 const PRODUCT_ID = "vela-rbxts" as const
 
@@ -77,7 +78,7 @@ const pillars = [
       href={scopeHref}
     >
       <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-[#f5a623]"></span>
-      vela-rbxts · v0.4.1 · pre-1.0
+      {VELA_VERSION_LABEL}
     </a>
 
     <div class="mt-6 flex flex-wrap gap-3">
