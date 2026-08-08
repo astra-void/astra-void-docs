@@ -1,7 +1,13 @@
+# Security floors for transitive deps. Bounded to the major each consumer
+# expects — a bare '>=' let js-yaml jump to 5.x and fast-uri to 4.x, which is a
+# breaking upgrade forced on astro and ajv rather than a patch.
 overrides:
   svgo: '>=4.0.2'
-  brace-expansion: '>=5.0.7'
-  hono: '>=4.12.27'
+  brace-expansion: '>=5.0.9 <6'
+  fast-uri: '>=3.1.5 <4'
+  hono: '>=4.12.34 <5'
+  ip-address: '>=10.3.1 <11'
+  js-yaml: '>=4.3.1 <5'
 allowBuilds:
   esbuild: true
   msw: true
