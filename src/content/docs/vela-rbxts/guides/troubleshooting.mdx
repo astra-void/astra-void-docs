@@ -207,9 +207,12 @@ compile error you can see. See [the motion driver](/vela-rbxts/reference/config/
 Every file with a variant-prefixed token or other runtime trigger carries its own copy of the runtime
 helper — a few thousand lines of generated roblox-ts — so concentrate variants in a few container
 components. Since 0.10.0 that copy is grouped into namespaces, which is what keeps it from crowding
-Luau's [local register limit](#out-of-local-registers); it does not make the emit smaller. And
-`vela.config.ts` is re-read, re-transpiled, and re-executed for **every** eligible source file, so
-keep it a plain `defineConfig` call with literal values.
+Luau's [local register limit](#out-of-local-registers); it does not make the emit smaller.
+
+If the slowdown predates 0.11.0, suspect the config: below that version `vela.config.ts` was re-read,
+re-transpiled and re-executed for **every** eligible source file. 0.11.0 caches the load against the
+config's own text, so it now runs once per distinct config — upgrading is the fix. Keeping it a plain
+`defineConfig` call with literal values is still worth doing, since it is executed as real code.
 
 ## Still stuck?
 

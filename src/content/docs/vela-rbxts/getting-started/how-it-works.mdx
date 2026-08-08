@@ -1,6 +1,6 @@
 ---
 title: How it works
-description: The Vela pipeline from rbxtsc to emitted Luau, and the two lowering paths a className can take.
+description: The Vela pipeline end to end, the two points where the transformer and the CLI diverge, and the two lowering paths a className can take.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -9,13 +9,18 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela has no runtime you install. It is a TypeScript program transformer that roblox-ts loads, plus a native compiler that does the actual class-name work. Understanding the order of those pieces explains most of Vela's behavior, including the parts that surprise people.
+Vela has no runtime you install. It is a host adapter that decides which files to touch, plus a native compiler that does the actual class-name work. Understanding the order of those pieces explains most of Vela's behavior, including the parts that surprise people.
 
-This page describes the transformer path, which is the default and the one to read first. Since 0.11.0 the same work can also run as a build step of its own, ahead of `rbxtsc` — see [the CLI](/vela-rbxts/reference/cli/). It calls the same host adapter and the same compiler, so everything below applies to it too, from the file filter onward.
+[The two ways to run Vela](/vela-rbxts/getting-started/installation/#choose-how-vela-runs) differ at exactly two points: what hands the adapter a file, and where the resulting text goes. Everything between — the filter, config resolution, and the compiler itself — is one shared pipeline running the same code on the same input, which is why both tracks emit the same Luau.
 
 ## The pipeline
 
-**`rbxtsc` loads the transformer.** The `{ "transform": "vela-rbxts/transformer" }` entry in your `tsconfig.json` is resolved by roblox-ts, which calls the exported factory with your `Program`, the plugin options object, and its own `typescript` instance. The factory throws if roblox-ts does not hand it that instance, so the transformer cannot be driven by a plain `tsc`.
+**Something hands the adapter a file.** This is the one step that differs.
+
+- *Track A — the transformer.* The `{ "transform": "vela-rbxts/transformer" }` entry in your `tsconfig.json` is resolved by roblox-ts, which calls the exported factory with your `Program`, the plugin options object, and its own `typescript` instance. The factory throws if roblox-ts does not hand it that instance, so the transformer cannot be driven by a plain `tsc`. Files arrive as roblox-ts walks the program.
+- *Track B — the CLI.* `vela build` walks `--src` itself and calls the same adapter per file, before roblox-ts is involved at all. There is no `Program` and no plugin options object, so the three filter toggles below are simply at their defaults.
+
+From here the two are the same code on the same input.
 
 **The host adapter filters files.** Before any parsing happens, each source file is checked against five conditions in order, and a file that fails any of them is passed through untouched:
 
@@ -29,13 +34,30 @@ Those last three are toggles (`skipNodeModules`, `requireClassName`, `requireJsx
 
 **The adapter finds your config.** For each eligible file, Vela walks up from that file's directory looking for `vela.config.ts` or `vela.config.json` — the `.ts` form wins when a directory has both. A TypeScript config is read, stripped of every `import … from "vela-rbxts"` statement, transpiled with `ts.transpileModule`, and executed in a function scope where `defineConfig` and `defaultConfig` are injected as parameters. That injection is why the stripped import still works. A TypeScript diagnostic in your config throws; an export that is neither a resolved config nor an input-shaped object throws. A JSON config is parsed directly, with its `$schema` key stripped. Finding nothing at all is fine — you get the default theme.
 
-<Callout title="Config discovery is not cached">
-Config resolution runs **per file**, so `vela.config.ts` is re-read, re-transpiled and re-executed once for every eligible source file in your project. On a large project this is a measurable share of build time. Keep the config file small and side-effect-free.
+<Callout title="Discovery runs per file; loading is cached since 0.11.0">
+The upward walk is **per file** — that is what lets two directories carry different configs — and each
+eligible file still reads the config file it lands on. What no longer repeats is the expensive part.
+Before 0.11.0, `vela.config.ts` was re-transpiled and re-executed once for every eligible source file
+in the project, which on a large tree was a measurable share of build time. It is now cached against
+the file's own text, so the transpile and the execution happen once per distinct config content and a
+second file resolving to the same config reuses the result.
+
+The cache is keyed on content, not on a timestamp, so editing the config invalidates it on the next
+read. `vela watch` also clears it outright when it sees a config change, which is why a theme edit
+rebuilds the whole tree rather than only the next file you touch.
+
+Keeping the config small and side-effect-free is still worth doing — it is executed as real code —
+but it is no longer a per-file cost.
 </Callout>
 
 **The native compiler parses and lowers.** The file's text goes to the Rust compiler, which parses the TSX, walks the JSX tree, resolves each class token against the merged theme, and produces both new source text and a diagnostic list.
 
-**The output is re-parsed and re-injected.** Vela does not perform AST node surgery on TypeScript's tree. It takes the emitted text, parses it into a fresh `SourceFile`, and substitutes that. If the compiler reports no change, this step is skipped entirely. Diagnostics are handed back through roblox-ts's `addDiagnostic` — and if the version of roblox-ts in use does not expose that hook, they are dropped silently.
+**The text goes back out.** The compiler hands back source text, not an AST — Vela never performs node surgery on TypeScript's tree — and where that text lands is the second and last place the tracks diverge.
+
+- *Track A.* The text is parsed into a fresh `SourceFile` and substituted into the program, in memory. If the compiler reports no change, the step is skipped entirely. Diagnostics are handed back through roblox-ts's `addDiagnostic` — and if the version of roblox-ts in use does not expose that hook, **they are dropped silently.**
+- *Track B.* The text is written to the mirrored path under the generated tree, and skipped when it is byte-identical to what is already there, so `rbxtsc -w` is not woken by a file that did not change. Diagnostics are printed by the CLI itself, so no roblox-ts hook is involved and none can be dropped.
+
+That difference in diagnostic delivery is the one behavioral gap between the tracks worth knowing: an old roblox-ts can swallow track A's warnings, and track B is immune to that particular failure.
 
 ## What gets touched
 

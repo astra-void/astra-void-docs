@@ -143,12 +143,18 @@ than at install. Second, prebuilt native binaries do not cover every platform �
 
 ## A performance note
 
-Config discovery re-reads, re-transpiles and re-executes `vela.config.ts` for **every eligible
-source file**. There is no caching layer between files. On a project with hundreds of `.tsx` files
-this is hundreds of `transpileModule` calls per build. Keeping `vela.config.ts` to a plain
-`defineConfig` call with literal values — no imports beyond `vela-rbxts`, no computed theme
-generation, no side effects — keeps that cost small and predictable. (A JSON config,
-`vela.config.json`, skips the transpile step but is still re-read per file.)
+Config discovery runs for **every eligible source file** — the walk up the directory tree, and a read
+of whatever config it lands on. That part is per file by design, since it is what lets two directories
+carry different configs.
+
+The expensive part is no longer per file. Below 0.11.0 there was no cache at all, so a project with
+hundreds of `.tsx` files meant hundreds of `transpileModule` calls and executions per build; 0.11.0
+keys the loaded config on the config file's own text, collapsing that to one per distinct config.
+
+Keeping `vela.config.ts` to a plain `defineConfig` call with literal values — no imports beyond
+`vela-rbxts`, no computed theme generation, no side effects — is still the right shape: it is executed
+as real code, and any edit invalidates the cache. (A JSON config, `vela.config.json`, skips the
+transpile step on a miss and is cached the same way.)
 
 ## See also
 

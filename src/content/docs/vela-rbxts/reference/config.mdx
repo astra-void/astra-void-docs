@@ -39,11 +39,15 @@ editor validation:
 }
 ```
 
-<Callout title="The config is re-executed for every file">
-There is no caching. Config resolution runs once per eligible source file, which means
-`vela.config.ts` is re-read, re-transpiled, and re-executed for each `.tsx` file in your project.
-Keep the file cheap: no filesystem access, no network, no heavy computation at module scope. (A
-`vela.config.json` skips the transpile-and-execute steps, but is still re-read per file.)
+<Callout title="Resolution runs per file; the load is cached since 0.11.0">
+Config *resolution* — the walk up from each source file — still runs once per eligible file, which is
+what lets two directories carry different configs, and each file still reads the config it lands on.
+The *load* is cached against that file's text, so `vela.config.ts` is transpiled and executed once per
+distinct config rather than once per `.tsx` file. Before 0.11.0 there was no cache at all and the
+whole load repeated for every file.
+
+Keep the file cheap regardless — no filesystem access, no network, no heavy computation at module
+scope — because it is still executed as real code, and a cache miss is a full re-execution.
 </Callout>
 
 ## How the TypeScript form is loaded
