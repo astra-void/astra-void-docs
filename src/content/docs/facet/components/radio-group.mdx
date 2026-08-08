@@ -1,0 +1,139 @@
+---
+title: Radio group
+description: One value across a set of dials — and the one component in this tier that mirrors half the state and lets the primitive keep the rest.
+product: facet
+section: components
+sidebar:
+  order: 40
+  group: Form
+---
+
+import { Callout, FacetPreview, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add radio-group
+```
+
+Copies `ui/radio-group.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-radio-group@^0.8.0`.
+
+```tsx
+import { RadioGroup, RadioGroupItem } from "../shared/ui/radio-group";
+import { Label } from "../shared/ui/label";
+
+<RadioGroup defaultValue="normal" onValueChange={setDifficulty}>
+  <frame className="flex-row items-center gap-2 w-fit h-fit">
+    <RadioGroupItem value="normal" />
+    <Label Text="Normal" />
+  </frame>
+</RadioGroup>
+```
+
+<FacetPreview
+  scene="RadioGroupScene"
+  source="ui/radio-group.tsx"
+  height={150}
+  label="Three items, one checked. The row around each dial is yours — Facet ships no RadioGroupLabel."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `RadioGroup` | `Frame` | `flex-col gap-2 w-fit h-fit` |
+| `RadioGroupItem` | `TextButton` | `size-4 rounded-full border border-input transition duration-150` |
+
+Two parts, not four. The indicator and the dot inside it are drawn by `RadioGroupItem` — they take
+no props, so exporting them would cost two Luau registers and buy nothing. See
+[the register limit](/facet/guides/component-conventions/#6-flat-named-exports).
+
+## Props
+
+### `RadioGroup`
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled value. Pass it with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Uncontrolled starting value." },
+    {
+      name: "onValueChange",
+      type: "(value: string) => void",
+      description: "Fires when a different item is checked.",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      description: "Disables every item in the group. An item can also disable itself.",
+    },
+    {
+      name: "orientation",
+      type: '"horizontal" | "vertical"',
+      description:
+        "Goes to the primitive for keyboard and gamepad navigation, and adds flex-row to the frame when horizontal. Defaults to vertical.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+### `RadioGroupItem`
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Required. What this item sets the group to." },
+    { name: "disabled", type: "boolean", description: "Disables this item alone." },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the item recipe's className slot inside the component.",
+    },
+  ]}
+/>
+
+There is no `Text` on either part. A radio button is a dial; the words next to it are a
+[`Label`](/facet/components/label/) you place yourself, exactly as shadcn does.
+
+## Half the state is mirrored, half is not
+
+The [mirrored-state rule](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) applies
+to what this file *styles by*, and here that is only the border:
+
+```tsx
+const checked = group.value === props.value;
+
+<RadioGroupPrimitive.Item
+  className={radioGroupVariants.item({
+    className: cn(checked && "border-primary", disabled && "opacity-50", props.className),
+  })}
+```
+
+The dot inside needs no mirror at all. `RadioGroup.Indicator` mounts and unmounts its children from
+the primitive's own state, so the dot is either rendered or it is not — there is no class to flip
+and nothing for this file to know.
+
+A Facet context carries the group's value down to each item, because Lattice's own context is
+private. That context exists for exactly one boolean per item.
+
+## `orientation` does two different things
+
+```tsx
+<frame
+  className={radioGroupVariants.root({
+    className: cn(props.orientation === "horizontal" && "flex-row", props.className),
+  })}
+```
+
+It goes to the primitive, which uses it for arrow-key navigation, **and** it is read again here to
+swap the frame's layout. Those are two separate mechanisms that happen to share a prop: nothing in
+Lattice lays this frame out, and nothing in the frame tells Lattice which key moves where.
+
+<Callout title="A horizontal group is not a row of labelled rows">
+The `flex-row` lands on the group's own frame, so its children are laid out in a row. If each child
+is a labelled row of its own — a `flex-row` frame holding a dial and a `Label` — you get a row of
+rows, which is usually what you want. Nesting is yours to arrange; the component only flips its own
+axis.
+</Callout>

@@ -1,0 +1,152 @@
+---
+title: Text field
+description: Five parts around a TextBox — and the component where a state has to be stated twice because nothing inherits.
+product: facet
+section: components
+sidebar:
+  order: 70
+  group: Form
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add text-field
+```
+
+Copies `ui/text-field.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-text-field@^0.8.0`.
+
+```tsx
+import {
+  TextField,
+  TextFieldDescription,
+  TextFieldInput,
+  TextFieldLabel,
+  TextFieldMessage,
+} from "../shared/ui/text-field";
+
+<TextField defaultValue="Nimbus_Rider" onValueCommit={saveName}>
+  <TextFieldLabel Text="Display name" />
+  <TextFieldInput />
+  <TextFieldDescription Text="Shown to other players in this server." />
+</TextField>
+```
+
+<FacetPreview
+  scene="TextFieldScene"
+  source="ui/text-field.tsx"
+  height={240}
+  label="A valid field and an invalid one. Click into either — the box is a real TextBox."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `TextField` | `Frame` | `flex-col gap-2 w-full h-fit` |
+| `TextFieldInput` | `TextBox` | `h-9 w-full rounded-md border border-input px-3 text-left text-sm font-normal text-foreground placeholder-muted-foreground focus:border-ring` |
+| `TextFieldLabel` | `TextButton` | `w-full h-fit text-left text-sm font-medium text-foreground` |
+| `TextFieldDescription` | `TextLabel` | `w-full h-fit whitespace-normal text-left text-xs font-normal text-muted-foreground` |
+| `TextFieldMessage` | `TextLabel` | `w-full h-fit whitespace-normal text-left text-xs font-medium text-destructive` |
+
+The label renders a `TextButton` rather than a `TextLabel` because Lattice makes it focus the input
+when pressed — the Roblox equivalent of `<label for>`.
+
+<ForwardedProps instance="TextBox" />
+
+That is `TextFieldInput`. `TextField` forwards onto a `Frame`, the two text parts onto a `TextLabel`,
+and the label onto a `TextButton`.
+
+## Props
+
+### `TextField`
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled value. Pass it with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Uncontrolled starting text." },
+    {
+      name: "onValueChange",
+      type: "(value: string) => void",
+      description: "Fires on every keystroke.",
+    },
+    {
+      name: "onValueCommit",
+      type: "(value: string) => void",
+      description: "Fires when the box loses focus, with the text as it stands.",
+    },
+    { name: "disabled", type: "boolean", description: "Blocks focus and typing." },
+    { name: "readOnly", type: "boolean", description: "Focusable, not editable." },
+    {
+      name: "invalid",
+      type: "boolean",
+      description:
+        "Carries the state into Lattice's context. It does not colour anything on its own — see below.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+### `TextFieldInput`
+
+<PropTable
+  rows={[
+    {
+      name: "invalid",
+      type: "boolean",
+      description: "Adds border-destructive. This is the one that draws the red border.",
+    },
+    { name: "disabled", type: "boolean", description: "Adds opacity-50." },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the input recipe's className slot inside the component.",
+    },
+  ]}
+/>
+
+`TextFieldLabel`, `TextFieldDescription` and `TextFieldMessage` each take `Text` and `className`.
+
+## `invalid` is stated twice, and that is not a bug
+
+```tsx
+<TextField invalid>
+  <TextFieldLabel Text="Clan tag" />
+  <TextFieldInput invalid />
+  <TextFieldMessage Text="Letters and numbers only." />
+</TextField>
+```
+
+The root's `invalid` is what reaches Lattice's context — the behavior half. The input's `invalid` is
+what turns the border `border-destructive` — the appearance half.
+
+They are separate because **nothing inherits**. A `TextBox`'s stroke colour lives on that `TextBox`;
+there is no descendant selector and no cascade to carry the root's state down to it. It is the same
+repetition [`Alert`](/facet/components/alert/#variant-goes-on-every-part) has with `variant`, reached
+from a different direction.
+
+<Callout title="Setting only one of them is silent">
+`<TextField invalid>` with a plain `<TextFieldInput />` compiles and renders a normally-bordered box
+that Lattice considers invalid. Nothing warns — the parts have no relationship for anything to check.
+
+If the repetition bothers you in your project, the file is yours: read the primitive's context in
+`TextFieldInput`, or collapse the five parts into one component that takes three strings.
+</Callout>
+
+## `font-normal` on the input is load-bearing
+
+A `TextBox` draws its own text, so unlike [Button](/facet/components/button/) there is no second
+label recipe here — the text classes sit on the input itself. `font-normal` is in that list not for
+weight but for existence: Vela leaves `FontFace` alone when no `font-*` token appears, and Roblox's
+untouched default is LegacyArial. That is
+[the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes), and
+every text-drawing instance in the registry states a `font-*` because of it.
+
+`placeholder-muted-foreground` colours `PlaceholderColor3`; `focus:border-ring` swaps the stroke
+while the box has focus.

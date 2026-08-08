@@ -10,10 +10,10 @@
  */
 
 /** Current release the docs are written against. */
-export const FACET_VERSION = "0.3.1"
+export const FACET_VERSION = "0.4.0"
 
 /** Pre-1.0 marker shown next to the version. */
 export const FACET_STABILITY = "pre-1.0"
 
-/** `facet-rbxts · v0.3.1 · pre-1.0` — the landing page badge. */
+/** `facet-rbxts · v0.4.0 · pre-1.0` — the landing page badge. */
 export const FACET_VERSION_LABEL = `facet-rbxts · v${FACET_VERSION} · ${FACET_STABILITY}`

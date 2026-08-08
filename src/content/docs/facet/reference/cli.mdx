@@ -67,7 +67,7 @@ Refuses to run if `facet.json` already exists, unless `--force`.
 ## `add`
 
 ```bash
-npx facet-rbxts add <names...> [--overwrite] [--dry-run] [--no-deps]
+npx facet-rbxts add <names...> [--overwrite] [--dry-run] [--no-deps] [--yes]
 ```
 
 | Option | |
@@ -75,6 +75,7 @@ npx facet-rbxts add <names...> [--overwrite] [--dry-run] [--no-deps]
 | `--overwrite` | Replace files that already exist instead of skipping them |
 | `--dry-run` | Resolve and report, write nothing |
 | `--no-deps` | Skip the package install |
+| `--yes` | Answer the provider-wiring prompt with yes instead of asking |
 
 Resolves the named items plus their `registryDependencies`, transitively and in dependency order.
 For each file: rewrites `~/` imports for where the file will land, then writes it. All writes go
@@ -95,6 +96,64 @@ on a file you never wrote.
 The field states intent; the lockfile states what the project actually installed with. Installing
 with the wrong one leaves two lockfiles disagreeing.
 </Callout>
+
+### Wiring a provider
+
+If an added component declares a [`providers`](/facet/reference/registry-format/#providers) entry —
+today that is [`dialog`](/facet/components/dialog/) and its `PortalProvider` — `add` offers to wrap
+your client entry in it. This is the **one file the CLI edits that it did not write**, and the bar
+for doing so is deliberately high.
+
+```
+PortalProvider has to wrap your app — Lattice reads the portal target from it,
+and throws when a dialog opens without one
+
+? Add it to src/client/main.client.tsx? (Y/n)
+```
+
+Why this and nothing else: every other thing the CLI reports is a **build-time** failure. A missing
+transformer means every class is inert on the next `rbxtsc`. A missing token is a Vela diagnostic.
+Both are loud, and both land in front of the person who just ran the command. A missing
+`PortalProvider` compiles, type-checks, passes CI, ships — and throws the first time a player opens
+the dialog, hundreds of lines of package-manager output after the snippet would have been printed.
+
+**The parser is used for positions, never for output.** `@babel/parser` answers where the last
+import ends and where the render call's argument starts; the edit itself is two string splices.
+Everything outside those two offsets comes out byte for byte identical — no re-quoted strings, no
+moved comments, no re-indented JSX on a file you arranged deliberately. A test asserts the exact
+bytes.
+
+**Anything ambiguous is reported, not guessed:**
+
+| What the entry looks like | What happens |
+| --- | --- |
+| One `.render(` call, a `PlayerGui` expression somewhere | Wrapped, after the prompt |
+| Two files under `src/` mount a tree | Snippet, naming both |
+| Two `.render(` calls in the one entry | Snippet — which tree to wrap is a design question |
+| No `PlayerGui` named anywhere | Snippet — synthesizing the lookup means editing imports too |
+| The entry does not parse | Snippet |
+| Provider already imported | Nothing, and it says so |
+
+The `PlayerGui` case is the one worth explaining. Writing
+`Players.LocalPlayer.WaitForChild("PlayerGui")` into the file also means adding `Players` to an
+`@rbxts/services` import that may or may not exist — a second, riskier edit for a situation that
+barely occurs, since a client that mounts React always names its `PlayerGui` already. So the CLI
+reuses the expression that is there and stops when there is none.
+
+<Callout title="Not being asked is not the same as saying no">
+The prompt defaults to yes and is the last thing `add` does, so nothing scrolls past it. `--yes`
+writes without asking.
+
+A **non-interactive** run without `--yes` writes nothing and prints the snippet, reported as
+*"nothing here to ask, and this is not a file to edit unasked"*. stdin not being a terminal is not
+consent — and it is also not you having declined, which is why the two read differently.
+</Callout>
+
+`facet doctor` checks the same thing on every run, so a provider that gets refactored out later is
+reported rather than rediscovered at runtime.
+
+Multiple providers are wired one at a time, and the entry is re-read between them — the second one
+wraps the file the first just rewrote.
 
 ## `list`
 
@@ -161,7 +220,7 @@ it says so in its own output rather than implying otherwise. See
 npx facet-rbxts doctor
 ```
 
-Seven checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-zero.
+Eight checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-zero.
 
 | Check | Fails when |
 | --- | --- |
@@ -172,6 +231,13 @@ Seven checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-ze
 | **components** | never — lists what is installed; warns when an item is missing some of its files |
 | **tokens** | an installed component names a token the theme does not define |
 | **packages** | a package is missing, or older than the floor the copied files need |
+| **providers** | an installed component declares a provider and the client entry is not wrapped in it |
+
+The providers check is the only one whose failure is not a build failure. A
+[`dialog`](/facet/components/dialog/) with no `PortalProvider` above it compiles, ships, and throws
+the first time a player opens it — and nothing in the copied file can prevent that, because the
+wiring lives in a file Facet does not own. When it fails it prints the snippet; when it cannot find
+a single client entry to look at, it *warns* rather than failing, and says to check by hand.
 
 The packages check is the one that catches a project set up by an older CLI: the copied files are
 current and the versions under them are not. It reads the version actually sitting in

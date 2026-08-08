@@ -56,10 +56,10 @@ The two copies are byte-for-byte identical, not re-rendered — an `add` from a 
 
 ```json
 {
-  "latest": "821604a",
+  "latest": "d345608",
   "revisions": [
-    { "revision": "821604a", "generatedBy": "0.3.1", "components": 10 },
-    { "revision": "011946b", "generatedBy": "0.3.0", "components": 10 }
+    { "revision": "d345608", "generatedBy": "0.4.0", "components": 23 },
+    { "revision": "821604a", "generatedBy": "0.3.1", "components": 10 }
   ]
 }
 ```
@@ -81,7 +81,7 @@ To read from one, point at it as a base — see [pinning a revision](/facet/refe
 ```json
 {
   "version": 1,
-  "generatedBy": "0.3.1",
+  "generatedBy": "0.4.0",
   "items": [
     {
       "name": "button",
@@ -117,6 +117,52 @@ To read from one, point at it as a base — see [pinning a revision](/facet/refe
 | `devDependencies` | `string[]?` | Same, installed as dev |
 | `registryDependencies` | `string[]?` | Other **items** — never files. Resolved transitively by `add` |
 | `tokens` | `string[]?` | Semantic theme tokens the classes name, so `doctor` can check them against the consumer's Vela theme |
+| `providers` | see below | React providers the component needs above the app |
+
+### `providers`
+
+New in 0.4.0, and the reason it exists is that one failure in the registry is not a build failure.
+
+```json
+{
+  "name": "dialog",
+  "providers": [
+    {
+      "name": "PortalProvider",
+      "package": "@lattice-ui/react-layer",
+      "props": { "container": "player-gui" },
+      "reason": "Lattice reads the portal target from it, and throws when a dialog opens without one"
+    }
+  ]
+}
+```
+
+| Field | |
+| --- | --- |
+| `name` | The component to import and wrap with |
+| `package` | Where to import it from |
+| `props` | Prop name → a **symbolic** value the tool resolves, not source text |
+| `reason` | Printed to the consumer, in both the prompt and `doctor`'s output |
+
+`facet add` [offers to write it into the client entry](/facet/reference/cli/#wiring-a-provider), and
+`facet doctor` reports when it is gone.
+
+<Callout title="The container value is a symbol, not a snippet">
+The expression for the local player's `PlayerGui` is knowledge about roblox-ts, and it belongs in the
+tool that reads the entry file — which can see what the entry already names — rather than in a string
+the registry hands over to be pasted somewhere it cannot see.
+</Callout>
+
+**The registry declares it, not the CLI.** The alternative was for the CLI to know that `dialog`
+needs `PortalProvider`. That knowledge would then live in a released binary, and the whole point of
+the hosted registry is that a component reaches users by being *published* rather than by a CLI
+release — so the next layered component would need a CLI release to be wired correctly.
+
+**`version` did not move for it.** `loadIndex` *rejects* an index whose version it does not
+recognise, so bumping to `2` would break every CLI already installed in order to deliver a field
+those CLIs would ignore anyway. An optional field is compatible in both directions: an older CLI
+does not read `providers`, and a newer one reads `undefined` from an older registry. The number is
+for removing a field, renaming one, or changing what an existing one means.
 
 ### Item types and where they land
 

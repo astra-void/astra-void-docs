@@ -1,0 +1,134 @@
+---
+title: Scroll area
+description: A viewport with a drawn scrollbar — and the component whose height has to come from above it.
+product: facet
+section: components
+sidebar:
+  order: 80
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add scroll-area
+```
+
+Copies `ui/scroll-area.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-scroll-area@^0.8.0`.
+
+```tsx
+import { ScrollArea } from "../shared/ui/scroll-area";
+
+<frame className="flex-col w-full h-32 rounded-md border border-border">
+  <ScrollArea>
+    <frame className="flex-col w-full h-fit p-3 gap-2">…</frame>
+  </ScrollArea>
+</frame>
+```
+
+<FacetPreview
+  scene="ScrollAreaScene"
+  source="ui/scroll-area.tsx"
+  height={180}
+  label="Seven rows in a 128px box. The height and the border are on the wrapper, not on the ScrollArea."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `ScrollArea` | `Frame` | `w-full h-full overflow-hidden` |
+| `ScrollBar` | `Frame` | `rounded-full`, plus the edge insets for its orientation |
+
+`ScrollArea` renders a `ScrollBar` for you. The export exists for the case where you want a second
+one on the other axis.
+
+<ForwardedProps instance="Frame" />
+
+## The height comes from the parent
+
+<Callout title="`h-full` is in the recipe, so a className here cannot set a height">
+The root is `w-full h-full`: the component fills whatever it is put inside. A `className` written at
+the call site is resolved *there* and arrives as instance properties, which the recipe then
+overwrites for every property it also names — and it names `Size` on both axes.
+
+This is measured. A `<ScrollArea className="h-32">` inside a 200px-tall parent renders 200px tall.
+The mechanism is in
+[overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+</Callout>
+
+So the size goes on a wrapper, and so does anything else the recipe states. What *does* cross from a
+call-site class is whatever the recipe leaves alone — `rounded-md` and `border-border` reach the
+instance fine, because the root recipe names neither a corner nor a stroke.
+
+A scroll area that hugs its content has nothing to scroll, so something above it has to resolve a
+height either way. Putting it on a wrapper frame is the one arrangement that always works.
+
+## Props
+
+### `ScrollArea`
+
+<PropTable
+  rows={[
+    {
+      name: "type",
+      type: '"auto" | "always" | "scroll"',
+      description:
+        "auto shows the bar while scrolling, always keeps it, scroll matches the platform. Read by the primitive.",
+    },
+    {
+      name: "scrollHideDelayMs",
+      type: "number",
+      description: "How long the bar lingers after a scroll stops.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description: "What scrolls. Give it h-fit so it can be taller than the viewport.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see above.",
+    },
+  ]}
+/>
+
+### `ScrollBar`
+
+<PropTable
+  rows={[
+    {
+      name: "orientation",
+      type: '"vertical" | "horizontal"',
+      description:
+        "Which edge it pins to, and which axis the thumb sizes on. Defaults to vertical.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the scrollbar recipe's className slot inside the component.",
+    },
+  ]}
+/>
+
+## Two scrollbars, one of them invisible
+
+```tsx
+viewport: fv("size-full scrollbar-none"),
+```
+
+The viewport is a Roblox `ScrollingFrame`, which draws a scrollbar of its own.
+`scrollbar-none` hides it, because the visible one is the `ScrollBar` beside it — a frame Lattice
+sizes and positions from the scroll ratio, and fades after `scrollHideDelayMs`.
+
+Losing that class gives you both bars at once, which is the failure mode to recognise.
+
+## The root has no `flex-*`
+
+The scrollbar is pinned to an edge with inset classes — `right-0 top-0 h-full w-2` for a vertical
+one — and a `UIListLayout` would pull it into the flow and lay it out beside the viewport instead.
+[Slider](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point) omits its layout for
+the same reason.

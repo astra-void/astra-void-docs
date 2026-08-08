@@ -1,0 +1,128 @@
+---
+title: Avatar
+description: A circle drawn by the wrapper, because the primitive under it renders no instance at all.
+product: facet
+section: components
+sidebar:
+  order: 30
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add avatar
+```
+
+Copies `ui/avatar.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-avatar@^0.8.0`.
+
+```tsx
+import { Avatar, AvatarFallback, AvatarImage } from "../shared/ui/avatar";
+
+<Avatar src={`rbxthumb://type=AvatarHeadShot&id=${userId}&w=150&h=150`}>
+  <AvatarImage />
+  <AvatarFallback Text="NR" />
+</Avatar>
+```
+
+<FacetPreview
+  scene="AvatarScene"
+  source="ui/avatar.tsx"
+  height={140}
+  label="Fallbacks only — Loom has no Roblox content pipeline to fetch an rbxthumb:// from, so the image half cannot be previewed."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `Avatar` | `Frame` | `size-10 rounded-full bg-muted overflow-hidden` |
+| `AvatarImage` | `ImageLabel` | `size-full rounded-full` |
+| `AvatarFallback` | `TextLabel` | `size-full rounded-full bg-muted text-sm font-medium text-muted-foreground text-center` |
+
+<ForwardedProps instance="Frame" />
+
+That is `Avatar`. `AvatarImage` forwards onto an `ImageLabel` and `AvatarFallback` onto a `TextLabel`.
+
+## The circle is drawn here, not by the primitive
+
+`Avatar.Root` renders **no instance**. It tracks whether the image loaded and hands that answer to
+`Image` and `Fallback`; it draws nothing. So unlike every other component in this tier, the visible
+container is a plain `<frame>` in the copied file, and `Avatar.Root` wraps it.
+
+That inverts the usual nesting:
+
+```tsx
+<AvatarPrimitive.Root delayMs={props.delayMs} src={props.src}>
+  <frame className={cn(avatarVariants.root({ className: props.className }))} …>
+    {props.children}
+  </frame>
+</AvatarPrimitive.Root>
+```
+
+[`Progress`](/facet/components/progress/) is built the same way, for the same reason.
+
+## Every part rounds itself
+
+<Callout title="Roblox clips to a rectangle">
+`rounded-full` appears three times — on the root, on the image and on the fallback — and it is not
+redundant. A `UICorner` rounds the instance it is on; it does not clip children to that shape.
+Round only the parent and a child that paints its own background pokes square corners out of the
+circle.
+
+`overflow-hidden` on the root is `ClipsDescendants`, which clips to the root's *rectangle* — not to
+its corner radius. It keeps a too-large image inside the box; it does not round it.
+</Callout>
+
+## Props
+
+### `Avatar`
+
+<PropTable
+  rows={[
+    {
+      name: "src",
+      type: "string",
+      description:
+        "The image source — an rbxassetid:// or rbxthumb:// URL. Read by the primitive, which decides whether the image or the fallback shows.",
+    },
+    {
+      name: "delayMs",
+      type: "number",
+      description:
+        "How long to hold the fallback back while the image loads. Stops a flash of initials on a fast load.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description: "AvatarImage and AvatarFallback, in that order.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+`AvatarFallback` takes `Text` and `className`; `AvatarImage` takes `className`.
+
+## `size-10` is the only size there is
+
+There is no `size` variant. `size-10` is stated on the root recipe, and a `className` at the call
+site cannot change it — a class written there resolves to `Size` at that call site and the recipe
+overwrites it, which is
+[measured, not predicted](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+
+A bigger avatar is an edit to the copied file:
+
+```tsx
+export const avatarVariants = {
+  root: fv("size-14 rounded-full bg-muted overflow-hidden"),
+  …
+};
+```
+
+Or a variant, if a project needs two of them — which is what the file is for.

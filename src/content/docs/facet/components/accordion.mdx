@@ -1,0 +1,175 @@
+---
+title: Accordion
+description: Seven recipe entries, two contexts, and a divider that moved to the root to survive Roblox.
+product: facet
+section: components
+sidebar:
+  order: 10
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add accordion
+```
+
+Copies `ui/accordion.tsx`, plus `lib/utils.ts` and `lib/text.tsx`. Needs
+`@facet-ui/react-variants`, `@lattice-ui/react-runtime@^0.8.0` and
+`@lattice-ui/react-accordion@^0.8.0`.
+
+```tsx
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../shared/ui/accordion";
+
+<Accordion type="single" collapsible defaultValue="saves">
+  <AccordionItem value="saves">
+    <AccordionTrigger Text="Where is my progress stored?" />
+    <AccordionContent Text="On the server, keyed to your account." />
+  </AccordionItem>
+</Accordion>
+```
+
+<FacetPreview
+  scene="AccordionScene"
+  source="ui/accordion.tsx"
+  height={200}
+  label="One item open, one closed, with a single rule between them — drawn by divide-y on the root, for the reason below."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `Accordion` | `Frame` | `flex-col w-full h-fit divide-y divide-border` |
+| `AccordionItem` | `Frame` | `flex-col w-full h-fit` |
+| `AccordionTrigger` | `TextButton` | `flex-row items-center justify-between w-full h-fit py-4` |
+| `AccordionContent` | `Frame` | `flex-col gap-2 w-full h-fit pb-4` |
+
+The trigger's label and the chevron are two more instances inside it, and the content's text is one
+more inside that. Seven recipe entries, four exported parts — the rest take no props of their own,
+and every export would cost a Luau register. See
+[the register limit](/facet/guides/component-conventions/#6-flat-named-exports).
+
+<ForwardedProps instance="Frame" />
+
+That is `AccordionItem` and `AccordionContent`. `Accordion` and `AccordionTrigger` take no
+passthrough bag.
+
+## The rule between items lives on the root
+
+shadcn draws the divider with `border-b` on each item. That class cannot work on Roblox, so this
+recipe moves the rule up to the root:
+
+```tsx
+root: fv("flex-col w-full h-fit divide-y divide-border"),
+item: fv("flex-col w-full h-fit"),
+```
+
+`border-*` lowers to a `UIStroke`, and **a `UIStroke` outlines the whole instance**. There are no
+per-side strokes, so Vela treats `border-b` as
+[unsupported and drops it](/vela-rbxts/guides/colors-and-surfaces/#borders) — silently here, because
+a recipe's classes are resolved by the Vela runtime rather than at compile time, so the compiler's
+unsupported-border diagnostic never fires. What would survive is `border-border`, which sets the
+stroke's colour and clears its transparency, and a `UIStroke` at its default thickness of 1 draws on
+all four sides. Every item would come out **boxed**, not underlined.
+
+`divide-y` has no such problem. Vela lowers it to real one-pixel frames interleaved between the
+root's children, painted by `divide-border`. Two items get one rule between them and nothing under
+the last — the same thing shadcn's `border-b last:border-b-0` renders.
+
+<Callout title="Changing the divider in your copy">
+The file is yours, so:
+
+- **A heavier rule** is `divide-y-2` on the root — the number is the thickness in pixels, and the
+  family takes `0`, `1`, `2`, `4` or `8`.
+- **No rule at all** — drop both `divide-*` classes.
+- **A rule you place yourself** — use [`Separator`](/facet/components/separator/) between items
+  instead. That is a real one-pixel frame in the flow, and it is what the registry has for dividers
+  elsewhere.
+
+What does not work is a smarter border class. `border-t`, `border-x` and every prefixed form are on
+the same unsupported list.
+</Callout>
+
+## Props
+
+### `Accordion`
+
+<PropTable
+  rows={[
+    {
+      name: "type",
+      type: '"single" | "multiple"',
+      description: "single closes the previous item when the next opens; multiple lets them accumulate.",
+    },
+    { name: "value", type: "string | string[]", description: "Controlled open item(s)." },
+    { name: "defaultValue", type: "string | string[]", description: "Uncontrolled starting state." },
+    {
+      name: "onValueChange",
+      type: "(value: string | string[]) => void",
+      description: "Fires when an item opens or closes.",
+    },
+    {
+      name: "collapsible",
+      type: "boolean",
+      description: "In single mode, whether the open item can be clicked shut again.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+### The other parts
+
+`AccordionItem` takes a required `value`, plus `disabled` and `className`. `AccordionTrigger` and
+`AccordionContent` each take `Text`, `children` and `className`.
+
+## Two contexts, and why the second one exists
+
+The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) is the set of
+open values, held on `Accordion` with `useControllableState`. A Facet context hands `isOpen(value)`
+down, because Lattice's own context is private and the chevron rotates with it.
+
+The second context is `AccordionItemContext`, and it carries one boolean:
+
+```tsx
+const AccordionItemContext = React.createContext<{ open: boolean } | undefined>(undefined);
+```
+
+Without it, `AccordionTrigger` would need to know its item's `value` to ask the first context —
+which means either passing `value` twice in the markup, or reaching into the primitive. The item
+already knows; it hands its own answer down.
+
+## The header carries no layout class
+
+```tsx
+<AccordionPrimitive.Header className="w-full h-fit">
+  <AccordionPrimitive.Trigger …>
+```
+
+No `flex-*` on the header, deliberately. A `flex-*` class lowers to a `UIListLayout` **sibling** next
+to the header's single child — and the primitive types `children` as one element, so there is no
+room for the layout instance beside it. Both axes are still declared, which is
+[rule 1](/facet/guides/component-conventions/#1-declare-both-axes-always).
+
+The same constraint is why the trigger's label and chevron arrive wrapped in a fragment: the
+primitive wants one child, and there are two things to draw.
+
+## The chevron is a rotated glyph
+
+```tsx
+<textlabel Rotation={item.open ? 180 : 0} Text="▾" … />
+```
+
+Roblox has no icon font, so `▾` is a character and "up" is the same character turned over. That is a
+[settled position](/facet/guides/component-conventions/#7-icons-are-text-glyphs-replaceable-by-slot),
+and swapping it for an `imagelabel` with your own artwork changes nothing else in the file.

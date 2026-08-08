@@ -19,7 +19,7 @@ static registry that the CLI fetches and copies into your project.
 | `@facet-ui/react-variants` | `fv()` and `cn()` — the one runtime package copied components import. | runtime, by `facet add` |
 
 All three are versioned in lockstep (`fixed` in the changesets config), published under MIT, and
-currently at **0.3.1**. You install the CLI; it installs the other two at the moment they are
+currently at **0.4.0**. You install the CLI; it installs the other two at the moment they are
 actually needed.
 
 <PackageInstall packageName="facet-rbxts" dev />
@@ -83,6 +83,13 @@ actually been built against the new minor.
 Registry components separately declare `@lattice-ui/react-runtime@^0.8.0`. 0.8.0 is what made
 `asChild` work at all — see [Components](/facet/components/button/#aschild).
 
+A component that wraps a Lattice primitive declares that primitive's package at the same floor —
+`@lattice-ui/react-checkbox@^0.8.0`, `@lattice-ui/react-dialog@^0.8.0`, and so on — and `facet add`
+installs it when the component is copied. Every entry carries the *same* spec for a given package,
+because `add` unions those strings across the install set and two spellings would both reach the
+package manager. `registry:check` enforces it; the
+[registry format reference](/facet/reference/registry-format/#validation-rules) has the rule.
+
 ## `facet init`
 
 ```bash title="Set the project up"
@@ -104,7 +111,12 @@ It asks four things (or takes the defaults with `-y`), then does five:
 <Callout title="init creates, but never edits">
 Both `vela.config.ts` and `tsconfig.json` belong to you and are routinely non-trivial — JSONC,
 comments, spreads, plugins, computed values. A pattern-matched edit that mangles one is worse than a
-printed snippet, so `init` prints. This changes only if it grows a real parser, not a smarter regex.
+printed snippet, so `init` prints.
+
+There is now exactly one file the CLI *does* edit, and it took the real parser that condition
+implied: `facet add` wraps your client entry in the providers a component declares, using
+`@babel/parser` for positions and string splices for the edit. It is behind a prompt, and it
+happens in `add` rather than `init` — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
 </Callout>
 
 The defaults, if you pass `-y`:
@@ -152,4 +164,4 @@ See [Your first component](/facet/getting-started/first-component/) for what to 
 
 - [Your first component](/facet/getting-started/first-component/) — render a `Button`.
 - [How it works](/facet/getting-started/how-it-works/) — what `add` actually does to the files.
-- [Scope and status](/facet/getting-started/scope-and-status/) — what exists at 0.3.1, and what does not.
+- [Scope and status](/facet/getting-started/scope-and-status/) — what exists at 0.4.0, and what does not.

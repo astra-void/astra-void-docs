@@ -105,6 +105,17 @@ projects are laid out by Rojo, not by module resolution.
 Every write goes through a file transaction that commits or rolls back as a unit. A failure halfway
 through `facet add card` does not leave you with a `card.tsx` whose helpers were never written.
 
+### And, for one kind of component, one edit to a file you wrote
+
+An item may declare [`providers`](/facet/reference/registry-format/#providers) — a React provider it
+needs above your whole app. Today that is [`dialog`](/facet/components/dialog/), which cannot find a
+`PlayerGui` to portal into without one.
+
+This is the only place the CLI touches a file it did not write, and it asks first. The reason it is
+worth the exception: everything else the CLI reports fails at *build* time, loudly, in front of the
+person who just ran the command. A missing provider fails at runtime, in production. See
+[wiring a provider](/facet/reference/cli/#wiring-a-provider).
+
 ## What the copied component then depends on
 
 A Facet component may only import from four places, and this is enforced by review in the Facet

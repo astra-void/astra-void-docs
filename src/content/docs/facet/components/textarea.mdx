@@ -1,0 +1,151 @@
+---
+title: Textarea
+description: The one recipe in the registry that declares no height — because the primitive grows it line by line.
+product: facet
+section: components
+sidebar:
+  order: 80
+  group: Form
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add textarea
+```
+
+Copies `ui/textarea.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-textarea@^0.8.0`.
+
+```tsx
+import {
+  Textarea,
+  TextareaDescription,
+  TextareaInput,
+  TextareaLabel,
+} from "../shared/ui/textarea";
+
+<Textarea maxRows={5} minRows={3} onValueCommit={submitReport}>
+  <TextareaLabel Text="What happened?" />
+  <TextareaInput />
+  <TextareaDescription Text="A moderator reads this — keep it to what you saw." />
+</Textarea>
+```
+
+<FacetPreview
+  scene="TextareaScene"
+  source="ui/textarea.tsx"
+  height={210}
+  label="Three rows to start, five at most. Type into it and the box grows a line at a time."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `Textarea` | `Frame` | `flex-col gap-2 w-full h-fit` |
+| `TextareaInput` | `TextBox` | `w-full rounded-md border border-input px-3 py-2 text-left text-sm font-normal text-foreground placeholder-muted-foreground focus:border-ring` |
+| `TextareaLabel` | `TextButton` | `w-full h-fit text-left text-sm font-medium text-foreground` |
+| `TextareaDescription` | `TextLabel` | `w-full h-fit whitespace-normal text-left text-xs font-normal text-muted-foreground` |
+
+Four parts, not five — there is no `TextareaMessage`. A multi-line box that needs a validation line
+can reach for [`TextFieldMessage`](/facet/components/text-field/), or the file is yours to add one.
+
+<ForwardedProps instance="TextBox" owns={["Size"]} ownedBecause="on the Y axis, which it grows with the text" />
+
+## The input declares no height
+
+```tsx
+input: fv(
+  "w-full rounded-md border border-input px-3 py-2 …",
+),
+```
+
+Rule 1 of the [conventions](/facet/guides/component-conventions/#1-declare-both-axes-always) is
+declare both axes, always — a Roblox instance with an unresolved axis renders at zero and takes the
+row above it with it. This recipe breaks that rule on purpose, and it is the only one that does.
+
+`Textarea.Input` owns `Size.Y`. It measures the wrapped text and sets the height between `minRows`
+and `maxRows` on every keystroke. A height class here would not lose an argument with the primitive —
+it would be overwritten a frame later, which is worse, because the first render would look right.
+
+<Callout title="This is the same rule as the slider's missing flex">
+Where a Lattice primitive owns a property, the recipe stays off it. [Slider](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point)
+omits `flex-*` from its track for exactly this reason, and [Switch](/facet/components/switch/#the-thumb-has-no-position)
+omits position from its thumb. A primitive that owns a property is as load-bearing as the
+`UIListLayout` that owns one.
+</Callout>
+
+## Props
+
+### `Textarea`
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled value. Pass it with onValueChange." },
+    { name: "defaultValue", type: "string", description: "Uncontrolled starting text." },
+    {
+      name: "onValueChange",
+      type: "(value: string) => void",
+      description: "Fires on every keystroke.",
+    },
+    {
+      name: "onValueCommit",
+      type: "(value: string) => void",
+      description: "Fires when the box loses focus, with the text as it stands.",
+    },
+    {
+      name: "autoResize",
+      type: "boolean",
+      description:
+        "Grow with the text. On by default; the box then sizes between minRows and maxRows.",
+    },
+    { name: "minRows", type: "number", description: "Floor for the grown height." },
+    { name: "maxRows", type: "number", description: "Ceiling. Past it the box scrolls instead." },
+    { name: "disabled", type: "boolean", description: "Blocks focus and typing." },
+    { name: "readOnly", type: "boolean", description: "Focusable, not editable." },
+    {
+      name: "invalid",
+      type: "boolean",
+      description:
+        "Carries the state into Lattice's context. The red border comes from the input's own invalid.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+### `TextareaInput`
+
+<PropTable
+  rows={[
+    { name: "invalid", type: "boolean", description: "Adds border-destructive." },
+    { name: "disabled", type: "boolean", description: "Adds opacity-50." },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the input recipe's className slot inside the component.",
+    },
+  ]}
+/>
+
+`invalid` is stated on the root **and** on the input, for
+[the reason Text field spells out](/facet/components/text-field/#invalid-is-stated-twice-and-that-is-not-a-bug):
+nothing inherits, so the context half and the appearance half are two different props on two
+different instances.
+
+## `autoResize` off
+
+With `autoResize={false}` the primitive stops touching `Size.Y`, and the recipe's missing height
+becomes the problem rule 1 warns about: give the input one.
+
+This is the rare case where a call-site `className` is the right place to do it. A class written
+there is resolved at that call site and arrives as instance properties, which the component's own
+recipe then overwrites *for the properties it also names* — and this recipe names no height, so
+`<TextareaInput className="h-24" />` survives. Anything the recipe does state, like `w-full`, does
+not. The mechanism, and why it reads backwards from `cn`'s own composition rules, is in
+[overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).

@@ -1,0 +1,122 @@
+---
+title: Switch
+description: A track and a thumb, where the thumb's travel is the primitive's job and this file only says what it looks like.
+product: facet
+section: components
+sidebar:
+  order: 60
+  group: Form
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add switch
+```
+
+Copies `ui/switch.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-switch@^0.8.0`.
+
+```tsx
+import { Switch } from "../shared/ui/switch";
+
+<Switch defaultChecked onCheckedChange={(checked) => setMuted(!checked)} />
+```
+
+<FacetPreview
+  scene="SwitchScene"
+  source="ui/switch.tsx"
+  height={150}
+  label="Off, on, and disabled. The thumb's position is Lattice's; the track's colour is this file's."
+/>
+
+<ForwardedProps
+  instance="TextButton"
+  owns={["AnchorPoint", "Position"]}
+  ownedBecause="on the thumb, which it animates between the track's edges"
+/>
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "checked",
+      type: "boolean",
+      description: "Controlled value. Pass it with onCheckedChange.",
+    },
+    {
+      name: "defaultChecked",
+      type: "boolean",
+      description: "Uncontrolled starting value. Defaults to false.",
+    },
+    {
+      name: "onCheckedChange",
+      type: "(checked: boolean) => void",
+      description: "Fires on every change, controlled or not.",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      description:
+        "Blocks the press and adds opacity-50 to the recipe's className slot.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+No `indeterminate` here, unlike [Checkbox](/facet/components/checkbox/) — a switch is on or off, and
+Lattice types it `boolean`.
+
+## Two classes, and one of them is the whole component
+
+```tsx
+export const switchVariants = {
+  root: fv("h-5 w-9 rounded-full transition duration-150"),
+  thumb: fv("size-4 rounded-full bg-background"),
+};
+```
+
+The root carries no background colour at all. It is applied from the mirrored state instead:
+
+```tsx
+const className = switchVariants.root({
+  className: cn(checked ? "bg-primary" : "bg-input", disabled && "opacity-50", props.className),
+});
+```
+
+That is the same [mirrored-state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for)
+shape `checkbox` establishes — `useControllableState` here, the primitive driven controlled from it —
+because Lattice keeps its context private and the track's colour changes with the value.
+
+## The thumb has no position
+
+<Callout title="Nothing in this file says where the thumb goes">
+`Switch.Thumb` owns `AnchorPoint` and `Position`, and animates them between the track's edges for
+whatever size the thumb turns out to be. The recipe says `size-4 rounded-full bg-background` and
+stops.
+
+Write a `left-*` or a `translate-x-*` here and you are fighting the primitive on a property it
+rewrites every frame. If you want a different travel, change the thumb's *size* or the track's — the
+geometry follows from those.
+</Callout>
+
+This is [layout is an instance, not a property](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property)
+seen from the other side: a Lattice primitive that owns a property is as load-bearing as a
+`UIListLayout` that owns one, and the recipe stays out of both.
+
+## Sizing it
+
+`h-5 w-9` on the track and `size-4` on the thumb are the only numbers in the component, and they are
+paired — a 16px thumb inside a 20px track leaves 2px of inset on each edge. Changing one means
+changing the other; there is no variant that does it for you, because the file is short enough to
+edit.
+
+A `className` at the call site cannot do it either. `h-5 w-9` is in the recipe, and the recipe
+resolves *after* the props a call-site class arrives as — see
+[overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).

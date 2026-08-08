@@ -1,6 +1,6 @@
 ---
 title: Scope and status
-description: What exists at 0.3.1, what has actually been looked at in Studio, and which decisions are still open.
+description: What exists at 0.4.0, what has actually been looked at in Studio, and which decisions are still open.
 product: facet
 section: getting-started
 sidebar:
@@ -11,37 +11,60 @@ import { Callout } from "@/components/docs/mdx";
 
 Facet is early. The whole chain works end to end — all three packages are on npm, the registry is
 live, and `npm i -D facet-rbxts` → `facet init` → `facet add button` → `rbxtsc` compiles in a
-project set up from scratch — but the registry holds ten items, and the roadmap is longer than the
-implementation.
+project set up from scratch — and the registry now holds twenty-one components. What has *not* been
+checked is how most of them look.
 
-## What ships at 0.3.1
+## What ships at 0.4.0
 
 **Every command the CLI advertises is written.** `list`, `init`, `add`, `remove`, `diff`, `doctor` —
 all implemented, all covered by tests that put a fixture project through them offline against a
 registry built into a temporary directory. See the [CLI reference](/facet/reference/cli/).
 
-**The registry holds ten items** — eight components and the two helpers they import:
+**The registry holds twenty-three items** — twenty-one components and the two helpers they import.
 
-| Item | Type | |
-| --- | --- | --- |
-| [`alert`](/facet/components/alert/) | `registry:ui` | three parts, default or destructive — and the variant goes on each |
-| [`badge`](/facet/components/badge/) | `registry:ui` | status pill that hugs its label |
-| [`button`](/facet/components/button/) | `registry:ui` | variant × size recipes, `asChild`, disabled |
-| [`card`](/facet/components/card/) | `registry:ui` | six flat parts — root, header, title, description, content, footer |
-| [`kbd`](/facet/components/kbd/) | `registry:ui` | key cap, and the registry's one deliberate typeface |
-| [`label`](/facet/components/label/) | `registry:ui` | form label |
-| [`separator`](/facet/components/separator/) | `registry:ui` | one-pixel divider, either orientation |
-| [`skeleton`](/facet/components/skeleton/) | `registry:ui` | placeholder block, deliberately without a pulse |
-| `utils` | `registry:lib` | `cn`, and `ClassValue` re-exported as `ClassName` |
-| `text` | `registry:lib` | `TextSlot` |
+The **pure-recipe tier** is a recipe plus a host element, with no Lattice primitive underneath:
 
-That completes the **pure-recipe tier** — every component that is a recipe plus a host element, with
-no Lattice primitive underneath it.
+| Item | |
+| --- | --- |
+| [`alert`](/facet/components/alert/) | three parts, default or destructive — and the variant goes on each |
+| [`badge`](/facet/components/badge/) | status pill that hugs its label |
+| [`card`](/facet/components/card/) | six flat parts — root, header, title, description, content, footer |
+| [`kbd`](/facet/components/kbd/) | key cap, and the registry's one deliberate typeface |
+| [`label`](/facet/components/label/) | form label |
+| [`separator`](/facet/components/separator/) | one-pixel divider, either orientation |
+| [`skeleton`](/facet/components/skeleton/) | placeholder block, deliberately without a pulse |
 
-<Callout title="Five of the eight have been opened in Studio">
-`button`, `badge`, `card`, `label` and `separator` have been rendered and looked at. `alert`,
-`skeleton` and `kbd` have not — they compile through `rbxtsc`, they render in the playground and in
-the previews on their pages, and that is a weaker claim.
+The **one-primitive tier** wraps a single Lattice primitive, new in 0.4.0:
+
+| Item | |
+| --- | --- |
+| [`accordion`](/facet/components/accordion/) | collapsible items, single or multiple open |
+| [`avatar`](/facet/components/avatar/) | image with a text fallback, and the circle is the wrapper's |
+| [`checkbox`](/facet/components/checkbox/) | checked, indeterminate, disabled |
+| [`progress`](/facet/components/progress/) | determinate or indeterminate bar |
+| [`radio-group`](/facet/components/radio-group/) | exactly one item checked |
+| [`scroll-area`](/facet/components/scroll-area/) | viewport with a drawn overlay scrollbar |
+| [`slider`](/facet/components/slider/) | track, range fill, draggable thumb |
+| [`switch`](/facet/components/switch/) | toggle with an animated thumb |
+| [`tabs`](/facet/components/tabs/) | list, triggers, switched panels |
+| [`text-field`](/facet/components/text-field/) | single-line input with label, description, message |
+| [`textarea`](/facet/components/textarea/) | multi-line input that grows with its text |
+| [`toggle-group`](/facet/components/toggle-group/) | two-state buttons, single or multiple pressed |
+
+Plus [`button`](/facet/components/button/), which is its own case — a recipe, a label recipe, and
+`asChild` — and the **layered tier**, which starts here:
+
+| Item | |
+| --- | --- |
+| [`dialog`](/facet/components/dialog/) | modal with overlay, header, footer, close — and a provider your app has to have |
+
+`utils` (`cn`, and `ClassValue` re-exported as `ClassName`) and `text` (`TextSlot`) are the two
+`registry:lib` items everything else imports.
+
+<Callout title="Five of the twenty-one have been opened in Studio">
+`button`, `badge`, `card`, `label` and `separator` have been rendered and looked at. **Everything
+else has not** — it compiles through `rbxtsc`, it renders in the playground and in the previews on
+these pages, and that is a weaker claim.
 
 The distinction is worth keeping because it has already cost something: compiling is a static
 result, and Roblox runtime behavior does not show up in it. Reading the emitted Luau was not enough
@@ -52,6 +75,25 @@ the only thing on screen in another typeface. Nobody caught that from the source
 **The registry is versioned.** Every push republishes the moving `r/`, and also writes an immutable
 `r/<sha>/` that never changes again. A project pins one through the `registry` field `facet.json`
 already had — see [pinning a revision](/facet/reference/facet-json/#pinning-a-revision).
+
+**`facet add` edits your client entry, once.** `dialog` declares a `PortalProvider`, and a missing
+one is the only failure on this page that happens at *runtime* rather than at build time. So the CLI
+parses the entry, asks, and writes it — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
+
+## What the one-primitive tier established
+
+Three rules came out of building twelve components on twelve primitives, and every component after
+them inherits all three. They are written up in
+[Component conventions](/facet/guides/component-conventions/#wrapping-a-lattice-primitive).
+
+1. **State a component styles by is mirrored, not reached for.** Lattice keeps its contexts private,
+   so a wrapper holds the value itself with `useControllableState` — the same hook the primitive
+   uses — and drives the primitive controlled.
+2. **A `className` on a primitive call site has to be visible to the transformer.** Vela rewrites the
+   call sites it can *see*; a `className` tucked into a shared spread reaches the primitive as a raw
+   prop and is dropped in silence.
+3. **Where the primitive owns a property, the recipe stays off it.** The slider's track carries no
+   `flex-*`, the switch's thumb no position, the textarea's input no height.
 
 ## What is not covered
 
@@ -67,6 +109,13 @@ screen, it is because someone opened Studio and looked — that is still the onl
 about runtime behavior, and it is a different and stronger claim than "the preview looks right".
 </Callout>
 
+- **The geometry of the one-primitive tier is unverified.** All twelve compile and render, but what
+  the type system cannot see is thumb travel, range fill, scrollbar placement and textarea growth.
+  Those are the four things Studio still has to answer for that tier.
+- **`dialog`'s geometry is unverified too**, and its three questions are separate: whether the panel
+  lands centred, whether the dim covers the screen beneath it, and whether the close ✕ reaches the
+  panel's right edge. The last one the preview *cannot* show — Loom does not lay out what `self-end`
+  lowers to. See [the corner ✕](/facet/components/dialog/#the-corner--is-not-a-corner-).
 - **No `rbxtsc` check in the CLI's own test suite.** `test/e2e.test.ts` runs `init`, `add` and
   `doctor` against a temporary registry, offline, with packages faked into `node_modules` at chosen
   versions — which is the only way to assert on a project sitting below a floor. What it does not do
@@ -75,8 +124,7 @@ about runtime behavior, and it is a different and stronger claim than "the previ
 - **No image icons.** Facet renders `▾`, `✓`, `✕` as text glyphs and exposes the slot, so a project
   that wants real artwork passes its own. That is a
   [settled position](/facet/guides/component-conventions/#7-icons-are-text-glyphs-replaceable-by-slot),
-  not a gap — shipping assets means uploading to somebody's account and owning the moderation and
-  licensing forever.
+  not a gap.
 - **No blocks.** `login-form`, `settings-panel`, `inventory-grid`, `shop-row` are on the roadmap,
   after the singles settle.
 - **Pinning is per project, not per component.** A revision says "this project builds against that
@@ -89,23 +137,29 @@ about runtime behavior, and it is a different and stronger claim than "the previ
 The build order is by what each component needs underneath it, because that is how the conventions
 get proven before anything complicated depends on them.
 
-**Nothing beneath them** — pure recipe plus a host element. **Done**, as of 0.3.1.
+**Nothing beneath them** — pure recipe plus a host element. **Done.**
 
 `aspect-ratio` came off this list rather than getting built: Vela lowers `aspect-*` onto
 `UIAspectRatioConstraint`, so it is
 [a class rather than a component](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property).
 
-**One Lattice primitive** — the tier being built now:
-`avatar` · `checkbox` · `switch` · `progress` · `slider` · `toggle-group` · `tabs` ·
-`accordion` · `text-field` · `textarea` · `radio-group` · `scroll-area`
+**One Lattice primitive** — **done as of 0.4.0**, pending Studio verification.
 
-`toggle` came off this list too, for now: `@lattice-ui/react-toggle` does not exist, and a
+`toggle` came off this list without being built: `@lattice-ui/react-toggle` does not exist, and a
 standalone pressed state is exactly the controlled/uncontrolled logic that belongs in Lattice rather
-than in a copied file. It returns when the primitive does — or a one-item `toggle-group` covers it.
+than in a copied file. It returns when the primitive does — or a
+[one-item `toggle-group`](/facet/components/toggle-group/#toggle-is-not-in-the-registry) covers it.
 
-**Layered** — needs portals, focus trapping, or popper:
-`dialog` · `alert-dialog` · `popover` · `tooltip` · `dropdown-menu` · `context-menu` · `select` ·
-`combobox` · `toast` · `sheet` · `command`
+**Layered** — needs portals, focus trapping, or popper. [`dialog`](/facet/components/dialog/) is
+built; the rest is `alert-dialog` · `popover` · `tooltip` · `dropdown-menu` · `context-menu` ·
+`select` · `combobox` · `toast` · `sheet` · `command`.
+
+Each of them declares the same `PortalProvider` `dialog` does, so the entry edit happens once.
+`dropdown-menu` will wrap `@lattice-ui/react-menu` — there is no `react-dropdown-menu` — and
+`alert-dialog` and `sheet` are both `react-dialog` again with different chrome.
+
+**Blocks** — multi-file compositions, once the singles settle: `login-form` · `settings-panel` ·
+`inventory-grid` · `shop-row`.
 
 **Roblox-native, with no shadcn counterpart**, worth their own pass rather than being wedged into
 that list: `viewport` (a `ViewportFrame` with a model), `billboard`, `surface`, `player-list`,
@@ -125,6 +179,8 @@ Each of these is written down in the repo with the reasoning kept where it can b
 | **Icons are text glyphs** | Replaceable by slot. This was listed as blocking the layered components; it does not. [→](/facet/guides/component-conventions/#7-icons-are-text-glyphs-replaceable-by-slot) |
 | **Ratio is a class, not a component** | Vela lowers `aspect-*` onto the native constraint, so a wrapper would add an instance to carry what an existing instance carries. [→](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property) |
 | **One recipe object per file** | Luau allows 200 module-scope locals and Vela inlines its runtime per file, so every export costs a register. `card` stopped loading over exactly this. [→](/facet/guides/component-conventions/#6-flat-named-exports) |
+| **The scrim is black** | The one class in the registry that names a colour instead of a role. No role is dark in both modes, and a token is too large a commitment for one class in one component. [→](/facet/components/dialog/#the-scrim) |
+| **A component declares its own providers** | `RegistryItem.providers`, so the next layered component is wired correctly by a CLI released before it existed. [→](/facet/reference/registry-format/#providers) |
 | **npm OIDC trusted publishing** | No `NPM_TOKEN` in repository settings. Publishes from GitHub Actions with provenance attestations. |
 
 ## Decisions that are open
@@ -148,7 +204,11 @@ Each of these is written down in the repo with the reasoning kept where it can b
   advertising it, to keep it as the internal composition slot it actually is, or to push for a Vela
   change that hands a component its `className` as a string instead of pre-resolving it. Nothing is
   decided.
-- **Whether the registry should make `asChild`'s missing label easier.** The chrome crosses `Slot`
-  whole; the label does not, because `TextSlot` never renders on that path. `buttonLabelVariants` is
-  exported so a consumer can state it themselves, but whether that pairing should be documented,
-  automated, or something else is unresolved. See [Button](/facet/components/button/#aschild).
+- **Whether the registry should make `asChild`'s missing label easier.** `asChild` itself is no
+  longer in question — it works as of Lattice 0.8.0, verified in Studio against a bare `<textbutton>`
+  child, with the recipe's background, size, hover variant and re-parented `UICorner`/`UIListLayout`/
+  `UIPadding` all crossing `Slot` intact. What does *not* cross is the label: `TextSlot` never
+  renders on that path, so the child draws its own text at Roblox's 8px near-black default.
+  `buttonLabelVariants` is exported so a consumer can state it themselves, but whether that pairing
+  should be documented, automated, or something else is unresolved. See
+  [Button](/facet/components/button/#aschild).

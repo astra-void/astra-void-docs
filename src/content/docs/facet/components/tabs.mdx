@@ -1,0 +1,122 @@
+---
+title: Tabs
+description: A list, some triggers, and switched panels — plus one prop you have to pass or nothing looks selected.
+product: facet
+section: components
+sidebar:
+  order: 110
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add tabs
+```
+
+Copies `ui/tabs.tsx`, plus `lib/utils.ts` and `lib/text.tsx`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-tabs@^0.8.0`.
+
+```tsx
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../shared/ui/tabs";
+
+<Tabs defaultValue="gear">
+  <TabsList>
+    <TabsTrigger value="gear" Text="Gear" />
+    <TabsTrigger value="stats" Text="Stats" />
+  </TabsList>
+  <TabsContent value="gear">…</TabsContent>
+  <TabsContent value="stats">…</TabsContent>
+</Tabs>
+```
+
+<FacetPreview
+  scene="TabsScene"
+  source="ui/tabs.tsx"
+  height={150}
+  label="Two live triggers and one disabled. The selected trigger takes bg-background; its label takes text-foreground."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `Tabs` | `Frame` | `flex-col gap-2 w-full h-fit` |
+| `TabsList` | `Frame` | `flex-row items-center justify-center gap-1 w-fit h-9 rounded-lg bg-muted p-1` |
+| `TabsTrigger` | `TextButton` | `flex-row items-center justify-center h-7 w-fit px-3 rounded-md transition duration-150` |
+| `TabsContent` | `Frame` | `flex-col gap-2 w-full h-fit` |
+
+<ForwardedProps instance="Frame" />
+
+That is `Tabs`, `TabsList` and `TabsContent`. `TabsTrigger` has no passthrough bag — it renders a
+button and a label, and there is no single instance for an unknown prop to land on.
+
+## Pass `defaultValue`
+
+<Callout title="Without one, nothing styles as selected">
+Lattice's `Tabs.Root` has its own fallback: with no value it selects the first enabled trigger. The
+[mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) in this file
+cannot see that decision — it holds `undefined`, so `selected` is false for every trigger, and the
+list renders with nothing highlighted while the content panel below it switches correctly.
+
+It compiles, it works, and it looks broken. Give `Tabs` a `defaultValue` (or a controlled `value`).
+</Callout>
+
+This is the sharp edge of mirroring a private context: the mirror is only as good as what it was
+told, and a fallback that lives inside the primitive is exactly what it was not told.
+
+## Props
+
+### `Tabs`
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Controlled value. Pass it with onValueChange." },
+    {
+      name: "defaultValue",
+      type: "string",
+      description: "Uncontrolled starting value. Effectively required — see above.",
+    },
+    {
+      name: "onValueChange",
+      type: "(value: string) => void",
+      description: "Fires when a different trigger is selected.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+### `TabsTrigger` and `TabsContent`
+
+`TabsTrigger` takes a required `value`, plus `disabled`, `Text`, `children` and `className`.
+`TabsContent` takes a required `value`, plus `children` and `className`.
+
+## The selected state lands on two instances
+
+```tsx
+<TabsPrimitive.Trigger
+  className={tabsVariants.trigger({
+    className: cn(selected && "bg-background", disabled && "opacity-50", props.className),
+  })}
+>
+  <TextSlot className={cn(tabsVariants.triggerLabel(), selected && "text-foreground")}>
+```
+
+The surface takes `bg-background`; the label takes `text-foreground` over its resting
+`text-muted-foreground`. Two classes on two instances, because nothing inherits — the same shape as
+[`Toggle group`](/facet/components/toggle-group/#the-pressed-state-and-where-it-lands).
+
+The state classes sit **inside** the recipe's slot and ahead of `props.className`, which is
+[the one rule](/facet/guides/variants-and-classes/#the-one-rule): resolution is last-token-wins, so
+anything after the consumer's class is an override they cannot undo.
+
+## `w-fit` on the list, `h-9` on the list
+
+The list hugs its triggers horizontally and states a fixed height, which is what gives the pill its
+shape: `p-1` insets the `h-7` triggers by 4px on each edge inside the `h-9` track. Changing one
+number means changing the other — there is no variant, because the file is short enough to edit.

@@ -1,0 +1,175 @@
+---
+title: Toggle group
+description: A set of two-state buttons — and the component that had to write its `className` out twice to keep the compiler able to see it.
+product: facet
+section: components
+sidebar:
+  order: 90
+  group: Form
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add toggle-group
+```
+
+Copies `ui/toggle-group.tsx`, plus `lib/utils.ts` and `lib/text.tsx`. Needs
+`@facet-ui/react-variants`, `@lattice-ui/react-runtime@^0.8.0` and
+`@lattice-ui/react-toggle-group@^0.8.0`.
+
+```tsx
+import { ToggleGroup, ToggleGroupItem } from "../shared/ui/toggle-group";
+
+<ToggleGroup type="single" defaultValue="grid" onValueChange={setView}>
+  <ToggleGroupItem value="list" Text="List" />
+  <ToggleGroupItem value="grid" Text="Grid" />
+</ToggleGroup>
+```
+
+<FacetPreview
+  scene="ToggleGroupScene"
+  source="ui/toggle-group.tsx"
+  height={140}
+  label="Single on top, multiple below. A pressed item takes bg-accent and its label takes text-accent-foreground."
+/>
+
+## The parts
+
+| Part | Renders | Classes |
+| --- | --- | --- |
+| `ToggleGroup` | `Frame` | `flex-row items-center gap-1 w-fit h-fit` |
+| `ToggleGroupItem` | `TextButton` | `flex-row items-center justify-center h-9 w-fit px-3 rounded-md transition duration-150 hover:bg-muted` |
+
+<ForwardedProps instance="Frame" />
+
+That is the root. `ToggleGroupItem` takes no passthrough bag — it renders a button and a label, and
+there is no single instance an unknown prop should land on.
+
+## Props
+
+### `ToggleGroup`
+
+<PropTable
+  rows={[
+    {
+      name: "type",
+      type: '"single" | "multiple"',
+      description:
+        "Required. single keeps at most one item pressed; multiple lets them accumulate. This is what decides whether value is a string or an array.",
+    },
+    {
+      name: "value",
+      type: "string | string[]",
+      description: "Controlled value. A string under single, an array under multiple.",
+    },
+    { name: "defaultValue", type: "string | string[]", description: "Uncontrolled starting value." },
+    {
+      name: "onValueChange",
+      type: "(value: string | string[] | undefined) => void",
+      description:
+        "Fires on every change. Under single it can fire with undefined — pressing the pressed item clears the selection.",
+    },
+    { name: "disabled", type: "boolean", description: "Disables every item in the group." },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+### `ToggleGroupItem`
+
+<PropTable
+  rows={[
+    { name: "value", type: "string", description: "Required. What this item contributes." },
+    { name: "disabled", type: "boolean", description: "Disables this item alone." },
+    {
+      name: "Text",
+      type: "string",
+      description: "The label. Drawn by TextSlot as a child TextLabel, not by the button.",
+    },
+    {
+      name: "children",
+      type: "React.ReactNode",
+      description: "An alternative to Text — an icon, a row, whatever the item should contain.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description: "Threaded into the item recipe's className slot inside the component.",
+    },
+  ]}
+/>
+
+## `className` is written out on both branches
+
+This is the component that turned a Vela rule into a convention. The root is rendered twice, once
+per arm of `type`:
+
+```tsx
+const className = toggleGroupVariants.root({ className: props.className });
+
+{props.type === "multiple" ? (
+  <ToggleGroupPrimitive.Root className={className} type="multiple" … {...passthrough} />
+) : (
+  <ToggleGroupPrimitive.Root className={className} type="single" … {...passthrough} />
+)}
+```
+
+The obvious tidy-up — folding `className` into the shared `passthrough` bag — is the thing that
+breaks it.
+
+<Callout title="Vela rewrites the call sites it can see">
+A `className` written as an **attribute** is a call site the transformer resolves. A `className`
+tucked inside a spread is just a key in an object; it reaches the primitive as a raw string prop and
+is dropped in silence, with no diagnostic. The component renders unstyled and nothing says why.
+
+Write it as an attribute. Every component in the registry does, including the ones where a spread
+would read better.
+</Callout>
+
+Two branches rather than a cast, because the primitive's props are a discriminated union over `type`
+and the mirrored value is the union's full width. One branch per arm keeps the narrowing honest.
+
+## The pressed state, and where it lands
+
+The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) is the
+group's value, held with `useControllableState` and handed to each item through a Facet context —
+Lattice's own is private, and each item's surface changes with whether it is pressed.
+
+```tsx
+className={toggleGroupVariants.item({
+  className: cn(pressed && "bg-accent hover:bg-accent", disabled && "opacity-50", props.className),
+})}
+```
+
+`hover:bg-accent` is repeated on the pressed branch on purpose. The base recipe has
+`hover:bg-muted`, and last-token-wins means the later `hover:bg-accent` replaces it — without it, a
+pressed item would go *lighter* under the cursor than it is at rest.
+
+The label's colour is a second class on a second instance:
+
+```tsx
+<TextSlot className={cn(toggleGroupVariants.label(), pressed && "text-accent-foreground")}>
+```
+
+Nothing inherits, so the surface and the text state their halves separately — the same shape as
+[`Alert`](/facet/components/alert/#variant-goes-on-every-part) and
+[`Text field`](/facet/components/text-field/#invalid-is-stated-twice-and-that-is-not-a-bug).
+
+## `toggle` is not in the registry
+
+There is no standalone `Toggle`, and it is not an oversight: `@lattice-ui/react-toggle` does not
+exist. A single pressed button is exactly the controlled/uncontrolled state logic that belongs in
+Lattice rather than in a file you copy, so it waits for the primitive.
+
+A one-item group covers it today:
+
+```tsx
+<ToggleGroup type="single">
+  <ToggleGroupItem value="muted" Text="Mute" />
+</ToggleGroup>
+```

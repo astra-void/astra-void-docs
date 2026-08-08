@@ -1,0 +1,161 @@
+---
+title: Checkbox
+description: The first component with a Lattice primitive underneath it, and the first that has to hold a copy of the state it styles by.
+product: facet
+section: components
+sidebar:
+  order: 20
+  group: Form
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add checkbox
+```
+
+Copies `ui/checkbox.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-checkbox@^0.8.0`.
+
+```tsx
+import { Checkbox } from "../shared/ui/checkbox";
+
+<Checkbox defaultChecked onCheckedChange={(checked) => print(checked)} />
+```
+
+<FacetPreview
+  scene="CheckboxScene"
+  source="ui/checkbox.tsx"
+  height={180}
+  label="Unchecked, checked, indeterminate, disabled. The mark is a text glyph, not an image."
+/>
+
+<ForwardedProps instance="TextButton" />
+
+## Props
+
+<PropTable
+  rows={[
+    {
+      name: "checked",
+      type: 'boolean | "indeterminate"',
+      description:
+        "Controlled value. Pass it with onCheckedChange to drive the box from your own state.",
+    },
+    {
+      name: "defaultChecked",
+      type: 'boolean | "indeterminate"',
+      description: "Uncontrolled starting value. Defaults to false.",
+    },
+    {
+      name: "onCheckedChange",
+      type: "(checked: boolean | \"indeterminate\") => void",
+      description: "Fires on every change, controlled or not.",
+    },
+    {
+      name: "disabled",
+      type: "boolean",
+      description:
+        "Blocks the press and adds opacity-50 to the recipe's className slot.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+There is no `Text` and no `children`: the box draws a glyph and nothing else. A label beside it is a
+separate [`Label`](/facet/components/label/) in a `flex-row` frame, the same pairing shadcn writes.
+
+## The state is mirrored, not reached for
+
+This is the first thing every component in this tier had to solve, and the reason is one line of
+Lattice's design:
+
+```tsx
+const [checked, setChecked] = useControllableState<CheckedState>({
+  value: props.checked,
+  defaultValue: props.defaultChecked ?? false,
+  onChange: props.onCheckedChange,
+});
+```
+
+Lattice keeps its contexts **private**. `Checkbox.Root` knows whether it is checked; nothing outside
+the primitive can read that. But the border and the fill are this file's job — `border-input` when
+clear, `border-primary bg-primary` when not — so the wrapper needs the same answer.
+
+The way out is not to reach into the primitive. It is to hold the value here with
+`useControllableState` — *the same hook the primitive uses* — and then drive the primitive
+**controlled** from it. One copy of the state, and it lives in the file you own.
+
+<Callout title="This is the shape, not a special case">
+`switch`, `tabs`, `toggle-group`, `accordion` and `radio-group` all do exactly this. Where a
+component styles by a state, the state is mirrored. Where it does not — `progress` maps a number to
+a width, `radio-group`'s inner dot is mounted and unmounted by the primitive — there is no mirror,
+because nothing here needed to know.
+</Callout>
+
+## State classes go inside the slot
+
+```tsx
+const className = checkboxVariants.root({
+  className: cn(
+    checked !== false && "border-primary bg-primary",
+    disabled && "opacity-50",
+    props.className,
+  ),
+});
+```
+
+Note the order: the state classes come **before** `props.className`, inside the recipe's slot.
+Resolution is last-token-wins and `cn` does not merge conflicts, so anything appended *after* the
+consumer's class would be an override the consumer cannot undo. That is the
+[one rule](/facet/guides/variants-and-classes/#the-one-rule) the whole registry follows.
+
+`checked !== false` rather than `checked === true`: indeterminate is checked-enough to paint.
+
+## Three parts, one recipe object
+
+```tsx
+export const checkboxVariants = {
+  root: fv("size-4 rounded-sm border border-input transition duration-150"),
+  indicator: fv("size-full flex-row items-center justify-center"),
+  glyph: fv("size-fit text-xs font-bold text-primary-foreground text-center"),
+};
+```
+
+`font-bold` on the glyph is load-bearing, and not for weight. Vela leaves `FontFace` alone when no
+`font-*` token appears, and Roblox's untouched default is LegacyArial — which is
+[the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes). The
+glyph is its own `textlabel` and nothing inherits, so it states its own typeface like every other
+text instance in the registry.
+
+`size-fit` on a glyph inside a `size-full` indicator is what centres it: the indicator does the
+`items-center justify-center`, and the glyph is only as big as the character.
+
+## The mark is a text glyph
+
+```tsx
+<textlabel Text={checked === "indeterminate" ? "–" : "✓"} … />
+```
+
+Roblox has no icon font, so `✓` and `–` are characters. That is a
+[settled position](/facet/guides/component-conventions/#7-icons-are-text-glyphs-replaceable-by-slot)
+rather than a shortcut — shipping images means owning the upload, the moderation and the licensing
+forever. The file is yours: swap the `textlabel` for an `imagelabel` with your own asset and nothing
+else in the component changes.
+
+## Indeterminate is a value, not a flag
+
+`CheckedState` is `boolean | "indeterminate"`, so the third state travels through the same prop as
+the other two. A parent checkbox over a list of children is the case it exists for:
+
+```tsx
+<Checkbox
+  checked={allChecked ? true : someChecked ? "indeterminate" : false}
+  onCheckedChange={(next) => setAll(next === true)}
+/>
+```

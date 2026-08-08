@@ -211,6 +211,103 @@ export function Thing(props: ThingProps) {
 }
 ```
 
+## Wrapping a Lattice primitive
+
+Everything above holds for a component that is a recipe plus a host element. Twelve of the
+components added in 0.4.0 sit on a Lattice primitive instead, and three more rules came out of
+building them — written once here rather than twelve times in the files.
+
+### A. State you style by is mirrored, not reached for
+
+Lattice keeps its contexts **private**. `Checkbox.Root` knows whether it is checked; nothing outside
+the primitive can read that. But the border and the fill are the wrapper's job, so the wrapper needs
+the same answer.
+
+The way out is not to reach in. Hold the value in the copied file with `useControllableState` — the
+same hook the primitive uses — and drive the primitive **controlled** from it:
+
+```tsx
+const [checked, setChecked] = useControllableState<CheckedState>({
+  value: props.checked,
+  defaultValue: props.defaultChecked ?? false,
+  onChange: props.onCheckedChange,
+});
+
+<CheckboxPrimitive.Root checked={checked} onCheckedChange={setChecked} className={…}>
+```
+
+One copy of the state, and it lives in the file you own. Where a component does *not* style by a
+state, there is no mirror: [`progress`](/facet/components/progress/) maps a number to a width and
+[`radio-group`](/facet/components/radio-group/#half-the-state-is-mirrored-half-is-not)'s inner dot is
+mounted and unmounted by the primitive.
+
+The cost is that the mirror only knows what it was told. `Tabs.Root` falls back to the first enabled
+trigger when it has no value, and the mirror cannot see that decision — so
+[`tabs` needs a `defaultValue`](/facet/components/tabs/#pass-defaultvalue) or nothing styles as
+selected.
+
+### B. A `className` on a primitive call site has to be an attribute
+
+Vela rewrites the call sites it can **see**. Written as an attribute, `className` is resolved. Folded
+into a shared spread, it is just a key in an object — it reaches the primitive as a raw string prop,
+is dropped in silence, and the component renders unstyled with no diagnostic.
+
+```tsx
+// resolved
+<ToggleGroupPrimitive.Root className={className} type="single" {...passthrough} />
+
+// dropped, silently
+<ToggleGroupPrimitive.Root type="single" {...{ className, ...passthrough }} />
+```
+
+[`toggle-group`](/facet/components/toggle-group/#classname-is-written-out-on-both-branches) is where
+this bit, because it renders its root twice and the shared spread was the obvious tidy-up.
+
+### C. Where the primitive owns a property, the recipe stays off it
+
+A primitive that writes `Size` or `Position` every frame is as load-bearing as the `UIListLayout`
+that owns one, and rule 5 applies to both. Three components omit a class they would otherwise be
+required to have:
+
+| Component | What it omits | Who owns it |
+| --- | --- | --- |
+| [`slider`](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point) | `flex-*` on the track | the range's fill and the thumb's travel |
+| [`switch`](/facet/components/switch/#the-thumb-has-no-position) | any position on the thumb | `Switch.Thumb`, which animates it |
+| [`textarea`](/facet/components/textarea/#the-input-declares-no-height) | a height on the input | `Textarea.Input`, which grows it by row |
+
+The failure mode is the one that looks like it works: a declared width on
+[`progress`](/facet/components/progress/#the-indicator-has-no-width)'s indicator renders correctly on
+mount and is overwritten as soon as the value moves.
+
+### D. A forwarded prop bag crosses a boundary widened
+
+`toSlotProps` is the crossing point. The typed passthrough bag collides with the runtime host's `ref`
+and with primitives that type `children` as a *single* element — what `asChild` merges onto — so
+several files add a local `forwardProps` that widens the bag and drops `children` from its type
+alone. The bag never carries one; `children` is always an own prop.
+
+## Wrapping a layered primitive
+
+[`dialog`](/facet/components/dialog/) is the first, and three more things came out of it.
+
+**A `PortalProvider` has to be above the app.** `Dialog.Portal` reads a strict context for the
+`BasePlayerGui` it renders into. Missing it *throws on open* rather than rendering nowhere — which is
+the better of the two failures, and still the only build-clean runtime failure in the registry. The
+component declares it, so `facet add` can [offer to write it](/facet/reference/cli/#wiring-a-provider)
+and `facet doctor` can notice when it goes missing.
+
+**The styled panel is a frame inside the primitive's content, never the content itself.** The
+primitive forces `Size` on its own host so the layer spans the screen, *and* takes the first host
+element under it as the boundary an outside press is measured against. A `className` there fights the
+first and — through the `UICorner` Vela prepends for `rounded-*` — quietly becomes the second.
+
+**A class forwarded to another component has to reach one `className` expression.** Vela resolves a
+`className` at the call site and hands the component the resolved *properties*, so a class routed
+through a wrapper's `className` prop is overwritten by that wrapper's own recipe. `dialog` spells the
+prop [`overlayClassName`](/facet/components/dialog/#overlayclassname-not-classname) and merges it
+where the overlay actually resolves. It is the
+[`TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one level up.
+
 ## Two things about spread order
 
 **Neutral defaults first.** Roblox instance defaults are themselves a look — a bare `textbutton` is

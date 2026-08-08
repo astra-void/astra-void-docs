@@ -4,7 +4,7 @@ description: A one-pixel divider — and the only component whose background is 
 product: facet
 section: components
 sidebar:
-  order: 50
+  order: 90
   group: Display
 ---
 
@@ -72,8 +72,10 @@ component in the registry that needs no automatic sizing at all. `h-px` is one l
 spacing step.
 
 `h-full` on the vertical orientation means the parent has to have a resolved height. Inside a
-`flex-row` container that hugs its content, that is not automatic; give the container a height, or
-give the separator a concrete one through `className`.
+`flex-row` container that hugs its content, that is not automatic — give the container a height. Not
+the separator: a `className` at the call site resolves to `Size` there and the recipe, which names
+both axes, overwrites it. See
+[overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 
 ## The one component that keeps its background
 

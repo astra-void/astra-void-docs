@@ -175,6 +175,18 @@ What still crosses the boundary is any instance property the component's classes
 `LayoutOrder`, `Position`, `Visible`, `ZIndex`, event handlers. Those arrive through passthrough and
 survive, because nothing overwrites them.
 
+**That includes the properties a call-site `className` resolved to**, which is what makes this
+confusing rather than merely inconvenient: the class list is not dropped as a unit, it is dropped
+property by property.
+
+```tsx
+<ScrollArea className="h-32 rounded-md border border-border" />
+```
+
+`rounded-md` and `border-border` land — the root recipe names no corner and no stroke. `h-32` does
+not: the recipe says `h-full`, and it resolves last. Two thirds of the class list works, which reads
+as "the class worked" right up until the size is wrong.
+
 ### Why the `className` prop exists at all
 
 It is not decoration. Inside the component it is a real slot that a *sibling* recipe or a wrapper in

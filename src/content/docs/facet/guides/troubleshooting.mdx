@@ -111,6 +111,66 @@ applied and the child draws its own text at Roblox's default. Style the child yo
 `FontFace` arrive as ordinary props. A component that accepts a `className` prop and re-applies it
 inside drops those props instead. `TextSlot` takes no `className` for this reason.
 
+## The dialog throws the first time it opens
+
+```
+[PortalProvider] context is undefined. Wrap components with <PortalProvider.Provider>.
+```
+
+**There is no `PortalProvider` above your app.** `Dialog.Portal` reads the `PlayerGui` it renders
+into from a strict context. Everything before this point succeeds — it compiles, it type-checks, it
+ships — and the failure lands on a player pressing the button.
+
+The `.Provider` in the message is Lattice's generic strict-context wording; the component to reach
+for is `PortalProvider` itself.
+
+```tsx title="src/client/main.client.tsx"
+import { PortalProvider } from "@lattice-ui/react-layer";
+
+root.render(
+  <PortalProvider container={playerGui}>
+    <App />
+  </PortalProvider>,
+);
+```
+
+One wrapper for the whole app, not one per dialog. `facet add dialog` offers to write it for you —
+[what it does and when it refuses](/facet/reference/cli/#wiring-a-provider) — and `facet doctor`
+reports it missing.
+
+## `border-b` boxes my element instead of underlining it
+
+**A one-sided border is not a thing Roblox can draw.** `border-*` lowers to a `UIStroke`, which
+outlines the whole instance, so Vela treats every side-specific key — `border-b`, `border-t`,
+`border-x` and their prefixed forms — as
+[unsupported and drops it](/vela-rbxts/guides/colors-and-surfaces/#borders), silently. What is left
+is `border-border`, which colours a stroke that then draws on all four sides.
+
+Reach for `divide-x` / `divide-y` on the parent instead: Vela lowers those to real one-pixel frames
+interleaved between its children, so a stack gets a rule between each pair and none after the last.
+Where you need a single rule in a specific place, put a
+[`Separator`](/facet/components/separator/) in the flow by hand.
+
+The registry's `accordion` is the worked example — it carries `divide-y divide-border` on its root
+for exactly this reason. See
+[Accordion](/facet/components/accordion/#the-rule-between-items-lives-on-the-root).
+
+## A component ignores the size I gave it
+
+**The recipe names that property, so it wins.** This is the
+[call-site `className`](#a-classname-i-pass-to-a-component-is-ignored) problem in its most confusing
+form, because *some* of the class list survives:
+
+```tsx
+<ScrollArea className="h-32 rounded-md border border-border" />
+```
+
+`rounded-md` and `border-border` reach the instance — the root recipe names neither a corner nor a
+stroke. `h-32` does not: the recipe says `h-full`, and a component's class-derived props are emitted
+after its spreads. So the box takes its parent's height while looking like the class worked.
+
+Put the size on a wrapper frame, or edit the copied file.
+
 ## A `className` I pass to a component is ignored
 
 **Expected — it cannot work.** `<Button className="bg-destructive" />` renders exactly like

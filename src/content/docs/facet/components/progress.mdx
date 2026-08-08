@@ -1,0 +1,101 @@
+---
+title: Progress
+description: A track and a fill, where the fill's width is the value — and this file names neither number.
+product: facet
+section: components
+sidebar:
+  order: 70
+  group: Display
+---
+
+import { Callout, FacetPreview, ForwardedProps, PropTable } from "@/components/docs/mdx";
+
+```bash
+npx facet-rbxts add progress
+```
+
+Copies `ui/progress.tsx`, plus `lib/utils.ts`. Needs `@facet-ui/react-variants`,
+`@lattice-ui/react-runtime@^0.8.0` and `@lattice-ui/react-progress@^0.8.0`.
+
+```tsx
+import { Progress } from "../shared/ui/progress";
+
+<Progress value={72} />
+<Progress indeterminate />
+```
+
+<FacetPreview
+  scene="ProgressScene"
+  source="ui/progress.tsx"
+  height={170}
+  label="Two determinate bars and the indeterminate sweep. The sweep is motion, not a class."
+/>
+
+<ForwardedProps instance="Frame" owns={["Size"]} ownedBecause="on the indicator, which it animates from the value" />
+
+## Props
+
+<PropTable
+  rows={[
+    { name: "value", type: "number", description: "How far along. Read against max." },
+    { name: "max", type: "number", description: "The end. Defaults to 100." },
+    {
+      name: "indeterminate",
+      type: "boolean",
+      description:
+        "Sweep the indicator back and forth instead of mapping value — for work with no known end.",
+    },
+    {
+      name: "className",
+      type: "ClassName",
+      description:
+        "Threaded into the root recipe's className slot inside the component. A class written at a Vela-compiled call site never reaches it — see Overriding from the call site.",
+    },
+  ]}
+/>
+
+There is no `Text`, no label and no percentage readout. A progress bar in this registry is two
+rectangles; the words above it are a [`Label`](/facet/components/label/) you place yourself.
+
+## The primitive draws nothing either
+
+```tsx
+<ProgressPrimitive.Root indeterminate={props.indeterminate} max={props.max} value={props.value}>
+  <frame className={cn(progressVariants.root({ className: props.className }))} …>
+    <ProgressPrimitive.Indicator className={cn(progressVariants.indicator())} />
+  </frame>
+</ProgressPrimitive.Root>
+```
+
+`Progress.Root` renders no instance — it turns `value` and `max` into a ratio and nothing else — so
+the track is a plain `<frame>` in the copied file, with the primitive wrapped around it. Same
+inversion as [`Avatar`](/facet/components/avatar/#the-circle-is-drawn-here-not-by-the-primitive).
+
+## The indicator has no width
+
+```tsx
+export const progressVariants = {
+  root: fv("h-2 w-full rounded-full bg-secondary overflow-hidden"),
+  indicator: fv("rounded-full bg-primary"),
+};
+```
+
+Two classes on the indicator, and neither is a size. Its `Size` **is** the value: Lattice's motion
+owns the property, animates it as the number moves, and sweeps it end to end when `indeterminate`.
+
+<Callout title="A width class here would win the first frame and lose every one after">
+That is the failure mode worth naming, because it is the one that looks like it works. Declaring
+`w-1/2` on the indicator renders a half-full bar on mount and then gets overwritten as soon as the
+value changes. [Textarea](/facet/components/textarea/#the-input-declares-no-height) and
+[Slider](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point) omit a property for
+the same reason.
+</Callout>
+
+`overflow-hidden` on the root is what keeps the fill's square end inside the rounded track:
+`ClipsDescendants` clips to the rectangle, and the indicator's own `rounded-full` does the corners.
+
+## `indeterminate` is not a value
+
+`<Progress indeterminate />` ignores `value` entirely. Use it for work whose end you cannot measure
+— a server round trip, an asset load with no progress signal — rather than passing a fake number
+that never advances.
