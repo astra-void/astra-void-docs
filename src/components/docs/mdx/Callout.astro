@@ -14,7 +14,11 @@ const { title = "Note" } = Astro.props as Props
 
 <Alert className="not-prose my-5 border-border/70 bg-muted/20">
   <AlertTitle>{title}</AlertTitle>
-  <AlertDescription>
+  {/* min-w-0: Alert lays its slots out as grid items, whose default
+      min-width:auto lets a wide code block size the track past the callout's
+      own border. Zeroing it keeps the track at the container width and hands
+      the overflow back to the code block's own horizontal scroll. */}
+  <AlertDescription className="min-w-0">
     <slot />
   </AlertDescription>
 </Alert>
