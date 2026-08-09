@@ -45,11 +45,12 @@ Each section folds away and keeps reporting its one headline number while folded
 the first frame on screen. The panel's `↻` button re-mounts the active target, which is how you take
 those timings for a target that was already up when the panel opened.
 
-**viewport** — four numbers that agree on a desktop and diverge on a phone, which is the reason all
-four are shown: the stage in real pixels, the **logical viewport the scene actually laid out
-against**, `Workspace.CurrentCamera.ViewportSize`, and the mobile scale factor with the `?base=` width
-behind it. Plus the device pixel ratio and the theme. [Mobile previews](/loom/guides/mobile-previews/)
-explains why those diverge.
+**viewport** — four numbers that agree unless the page asked for a `?base=` viewport, which is the
+reason all four are shown: the stage in real pixels, the **logical viewport the scene actually laid
+out against**, `Workspace.CurrentCamera.ViewportSize`, and the scale factor with the `?base=` width
+behind it. Plus the device pixel ratio and the theme. Together they tell a scene that *laid out*
+small from one that was *painted* small — see [Previews on a
+phone](/loom/guides/mobile-previews/).
 
 **scene** — live instances, how many are GuiObjects, and how many of *those* are invisible, which is
 usually the answer when a scene looks empty. Then tree depth, the DOM nodes it became, a count per

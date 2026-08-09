@@ -127,7 +127,7 @@ The built page reads six query parameters. This is the whole embedding API.
 | `chrome` | `none` | Hides the sidebar and renders one target full-bleed. Any other value (or absent) keeps the full chrome. |
 | `theme` | `light` \| `dark` | Sets the stage background and seeds `PlayerGui.LoomTheme`. Anything other than `light` is treated as `dark`. |
 | `background` | a CSS colour | *(`0.6.2`)* Paints the stage backdrop, overriding the one `theme` would have used and leaving the rest of the palette alone. |
-| `base` | px, or `none` / `off` / `0` | *(`0.6.4`)* The logical viewport the scene lays out against — see [Previews on a phone](/loom/guides/mobile-previews/#base-sets-the-logical-viewport). |
+| `base` | px (bare `?base` is 960), or `none` / `off` / `0` | *(`0.6.4`)* Keeps this logical viewport and scales the stage down to fit, instead of letting the scene reflow into the real one. Off unless asked for as of `0.10.2` — see [Previews on a phone](/loom/guides/mobile-previews/#base-keeps-a-wide-composition). |
 | `debug` | present, or `0`/`false`/`off`/`no`/`none` for off | *(`0.10.0`)* Opens the [debug panel](/loom/guides/debug-panel/) on load. A bare `?debug` counts as on, so a host page can template a boolean straight through. |
 
 ```text title="Deep-link one scene, chromeless, light"
