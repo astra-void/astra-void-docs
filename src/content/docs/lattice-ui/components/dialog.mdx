@@ -24,7 +24,9 @@ Reach for Dialog when a surface needs to be **modal** (block interaction behind 
 
 The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
 
-<LoomPreview scene="DialogExampleScene" height={420} />
+{/* The dialog panel is a fixed 420px wide — the only scene on these pages that
+    a phone's docs column would clip. `base` keeps it composed and scaled to fit. */}
+<LoomPreview scene="DialogExampleScene" height={420} base={480} />
 
 ## Import
 
