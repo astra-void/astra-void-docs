@@ -39,7 +39,7 @@ src/client/Panel.tsx:1:1 - error TS89000: [@vela-rbxts/rbxtsc-host] compiler-inv
 
 `5.9.3` is what the Vela repo pins and tests against; `6.x` also builds. Nothing enforces this —
 no package in the repo declares a `peerDependency`, and the only `engines` field anywhere is the VS
-Code extension's `vscode: ^1.90.0` — so your package manager will not warn you, and the error you
+Code extension's `vscode: ^1.91.0` — so your package manager will not warn you, and the error you
 get names neither TypeScript nor a version.
 
 The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0.0`**,
@@ -198,8 +198,67 @@ That single import pulls in `declare global { namespace React { interface Attrib
 
 Keep the file inside `src` so TypeScript picks it up with the rest of your sources. On track B you still write it in `src` — the CLI copies `.d.ts` files through unchanged, so it arrives inside the generated tree that `rootDir` names.
 
+That gets `className` past the type checker. It does not tell you whether what you typed inside it
+means anything — that is the language server's job, and it is worth installing before you write the
+first class rather than after.
+
 <Callout title="Do not name the file src/vela-rbxts.d.ts">
 A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` before `node_modules` for a bare specifier. Under that name, `import "vela-rbxts"` resolves to the declaration file itself rather than the package, so the augmentation never loads and `className` stays a type error — with no diagnostic pointing at the cause. Any other name works.
+</Callout>
+
+## Install the language server
+
+Vela ships a language server, `vela-rbxts-lsp`, built from the same compiler crate the build uses —
+so what the editor says a class resolves to is what the compiler will do with it. No build needs it.
+Install it anyway: one class of mistake is reported **only** here. `text-*` on a `frame`, `image-*` on a label,
+`placeholder-*` outside a `textbox` — the transform pipeline never checks any of it, so those
+compile clean and write the wrong property onto the wrong instance.
+
+### VS Code
+
+Install **Vela LSP**, id `astra-void.vela-rbxts-lsp`, publisher `astra-void`:
+
+```bash title="VS Code"
+code --install-extension astra-void.vela-rbxts-lsp
+```
+
+It needs VS Code `^1.91.0`, and that is the whole install — the marketplace serves a per-platform
+VSIX with the server binary inside it, so there is no npm package to add and nothing to configure
+per project. The extension activates on TypeScript and TSX documents: open a `.tsx` file and the
+server starts.
+
+It is also what gets your theme to the server. The extension watches `vela.config.{ts,json}`,
+evaluates every match, and pushes the result over the wire — the server never reads the file itself.
+The `.ts` form is evaluated through **your project's** `typescript`, so the pin at the top of this
+page decides whether your editor resolves custom theme keys, not just whether your build runs.
+
+### Any other editor
+
+The server speaks LSP over stdio and has no VS Code dependency. Add it to the project:
+
+<PackageInstall dev packageName="@vela-rbxts/lsp" />
+
+Then point your client's server command at it:
+
+```bash title="Server command"
+npx --package @vela-rbxts/lsp vela-rbxts-lsp
+```
+
+`--package` is not optional here. The binary is named `vela-rbxts-lsp`, but the package that owns it
+is `@vela-rbxts/lsp` — `vela-rbxts-lsp` on its own is the VS Code extension id, published as a VSIX
+and not to npm, so a bare `npx vela-rbxts-lsp` resolves nothing. The platform binary itself arrives
+as an optional dependency picked by `os`/`cpu`; there is nothing to select by hand. Two platforms
+have no prebuilt binary on either channel — linux arm64 musl and Windows on ARM — and there the
+server has to be built from source.
+
+<Callout title="Outside VS Code, nothing hands the server your config">
+The server has no config loader and no discovery of its own. Passing the resolved theme is the
+client's job, through `initializationOptions`. Skip it and the server falls back to the built-in
+default theme, so every custom color and spacing key you defined reports `unknown-theme-key` —
+against classes that build perfectly well, with nothing pointing at the config as the cause.
+
+[Editor setup](/vela-rbxts/guides/editor-setup/) has the payload shape, the method that updates it
+after startup, and the full list of what the server does and does not implement.
 </Callout>
 
 ## Build and serve
@@ -267,8 +326,8 @@ verbatim, the element was skipped.
 
 - [Your first component](/vela-rbxts/getting-started/first-component/) — write a panel, put it on
   screen, and read exactly what each class lowered to.
-- [Editor setup](/vela-rbxts/guides/editor-setup/) — worth doing now rather than later. A whole
-  class of mistakes (`text-*` on a `frame`, `image-*` on a label) is reported **only** by the
-  language server; the build never checks it.
+- [Editor setup](/vela-rbxts/guides/editor-setup/) — what the server you just installed actually
+  provides, the three settings it contributes, sorting class names on save, and how to configure a
+  non-VS Code client.
 - [The playground](/vela-playground/) — compile class strings in the browser against the real
   compiler, with no project at all.
