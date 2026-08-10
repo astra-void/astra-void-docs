@@ -230,6 +230,52 @@
   @apply border-l border-border pl-4 text-muted-foreground;
 }
 
+/* <Details>: a disclosure whose body is slotted MDX, so its rules live here
+   rather than in the component's scoped style. The body restates the
+   `> * + *` rhythm because .docs-prose's own is a direct-child rule. */
+.docs-details {
+  @apply my-5 overflow-hidden rounded-[0.5rem] border border-border/70 bg-muted/20;
+}
+
+.docs-details-summary {
+  @apply flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-medium text-foreground;
+}
+
+.docs-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.docs-details-summary:hover {
+  @apply bg-muted/40;
+}
+
+.docs-details-chevron {
+  @apply size-3.5 shrink-0 text-muted-foreground transition-transform duration-150;
+}
+
+.docs-details[open] .docs-details-chevron {
+  @apply rotate-90;
+}
+
+.docs-details-body {
+  @apply border-t border-border/70 px-4 pt-4 pb-4;
+}
+
+.docs-details-body > * + * {
+  @apply mt-4;
+}
+
+/* The body supplies its own padding, so a first child carrying a block margin
+   of its own — a code block, a table — would double it. Qualified with
+   .docs-prose to outrank the equally specific rules in expressive-code.css. */
+.docs-prose .docs-details-body > :first-child {
+  margin-block-start: 0;
+}
+
+.docs-prose .docs-details-body > :last-child {
+  margin-block-end: 0;
+}
+
 .docs-prose table {
   @apply mt-5 mb-0 w-full overflow-hidden rounded-[0.5rem] border border-separate border-spacing-0 border-border/80 text-sm leading-[1.5];
 }

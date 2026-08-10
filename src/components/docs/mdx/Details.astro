@@ -1,0 +1,39 @@
+---
+/**
+ * A disclosure for depth a page does not need inline — the reason behind a
+ * step, a failure mode, a version list. Native <details>, so it costs no JS,
+ * keeps its content in the DOM for Pagefind and in-page find, and stays
+ * keyboard-operable on its own.
+ *
+ * Styling lives in global.css beside the .docs-prose rules: the body is
+ * slotted MDX, which an Astro scoped style cannot reach.
+ */
+interface Props {
+  title: string
+  /** Start expanded. For a block most readers on the page will want open. */
+  open?: boolean
+}
+
+const { title, open = false } = Astro.props as Props
+---
+
+<details class="docs-details" open={open}>
+  <summary class="docs-details-summary">
+    <svg
+      class="docs-details-chevron"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 3.5 10.5 8 6 12.5"></path>
+    </svg>
+    <span>{title}</span>
+  </summary>
+  <div class="docs-details-body">
+    <slot />
+  </div>
+</details>
