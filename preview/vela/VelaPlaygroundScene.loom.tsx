@@ -17,20 +17,45 @@
  * The compiled module may export either `preview` (`{ render() }`, the scene
  * convention used across this folder) or a default component.
  */
+import * as LatticeRuntime from "@lattice-ui/react-runtime";
+import * as LatticeSwitch from "@lattice-ui/react-switch";
 import React from "@rbxts/react";
 import * as Services from "@rbxts/services";
+import * as VelaRuntime from "@rbxts/vela-runtime";
 import * as Stage from "./VelaStage";
 import { BACKDROP, useDocTheme } from "./VelaStage";
 
 /**
  * What playground code may import: the two specifiers an example in this folder
- * writes, so a scene copied out of it runs verbatim, plus `@rbxts/services` —
- * which nobody writes by hand here, but Vela's runtime path emits an import of
- * when a `className` cannot be resolved statically.
+ * writes, so a scene copied out of it runs verbatim, plus the two nobody writes
+ * by hand — `@rbxts/services`, which Vela's runtime path reaches for when a
+ * `className` cannot be resolved statically, and `@rbxts/vela-runtime`.
+ *
+ * The runtime is here because since 0.12.0 the emit *imports* its host instead
+ * of inlining it: `__VelaOpacity.Fade` wraps every component root, so this map
+ * is on the path of even the most static snippet, not just the runtime ones.
+ * The gallery resolves that id through a Loom shim (`src/lib/vela-runtime-shims.ts`)
+ * pointing at the vela checkout, which is why the import above resolves at all
+ * — the published package ships compiled Luau. This scene evaluates its code
+ * with `new Function` rather than through Vite, so the shim never sees those
+ * `require` calls and the id has to be registered here by hand.
+ *
+ * A Vide config lowers against `@rbxts/vela-runtime-vide` instead, which is
+ * deliberately absent: this stage is React, and a Vide emit would not render in
+ * it even if the id resolved.
+ *
+ * The `@lattice-ui/*` pair is here for the same reason and comes from the same
+ * place — `src/lib/lattice-shims.ts`, aliased at the lattice checkout. Only the
+ * two ids the scenes in this folder actually import are listed, rather than the
+ * whole `packages/react` set: this is a hand-kept whitelist like the one behind
+ * `/playground`, so a scene reaching for a new primitive means adding it here.
  */
 const PLAYGROUND_MODULES: Record<string, unknown> = {
+  "@lattice-ui/react-runtime": LatticeRuntime,
+  "@lattice-ui/react-switch": LatticeSwitch,
   "@rbxts/react": React,
   "@rbxts/services": Services,
+  "@rbxts/vela-runtime": VelaRuntime,
   "./VelaStage": Stage,
 };
 
