@@ -7,20 +7,11 @@ sidebar:
   order: 10
 ---
 
-import { Callout, PackageInstall } from "@/components/docs/mdx";
+import { Callout, Details, PackageInstall } from "@/components/docs/mdx";
 
 Facet publishes three packages, and **the components are not among them**. They are text on a
-static registry that the CLI fetches and copies into your project.
-
-| Package | What it is | Installed as |
-| --- | --- | --- |
-| `facet-rbxts` | The CLI. Command is `facet`. Node, dev dependency. | `-D`, or `npx` |
-| `@facet-ui/theme` | Semantic tokens shaped as a Vela config preset. Only `vela.config.ts` imports it. | `-D`, by `facet init` |
-| `@facet-ui/react-variants` | `fv()` and `cn()` — the one runtime package copied components import. | runtime, by `facet add` |
-
-All three are versioned in lockstep (`fixed` in the changesets config), published under MIT, and
-currently at **0.4.0**. You install the CLI; it installs the other two at the moment they are
-actually needed.
+static registry that the CLI fetches and copies into your project. You install the CLI; it installs
+the other two at the moment they are actually needed.
 
 <PackageInstall packageName="facet-rbxts" dev />
 
@@ -30,6 +21,17 @@ Or skip installing it at all — every command works through `npx`:
 npx facet-rbxts init
 npx facet-rbxts add button
 ```
+
+<Details title="The three packages, and which one arrives when">
+| Package | What it is | Installed as |
+| --- | --- | --- |
+| `facet-rbxts` | The CLI. Command is `facet`. Node, dev dependency. | `-D`, or `npx` |
+| `@facet-ui/theme` | Semantic tokens shaped as a Vela config preset. Only `vela.config.ts` imports it. | `-D`, by `facet init` |
+| `@facet-ui/react-variants` | `fv()` and `cn()` — the one runtime package copied components import. | runtime, by `facet add` |
+
+All three are versioned in lockstep (`fixed` in the changesets config), published under MIT, and
+currently at **0.4.0**.
+</Details>
 
 ## What your project has to be first
 
@@ -63,8 +65,7 @@ Without it, `className` is inert. Nothing errors. You get a screen of grey Roblo
 explanation.
 </Callout>
 
-## Version floors
-
+<Details title="Version floors: why the CLI pins vela-rbxts@^0.9.0">
 The CLI installs `vela-rbxts@^0.9.0` as a build dependency, and that floor is not decorative:
 
 - **Below 0.7.0**, `w-fit` and `font-*` silently do nothing on the computed-`className` path that
@@ -89,6 +90,7 @@ installs it when the component is copied. Every entry carries the *same* spec fo
 because `add` unions those strings across the install set and two spellings would both reach the
 package manager. `registry:check` enforces it; the
 [registry format reference](/facet/reference/registry-format/#validation-rules) has the rule.
+</Details>
 
 ## `facet init`
 
@@ -108,19 +110,7 @@ It asks four things (or takes the defaults with `-y`), then does five:
    pulls in `@facet-ui/react-variants`.
 5. **Reports on `tsconfig.json`** — the transformer check above.
 
-<Callout title="init creates, but never edits">
-Both `vela.config.ts` and `tsconfig.json` belong to you and are routinely non-trivial — JSONC,
-comments, spreads, plugins, computed values. A pattern-matched edit that mangles one is worse than a
-printed snippet, so `init` prints.
-
-There is now exactly one file the CLI *does* edit, and it took the real parser that condition
-implied: `facet add` wraps your client entry in the providers a component declares, using
-`@babel/parser` for positions and string splices for the edit. It is behind a prompt, and it
-happens in `add` rather than `init` — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
-</Callout>
-
-The defaults, if you pass `-y`:
-
+<Details title="The defaults, if you pass -y">
 ```json title="facet.json"
 {
   "$schema": "https://facet.astra-void.xyz/schema.json",
@@ -139,6 +129,18 @@ No `import` specifier is set on those aliases by default, which means copied fil
 through **relative** imports. That needs no tsconfig `paths` and therefore works in a project nobody
 configured for this. If your project already has an alias, answer the prompt with it and the CLI
 writes `shared/ui`-style specifiers instead.
+</Details>
+
+<Details title="Why init creates files but never edits them">
+Both `vela.config.ts` and `tsconfig.json` belong to you and are routinely non-trivial — JSONC,
+comments, spreads, plugins, computed values. A pattern-matched edit that mangles one is worse than a
+printed snippet, so `init` prints.
+
+There is now exactly one file the CLI *does* edit, and it took the real parser that condition
+implied: `facet add` wraps your client entry in the providers a component declares, using
+`@babel/parser` for positions and string splices for the edit. It is behind a prompt, and it
+happens in `add` rather than `init` — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
+</Details>
 
 ## Verify
 
