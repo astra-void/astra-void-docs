@@ -1,0 +1,221 @@
+---
+/**
+ * Shows what Vela emitted for one example, per target, with no preview frame.
+ *
+ * `VelaPreview` is the right component when a reader should see the render;
+ * this one is for the places where the emit *is* the subject — above all the
+ * Vide guide, where the two targets differ by a couple of props and by nothing
+ * you could photograph. The examples live in `preview/vela-emits/` as
+ * `<name>.<framework>.tsx` and are lowered by the real compiler at build time,
+ * so a page quoting `__velaMarginBox` is quoting the compiler rather than a
+ * snippet that was true when it was typed.
+ *
+ * There is deliberately no Preview tab. `@rbxts/vide` ships Luau, so the Loom
+ * gallery cannot run a Vide component at all — see src/lib/vela-emit.ts.
+ */
+import { Code } from "astro-expressive-code/components"
+import {
+  VELA_FRAMEWORKS,
+  type VelaFramework,
+  compileVelaEmits,
+} from "@/lib/vela-emit"
+
+interface Props {
+  /** Example name, e.g. "Panel" (the files are `<name>.<framework>.tsx`). */
+  name: string
+  /** Which targets to show, in tab order. Defaults to Vide then React. */
+  frameworks?: VelaFramework[]
+  /** Path shown on the source block. Defaults to `src/client/<name>.tsx`. */
+  sourceTitle?: string
+  /**
+   * Text to highlight in the emitted block — the prop the surrounding prose is
+   * about. The emit is shown whole, runtime-host config and all, so the line
+   * that carries the point needs to be findable without reading all of it.
+   */
+  mark?: string
+  /** Short caption under the card. */
+  label?: string
+}
+
+const {
+  name,
+  frameworks = [...VELA_FRAMEWORKS],
+  sourceTitle = `src/client/${name}.tsx`,
+  mark,
+  label,
+} = Astro.props as Props
+
+const emits = compileVelaEmits(name, frameworks)
+
+// Marker syntax for expressive-code: a quoted string in the meta line marks
+// every occurrence of that text.
+const outputMeta = mark ? `"${mark}"` : undefined
+
+const diagnostics = emits.flatMap((emit) =>
+  emit.diagnostics.map((diagnostic) => ({
+    framework: emit.frameworkLabel,
+    ...diagnostic,
+  })),
+)
+---
+
+{
+  emits.length > 0 ? (
+    <figure class="not-prose my-6" data-loom-preview>
+      <div class="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+        <div class="flex items-center justify-between border-b border-border bg-muted/40 px-2 py-1.5">
+          <div class="flex items-center gap-1" role="tablist">
+            {emits.map((emit, index) => (
+              <button
+                aria-selected={index === 0}
+                class="rounded-md px-2.5 py-1 font-mono text-xs transition-colors data-[active=false]:text-muted-foreground data-[active=false]:hover:text-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                data-active={String(index === 0)}
+                data-loom-tab={emit.framework}
+                role="tab"
+                type="button"
+              >
+                {emit.frameworkLabel}
+              </button>
+            ))}
+          </div>
+          <span class="hidden px-1 font-mono text-[0.7rem] text-muted-foreground/70 sm:inline">
+            Lowered by vela-rbxts
+          </span>
+        </div>
+        {emits.map((emit, index) => (
+          <div class="loom-code" data-loom-panel={emit.framework} hidden={index !== 0}>
+            <Code code={emit.source} lang="tsx" title={sourceTitle} />
+            {/* Only the lowering scrolls, and only its code area — stacking
+                both inside one scroll box put the emit, the thing the card
+                exists for, below the fold, and scrolling the whole block took
+                its title and copy button with it. */}
+            <div
+              class="border-t border-border"
+              data-vela-emit-output={mark ? "marked" : "plain"}
+            >
+              {/* Wrapped, because the props this card is about ride at the end
+                  of a long JSX line the compiler prints unbroken — off the
+                  right edge of the card, where highlighting them proves
+                  nothing. */}
+              <Code
+                code={emit.output}
+                lang="tsx"
+                meta={outputMeta}
+                preserveIndent
+                title={`Emitted for ${emit.frameworkLabel}`}
+                wrap
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      {diagnostics.length > 0 ? (
+        <ul class="mt-2 space-y-1 text-xs text-muted-foreground">
+          {diagnostics.map((diagnostic) => (
+            <li>
+              <code class="font-mono text-[0.7rem] text-foreground">
+                {diagnostic.framework} · {diagnostic.code}
+              </code>{" "}
+              {diagnostic.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {label ? (
+        <figcaption class="mt-2 text-center text-sm text-muted-foreground">
+          {label}
+        </figcaption>
+      ) : null}
+    </figure>
+  ) : null
+}
+
+<style>
+  /* The embedded expressive-code blocks should sit flush inside the card. */
+  .loom-code :global(.expressive-code) {
+    margin: 0;
+  }
+  .loom-code :global(.expressive-code .frame) {
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+  }
+  /* The lowering is long — a runtime-path emit opens with the host's resolved
+     config — so its code area scrolls while the title and copy button stay. */
+  [data-vela-emit-output] :global(.expressive-code pre) {
+    max-height: 20rem;
+    overflow: auto;
+  }
+</style>
+
+<script>
+  // Shared with the preview components — the tab strip is the same markup, and
+  // `mountLoomFrames` wires any `[data-loom-preview]` figure whether or not it
+  // holds a frame.
+  import { mountLoomFrames } from "@/lib/loom-frame"
+
+  /**
+   * Bring the marked prop into view inside the lowering.
+   *
+   * An emit that takes the runtime path opens with the host's resolved config —
+   * two dozen lines of theme JSON before anything the prose is about. That is
+   * the compiler's output and the block shows it whole, but a reader landing on
+   * it should not have to scroll to find the one line the section is discussing.
+   *
+   * With no mark to find, the end of the block is the answer: a card marks a
+   * prop precisely because some target may not emit it, and the element the prop
+   * would have sat on is the last thing in the file. So the tab that proves the
+   * absence opens on the same line as the tab that shows the prop.
+   *
+   * Only for a visible panel — `scrollTop` on a hidden box does nothing, so a
+   * tab has to re-run it — and only once, so a reader's own scrolling stands.
+   */
+  function alignMarks(root: ParentNode = document) {
+    for (const box of root.querySelectorAll<HTMLElement>(
+      "[data-vela-emit-output] pre",
+    )) {
+      if (box.dataset.aligned === "true" || box.offsetParent === null) continue
+      box.dataset.aligned = "true"
+
+      const mark = box.querySelector("mark")
+      if (!mark) {
+        // Only where the card asked for a mark and this target had none. A
+        // block with nothing marked is read from the top like any other.
+        const wrapper = box.closest("[data-vela-emit-output]")
+
+        if (wrapper?.getAttribute("data-vela-emit-output") === "marked") {
+          box.scrollTop = box.scrollHeight
+        }
+        continue
+      }
+
+      const offset =
+        mark.getBoundingClientRect().top - box.getBoundingClientRect().top
+
+      if (offset > box.clientHeight - 48) {
+        box.scrollTop += offset - 48
+      }
+    }
+  }
+
+  function mount() {
+    mountLoomFrames()
+    alignMarks()
+
+    for (const figure of document.querySelectorAll<HTMLElement>(
+      "[data-loom-preview]:not([data-emit-wired])",
+    )) {
+      if (!figure.querySelector("[data-vela-emit-output]")) continue
+
+      figure.dataset.emitWired = "true"
+      for (const tab of figure.querySelectorAll("[data-loom-tab]")) {
+        // `mountLoomFrames` above wired the strip first, so by the time this
+        // runs the panel has been unhidden and can be measured.
+        tab.addEventListener("click", () => alignMarks(figure))
+      }
+    }
+  }
+
+  mount()
+  document.addEventListener("astro:after-swap", mount)
+</script>

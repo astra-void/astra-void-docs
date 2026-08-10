@@ -1,4 +1,5 @@
 import { PACKAGE_STATUS_LABELS, type PackageStatus } from "@/lib/package-status"
+import { VELA_FRAMEWORKS, compileVelaEmits } from "@/lib/vela-emit"
 import { getUtilityGroup, isAllRuntime } from "@/lib/vela-utilities"
 
 /**
@@ -328,6 +329,7 @@ const COMPONENT_RENDERERS: Record<
   // Inline next to a heading that already says the same word on the page.
   StatusBadge: () => "",
   UtilityTable: renderUtilityTable,
+  VelaEmit: renderVelaEmit,
   VelaPreview: renderPreview,
   // A filter over rows the utility reference already prints in full; repeating
   // all 200 of them here would only pad llms.txt.
@@ -489,6 +491,36 @@ function renderForwardedProps(attrs: JsxAttributes) {
   }
 
   return `\n${sentences.join(" ")}\n`
+}
+
+/**
+ * An emit example is text, so unlike a preview it survives the trip whole: the
+ * Markdown view prints the same source and lowering the page shows, target by
+ * target. That is exactly what a reader of llms.txt came for — the tab strip was
+ * only ever a way to fit two of them on a screen.
+ */
+function renderVelaEmit(attrs: JsxAttributes) {
+  const name = asString(attrs.name)
+
+  if (!name) {
+    return ""
+  }
+
+  const requested = asStringArray(attrs.frameworks)
+  const frameworks = VELA_FRAMEWORKS.filter(
+    (framework) => requested.length === 0 || requested.includes(framework),
+  )
+
+  const sourceTitle = asString(attrs.sourceTitle) ?? `src/client/${name}.tsx`
+
+  const blocks = compileVelaEmits(name, frameworks).map(
+    (emit) =>
+      `**${emit.frameworkLabel}**\n\n` +
+      `\`\`\`tsx title="${sourceTitle}"\n${emit.source.trimEnd()}\n\`\`\`\n\n` +
+      `\`\`\`tsx title="Emitted for ${emit.frameworkLabel}"\n${emit.output}\n\`\`\``,
+  )
+
+  return blocks.length > 0 ? `\n${blocks.join("\n\n")}\n` : ""
 }
 
 function renderPreview(attrs: JsxAttributes) {

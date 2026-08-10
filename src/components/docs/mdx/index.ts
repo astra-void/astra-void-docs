@@ -10,4 +10,5 @@ export { default as PropTable } from "./PropTable.astro";
 export { default as StatusBadge } from "./StatusBadge.astro";
 export { default as UtilityTable } from "./UtilityTable.astro";
 export { VelaCheatSheet } from "./VelaCheatSheet";
+export { default as VelaEmit } from "./VelaEmit.astro";
 export { default as VelaPreview } from "./VelaPreview.astro";

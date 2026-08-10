@@ -7,7 +7,7 @@ sidebar:
   order: 70
 ---
 
-import { Callout } from "@/components/docs/mdx";
+import { Callout, VelaEmit } from "@/components/docs/mdx";
 
 Vela emits for [Vide](https://centau.github.io/vide/) as well as React, from **0.12.0**, and
 everything this documentation says about utilities, variants, the theme and the two lowering paths
@@ -71,12 +71,22 @@ error — it is a class list that was correct once. Nothing warns about it, for 
 does not warn about any other prop read outside a thunk.
 
 <Callout title="A branch still resolves at compile time either way">
-A thunk is about *tracking*, not about lowering. `() => (active() ? "text-lg" : "text-sm")` names both
-tokens in the source, so both are resolved by the compiler with the full utility set and the element is
-handed the resolved props alongside the test — exactly as the React form is. The only difference in the
-emit is that the test itself is thunked, `__velaTests={[() => active() ? true : false]}`, so reading it
-tracks. See [dynamic class names](/vela-rbxts/guides/dynamic-class-names/#a-branch-lowers-at-compile-time).
+A thunk is about *tracking*, not about lowering. `() => (active() ? "bg-blue-600" : "bg-slate-700")` names
+both tokens in the source, so both are resolved by the compiler with the full utility set and the element
+is handed the resolved props alongside the test — exactly as the React form is. The only difference in the
+emit is that the test itself is thunked, so reading it tracks. See
+[dynamic class names](/vela-rbxts/guides/dynamic-class-names/#a-branch-lowers-at-compile-time).
 </Callout>
+
+That is worth seeing whole, because it is most of what "the same output" means. Both targets resolve the
+branch into the same two `__velaRules`; what differs is the one line inside `__velaTests` — and the
+runtime the host is imported from.
+
+<VelaEmit
+  label="The same button under both targets, lowered by the compiler at build time. Switch the tab: the rules do not move."
+  mark="__velaTests"
+  name="Button"
+/>
 
 ## What the runtime host does differently
 
@@ -110,11 +120,13 @@ one — so a margin box cannot be introduced afterwards. The compiler closes alm
 so up front: a class value naming `m-*` anywhere this pass can see, in a static token or in a branch,
 emits `__velaMarginBox` and the host builds the box **before** the element.
 
-```tsx title="Emitted for Vide — React gets no such prop"
-<VelaRuntimeHost className={() => (p.big() ? "m-4 p-2" : "p-2")} __velaMarginBox={true} __velaTag={"frame"} />
-```
+<VelaEmit
+  label="React gets no such prop — the same component, written the way each target writes it."
+  mark="__velaMarginBox={true}"
+  name="Panel"
+/>
 
-React answers `false` to the same question, because the render that resolves a margin also renders the
+React emits nothing in that position at all, because the render that resolves a margin also renders the
 wrapper around it — the hint would be a prop with no reader.
 
 What is left is a margin named where nothing can read it, arriving out of an opaque call. The runtime

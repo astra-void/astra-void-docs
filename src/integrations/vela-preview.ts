@@ -20,7 +20,7 @@
  * error (see {@link reportDiagnostics}).
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { resolve } from "node:path"
+import { resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import type { AstroIntegration } from "astro"
 import { buildGallery, createGalleryServer } from "loom-dev/embed"
@@ -166,7 +166,12 @@ export default function velaPreview(): AstroIntegration {
         // Editing an example re-runs the compiler; the generated file changing
         // is what the gallery's own watcher picks up, so the frame hot-reloads
         // with the new lowering.
-        const sourceDir = resolve(process.cwd(), SOURCE_DIR)
+        //
+        // Matched with a trailing separator, because the sibling
+        // `preview/vela-emits/` is a string prefix away: those examples are
+        // lowered by the pages that show them, not by this integration, and a
+        // bare `startsWith` would rebuild every scene whenever one is touched.
+        const sourceDir = `${resolve(process.cwd(), SOURCE_DIR)}${sep}`
         server.watcher.add(sourceDir)
         const recompile = (path: string) => {
           if (!path.startsWith(sourceDir)) return
