@@ -111,7 +111,17 @@ function getConfigJson(mode: PreviewMode): string {
 
     cached = JSON.stringify(
       defineConfig({
-        theme: { extend: { ...facetTheme({ base: PREVIEW_BASE, mode }) } },
+        theme: {
+          // Vela 0.12.0 measures every pixel offset against a 1920×1020
+          // viewport, and a preview frame is nothing like that — the curve
+          // resolves rem to its `min` and the component renders at half the
+          // size its classes name. Pinning the clamp is Vela's own documented
+          // answer and drops the scaling from the emit, so a preview shows one
+          // pixel per pixel. Same reason as the Vela gallery's own stage
+          // config; see src/lib/vela-source.ts.
+          rem: { base: 16, min: 16, max: 16 },
+          extend: { ...facetTheme({ base: PREVIEW_BASE, mode }) },
+        },
       }),
     )
     configJson.set(mode, cached)

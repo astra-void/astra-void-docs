@@ -1,5 +1,9 @@
 {
   "theme": {
+    "rem": {
+      "min": 16,
+      "max": 16
+    },
     "extend": {
       "colors": {
         "brand": {
@@ -8,8 +12,12 @@
         },
         "surface": "Color3.fromRGB(24, 24, 27)"
       },
-      "radius": { "card": "new UDim(0, 10)" },
-      "spacing": { "gutter": "new UDim(0, 20)" }
+      "radius": {
+        "card": "new UDim(0, 10)"
+      },
+      "spacing": {
+        "gutter": "new UDim(0, 20)"
+      }
     }
   }
 }

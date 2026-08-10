@@ -128,8 +128,27 @@ export function velaSceneTarget(name: string) {
 }
 
 /**
- * A scene's own project config, if it has one: `<name>.config.json` next to the
- * scene, in the same input shape a project's `vela.config.json` uses.
+ * What every scene is compiled against before its own config is layered on.
+ *
+ * Vela 0.12.0 made every pixel offset a rem unit measured against a 1920×1020
+ * viewport. A preview frame is nothing like that — roughly 740×220 — so the
+ * curve resolves rem to its `min` of 8 and the whole scene renders at exactly
+ * half the size its class list names. That is correct in a game and wrong here:
+ * these frames are component stages, not devices, and a reader comparing the
+ * render against `p-4 → new UDim(0, 16)` in the tables beside it should see one
+ * pixel per pixel.
+ *
+ * Pinning the clamp is Vela's own documented answer, not a preview-only hack —
+ * `min === max === base` drops the scaling from the emit entirely, so the
+ * Lowered tab shows the plain `UDim` literals the guides quote. The pages that
+ * show a *default* emit beside a preview say so where they show it.
+ */
+const STAGE_CONFIG = { theme: { rem: { base: 16, min: 16, max: 16 } } }
+
+/**
+ * The resolved config a scene is compiled with: the stage defaults above, with
+ * the scene's own `<name>.config.json` — same input shape as a project's
+ * `vela.config.json` — merged over them.
  *
  * The compiler wants the *resolved* config — defaults merged, `extend` applied
  * — which is exactly what `defineConfig` returns and exactly what the `rbxtsc`
@@ -138,15 +157,25 @@ export function velaSceneTarget(name: string) {
  */
 function readSceneConfig(name: string) {
   const input = readVelaSceneConfigInput(name)
-  if (input === undefined) {
-    return undefined
-  }
 
   const { defineConfig } = requireFromDocs("@vela-rbxts/config") as {
     defineConfig(input: unknown): unknown
   }
 
-  return JSON.stringify(defineConfig(JSON.parse(input)))
+  if (input === undefined) {
+    return JSON.stringify(defineConfig(STAGE_CONFIG))
+  }
+
+  const scene = JSON.parse(input) as { theme?: Record<string, unknown> }
+
+  // `rem` is a record of four settings rather than a keyed scale, so it merges
+  // field by field and a scene that names its own rem still wins field by field.
+  return JSON.stringify(
+    defineConfig({
+      ...scene,
+      theme: { ...STAGE_CONFIG.theme, ...scene.theme },
+    }),
+  )
 }
 
 /**

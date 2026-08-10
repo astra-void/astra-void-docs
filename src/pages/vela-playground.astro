@@ -225,7 +225,9 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
         <code class="font-mono">./VelaStage</code>. Export{" "}
         <code class="font-mono">preview = &#123; render &#125;</code> or a default component.
         The config pane takes the same shape as a project's{" "}
-        <code class="font-mono">vela.config.json</code>.
+        <code class="font-mono">vela.config.json</code>. It starts with{" "}
+        <code class="font-mono">rem</code> pinned so the frame renders one pixel per pixel —
+        delete those two keys to watch offsets scale with the viewport instead.
       </p>
     </main>
 
@@ -386,10 +388,21 @@ const codeBlockIconStyle = Object.entries(codeBlockIconVars)
           return docsForTemplate(template)
         }
 
+        // The frame below is a few hundred pixels wide, and Vela measures every
+        // pixel offset against a 1920x1020 viewport — so with rem left at its
+        // defaults the curve resolves to its `min` and everything you type
+        // renders at half the size its classes name. Seed the pin visibly
+        // rather than injecting it: it is an ordinary config key, and deleting
+        // it is how you watch rem work. A function declaration, not a const, so
+        // it is hoisted above the first template read.
+        function stageConfig() {
+          return '{\n  "theme": {\n    "rem": { "min": 16, "max": 16 }\n  }\n}'
+        }
+
         function docsForTemplate(template: Template | undefined) {
           return {
             source: template?.source ?? "",
-            config: template?.configInput?.trimEnd() ?? "{}",
+            config: template?.configInput?.trimEnd() ?? stageConfig(),
           }
         }
 
