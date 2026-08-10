@@ -295,3 +295,15 @@
 .docs-prose tbody tr td {
   @apply border-t border-border/70;
 }
+
+/* <UtilityTable> and the cheat sheet: a row lists one or more class patterns,
+   which wrap as chips rather than running together as one string. */
+.docs-utility-classes {
+  @apply inline-flex flex-wrap gap-x-1.5 gap-y-1;
+}
+
+/* Marks a utility that builds a wrapper, a separator, or a loop, so it moves
+   the element onto the runtime path even from a plain string literal. */
+.docs-utility-runtime {
+  @apply mr-1.5 inline-block rounded-[0.3rem] border border-border/70 bg-muted px-1.5 py-px align-[0.05em] font-mono text-[0.72rem] leading-[1.5] text-muted-foreground;
+}

@@ -1,0 +1,77 @@
+---
+/**
+ * One family's worth of utility classes, rendered from src/lib/vela-utilities.ts.
+ *
+ * Emits a plain <table> rather than a styled island: .docs-prose already has
+ * table rules, so a data-driven family and a hand-written table on the same page
+ * look the same. What the data buys over Markdown is that the columns collapse
+ * when a family does not use them, the `runtime` flag renders as a pill instead
+ * of a repeated sentence, and the cheat sheet reads the same rows.
+ */
+import {
+  getUtilityGroup,
+  isAllRuntime,
+  utilityCellToHtml,
+} from "@/lib/vela-utilities"
+
+interface Props {
+  /** Family id — the heading slug of the section it sits under. */
+  family: string
+}
+
+const { family } = Astro.props as Props
+
+const group = getUtilityGroup(family)
+const allRuntime = isAllRuntime(group)
+
+const showValues = group.rows.some((row) => row.values)
+// A family that is runtime-structural throughout says so in its prose; a pill on
+// every row would be noise.
+const showRuntimePills = !allRuntime && group.rows.some((row) => row.runtime)
+const showNotes = showRuntimePills || group.rows.some((row) => row.notes)
+
+const targetLabel = group.targetLabel ?? "Roblox target"
+const classLabel = group.classLabel ?? "Class"
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>{classLabel}</th>
+      {showValues ? <th>Values</th> : null}
+      <th>{targetLabel}</th>
+      {showNotes ? <th>Notes</th> : null}
+    </tr>
+  </thead>
+  <tbody>
+    {
+      group.rows.map((row) => (
+        <tr>
+          <td>
+            <span class="docs-utility-classes">
+              {row.classes.map((className) => (
+                <code>{className}</code>
+              ))}
+            </span>
+          </td>
+          {showValues ? (
+            <td set:html={row.values ? utilityCellToHtml(row.values) : "—"} />
+          ) : null}
+          <td set:html={utilityCellToHtml(row.target)} />
+          {showNotes ? (
+            <td>
+              {showRuntimePills && row.runtime ? (
+                <span class="docs-utility-runtime" title="Moves the element onto the runtime path">
+                  runtime
+                </span>
+              ) : null}
+              {row.notes ? (
+                <span set:html={utilityCellToHtml(row.notes)} />
+              ) : null}
+            </td>
+          ) : null}
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

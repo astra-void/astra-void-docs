@@ -1,0 +1,30 @@
+---
+title: Cheat sheet
+description: Every Vela utility class on one filterable page — filter by class, by the Roblox property it writes, or by whether it forces the runtime path.
+product: vela-rbxts
+section: reference
+sidebar:
+  order: 15
+---
+
+import { VelaCheatSheet } from "@/components/docs/mdx";
+
+The same classes the [utility reference](/vela-rbxts/reference/utilities/) documents, with the prose
+taken out. Filter by a class prefix (`bg-`), by the Roblox property a class writes (`UIStroke`,
+`TextSize`), or by the family name — every family heading links back to the section that explains it.
+
+The **runtime** pill marks a utility that builds a wrapper, a separator, or a loop, which no static
+prop can express: margins, `divide-*`, `animate-*`, and every variant prefix move the element onto
+the [runtime path](/vela-rbxts/getting-started/how-it-works/#the-two-lowering-paths) even inside a
+plain string literal. Filter to just those to see what a class list is costing you.
+
+<VelaCheatSheet client:load />
+
+A class that is not here is one Vela does not compile. The reference page lists
+[what has no Roblox equivalent](/vela-rbxts/reference/utilities/#not-implemented) and why, and
+[Diagnostics](/vela-rbxts/reference/diagnostics/) explains every warning code named above.
+
+Three things this page cannot flatten into rows, all on the reference:
+[color keys and the `/N` modifier](/vela-rbxts/reference/utilities/#color),
+[arbitrary bracket values](/vela-rbxts/reference/utilities/#arbitrary-values), and
+[which utilities each host element accepts](/vela-rbxts/reference/utilities/#supported-elements).

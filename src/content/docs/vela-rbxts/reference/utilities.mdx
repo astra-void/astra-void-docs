@@ -7,7 +7,7 @@ sidebar:
   order: 10
 ---
 
-import { Callout } from "@/components/docs/mdx";
+import { Callout, UtilityTable } from "@/components/docs/mdx";
 
 This is the complete list of what Vela compiles as of **0.12.0**. If a class is not on this page,
 Vela does not implement it — an unknown family produces `unsupported-utility-family`, a real
@@ -73,17 +73,7 @@ element — nothing checks that it does. See
 
 ## Color
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `bg-{color}` | theme color key, `[#hex]` | `BackgroundColor3` + `BackgroundTransparency` | |
-| `text-{color}` | theme color key, `[#hex]` | `TextColor3` + `TextTransparency` | Fallback branch of `text-*` |
-| `image-{color}` | theme color key, `[#hex]` | `ImageColor3` + `ImageTransparency` | |
-| `placeholder-{color}` | theme color key, `[#hex]` | `PlaceholderColor3` | No transparency channel |
-| `border-{color}` | theme color key, `[#hex]` | `UIStroke.Color` + `UIStroke.Transparency` | Helper instance |
-| `ring-{color}`, `outline-{color}` | theme color key, `[#hex]` | `UIStroke.Color` + `UIStroke.Transparency` | Same `UIStroke` as `border-*` |
-| `shadow-{color}` | theme color key, `[#hex]` | `UIShadow.Color` | Helper instance |
-| `divide-{color}` | theme color key, `[#hex]` | separator `BackgroundColor3` + `BackgroundTransparency` | Runtime-structural |
-| `from-{color}`, `via-{color}`, `to-{color}` | theme color key, `[#hex]` | `UIGradient.Color` keypoints + `UIGradient.Transparency` | Helper instance |
+<UtilityTable family="color" />
 
 A color key is either a literal (`black`, `white`, or anything you define as a plain string) or a
 palette family plus a shade from `50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`. The shade
@@ -154,17 +144,7 @@ reported as `unknown-theme-key` for a color named `smal`.
 
 Everything here writes into a single shared `UIStroke` helper instance.
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `border` | — | `UIStroke.Thickness = 1` | Bare form |
-| `border-{n}` | `0`, `1`, `2`, `4` | `UIStroke.Thickness` | No other numbers; use `border-[3px]` |
-| `border-transparent` | — | `UIStroke.Transparency = 1` | |
-| `border-{join}` | `round`, `bevel`, `miter` | `UIStroke.LineJoinMode` | |
-| `border-{color}` | theme color key, `[#hex]` | `UIStroke.Color`, `Transparency = 0` | |
-| `ring` | — | `UIStroke.Thickness = 3` | Also sets `ApplyStrokeMode = Border` |
-| `ring-{n}` | `0`, `1`, `2`, `4`, `8` | `UIStroke.Thickness` | |
-| `outline` | — | `UIStroke.Thickness = 2` | Also sets `ApplyStrokeMode = Border` |
-| `outline-none`, `outline-hidden` | — | `UIStroke.Thickness = 0` | |
+<UtilityTable family="border-ring-and-outline" />
 
 `ring-*` and `outline-*` exist for Tailwind muscle memory, but Roblox gives one reliable `UIStroke`
 per instance, so they do not stack the way CSS rings stack on borders: **all three families merge
@@ -184,12 +164,7 @@ containing a slash (`unsupported-border-value`). For `ring-*`/`outline-*`: `inse
 
 ## Radius
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `rounded` | — | `UICorner.CornerRadius` | The theme's `DEFAULT` radius, 4px by default |
-| `rounded-{key}` | any key in `theme.radius` | `UICorner.CornerRadius` | Pure theme lookup |
-
-| `rounded-[{n}]` | pixels, percent | `UICorner.CornerRadius` | Arbitrary value, since 0.7.0 |
+<UtilityTable family="radius" />
 
 The default theme ships the `DEFAULT` plus ten named keys: `none`, `xs`, `sm`, `md`, `lg`, `xl`,
 `2xl`, `3xl`, `4xl`, `full`. There is no numeric fallback — `rounded-8` is `unknown-theme-key` in the
@@ -198,28 +173,14 @@ The default theme ships the `DEFAULT` plus ten named keys: `none`, `xs`, `sm`, `
 
 ## Shadow
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `shadow` | — | `UIShadow` preset | blur 3, offset Y 1, spread 0, transparency `0.9` |
-| `shadow-sm` | — | `UIShadow` preset | 2 / 1 / 0 / `0.95` |
-| `shadow-md` | — | `UIShadow` preset | 6 / 4 / −1 / `0.9` |
-| `shadow-lg` | — | `UIShadow` preset | 15 / 10 / −3 / `0.9` |
-| `shadow-xl` | — | `UIShadow` preset | 25 / 20 / −5 / `0.9` |
-| `shadow-2xl` | — | `UIShadow` preset | 50 / 25 / −12 / `0.75` |
-| `shadow-none` | — | `UIShadow.Enabled = false` | |
-| `shadow-{color}` | theme color key, `[#hex]` | `UIShadow.Color` | `shadow-transparent` instead sets `Transparency = 1` |
-| `shadow-inner` | — | — | `unsupported-shadow-inset` |
+<UtilityTable family="shadow" />
 
 Presets emit `BlurRadius = new UDim(0, blur)`, `Offset = UDim2.fromOffset(0, offsetY)`, `Spread` only
 when it is non-zero, and `Transparency`.
 
 ## Gradient
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `bg-gradient-to-{dir}` | `t`, `tr`, `r`, `br`, `b`, `bl`, `l`, `tl` | `UIGradient.Rotation` | Rotations 270, 315, 0, 45, 90, 135, 180, 225 |
-| `bg-linear-to-{dir}` | same | same | Accepted alias |
-| `from-{color}`, `via-{color}`, `to-{color}` | theme color key, `[#hex]` | `UIGradient.Color` | |
+<UtilityTable family="gradient" />
 
 Stops flush into a `ColorSequence`: one stop becomes `new ColorSequence(c)`, two become
 `new ColorSequence(a, b)`, three or more become `new ColorSequence([keypoints])`. `Rotation` is only
@@ -229,10 +190,7 @@ overridden regardless of token order. A bad direction is `unsupported-gradient-d
 
 ## Z-index
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `z-{n}` | `0`, `10`, `20`, `30`, `40`, `50` | `ZIndex` | Exactly these six |
-| `z-[{n}]` | any non-negative integer | `ZIndex` | Arbitrary value, since 0.7.0 |
+<UtilityTable family="z-index" />
 
 `z-[15]` and `z-[999]` are how you reach a level the six presets do not cover. The payload has to be
 a whole number, because `ZIndex` is an integer: `z-[1.5]` keeps `unsupported-arbitrary-z-index`.
@@ -245,15 +203,7 @@ Everything else is a distinct diagnostic: `z-auto` gives `unsupported-z-index-au
 
 All padding writes into a single `UIPadding` helper instance.
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `p-{key}` | spacing value | `PaddingTop`, `PaddingRight`, `PaddingBottom`, `PaddingLeft` | |
-| `px-{key}` | spacing value | `PaddingLeft`, `PaddingRight` | |
-| `py-{key}` | spacing value | `PaddingTop`, `PaddingBottom` | |
-| `pt-{key}` | spacing value | `PaddingTop` | |
-| `pr-{key}` | spacing value | `PaddingRight` | |
-| `pb-{key}` | spacing value | `PaddingBottom` | |
-| `pl-{key}` | spacing value | `PaddingLeft` | |
+<UtilityTable family="padding" />
 
 ### Spacing values
 
@@ -310,15 +260,7 @@ frame padded by the margin values, with the element's layout-facing props routed
 which is structural work no static prop can express, so **any margin utility moves the element onto
 the [runtime path](/vela-rbxts/guides/dynamic-class-names/)**, plain string literal or not.
 
-| Class | Values | Effect | Notes |
-|---|---|---|---|
-| `m-{key}` | spacing value | margin box, all four sides | Runtime-structural |
-| `mx-{key}`, `my-{key}` | spacing value | margin box, one axis | Runtime-structural |
-| `mt-{key}`, `mr-{key}`, `mb-{key}`, `ml-{key}` | spacing value | margin box, one side | Runtime-structural |
-| `-mt-{key}`, `-ml-{key}` | spacing value | `Position` shift | Negative top/left margins move, not wrap |
-| `-mr-{key}`, `-mb-{key}` | — | — | `unsupported-negative-margin` |
-| `mx-auto` | — | `AnchorPoint.X = 0.5`, `Position.X = 0.5` scale | **Static** — centers without a wrapper |
-| `my-auto` | — | `AnchorPoint.Y = 0.5`, `Position.Y = 0.5` scale | **Static** |
+<UtilityTable family="margin" />
 
 Margins participate in the parent's list layout and sum with its `gap-*` — a `gap-2` list whose
 children carry `my-2` produces 16-pixel visual gaps, not 8. If all you need is space between list
@@ -327,11 +269,7 @@ the static path.
 
 ## Gap and space
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `gap-{key}` | spacing value | `UIListLayout.Padding` | No `gap-x-` or `gap-y-` |
-| `space-x-{key}` | spacing value | `UIListLayout.Padding` + `FillDirection = Horizontal` | |
-| `space-y-{key}` | spacing value | `UIListLayout.Padding` + `FillDirection = Vertical` | |
+<UtilityTable family="gap-and-space" />
 
 Roblox's `UIListLayout` has one padding axis, so there is no axis-specific gap to expose.
 `space-x-*` and `space-y-*` are the Tailwind spellings of the same property with a direction
@@ -347,11 +285,7 @@ On a `grid` element, `gap-*` also feeds `UIGridLayout.CellPadding` — see the
 borders-between-children idiom. Like margins, separators are structural, so **any divide utility
 moves the element onto the runtime path**.
 
-| Class | Values | Effect |
-|---|---|---|
-| `divide-x`, `divide-y` | — | 1px separators between children, horizontal / vertical |
-| `divide-x-{n}`, `divide-y-{n}` | `0`, `1`, `2`, `4`, `8` | separator thickness |
-| `divide-{color}` | theme color key, `[#hex]` | separator `BackgroundColor3` |
+<UtilityTable family="divide" />
 
 Two sharp edges. Separators are themselves list items, so the parent's `gap-*` applies on **both**
 sides of each separator — unlike CSS, where a divider lives inside the gap. And explicit
@@ -362,15 +296,7 @@ by child position, not by layout order. `divide-transparent` reports `unsupporte
 
 ## Size
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `w-{value}` | see below | `Size` X component | Merges with `h-` |
-| `h-{value}` | see below | `Size` Y component | Merges with `w-` |
-| `size-{value}` | see below | both axes | |
-| `basis-{value}` | see below | `Size` X component | Effectively `w-*`; see note |
-| `w-auto`, `w-fit` | — | `AutomaticSize = Enum.AutomaticSize.X` | |
-| `h-auto`, `h-fit` | — | `AutomaticSize = Enum.AutomaticSize.Y` | |
-| `size-auto`, `size-fit` | — | `AutomaticSize = Enum.AutomaticSize.XY` | Also when both axes are set |
+<UtilityTable family="size" />
 
 Accepted values on the sizing axes:
 
@@ -392,26 +318,14 @@ markup; write `w-*`/`h-*` in new code.
 
 ## Constraints
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `min-w-{key}` | spacing offset | `UISizeConstraint.MinSize` X | |
-| `min-h-{key}` | spacing offset | `UISizeConstraint.MinSize` Y | |
-| `max-w-{key}` | spacing offset | `UISizeConstraint.MaxSize` X | |
-| `max-h-{key}` | spacing offset | `UISizeConstraint.MaxSize` Y | |
+<UtilityTable family="constraints" />
 
 Emitted as `new Vector2(x, y)`. An axis you do not specify gets a default: `0` for `MinSize` and
 `math.huge` for `MaxSize`. These are offset-only — no fractions, no `full`.
 
 ## Position
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `left-{value}` | `px`, `full`, fractions, spacing offsets | `Position` X | |
-| `top-{value}` | same | `Position` Y | |
-| `right-{value}` | same | `Position` X, from the far edge | `right-2` is `new UDim(1, -8)` |
-| `bottom-{value}` | same | `Position` Y, from the far edge | |
-| `inset-{value}` | same | both axes | |
-| `-left-{value}`, `-top-{value}`, `-inset-{value}` | same | negated | |
+<UtilityTable family="position" />
 
 The fraction set is the same allowlist as sizing. `right-*` and `bottom-*` express the position from
 the far edge — scale `1` minus the offset — but they do not touch `AnchorPoint`, so what lands at
@@ -425,9 +339,7 @@ instead.
 
 ## Anchor
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `origin-{key}` | `top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right` | `AnchorPoint` | Emitted as `new Vector2(x, y)` |
+<UtilityTable family="anchor" />
 
 Anything outside those nine keys is `unsupported-anchor-value`.
 
@@ -435,19 +347,7 @@ Anything outside those nine keys is `unsupported-anchor-value`.
 
 These write into a `UIListLayout` helper instance.
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `flex` | — | `FillDirection = Enum.FillDirection.Horizontal` | Bare form. Every form also sets `SortOrder = LayoutOrder` |
-| `flex-row` | — | `FillDirection = Enum.FillDirection.Horizontal` | |
-| `flex-col` | — | `FillDirection = Enum.FillDirection.Vertical` | |
-| `flex-wrap` | — | `Wraps = true` | |
-| `flex-nowrap` | — | `Wraps = false` | |
-| `justify-start`, `justify-center`, `justify-end` | — | `HorizontalAlignment = Left, Center, Right` | |
-| `justify-between`, `justify-around`, `justify-evenly` | — | `HorizontalFlex = Enum.UIFlexAlignment.SpaceBetween, SpaceAround, SpaceEvenly` | Different property |
-| `items-start`, `items-center`, `items-end` | — | `VerticalAlignment = Top, Center, Bottom` | |
-| `items-stretch` | — | `VerticalFlex = Enum.UIFlexAlignment.Fill` | Different property |
-| `content-{start,center,end}` | — | `VerticalAlignment` | |
-| `content-{between,around,evenly,stretch}` | — | `VerticalFlex` | |
+<UtilityTable family="flex-layout" />
 
 Any other `flex-{something}` that is not a flex-item keyword is `unsupported-flex-direction`. An
 unresolvable `justify-*`, `items-*`, or `content-*` value is `unsupported-alignment-value`.
@@ -459,29 +359,13 @@ layout, not after the flex main and cross axes. They do not swap when you use `f
 
 These write into a `UIFlexItem` helper instance on the child.
 
-| Class | Roblox target |
-|---|---|
-| `flex-1` | `FlexMode = Enum.UIFlexMode.Fill` |
-| `flex-auto` | `FlexMode = Enum.UIFlexMode.Fill` |
-| `flex-initial` | `FlexMode = Enum.UIFlexMode.Shrink` |
-| `flex-none` | `FlexMode = Enum.UIFlexMode.None` |
-| `grow` | `FlexMode = Enum.UIFlexMode.Grow` |
-| `grow-0` | `FlexMode = Enum.UIFlexMode.None` |
-| `shrink` | `FlexMode = Enum.UIFlexMode.Shrink` |
-| `shrink-0` | `FlexMode = Enum.UIFlexMode.None` |
-| `self-{auto,start,center,end,stretch}` | `ItemLineAlignment` |
+<UtilityTable family="flex-items" />
 
 There is no `grow-{n}`, no `shrink-{n}` — numeric variants are not recognized.
 
 ## Grid
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `grid` | — | `UIGridLayout` child, `SortOrder = LayoutOrder` | |
-| `grid-cols-{n}` | `1`–`12` | `FillDirection = Horizontal`, `FillDirectionMaxCells = n`, `CellSize.X` | |
-| `grid-rows-{n}` | `1`–`12` | `FillDirection = Vertical`, `FillDirectionMaxCells = n`, `CellSize.Y` | |
-| `auto-rows-{n}` | Spacing scale, arbitrary | `CellSize.Y` | Cross axis of `grid-cols-*` |
-| `auto-cols-{n}` | Spacing scale, arbitrary | `CellSize.X` | Cross axis of `grid-rows-*` |
+<UtilityTable family="grid" />
 
 Anything else in the grid family — `col-span-*`, `row-span-*`, template values — is not implemented;
 `UIGridLayout` has no span concept. An unresolvable count is `unsupported-grid-value`.
@@ -513,12 +397,7 @@ fixed upstream, set `CellPadding` as a prop on the grid element and leave `gap-*
 
 ## Order
 
-| Class | Values | Roblox target |
-|---|---|---|
-| `order-{n}`, `-order-{n}` | any integer | `LayoutOrder` |
-| `order-first` | — | `LayoutOrder = -9999` |
-| `order-last` | — | `LayoutOrder = 9999` |
-| `order-none` | — | `LayoutOrder = 0` |
+<UtilityTable family="order" />
 
 An unresolvable payload is `unsupported-layout-order-value`. Remember `divide-*` separators are
 positioned by child order, not `LayoutOrder` — mixing the two breaks separator placement.
@@ -531,23 +410,13 @@ had that bug until 0.5.0; see the [release notes](/vela-rbxts/reference/release-
 
 ## Aspect ratio
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `aspect-square` | — | `UIAspectRatioConstraint.AspectRatio = 1` | |
-| `aspect-video` | — | `AspectRatio = 1.7777777778` | |
-| `aspect-[W/H]` | positive finite numbers | `AspectRatio` | Arbitrary value |
-| `aspect-[N]` | positive finite number | `AspectRatio` | Arbitrary value |
-| `aspect-auto` | — | — | `unsupported-aspect-value` |
+<UtilityTable family="aspect-ratio" />
 
 Arbitrary bracket values are accepted here on the compile-time path, unlike `rounded-*`.
 
 ## Transform
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `rotate-{deg}`, `-rotate-{deg}` | `0`, `1`, `2`, `3`, `6`, `12`, `45`, `90`, `180` | `Rotation` | `-rotate-0` stays `0` |
-| `scale-{n}` | `0`, `50`, `75`, `90`, `95`, `100`, `105`, `110`, `125`, `150` | `UIScale.Scale` | Maps to `0`, `0.5`, `0.75`, `0.9`, `0.95`, `1`, `1.05`, `1.1`, `1.25`, `1.5` |
-| `translate-x-{v}`, `translate-y-{v}` | fractions or spacing values | `AnchorPoint` or `Position` | See below |
+<UtilityTable family="transform" />
 
 Degrees outside the list give `unsupported-rotation-value`; scales outside the list give
 `unsupported-scale-value`. Scaling is uniform — there is no `scale-x-*`/`scale-y-*`.
@@ -564,10 +433,7 @@ offset. The practical payoff is that the CSS centering idiom works verbatim:
 
 ## Effects
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `opacity-{n}` | any integer `0`–`100` | Every transparency channel the element paints, and the subtree under it | Inverted: `opacity-100` is fully opaque |
-| `opacity-{n}` on a `canvasgroup` | same | `GroupTransparency` | One composited layer; the fade stops there |
+<UtilityTable family="effects" />
 
 The value is converted to transparency as `100 - n`. Any non-integer or out-of-range value gives
 `unsupported-opacity-value`.
@@ -602,20 +468,7 @@ the overlap darkens, and a fade arriving from an ancestor *component* composes o
 Vela can describe transitions and looping animations, executed by `TweenService` inside the runtime
 helper.
 
-| Class | Values | Effect |
-|---|---|---|
-| `transition` | — | Tween property changes caused by variant rules |
-| `transition-all` | — | Tween every property a rule changes |
-| `transition-colors` | — | Narrow the tween to the color properties |
-| `transition-opacity` | — | Narrow the tween to the transparency properties |
-| `transition-transform` | — | Narrow the tween to `Position`, `Rotation`, `UIScale` |
-| `transition-shadow` | — | `unsupported-transition-value` — see below |
-| `transition-none` | — | Disable tweening |
-| `duration-{n}` | preset `75`–`1000`, or any integer ms | Tween time, `n / 1000` seconds |
-| `delay-{n}` | same | Tween delay |
-| `ease-{linear,in,out,in-out}` | — | `EasingStyle` / `EasingDirection` |
-| `animate-{spin,pulse,bounce}` | — | Preset looping animation — **runtime-structural** |
-| `animate-none` | — | No animation |
+<UtilityTable family="motion" />
 
 Defaults are `0.15` seconds and `Quad`/`Out`; `duration-*`, `delay-*`, and `ease-*` each enable the
 transition on their own, so `duration-200` alone is a complete transition spec.
@@ -644,21 +497,7 @@ whole section, one method at a time.
 
 ## Typography
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `text-{size}` | `xs` 12, `sm` 14, `base` 16, `lg` 18, `xl` 20, `2xl` 24, `3xl` 30, `4xl` 36, `5xl` 48, `6xl` 60, `7xl` 72, `8xl` 96, `9xl` 128 | `TextSize` | Pixel values shown |
-| `font-{weight}` | `thin`, `extralight`, `light`, `normal`, `medium`, `semibold`, `bold`, `extrabold`, `black` | `FontFace` weight axis | See below |
-| `font-{family}` | Any key in `theme.fontFamily` — `sans`, `serif`, `mono` by default | `FontFace` family axis | See below |
-| `italic`, `not-italic` | — | `FontFace` style axis | Merges with the weight |
-| `leading-{key}` | `none` 1, `tight` 1.25, `snug` 1.375, `normal` 1.5, `relaxed` 1.625, `loose` 2 | `LineHeight` | Numeric forms are `unsupported-line-height-value` |
-| `text-left`, `text-center`, `text-right` | — | `TextXAlignment` | |
-| `text-justify` | — | — | `unsupported-text-alignment` |
-| `align-top`, `align-middle`, `align-bottom` | — | `TextYAlignment = Top, Center, Bottom` | |
-| `text-wrap`, `text-nowrap` | — | `TextWrapped = true, false` | |
-| `whitespace-normal`, `whitespace-nowrap` | — | `TextWrapped = true, false` | Alias family; others are `unsupported-whitespace-value` |
-| `truncate` | — | `TextTruncate = Enum.TextTruncate.AtEnd` | |
-| `uppercase`, `lowercase`, `capitalize`, `normal-case` | — | the `Text` string itself | See below |
-| `underline`, `line-through`, `no-underline` | — | RichText markup around `Text` | See below |
+<UtilityTable family="typography" />
 
 **`font-*` is one prefix over three axes**, and they merge into a single `Font` value:
 `new Font(family, Enum.FontWeight.X, Enum.FontStyle.Italic)`, with the style argument present only
@@ -688,43 +527,25 @@ reports `decoration-on-richtext` rather than double-wrapping your markup.
 
 ## Images
 
-| Class | Roblox target |
-|---|---|
-| `object-cover` | `ScaleType = Enum.ScaleType.Crop` |
-| `object-contain` | `ScaleType = Enum.ScaleType.Fit` |
-| `object-fill` | `ScaleType = Enum.ScaleType.Stretch` |
-| `object-tile` | `ScaleType = Enum.ScaleType.Tile` |
+<UtilityTable family="images" />
 
 `object-tile` is a Roblox-only extension with no Tailwind counterpart. Other values are
 `unsupported-object-fit-value`.
 
 ## Interaction
 
-| Class | Roblox target |
-|---|---|
-| `pointer-events-none` | `Interactable = false` |
-| `pointer-events-auto` | `Interactable = true` |
-| `overscroll-auto` | `ElasticBehavior = Enum.ElasticBehavior.Always` |
-| `overscroll-contain` | `ElasticBehavior = Enum.ElasticBehavior.WhenScrollable` |
-| `overscroll-none` | `ElasticBehavior = Enum.ElasticBehavior.Never` |
+<UtilityTable family="interaction" />
 
 `overscroll-*` is meaningful only on `scrollingframe`. Unresolvable values are
 `unsupported-pointer-events-value` and `unsupported-overscroll-value`.
 
 ## Visibility
 
-| Class | Roblox target |
-|---|---|
-| `hidden` | `Visible = false` |
-| `visible` | `Visible = true` |
+<UtilityTable family="visibility" />
 
 ## Overflow
 
-| Class | Roblox target |
-|---|---|
-| `overflow-hidden` | `ClipsDescendants = true` |
-| `overflow-clip` | `ClipsDescendants = true` |
-| `overflow-visible` | `ClipsDescendants = false` |
+<UtilityTable family="overflow" />
 
 Any other `overflow-*` value gives `unsupported-overflow-value`. There is no `overflow-auto` and no
 `overflow-scroll` — use a `scrollingframe` and the [scrolling families](#scrolling).
@@ -733,14 +554,7 @@ Any other `overflow-*` value gives `unsupported-overflow-value`. There is no `ov
 
 Four families added in 0.7.0, all meaningful only on `scrollingframe`.
 
-| Class | Values | Roblox target | Notes |
-|---|---|---|---|
-| `scroll-{x,y,xy}` | — | `ScrollingDirection = X, Y, XY` | |
-| `scroll-none` | — | `ScrollingEnabled = false` | Does not set a direction |
-| `scrollbar-w-{n}` | Spacing scale, arbitrary | `ScrollBarThickness` | `scrollbar-w-2` is 8px |
-| `scrollbar-none` | — | `ScrollBarThickness = 0` | |
-| `scrollbar-{color}` | Any color, `/N` modifier | `ScrollBarImageColor3`, `ScrollBarImageTransparency` | |
-| `canvas-{auto,auto-x,auto-y,none}` | — | `AutomaticCanvasSize = XY, X, Y, None` | |
+<UtilityTable family="scrolling" />
 
 ```tsx title="A vertical list that grows its canvas"
 <scrollingframe className="scroll-y canvas-auto-y scrollbar-w-2 scrollbar-zinc-600/50" />
@@ -776,20 +590,7 @@ Twelve variant prefixes are supported. They chain with colons, and multiple pref
 combine with AND — `md:touch:w-full` applies only when both conditions hold. An unrecognized prefix
 reports `unknown-variant`, names the supported set in the message, and drops the token.
 
-| Variant | Condition |
-|---|---|
-| `sm` | Viewport width ≥ 640 |
-| `md` | Viewport width ≥ 768 |
-| `lg` | Viewport width ≥ 1024 |
-| `portrait` | Viewport width less than height |
-| `landscape` | Viewport width ≥ height |
-| `touch` | `UserInputService.TouchEnabled`, and no gamepad |
-| `mouse` | Neither gamepad nor touch |
-| `gamepad` | `UserInputService.GamepadEnabled` |
-| `hover` | The pointer is over this element |
-| `active` | This element is being pressed |
-| `focus` | This element holds focus or selection |
-| `dark` | `Players.LocalPlayer` carries `VelaColorScheme = "dark"` |
+<UtilityTable family="variants" />
 
 All three breakpoints are minimum-width only; there is no maximum-width form and no `xl`/`2xl`, and
 the thresholds are not configurable. A square viewport counts as `landscape`. Input mode is resolved

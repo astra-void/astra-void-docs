@@ -1,4 +1,5 @@
 import { PACKAGE_STATUS_LABELS, type PackageStatus } from "@/lib/package-status"
+import { getUtilityGroup, isAllRuntime } from "@/lib/vela-utilities"
 
 /**
  * Turns the MDX body of a docs entry back into plain Markdown for the `.md`
@@ -206,7 +207,9 @@ function parseAttributes(input: string, start: number) {
       return { attrs, end: index + 1, selfClosing: false }
     }
 
-    const name = /^[A-Za-z_][\w-]*/.exec(input.slice(index))
+    // The colon is for Astro's client directives (`client:load`), which are
+    // attributes as far as this parser is concerned.
+    const name = /^[A-Za-z_][\w:-]*/.exec(input.slice(index))
 
     if (!name) {
       return null
@@ -322,7 +325,12 @@ const COMPONENT_RENDERERS: Record<
   PropTable: renderPropTable,
   // Inline next to a heading that already says the same word on the page.
   StatusBadge: () => "",
+  UtilityTable: renderUtilityTable,
   VelaPreview: renderPreview,
+  // A filter over rows the utility reference already prints in full; repeating
+  // all 200 of them here would only pad llms.txt.
+  VelaCheatSheet: () =>
+    "\n_Every utility class on one filterable page. The same rows, with the prose that explains them, are in the Utility reference._\n",
 }
 
 function renderComponent(element: JsxElement, resolveLink?: LinkResolver) {
@@ -363,6 +371,55 @@ function renderPropTable(attrs: JsxAttributes) {
     .join("\n")
 
   return `\n| Prop | Type | Description |\n| --- | --- | --- |\n${body}\n`
+}
+
+/**
+ * The utility reference's tables are data, so the Markdown view rebuilds them
+ * from the same rows the page renders — same columns, and the `runtime` flag
+ * spelled out where the page draws a pill.
+ */
+function renderUtilityTable(attrs: JsxAttributes) {
+  const family = asString(attrs.family)
+
+  if (!family) {
+    return ""
+  }
+
+  const group = getUtilityGroup(family)
+  const allRuntime = isAllRuntime(group)
+
+  const showValues = group.rows.some((row) => row.values)
+  const showRuntime = !allRuntime && group.rows.some((row) => row.runtime)
+  const showNotes = showRuntime || group.rows.some((row) => row.notes)
+
+  const headers = [
+    group.classLabel ?? "Class",
+    ...(showValues ? ["Values"] : []),
+    group.targetLabel ?? "Roblox target",
+    ...(showNotes ? ["Notes"] : []),
+  ]
+
+  const body = group.rows
+    .map((row) => {
+      const notes = [
+        showRuntime && row.runtime ? "Runtime-structural" : "",
+        row.notes ?? "",
+      ]
+        .filter(Boolean)
+        .join(". ")
+
+      const columns = [
+        row.classes.map((name) => `\`${name}\``).join(", "),
+        ...(showValues ? [row.values ?? "—"] : []),
+        row.target,
+        ...(showNotes ? [notes] : []),
+      ]
+
+      return `| ${columns.map(cell).join(" | ")} |`
+    })
+    .join("\n")
+
+  return `\n| ${headers.join(" | ")} |\n|${headers.map(() => " --- ").join("|")}|\n${body}\n`
 }
 
 function renderPackageMeta(attrs: JsxAttributes) {
