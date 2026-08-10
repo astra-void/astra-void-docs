@@ -27,6 +27,7 @@ import { buildGallery, createGalleryServer } from "loom-dev/embed"
 // Relative, not the `@/` alias: this module is loaded while astro.config is
 // being evaluated, before that alias exists.
 import { getLatticeShims } from "../lib/lattice-shims"
+import { materializeVelaRuntime } from "../lib/vela-runtime-shims"
 import {
   compileVelaScene,
   listVelaScenes,
@@ -48,6 +49,16 @@ const TARGETS = "src/preview-targets"
 const MOUNT = "vela-preview/"
 
 /**
+ * The Vela runtime shims, refreshed by {@link emitScenes}.
+ *
+ * `emitScenes` clears the whole generated root on every run — including on the
+ * dev watcher's recompile — so the copy has to be re-made there rather than once
+ * at startup, or the first edit to an example would delete the runtime out from
+ * under the running gallery.
+ */
+let runtimeShims: Record<string, string> = {}
+
+/**
  * Lower every example into the generated gallery root and return the
  * diagnostics the compiler reported, scene by scene.
  */
@@ -57,6 +68,7 @@ function emitScenes(): { scene: string; diagnostics: string[] }[] {
   // deleted example cannot leave a stale target behind for the gallery to list.
   rmSync(resolve(process.cwd(), GENERATED_DIR), { recursive: true, force: true })
   mkdirSync(outDir, { recursive: true })
+  runtimeShims = materializeVelaRuntime(resolve(process.cwd(), GENERATED_DIR))
 
   // Vite derives its dep-optimizer cache dir from the nearest package.json
   // above the root. Without one here that is the docs' own package.json, so
@@ -145,7 +157,7 @@ export default function velaPreview(): AstroIntegration {
           root: resolve(process.cwd(), GENERATED_DIR),
           targets: TARGETS,
           base: `${base}${MOUNT}`,
-          shims: getLatticeShims(),
+          shims: { ...getLatticeShims(), ...runtimeShims },
         })
         // Registered during `astro:server:setup`, so it sits ahead of Astro's
         // own dev handler and wins for `/vela-preview/*`.
@@ -187,7 +199,7 @@ export default function velaPreview(): AstroIntegration {
           root: resolve(process.cwd(), GENERATED_DIR),
           targets: TARGETS,
           outDir,
-          shims: getLatticeShims(),
+          shims: { ...getLatticeShims(), ...runtimeShims },
         })
         logger.info(`built Vela previews → ${outDir}`)
       },

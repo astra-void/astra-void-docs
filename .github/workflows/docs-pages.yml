@@ -51,6 +51,17 @@ jobs:
           repository: astra-void/facet
           path: .preview-src/facet
 
+      # Since Vela 0.12.0 a lowered scene imports its runtime host rather than
+      # carrying an inlined copy, and the published package is compiled Luau for
+      # Rojo — nothing Loom can run. The TypeScript behind it lives only here, so
+      # both the Vela and Facet galleries copy it out of this checkout (see
+      # src/lib/vela-runtime-shims.ts). Nothing is installed from it.
+      - name: Checkout vela-rbxts
+        uses: actions/checkout@v7
+        with:
+          repository: astra-void/vela-rbxts
+          path: .preview-src/vela-rbxts
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 

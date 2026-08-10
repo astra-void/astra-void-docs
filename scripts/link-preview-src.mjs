@@ -35,6 +35,15 @@ const links = [
     name: "facet",
     source: process.env.FACET_REPO ?? resolve(workspace, "typescript/facet"),
   },
+  // Since 0.12.0 a lowered scene *imports* its runtime host instead of carrying
+  // an inlined copy, so the Vela gallery needs something to resolve
+  // `@rbxts/vela-runtime` to. The published package ships compiled Luau, which
+  // Loom cannot run — the TypeScript the compiler emits against lives only in
+  // the repo, so the checkout is the source, shimmed like `@lattice-ui/*`.
+  {
+    name: "vela-rbxts",
+    source: process.env.VELA_REPO ?? resolve(workspace, "rust/vela-rbxts"),
+  },
 ]
 
 mkdirSync(previewSrc, { recursive: true })

@@ -47,6 +47,7 @@ import {
   readFacetCheckoutVersion,
 } from "../lib/facet-source"
 import { getLatticeShims } from "../lib/lattice-shims"
+import { materializeVelaRuntime } from "../lib/vela-runtime-shims"
 
 /** Where the authored examples live, relative to the project root. */
 const SOURCE_DIR = "preview/facet"
@@ -75,6 +76,9 @@ function emit(): Report[] {
   // deleted example cannot leave a stale target behind for the gallery to list.
   rmSync(root, { recursive: true, force: true })
   mkdirSync(resolve(root, TARGETS), { recursive: true })
+  // Cleared with the rest of the tree, so the copy is re-made here rather than
+  // once at startup — see the Vela gallery for the same note.
+  runtimeShims = materializeVelaRuntime(root)
 
   // Vite derives its dep-optimizer cache dir from the nearest package.json
   // above the root. Without one here that is the docs' own package.json, and
@@ -169,10 +173,17 @@ function reportDiagnostics(
   }
 }
 
-/** Loom needs both scopes: Lattice for behavior, Facet for the variant runtime. */
+/**
+ * Loom needs three scopes: Lattice for behavior, Facet for the variant runtime,
+ * and — since Vela 0.12.0 — the Vela runtime a lowered registry source imports
+ * instead of carrying inlined.
+ */
 function shims() {
-  return { ...getLatticeShims(), ...facetShims() }
+  return { ...getLatticeShims(), ...facetShims(), ...runtimeShims }
 }
+
+/** The Vela runtime shims, refreshed by {@link emit}. */
+let runtimeShims: Record<string, string> = {}
 
 /**
  * Whether there is anything to serve, warning once about why not.
