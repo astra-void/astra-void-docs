@@ -195,7 +195,8 @@ which spreads your object over the base and returns the base unchanged. So
 ### framework
 
 Which UI library the project's JSX compiles for. `"react"` is the default; `"vide"` emits for
-[Vide](https://centau.github.io/vide/).
+[Vide](https://centau.github.io/vide/). Most projects never write it — left unset the target is
+inferred from `tsconfig.json`, and a Vide project's tsconfig already says so.
 
 ```ts title="vela.config.ts"
 export default defineConfig({ framework: "vide" });

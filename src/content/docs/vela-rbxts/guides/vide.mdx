@@ -1,6 +1,6 @@
 ---
 title: Vide
-description: Emitting for Vide instead of React — one config key, the same utilities and the same static output, a thunk for anything dynamic, and the two limits that follow from a component body that runs once.
+description: Emitting for Vide instead of React — read off your tsconfig with no Vela config to write, the same utilities and the same static output, a thunk for anything dynamic, and the two limits that follow from a component body that runs once.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -9,18 +9,29 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela emits for [Vide](https://centau.github.io/vide/) as well as React, from **0.12.0**. It is one
-config key, and everything this documentation says about utilities, variants, the theme and the two
-lowering paths says the same thing under either target.
+Vela emits for [Vide](https://centau.github.io/vide/) as well as React, from **0.12.0**, and
+everything this documentation says about utilities, variants, the theme and the two lowering paths
+says the same thing under either target.
 
-```ts title="vela.config.ts"
-import { defineConfig } from "vela-rbxts";
+**A Vide project needs no Vela config for this.** With `framework` unset — which includes having no
+`vela.config.ts` at all — Vela reads the target off your `tsconfig.json`, and the setting it reads is
+the one a Vide project already has so that roblox-ts compiles its JSX:
 
-export default defineConfig({ framework: "vide" });
+```json title="tsconfig.json — enough on its own"
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "jsxFactory": "Vide.jsx",
+    "jsxFragmentFactory": "Vide.Fragment"
+  }
+}
 ```
 
-There is nothing else to install. Both runtime hosts ship with `vela-rbxts`, and the one you do not
-emit for is an inert ModuleScript no module imports — see [installation](/vela-rbxts/getting-started/installation/#install-the-packages).
+There is nothing else to install either. Both runtime hosts ship with `vela-rbxts`, and the one you do
+not emit for is an inert ModuleScript no module imports — see [installation](/vela-rbxts/getting-started/installation/#install-the-packages).
+
+The config key exists for the cases where you want to say it out loud rather than have it read — see
+[naming the target explicitly](#naming-the-target-explicitly) at the end of this page.
 
 ## The static path is the same output
 
@@ -110,25 +121,26 @@ What is left is a margin named where nothing can read it, arriving out of an opa
 **warns** there rather than rendering the element unspaced, so it is a message in the output rather
 than a layout you have to reverse-engineer.
 
-## The framework is inferred when you do not name it
+## Naming the target explicitly
 
-Leave `framework` unset and Vela reads it off your `tsconfig.json`: it walks up from each source file to
-the nearest one, follows a relative `extends` up to eight levels, and reads `compilerOptions.jsxFactory`.
-A factory beginning with `Vide.` selects Vide.
-
-```json title="tsconfig.json — enough on its own"
-{
-  "compilerOptions": {
-    "jsx": "react",
-    "jsxFactory": "Vide.jsx",
-    "jsxFragmentFactory": "Vide.Fragment"
-  }
-}
-```
+The inference is a walk, and it is worth knowing how far it reaches before you decide you need to
+override it: from each source file's directory upward to the nearest `tsconfig.json`, following a
+**relative** `extends` up to eight levels, reading `compilerOptions.jsxFactory`. A factory beginning
+with `Vide.` selects Vide; anything else, or none found, leaves the default of React.
 
 Naming the key in `vela.config.ts` always wins, and it wins by being **present** rather than by its
-value — `framework: "react"` in the config stops the inference even under a Vide `jsxFactory`. That is
-the escape hatch if you ever need it; there is no reason to write it otherwise.
+value:
+
+```ts title="vela.config.ts — only if you want to override the walk"
+import { defineConfig } from "vela-rbxts";
+
+export default defineConfig({ framework: "vide" });
+```
+
+So `framework: "react"` pins React even under a Vide `jsxFactory`, and `framework: "vide"` pins Vide
+where the walk would not have found the factory — a tsconfig reached through a non-relative `extends`,
+or one nested deeper than the walk goes. Both are escape hatches; a project whose tsconfig says `Vide.`
+in the ordinary way has no reason to write either.
 
 <Callout title="One target per project, not per file">
 `jsxFactory` is a program-wide TypeScript setting, so a project pointing it at Vide cannot compile React

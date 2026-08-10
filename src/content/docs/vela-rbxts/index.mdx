@@ -12,7 +12,7 @@ utility classes on Roblox host elements — and on your own components — and a
 rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau. `p-4`
 becomes a `UIPadding` child, `rounded-lg` becomes a `UICorner`, `bg-slate-700` becomes
 `BackgroundColor3`. It emits for [React](https://github.com/littensy/rbxts-react) by default and for
-[Vide](/vela-rbxts/guides/vide/) on one config key, and nothing about Vela survives into the shipped
+[Vide](/vela-rbxts/guides/vide/) when your `tsconfig.json` compiles Vide JSX, and nothing about Vela survives into the shipped
 game unless a class genuinely needs the player's screen or input device to resolve.
 
 <VelaPreview
