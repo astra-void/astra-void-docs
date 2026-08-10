@@ -22,7 +22,7 @@
  * The copy is cheap (a couple of dozen small files), and both generated roots are
  * rebuilt from scratch on every run, so it cannot go stale.
  */
-import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs"
+import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs"
 import { resolve } from "node:path"
 
 // Anchored on the working directory for the same reason lattice-source.ts is:
@@ -81,7 +81,33 @@ export function materializeVelaRuntime(
     mkdirSync(target, { recursive: true })
     cpSync(source, target, { recursive: true })
     shims[id] = resolve(target, "index.ts")
+
+    materializeConfigDefaults(repo, target)
   }
 
   return shims
+}
+
+/**
+ * `src/config-defaults.json` is generated, and gitignored — the runtime carries
+ * the default theme so the compiler never has to emit it, and both sides read
+ * one source of truth in `@vela-rbxts/config`. A local checkout has it because
+ * the package has been built there; a fresh CI checkout does not, and the copy
+ * then fails at *bundle* time with `Could not resolve "./config-defaults.json"`
+ * rather than at copy time, which is a long way from the cause.
+ *
+ * So write it the way each package's own prebuild script does. Unconditional
+ * across the three: a package that never imports it is unaffected by the file
+ * being there.
+ */
+function materializeConfigDefaults(repo: string, target: string) {
+  const written = resolve(target, "config-defaults.json")
+  if (existsSync(written)) {
+    return
+  }
+
+  const defaults = resolve(repo, "packages/config/src/defaults.json")
+  if (existsSync(defaults)) {
+    copyFileSync(defaults, written)
+  }
 }
