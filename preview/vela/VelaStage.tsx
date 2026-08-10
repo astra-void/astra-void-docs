@@ -11,6 +11,39 @@
  * on the same color as the page around it. Defaults to dark outside the docs.
  */
 import React from "@rbxts/react";
+import { Players } from "@rbxts/services";
+
+// Loom models a Player without Roblox's attribute API, and Vela's runtime host
+// uses two halves of it to resolve `dark:`: it reads
+// `LocalPlayer:GetAttribute("VelaColorScheme")` on every environment read, and
+// subscribes to `GetAttributeChangedSignal` for that key on mount. Any scene
+// that reaches the host — a variant, a dynamic class value — dies on
+// `GetAttribute is not a function` before it draws, or on the signal a moment
+// later. Answer the way a place that never sets the attribute answers, with a
+// subscription that never fires.
+//
+// Every scene in this folder imports this module, so importing it for the side
+// effect is enough; both calls happen at render, well after module init.
+{
+  const player = Players.LocalPlayer as unknown as
+    | {
+        GetAttribute?: (name: string) => unknown;
+        GetAttributeChangedSignal?: (name: string) => unknown;
+      }
+    | undefined;
+
+  if (player !== undefined) {
+    if (player.GetAttribute === undefined) {
+      player.GetAttribute = () => undefined;
+    }
+
+    if (player.GetAttributeChangedSignal === undefined) {
+      player.GetAttributeChangedSignal = () => ({
+        Connect: () => ({ Disconnect: () => {} }),
+      });
+    }
+  }
+}
 
 type VelaStageProps = {
   /** Fixed pixel size of the centered example area. */
