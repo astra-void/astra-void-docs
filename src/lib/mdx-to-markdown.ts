@@ -317,6 +317,8 @@ const COMPONENT_RENDERERS: Record<
   (attrs: JsxAttributes, children: string) => string
 > = {
   Callout: renderCallout,
+  Details: renderDetails,
+  FacetPreview: renderPreview,
   ForwardedProps: renderForwardedProps,
   LoomPreview: renderPreview,
   PackageInstall: renderPackageInstall,
@@ -349,6 +351,18 @@ function renderCallout(attrs: JsxAttributes, children: string) {
     .join("\n")
 
   return `\n${quoted}\n`
+}
+
+/**
+ * A disclosure is depth the page keeps behind a click. Markdown has no click,
+ * so the title becomes a lead-in and the body follows verbatim — unlike a
+ * `<Callout>`, it routinely holds code fences and lists that quoting would
+ * mangle.
+ */
+function renderDetails(attrs: JsxAttributes, children: string) {
+  const title = asString(attrs.title)
+
+  return title ? `\n**${title}**\n\n${children}\n` : `\n${children}\n`
 }
 
 function renderPropTable(attrs: JsxAttributes) {
