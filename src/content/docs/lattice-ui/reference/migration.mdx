@@ -11,6 +11,12 @@ import { LATTICE_VERSION } from "@/lib/lattice-version";
 
 Lattice UI is pre-1.0, so `0.x` minors may break. This page carries the code changes each breaking release needs; [Releases](/lattice-ui/reference/releases/) carries the summaries and the reasoning.
 
+## 0.8.0 → 0.8.1
+
+No work. A patch with no API change: `asChild` recognises UI modifier siblings under browser React as well as in Roblox, `UIShadow` joins the modifier set, and re-parented modifiers no longer collide keys with the element's own children. `npx lattice-ui upgrade` and carry on.
+
+The one thing worth knowing is *why* there were two spellings to get wrong, because it decides which renderers 0.8.0 was broken under. `@rbxts/react` rewrites a host tag to its Roblox class name before it builds the element, so in Roblox `<uicorner />` reaches `Slot` as `"UICorner"`. A browser React renderer — what the previews on this site run on — leaves the tag as written. 0.8.0 matched the first spelling only. If you ship to Roblox, 0.8.0 already worked; if you render Lattice primitives under browser React, `asChild` failed there on every styled subtree until this release.
+
 ## 0.7.x → 0.8.0
 
 A small release with one shape change: every motion host that was a `CanvasGroup` is now a `Frame`. Nothing about placement, presence timing, exit-before-unmount, dismissal boundaries, focus scoping or layering moves.
@@ -51,7 +57,9 @@ Its motion host spans the whole layer, so animating `BackgroundTransparency` the
 
 ### 4. `asChild` starts working on Vela-styled subtrees
 
-Not work, a fix to stop working around. The `Slot` runtime matched UI modifiers by their JSX tag, but roblox-ts labels a host element with its Roblox class — `<uicorner />` arrives as `"UICorner"` — so every modifier missed the lookup and counted as a second target candidate. Any subtree carrying a `UICorner`, `UIPadding` or `UIListLayout` sibling, which is what a Tailwind-style `className` transform emits, failed with "expected exactly one child element besides any UI modifiers". Delete whatever you did to avoid it.
+Not work, a fix to stop working around. The `Slot` runtime matched UI modifiers by their JSX tag, but `@rbxts/react` rewrites a host tag to its Roblox class name before it builds the element — `<uicorner />` arrives as `"UICorner"` — so every modifier missed the lookup and counted as a second target candidate. Any subtree carrying a `UICorner`, `UIPadding` or `UIListLayout` sibling, which is what a Tailwind-style `className` transform emits, failed with "expected exactly one child element besides any UI modifiers". Delete whatever you did to avoid it.
+
+In Roblox, that is the whole story. Under a browser React renderer the tag survives as written, and this release matched the class name only — see [0.8.0 → 0.8.1](#080--081), which recognises both.
 
 ### Upgrade checklist
 
@@ -216,7 +224,7 @@ const toast = useToast();
 Not everything here is work. Three fixes remove workarounds you may currently be carrying:
 
 - **16 leaf parts now render `children`.** Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay` previously dropped children unless `asChild` was set, so attaching a `UICorner` or `UIPadding` silently did nothing. Delete any `asChild` you added only to work around that.
-- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits — is re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error. Note that the 0.7.0 implementation matched modifiers by their JSX tag and therefore never fired — this only works from 0.8.0. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
+- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits — is re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error. Note that the 0.7.0 implementation matched modifiers by their JSX tag and therefore never fired in Roblox — that works from 0.8.0, and from 0.8.1 under a browser React renderer too. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 - **Highlight state is readable.** `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext` return `{ highlighted, disabled }`. `highlighted` reports hover *or* managed focus, which is what you need to render the highlight the primitive used to draw.
 
 ### 7. Focus additions

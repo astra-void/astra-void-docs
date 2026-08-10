@@ -89,11 +89,13 @@ JSX attributes on `Switch.Root`, and helper instances are prepended as its child
 ```
 
 Two `GuiObject`-ish children where `asChild` clones exactly one — which is precisely the case Lattice
-0.7.0 added, and **0.8.0 is the release where it works**. `Slot` re-parents the modifier under the
-element the props land on instead of treating it as a second slot candidate, so this renders the same
-tree as the first form. On 0.7.x the rule shipped keyed by the JSX tag rather than the Roblox class
-roblox-ts actually emits, so every modifier missed it and the whole shape raised "expected exactly one
-child element besides any UI modifiers". See
+0.7.0 added, and **0.8.0 is the release where it works in Roblox**. `Slot` re-parents the modifier
+under the element the props land on instead of treating it as a second slot candidate, so this renders
+the same tree as the first form. On 0.7.x the rule shipped keyed by the JSX tag rather than the Roblox
+class name `@rbxts/react` actually labels the element with, so every modifier missed it and the whole
+shape raised "expected exactly one child element besides any UI modifiers". A browser React renderer
+keeps the tag as written and so needed the other spelling, which **0.8.1** added — the previews on
+this page ran into exactly that. See
 [asChild composition](/lattice-ui/guides/as-child-composition/) for the full rule.
 
 That emit is what the **static** path produces, and the Bluetooth row keeps it by branching the whole

@@ -69,9 +69,11 @@ Because `Slot` composes rather than replaces, you can attach your own analytics 
 Two things do **not** count against that one-element budget, as of 0.7.0:
 
 - **Fragments are looked through.** A fragment wrapping a single element resolves to that element.
-- **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uigradient`, `uiscale`, the constraints, and the rest of the `UIBase` classes are re-parented under the element the props land on instead of competing to be the target.
+- **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uishadow`, `uigradient`, `uiscale`, the constraints, and the rest of the creatable `UIComponent` classes are re-parented under the element the props land on instead of competing to be the target.
 
-**On 0.7.x that second rule is documented but inert.** The lookup that recognises a modifier was keyed by the JSX tag, and roblox-ts labels a host element with its Roblox class — `<uicorner />` reaches `Slot` as `"UICorner"` — so every modifier missed it, counted as a second candidate, and `asChild` failed with "expected exactly one child element besides any UI modifiers" on precisely the subtrees the rule was written for. Fixed in 0.8.0.
+**On 0.7.x that second rule is documented but inert.** The lookup that recognises a modifier was keyed by the JSX tag, and `@rbxts/react` rewrites a host tag to its Roblox class name before it builds the element — `<uicorner />` reaches `Slot` as `"UICorner"` — so every modifier missed it, counted as a second candidate, and `asChild` failed with "expected exactly one child element besides any UI modifiers" on precisely the subtrees the rule was written for. Fixed in 0.8.0.
+
+Which spelling arrives depends on the renderer, and 0.8.0 recognised only the Roblox one. A browser React renderer builds the element from the tag as written, so `"uicorner"` reaches `Slot` and the same failure appeared there instead — the previews on this site among them. From **0.8.1** the lookup accepts both, and `UIShadow` joins the set it was missing from.
 
 That second rule exists because Roblox attaches modifiers as *children* rather than properties, which is exactly the shape a Tailwind-style `className` transform emits when it lowers `rounded-md` or `p-2` at the call site — [vela-rbxts](/vela-rbxts/) being the one this was built against:
 

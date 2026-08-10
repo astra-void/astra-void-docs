@@ -17,9 +17,26 @@ All `@lattice-ui/*` packages version in lockstep, so a single release number des
   per-package stability tiers before upgrading.
 </Callout>
 
+## 0.8.1
+
+The current stable release. A patch: three fixes to `asChild`'s handling of UI modifier siblings, no API change and nothing to migrate.
+
+**Fixes**
+
+- **UI modifiers are recognised under both renderers.** `Slot` decides which child to clone by looking each element's type up in a table of UI modifiers, and that table held one spelling of each class at a time. Which spelling an element carries depends on who renders it: `@rbxts/react`'s `createElement` rewrites a host tag to its Roblox class name before building the element, so `<uicorner />` arrives as `"UICorner"`, while a browser React renderer leaves the tag as written. Keyed by tag, `asChild` failed on every styled subtree in Roblox; re-keyed by class name in 0.8.0, it failed the same way anywhere the library runs under browser React — which is what broke the `asChild` previews on this site. Both spellings are now listed.
+- **`UIShadow` counts as a modifier.** It is a creatable `UIComponent` that a Tailwind-style transform emits for `shadow-*`, and it was absent under either spelling, so it failed `asChild` exactly like a casing miss.
+- **Re-parented modifiers no longer collide keys with the element's own children.** Both child walks numbered from `.0`, and React may resolve a duplicate key by dropping a child rather than by warning. Reachable from any modifier sibling on an element that has children of its own.
+
+<Callout title="If you are on 0.8.0 in Roblox, this changes nothing you can see">
+  The 0.8.0 keying is correct for `@rbxts/react`, so a game shipped against it
+  was never affected by the first fix. The second and third are real anywhere:
+  a `shadow-*` class on an `asChild` part failed, and a modifier next to an
+  element with its own children fed React a duplicate key.
+</Callout>
+
 ## 0.8.0
 
-The current stable release. Every motion host that used to be a `CanvasGroup` is now a `Frame`, so no primitive flattens its content into an offscreen composited layer behind your back.
+Every motion host that used to be a `CanvasGroup` is now a `Frame`, so no primitive flattens its content into an offscreen composited layer behind your back.
 
 **Migration** — see [Migration](/lattice-ui/reference/migration/#07x--080). In short:
 
@@ -39,7 +56,7 @@ A `CanvasGroup` composites its whole subtree into one offscreen layer so `GroupT
 
 **Fixes**
 
-- `asChild` works on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by the JSX tag, but roblox-ts labels a host element with its Roblox class — `<uicorner />` reaches `Slot` as `"UICorner"` — so every modifier missed the lookup, counted as a second target candidate, and `asChild` failed with "expected exactly one child element besides any UI modifiers". Any component recipe that emits a `UIListLayout` or a `UICorner` hit this on every use. See [styling with Vela](/lattice-ui/guides/styling-with-vela/) and [`asChild` composition](/lattice-ui/guides/as-child-composition/).
+- `asChild` works in Roblox on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by the JSX tag, but `@rbxts/react` rewrites a host tag to its Roblox class name before building the element — `<uicorner />` reaches `Slot` as `"UICorner"` — so every modifier missed the lookup, counted as a second target candidate, and `asChild` failed with "expected exactly one child element besides any UI modifiers". Any component recipe that emits a `UIListLayout` or a `UICorner` hit this on every use. Re-keying it fixed Roblox and broke browser React, where the tag survives as written; 0.8.1 lists both spellings. See [styling with Vela](/lattice-ui/guides/styling-with-vela/) and [`asChild` composition](/lattice-ui/guides/as-child-composition/).
 
 ## 0.7.0
 
