@@ -1,0 +1,154 @@
+---
+title: Vide
+description: Emitting for Vide instead of React — one config key, the same utilities and the same static output, a thunk for anything dynamic, and the two limits that follow from a component body that runs once.
+product: vela-rbxts
+section: guides
+sidebar:
+  order: 70
+---
+
+import { Callout } from "@/components/docs/mdx";
+
+Vela emits for [Vide](https://centau.github.io/vide/) as well as React, from **0.12.0**. It is one
+config key, and everything this documentation says about utilities, variants, the theme and the two
+lowering paths says the same thing under either target.
+
+```ts title="vela.config.ts"
+import { defineConfig } from "vela-rbxts";
+
+export default defineConfig({ framework: "vide" });
+```
+
+There is nothing else to install. Both runtime hosts ship with `vela-rbxts`, and the one you do not
+emit for is an inert ModuleScript no module imports — see [installation](/vela-rbxts/getting-started/installation/#install-the-packages).
+
+## The static path is the same output
+
+A statically lowered element is *identical* source under both targets, because there is nothing
+framework-shaped in it. Vide's JSX intrinsics are the same lowercase Roblox class names React's are,
+and its props are Roblox instance properties directly:
+
+```tsx title="Both targets emit this"
+<frame BackgroundColor3={Color3.fromRGB(49, 65, 88)} Size={__VelaRem.scale(UDim2.fromOffset(160, 0), 4)}>
+  <uipadding PaddingTop={__VelaRem.scale(new UDim(0, 16), 0)} />
+</frame>
+```
+
+The whole token → utility pipeline is shared: the same parser, the same theme, the same diagnostics,
+the same helper children, the same [rem](/vela-rbxts/guides/theming/#rem) scaling. What differs is the
+module specifier at the top of the file — `@rbxts/vela-runtime-vide` rather than `@rbxts/vela-runtime`,
+so React never reaches a Vide place — and what happens on the runtime path.
+
+## A dynamic class value has to be a thunk
+
+This is the one thing you write differently. A Vide component body runs **once**; there is no
+re-render to refresh a plain value with. So a class value that changes has to be written as a function,
+the way any other derived Vide prop is:
+
+```tsx title="src/client/Button.tsx"
+const active = source(false);
+
+// Tracked — the class list is re-read whenever `active` changes.
+<textbutton className={() => (active() ? "bg-blue-600" : "bg-slate-700")} />
+
+// Not tracked — read once, at the moment the component body ran.
+<textbutton className={active() ? "bg-blue-600" : "bg-slate-700"} />
+```
+
+`className` is typed to allow both (`ClassValue | (() => ClassValue)`), and the second line is not an
+error — it is a class list that was correct once. Nothing warns about it, for the same reason Vide
+does not warn about any other prop read outside a thunk.
+
+<Callout title="A branch still resolves at compile time either way">
+A thunk is about *tracking*, not about lowering. `() => (active() ? "text-lg" : "text-sm")` names both
+tokens in the source, so both are resolved by the compiler with the full utility set and the element is
+handed the resolved props alongside the test — exactly as the React form is. The only difference in the
+emit is that the test itself is thunked, `__velaTests={[() => active() ? true : false]}`, so reading it
+tracks. See [dynamic class names](/vela-rbxts/guides/dynamic-class-names/#a-branch-lowers-at-compile-time).
+</Callout>
+
+## What the runtime host does differently
+
+Nothing you have to think about, on a host element. The Vide host binds an effect that writes whatever
+the current resolution names, which is what a re-render is for React: a property that appears is
+written, one that disappears goes back to what the element declared, or to the class default where it
+declared nothing. Interaction variants, `transition-*` and `animate-*`, the text transforms, `divide-*`
+separators and the `opacity-*` model all behave as the React host's do — they run on the same
+target-neutral core.
+
+The reactive seams underneath are different, and two of their consequences reach you.
+
+### A component element's props are fixed at the call
+
+Vide hands a component its props once, rather than writing to an instance it owns. So on a **component**
+element, which props the host can pass down is decided when the component is called:
+
+```tsx title="A prop that only a later reading names cannot appear"
+<Card className={() => (loud() ? "bg-red-500 rounded-xl" : "bg-slate-700")} />
+```
+
+Both branches are read up front here, so both `BackgroundColor3` and the `UICorner` are accounted for.
+What cannot work is a name that no reading at call time produced — a class value arriving from an opaque
+call that later yields a family nothing anticipated. A host element has no such limit: it is an instance
+the host owns, and it writes whatever the resolution now names.
+
+### A late `m-*` cannot be honoured
+
+A margin is a wrapper instance *above* the element, and Vide parents an element as soon as it builds
+one — so a margin box cannot be introduced afterwards. The compiler closes almost all of this by saying
+so up front: a class value naming `m-*` anywhere this pass can see, in a static token or in a branch,
+emits `__velaMarginBox` and the host builds the box **before** the element.
+
+```tsx title="Emitted for Vide — React gets no such prop"
+<VelaRuntimeHost className={() => (p.big() ? "m-4 p-2" : "p-2")} __velaMarginBox={true} __velaTag={"frame"} />
+```
+
+React answers `false` to the same question, because the render that resolves a margin also renders the
+wrapper around it — the hint would be a prop with no reader.
+
+What is left is a margin named where nothing can read it, arriving out of an opaque call. The runtime
+**warns** there rather than rendering the element unspaced, so it is a message in the output rather
+than a layout you have to reverse-engineer.
+
+## The framework is inferred when you do not name it
+
+Leave `framework` unset and Vela reads it off your `tsconfig.json`: it walks up from each source file to
+the nearest one, follows a relative `extends` up to eight levels, and reads `compilerOptions.jsxFactory`.
+A factory beginning with `Vide.` selects Vide.
+
+```json title="tsconfig.json — enough on its own"
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "jsxFactory": "Vide.jsx",
+    "jsxFragmentFactory": "Vide.Fragment"
+  }
+}
+```
+
+Naming the key in `vela.config.ts` always wins, and it wins by being **present** rather than by its
+value — `framework: "react"` in the config stops the inference even under a Vide `jsxFactory`. That is
+the escape hatch if you ever need it; there is no reason to write it otherwise.
+
+<Callout title="One target per project, not per file">
+`jsxFactory` is a program-wide TypeScript setting, so a project pointing it at Vide cannot compile React
+JSX at all. The choice is per project by construction, and this is also why an unset `framework` is read
+as *the default* rather than as a positive request for React — a project that never mentioned Vela's
+config but compiles Vide JSX is asking for Vide.
+</Callout>
+
+## Writing the declaration file
+
+Unchanged. The same side-effect import augments both namespaces — `React.Attributes` and
+`Vide.Attributes` — so one file covers whichever you compile for:
+
+```ts title="src/vela-env.d.ts"
+import "vela-rbxts";
+```
+
+## See also
+
+- [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — what a branch costs and what it does
+  not, on both targets.
+- [`framework`](/vela-rbxts/reference/config/#framework) — the config key itself.
+- [Release notes](/vela-rbxts/reference/release-notes/#0120) — what shipped in the Vide pass.

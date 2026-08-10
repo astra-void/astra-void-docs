@@ -66,7 +66,8 @@ So when you misspell a size and see a theme-key warning, that is why. Reading `u
 
 ## Size
 
-`text-{size}` sets `TextSize` in pixels.
+`text-{size}` sets `TextSize`, in rem — the numbers below are what each key is worth at the base
+viewport, and they scale from there like every other offset. See [rem](/vela-rbxts/guides/theming/#rem).
 
 | Class | `TextSize` |
 | --- | --- |
@@ -85,6 +86,17 @@ So when you misspell a size and see a theme-key warning, that is why. Reading `u
 | `text-9xl` | 128 |
 
 The set is fixed and does not come from the theme, so there is no way to add or change a size key. Anything outside the list falls through to the color branch as described above.
+
+<Callout title="A scaled TextSize stops at 100">
+Roblox stops honoring `TextSize` past 100 and does it silently, so rem stops there too. On a large
+viewport `text-6xl` and up land on that ceiling rather than climbing toward a size the engine never
+paints — which also keeps a `transition` from tweening toward one and stalling part-way.
+
+The ceiling belongs to the scaling, not to the utility, so it applies to an arbitrary value as well:
+`text-[240px]` emits `__VelaRem.scaleText(240, 0)` and renders at 100. [Pin the
+clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels) and the scaling leaves the
+emit entirely — `TextSize={240}`, unclamped and equally unhonored by the engine.
+</Callout>
 
 ## Weight, family and style
 

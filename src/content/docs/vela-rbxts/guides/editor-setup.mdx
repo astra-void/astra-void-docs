@@ -45,7 +45,11 @@ The declared capability set is small and deliberate.
 
 **Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete.
 
-**Hover.** Shows what a class token resolves to.
+**Hover.** Shows what a class token resolves to. Since 0.12.0 a viewport-scaled offset reads as its
+rem value first — `` Sets `UIPadding` to `1rem` (16px at the base viewport). `` — across padding, gap,
+margin, sizes, positions, radius, text size, stroke and separator thickness, and scrollbar width. That
+is true in completion docs as well. A config that [pins rem](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels)
+gets the old pixel wording back, matching the emit it produces.
 
 **Diagnostics.** Push-based via `publish_diagnostics`, debounced 200 ms and gated on the document version. There is no pull-diagnostics provider, so a client that only implements pull diagnostics will see nothing.
 

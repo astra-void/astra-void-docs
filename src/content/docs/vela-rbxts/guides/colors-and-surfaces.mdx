@@ -55,11 +55,20 @@ waiting to be named in [theming](/vela-rbxts/guides/theming/).
 
 A color can carry a level in one token: `/N` with an integer 0–100 sets the family's transparency
 alongside its color, Tailwind-style. `bg-blue-600/50` emits `BackgroundColor3` plus
-`BackgroundTransparency = 0.5`; `text-slate-100/80` fades text to 80% opacity. The modifier works
-exactly where a transparency channel exists — `bg`, `text`, `image`, `shadow`, `ring`, `outline` —
-and reports `unsupported-opacity-modifier` elsewhere. (`border-{color}/50` is the odd one out: the
-border parser rejects any slash payload as `unsupported-border-value` before the modifier is even
-considered.)
+`BackgroundTransparency = 0.5`; `text-slate-100/80` fades text to 80% opacity.
+
+Since **0.12.0** it works on every family Roblox gives a transparency channel, which is all of them but
+one. `border-slate-500/25` and `ring-red-500/40` set the `UIStroke`'s `Transparency`, `divide-white/10`
+fades the separator frames, and `from-blue-600/50` becomes a `UIGradient.Transparency` keypoint aligned
+with its color stop — so fading one stop leaves the others alone.
+
+Before 0.12.0 only `bg`, `text`, `image`, `shadow`, `ring` and `outline` carried it: `border-{color}/N`
+was rejected by the border parser as a slash payload, and `divide-*` and the gradient stops reported
+`unsupported-opacity-modifier`. A class list carried over from Tailwind lost exactly the alpha it was
+written for.
+
+`placeholder-*` is the one family left. Roblox has no placeholder transparency, and fading the text
+itself would take the typed value with it, so it still reports `unsupported-opacity-modifier`.
 
 ## `transparent`, and the two rejected keywords
 
@@ -114,10 +123,10 @@ Everything below is explicitly detected and rejected with `unsupported-border-va
 
 - Border styles — `border-dashed`, `border-solid`, `border-dotted`, `border-double`. `UIStroke` draws one continuous line and has no style property.
 - Side-specific keys — `border-x`, `border-y`, `border-t`, `border-r`, `border-b`, `border-l`, and their prefixed forms like `border-t-2` or `border-x-slate-500`. A `UIStroke` outlines the whole instance; there are no per-side strokes. (For dividers *between* children, `divide-x`/`divide-y` builds real separator frames — see the [utilities reference](/vela-rbxts/reference/utilities/#divide).)
-- `border-opacity-*`. Use `border-transparent`, or set the color you actually want.
-- Anything containing a `/`, such as `border-slate-500/50`.
+- `border-opacity-*`. Use the `/N` modifier — `border-slate-500/25` — or `border-transparent`.
 
-An arbitrary bracket thickness like `border-[3]` is rejected too, as `unsupported-arbitrary-value`.
+An arbitrary bracket thickness is *not* rejected: `border-[3]`, `border-[3px]` and `border-[0.125rem]`
+all reach `UIStroke.Thickness`, and like every other offset they scale with the viewport.
 
 ### Rings and outlines
 

@@ -1,6 +1,6 @@
 ---
 title: Theming
-description: How the Vela theme works — four axes of roblox-ts expression strings, the extend-versus-replace merge rules, and what ships by default.
+description: How the Vela theme works — expression strings rather than values, the extend-versus-replace merge rules, rem scaling every offset to the viewport, and what ships by default.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -10,7 +10,7 @@ draft: false
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-A Vela theme has exactly four axes: `colors`, `radius`, `spacing`, and — since 0.7.0 — `fontFamily`. There is nothing else in `theme`. No `content`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them. (`plugins` does exist since 0.7.0, but it sits beside `theme` rather than inside it; see [the config reference](/vela-rbxts/reference/config/#plugins).)
+A Vela theme has exactly five axes: `colors`, `radius`, `spacing`, `fontFamily` since 0.7.0, and `rem` since 0.12.0. There is nothing else in `theme`. No `content`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them. (`plugins` does exist since 0.7.0, but it sits beside `theme` rather than inside it; see [the config reference](/vela-rbxts/reference/config/#plugins).)
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -38,7 +38,7 @@ export default defineConfig({
   scene="ThemeScene"
 />
 
-That preview is compiled against exactly that config. Because it extends rather than replaces, the built-in `text-slate-100` still resolves next to the new keys, and the **Lowered** tab shows each one spliced in as the roblox-ts expression the config declared.
+That preview is compiled against that config, plus a [pinned `rem`](#pinning-offsets-back-to-literal-pixels) — every preview in these docs carries one, so a frame renders one pixel per pixel rather than scaling itself down to its own size. Because it extends rather than replaces, the built-in `text-slate-100` still resolves next to the new keys, and the **Lowered** tab shows each one spliced in as the roblox-ts expression the config declared.
 
 ## Values are source code, not values
 
@@ -48,7 +48,7 @@ That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and
 
 <Callout title="A bad theme string fails in one of three ways, none of them loud">
 Which one you get depends on how the text parses, and the difference is easy to mistake for a rule
-that does not exist. Measured at 0.11.0:
+that does not exist. Measured at 0.12.0:
 
 | You write | Emitted | Why |
 |---|---|---|
@@ -80,7 +80,7 @@ export default defineConfig({
 ```
 
 <Callout title="The runtime path understands only two exact shapes">
-Everything above describes the **static** path, where your string becomes a real roblox-ts expression. A class that has to be resolved at runtime — anything reaching the runtime host through a dynamic `className` — takes a different route: the whole resolved theme is serialized to JSON and shipped as string *data*, then re-parsed in Luau by two small hand-written parsers that accept exactly two textual forms.
+Everything above describes the **static** path, where your string becomes a real roblox-ts expression. A class that has to be resolved at runtime — anything reaching the runtime host through a dynamic `className` — takes a different route: your theme travels as string *data* and is re-parsed in Luau by two small hand-written parsers that accept exactly two textual forms.
 
 - `Color3.fromRGB(r, g, b)` — the prefix must be literally that, with three numeric arguments in `0`–`255`.
 - `new UDim(a, b)` — two numeric arguments.
@@ -89,6 +89,27 @@ A value that is perfectly good roblox-ts but not in one of those two shapes comp
 
 Keep every theme value in those two literal forms with numeric arguments, even if you do not think you use a dynamic `className`.
 </Callout>
+
+### Only what you changed travels
+
+Since 0.12.0 the emit does **not** carry your whole palette. `@rbxts/vela-runtime` holds the default
+theme itself — built from the same defaults the compiler diffs against — and a transformed module sends
+only the entries that differ from it:
+
+```lua title="The config in an emitted file, for a project that changed nothing"
+theme = { colors = {}, radius = {}, spacing = {}, fontFamily = {}, rem = { … } }
+```
+
+What travels scales with what you changed rather than with the size of the scale. An untouched family
+sends nothing; `theme.extend.colors.brand` sends `brand`; overriding one shade sends that whole color
+family, so the shades around it survive the family-level merge.
+
+A top-level `theme.colors`, which **replaces** the scale rather than extending it, is the one case that
+sends a table whole — and names itself in `theme.replaced`. Without that marker the runtime would merge
+its own defaults back underneath and resurrect every palette you deliberately dropped.
+
+None of this changes what a class resolves to. It is why the same `App.luau` that carried 15,950 bytes
+of palette now carries 675.
 
 The config file itself is discovered by walking up from the source file being compiled, looking for `vela.config.ts` or `vela.config.json` (the `.ts` form wins when both exist). See the [configuration reference](/vela-rbxts/reference/config/) for discovery, loading, and the full schema.
 
@@ -123,6 +144,98 @@ export default defineConfig({
 ```
 
 Reach for a top-level family only when you genuinely want to start from an empty scale — a locked-down design system where referencing `bg-slate-700` should be an error.
+
+## Rem
+
+Since **0.12.0**, every pixel offset a utility lowers is a rem unit rather than a raw pixel. `p-4`,
+`w-40`, `rounded-lg`, `text-sm`, `border-2` and `top-2` all follow the viewport: one rem is 16px at a
+1920×1020 viewport and scales from there, so the same class list reads at the same visual weight on a
+phone, a laptop and a 4K monitor.
+
+It is on by default. There is no provider to mount, no hook to call and no wrapper component — the
+scaling lives in the emit and in the runtime the emit already imports.
+
+```ts title="vela.config.ts — the defaults, written out"
+export default defineConfig({
+  theme: {
+    rem: {
+      base: 16,
+      min: 8,
+      max: 64,
+      baseResolution: { x: 1920, y: 1020 },
+    },
+  },
+});
+```
+
+The curve follows [Littensy's rem provider](https://github.com/littensy/slither/blob/main/src/client/providers/rem-provider.tsx):
+the viewport diagonal measured against `baseResolution`, with the width first capped at a 19:9 aspect
+ratio so an ultrawide does not inflate the scale, a gentler falloff in portrait, then rounded and
+clamped into `[min, max]`.
+
+`rem` is the one axis where extend and replace are the same thing. It is a record of four settings
+rather than a scale of keys, so `theme.rem` and `theme.extend.rem` both merge field by field — naming
+only `min` leaves the rest at their defaults, and `baseResolution` merges per axis.
+
+### What rem does not touch
+
+Scale-valued utilities. `w-full`, `h-1/2` and `translate-x-1/2` are fractions of the parent and stay
+exactly that; rem is only ever applied to the offset half of a `UDim`. Colors, alignments, `LayoutOrder`,
+`ZIndex` and `UIScale.Scale` are untouched for the same reason — there is no pixel in them.
+
+`TextSize` is scaled, with a ceiling: it stops at **100**, which is where Roblox itself stops honoring
+it. On a large viewport `text-6xl` and up land on that ceiling rather than tweening toward a size the
+engine never paints.
+
+### Pinning offsets back to literal pixels
+
+Close the clamp:
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: { rem: { min: 16, max: 16 } },
+});
+```
+
+With no room left in it every viewport resolves the same rem, and the compiler drops the scaling from
+the emit **entirely** — offsets lower to plain `UDim2`/`UDim` literals with no binding and no scaler,
+exactly as they did before rem existed:
+
+```tsx title='className="p-4 w-40" with the clamp closed'
+<frame Size={UDim2.fromOffset(160, 0)}>
+  <uipadding PaddingTop={new UDim(0, 16)} … />
+</frame>
+```
+
+Pinning somewhere *other* than `base` is still a scale, by a constant ratio, so it keeps the binding.
+An inverted clamp (`min` above `max`) collapses onto `min` during config resolution rather than
+erroring in-game.
+
+### What the emit looks like
+
+A statically lowered element has no render of its own to re-run when the viewport changes, so it carries
+its offsets as bindings and the file builds a scaler above it:
+
+```tsx title='className="p-4 w-40" with rem active'
+import { createVelaRemScaler } from "@rbxts/vela-runtime";
+const __VelaRem = createVelaRemScaler({ base: 16, min: 8, max: 64, baseResolution: { x: 1920, y: 1020 } });
+
+<frame Size={__VelaRem.scale(UDim2.fromOffset(160, 0), 4)}>
+  <uipadding PaddingTop={__VelaRem.scale(new UDim(0, 16), 0)} … />
+</frame>
+```
+
+The number beside each value is a slot, so the file allocates one binding per scaled offset rather than
+one per read. `TextSize` goes through `scaleText` instead, which is where the 100 ceiling is applied.
+
+An element that already needs the runtime host keeps plain values and is handed the *names* of the props
+to scale — it re-renders on a rem change anyway, so a binding would be redundant.
+
+<Callout title="This changes rendering on any viewport but the base one">
+Upgrading to 0.12.0 without touching your config will move pixels. A place that was tuned by eye at
+1920×1080 keeps its proportions there and gains them everywhere else, which is the point — but if you
+have layouts you cannot re-check right now, pin the clamp above, ship, and turn it on deliberately.
+</Callout>
 
 ## Semantic colors and shade palettes
 

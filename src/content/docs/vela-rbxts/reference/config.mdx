@@ -9,9 +9,10 @@ sidebar:
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-Vela reads a single optional config file, and it configures exactly two things: the theme, and
-whether [preflight](#preflight) neutralizes the Roblox host defaults. There is no build configuration
-to write — file selection, output, and diagnostics all come from `tsconfig.json` instead.
+Vela reads a single optional config file, and it configures three things: the theme, whether
+[preflight](#preflight) neutralizes the Roblox host defaults, and — since 0.12.0 — which UI
+[`framework`](#framework) the emit targets. There is no build configuration to write — file selection,
+output, and diagnostics all come from `tsconfig.json` instead.
 
 ## Discovery
 
@@ -93,12 +94,18 @@ export default defineConfig({
 
 ## Schema
 
-The schema is three optional keys: `preflight`, `theme`, and — since 0.7.0 — `plugins`. There is no
-`content`, `presets`, `darkMode`, `prefix`, `important`, `corePlugins`, `safelist`, or `variants`
-option. Those keys do not exist in the type and are ignored if you write them anyway.
+The schema is four optional keys: `preflight`, `theme`, `plugins` since 0.7.0, and `framework` since
+0.12.0. There is no `content`, `presets`, `darkMode`, `prefix`, `important`, `corePlugins`, `safelist`,
+or `variants` option. Those keys do not exist in the type and are ignored if you write them anyway.
 
 <PropTable
   rows={[
+    {
+      name: "framework",
+      type: '"react" | "vide"',
+      description:
+        "Which UI library the project's JSX compiles for. Default react. Added in 0.12.0. Left unset it is inferred from the nearest tsconfig.json: a compilerOptions.jsxFactory beginning with Vide. selects Vide. Writing the key at all — with either value — stops that inference.",
+    },
     {
       name: "preflight",
       type: "boolean",
@@ -130,6 +137,12 @@ option. Those keys do not exist in the type and are ignored if you write them an
         "Replaces the entire font family scale. Each value is a Roblox font family asset path — a rbxasset:// font JSON or an uploaded rbxassetid://. Added in 0.7.0; the keys are what font-{family} looks up.",
     },
     {
+      name: "theme.rem",
+      type: "{ base?: number; min?: number; max?: number; baseResolution?: { x: number; y: number } }",
+      description:
+        "How one rem resolves against the viewport, which is what every pixel offset a utility lowers is measured in. Added in 0.12.0. Defaults: base 16, min 8, max 64, baseResolution 1920×1020. A record rather than a keyed scale, so it merges field by field and theme.extend.rem behaves identically.",
+    },
+    {
       name: "plugins",
       type: "VelaPlugin[] | { utilities, motion }",
       description:
@@ -156,6 +169,12 @@ option. Those keys do not exist in the type and are ignored if you write them an
       type: "Record<string, string>",
       description: "Shallow-merges over the default font family scale by key.",
     },
+    {
+      name: "theme.extend.rem",
+      type: "{ base?: number; min?: number; max?: number; baseResolution?: { x: number; y: number } }",
+      description:
+        "The same field-by-field merge theme.rem does. rem is the one family where the replace-versus-extend distinction does not exist, because it is a record of four settings rather than a scale of keys.",
+    },
   ]}
 />
 
@@ -172,6 +191,30 @@ actually normalized: a family that is not already in the registry, or any family
 `theme.colors`. Extending a family that already exists as a palette takes the merge path instead,
 which spreads your object over the base and returns the base unchanged. So
 `theme.extend.colors: { blue: {} }` throws nothing, warns nothing, and does nothing.
+
+### framework
+
+Which UI library the project's JSX compiles for. `"react"` is the default; `"vide"` emits for
+[Vide](https://centau.github.io/vide/).
+
+```ts title="vela.config.ts"
+export default defineConfig({ framework: "vide" });
+```
+
+It decides two things and nothing else: the module specifier the emit imports for its runtime host
+(`@rbxts/vela-runtime-vide` rather than `@rbxts/vela-runtime`), and the reactive shape of what is
+handed to that host. Every utility, variant, diagnostic and theme value is target-neutral, and a
+statically lowered element is byte-identical under both.
+
+Left unset, it is inferred: the host walks up from each source file to the nearest `tsconfig.json`,
+follows a **relative** `extends` up to eight levels deep, and reads `compilerOptions.jsxFactory`. A
+factory beginning with `Vide.` selects Vide; anything else, or none at all, leaves the default.
+
+The inference is keyed on whether the config *names* the key, not on what it names. `framework: "react"`
+therefore pins React even under a Vide `jsxFactory` — an escape hatch, not something to write by habit.
+`jsxFactory` is program-wide, so the two targets cannot be mixed in one project either way.
+
+The [Vide guide](/vela-rbxts/guides/vide/) covers what changes when you write the code.
 
 ### preflight
 
@@ -359,6 +402,37 @@ Unlike the other three axes, these values are **not** roblox-ts expressions — 
 that goes into `Font`'s first argument, so the runtime path carries them through unchanged and the
 [re-parsing caveat](#values-are-roblox-ts-expression-strings) below does not apply to them.
 
+### rem
+
+Four numbers, added in 0.12.0. They decide what one rem is worth, and every pixel offset a utility
+lowers is measured in rem — see [the theming guide](/vela-rbxts/guides/theming/#rem) for what that
+changes about rendering.
+
+| Key | Default | What it is |
+|---|---|---|
+| `base` | `16` | Pixels per rem at `baseResolution` |
+| `min` | `8` | Lower clamp, in pixels |
+| `max` | `64` | Upper clamp, in pixels |
+| `baseResolution` | `{ x: 1920, y: 1020 }` | The viewport `base` is calibrated against |
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: {
+    rem: { base: 16, min: 8, max: 64, baseResolution: { x: 1920, y: 1020 } },
+  },
+});
+```
+
+`rem` is a record of four related settings rather than a scale of keys, so the replace-versus-extend
+rule the other families follow does not apply: **`theme.rem` and `theme.extend.rem` do the same thing**,
+merging field by field. Naming only `min` leaves `base`, `max` and `baseResolution` at their defaults,
+and `baseResolution` merges per axis in turn.
+
+One correction happens during resolution: an inverted clamp collapses onto `min`, because
+`max` is resolved as `math.max(min, max)`. Luau's own `math.clamp` errors when the bounds cross and
+this config travels to the runtime verbatim, so the crossing is fixed here rather than at the first
+viewport read.
+
 ## Plugins
 
 Added in 0.7.0. A plugin is a function that receives an API object and registers things on it. The
@@ -380,7 +454,7 @@ export default defineConfig({
 ```
 
 Plugin functions run **while the config resolves**, not while a file compiles. What the compiler, the
-inlined runtime host and the LSP each receive is the same plain table of utilities, which is why the
+runtime host and the LSP each receive is the same plain table of utilities, which is why the
 JSON form can state it directly.
 
 ### addUtilities
@@ -427,7 +501,7 @@ plugin(({ setMotionDriver }) => {
 });
 ```
 
-The inlined runtime host imports that module and calls its `transition` and `animate` methods.
+The runtime host imports that module and calls its `transition` and `animate` methods.
 **Each method is taken over on its own**, so a driver that implements only `transition` keeps the
 built-in `animate-*` presets on TweenService.
 
@@ -446,13 +520,15 @@ called it detached, which shifted every argument one place to the left and kille
 `spec.time` — React caught it at mount and took the whole tree down. 0.10.0 calls them as methods and
 types them as methods, so the arrow form is now a compile error rather than a tree that disappears.
 
-The specifier is imported by a helper that is inlined into *every* transformed module, so it has to
-resolve from any of them: a package name, or a path relative to your `baseUrl`. A relative `./`
-specifier would resolve differently per file and is rejected while the config loads:
+The driver is imported by *every* transformed module that needs one and handed to the host from
+there — it did not move into the runtime package in 0.12.0, which is why this rule is unchanged. The
+specifier has to resolve from any of those modules: a package name, or a path relative to your
+`baseUrl`. A relative `./` specifier would resolve differently per file and is rejected while the
+config loads:
 
 ```
 plugins.motion set the motion driver module to "./driver". A relative path cannot resolve
-from every module the runtime host is inlined into; use a package name or a baseUrl-relative path.
+from every module that imports the driver; use a package name or a baseUrl-relative path.
 ```
 
 Omit `export` to import the module's default export.

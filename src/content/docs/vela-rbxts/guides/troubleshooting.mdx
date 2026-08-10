@@ -93,7 +93,7 @@ the layout solver rather than one winning. Pick one. See
 **Spacing is bigger than you asked for.** Margins are wrappers that participate in the parent's
 list, so they **sum** with its `gap-*`. Prefer gap alone for list spacing.
 
-**A grid stops laying out when you add `gap-*`.** Still open in 0.11.0: gap on a `grid` element
+**A grid stops laying out when you add `gap-*`.** Still open in 0.12.0: gap on a `grid` element
 also emits a conflicting `UIListLayout`. Keep gap off grid elements until the fix ships.
 
 **Children shuffle when `divide-*` is present.** Separators are inserted by child position and
@@ -134,7 +134,7 @@ so `{props.children}` and component children are no longer out of reach. Confirm
 @vela-rbxts/compiler`. On 0.9.x specifically, the compiler tells you: an unreachable child reports
 `opacity-unreachable-child`.
 
-**`opacity-*` fades a transparency you set yourself.** Expected on 0.11.0 when the fade comes from an
+**`opacity-*` fades a transparency you set yourself.** Expected on 0.12.0 when the fade comes from an
 ancestor *component*: the alpha arrives as a React context, and a consumer reading it cannot tell your
 `BackgroundTransparency` prop from one Vela lowered, so it composes over both. The static path can,
 and leaves yours alone. Write the fade on the element itself, or push the value into a class.
@@ -148,6 +148,50 @@ re-parses theme values from text and accepts exactly two shapes — `Color3.from
 `new UDim(a, b)` with numeric literals. Anything else (`Color3.fromHex`, a constant in the
 expression) silently degrades at runtime while the static path keeps working. Keep theme values in
 those two literal forms. See [theming](/vela-rbxts/guides/theming/).
+
+## "Everything got bigger or smaller after upgrading to 0.12.0"
+
+Expected. Every pixel offset a utility lowers is now a [rem unit](/vela-rbxts/guides/theming/#rem) that
+follows the viewport, so a layout tuned by eye at one resolution keeps its proportions there and changes
+everywhere else. `p-4` is 16px at 1920×1020 and more on a 4K monitor, less on a phone.
+
+If a screen looks *uniformly* off, check what viewport you are testing at. If it looks off only at the
+extremes, the clamp is doing its job — `min` 8 and `max` 64 are the bounds, and both are configurable.
+To rule rem out entirely while you look at something else, close the clamp:
+
+```ts title="vela.config.ts"
+export default defineConfig({ theme: { rem: { min: 16, max: 16 } } });
+```
+
+That drops the scaling from the emit, so offsets lower to plain `UDim` literals exactly as they did
+before 0.12.0.
+
+**Text stopped growing past a point.** `TextSize` is capped at 100, which is where Roblox stops
+honoring it. `text-6xl` and up reach that ceiling on a large viewport.
+
+## "`@rbxts/vela-runtime` does not resolve"
+
+The runtime reaches your place as a dependency of `vela-rbxts` rather than as something you installed,
+and pnpm's default isolated linker does not put a transitive dependency where roblox-ts and Rojo look —
+both walk real directories, and under that layout `node_modules/@rbxts/vela-runtime` does not exist.
+Set the linker at the workspace root:
+
+```yaml title="pnpm-workspace.yaml"
+nodeLinker: hoisted
+```
+
+npm and Yarn hoist by default and are unaffected. A nested `.npmrc` will not do it — pnpm reads
+`nodeLinker` only from the workspace root.
+
+## "A margin renders unspaced under Vide, with a warning"
+
+A margin box is an instance *above* the element, and Vide parents an element as soon as it builds one,
+so the box has to be decided before the element exists. The compiler says so up front whenever it can
+see a `m-*` anywhere in the class value — a static token, a branch — and the host builds the box first.
+
+What it cannot see is a margin arriving out of an opaque call, and that is the case that warns. Name the
+token where the compiler can read it: write the branch out rather than returning a class string from a
+helper. See [the Vide guide](/vela-rbxts/guides/vide/).
 
 ## "`className` is a type error"
 
@@ -178,8 +222,10 @@ the line and failed to compile outright — a six-part `card` was enough.
 
 0.9.0 folds the runtime into a single initializer (96 module-scope locals down to 12) and 0.10.0
 splits that initializer into thirteen namespaces (177 registers down to 65), with a budget of 120
-asserted in the repo's own tests. **The fix is to upgrade.** If you are pinned below 0.9.0, split the
-module until each file's own declarations fit in what is left.
+asserted in the repo's own tests. 0.12.0 removes the pressure at the source: the runtime is
+`@rbxts/vela-runtime`, an import rather than a copy, so a transformed file contributes a handful of
+locals of its own. **The fix is to upgrade.** If you are pinned below 0.9.0, split the module until
+each file's own declarations fit in what is left.
 
 ## "Configuring a motion driver takes the whole UI down at mount"
 
@@ -204,10 +250,17 @@ compile error you can see. See [the motion driver](/vela-rbxts/reference/config/
 
 ## "The build got slower, or the output got bigger"
 
-Every file with a variant-prefixed token or other runtime trigger carries its own copy of the runtime
-helper — a few thousand lines of generated roblox-ts — so concentrate variants in a few container
-components. Since 0.10.0 that copy is grouped into namespaces, which is what keeps it from crowding
-Luau's [local register limit](#out-of-local-registers); it does not make the emit smaller.
+If the output got bigger and you are below 0.12.0, this is the inlined runtime: every file with a
+variant-prefixed token or other runtime trigger carried its own copy — a few thousand lines of generated
+roblox-ts — so twenty component files meant twenty copies. Upgrading is the fix. Since 0.12.0 the
+runtime is `@rbxts/vela-runtime`, one ModuleScript the place shares, and a transformed file carries an
+import and its config instead. In the reference app that took one `App.luau` from 190,260 bytes to
+27,912.
+
+On 0.12.0, a file that is still larger than you expect is usually one whose host has to **parse** a
+class value — a computed `className`, or a host taking a spread — because that is the only case that
+keeps the full theme tables in the emit. Writing the branch out instead of interpolating it is often
+enough to drop them.
 
 If the slowdown predates 0.11.0, suspect the config: below that version `vela.config.ts` was re-read,
 re-transpiled and re-executed for **every** eligible source file. 0.11.0 caches the load against the

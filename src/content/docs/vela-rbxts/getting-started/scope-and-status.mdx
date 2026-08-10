@@ -1,6 +1,6 @@
 ---
 title: Scope and status
-description: What Vela covers at 0.11.0, which Tailwind families are permanently out, and where enforcement has gaps.
+description: What Vela covers at 0.12.0, which Tailwind families are permanently out, and where enforcement has gaps.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -15,7 +15,7 @@ that cannot mean anything. What Vela ships instead is a Roblox-oriented mapping:
 correspond to real Roblox properties and helper instances, a few structural emulations where the
 correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes separator
 frames — and loud rejection of everything that cannot be expressed at all. This page is the honest
-map of where the edges are at **0.11.0**.
+map of where the edges are at **0.12.0**.
 
 ## What is in scope
 
@@ -33,7 +33,7 @@ Anything that is neither is skipped, keeps its `className` verbatim, and reports
 `classname-on-unsupported-host` — lowercase intrinsics Vela does not implement, such as `screengui`,
 and namespaced tags such as `<svg:rect />`, which never count as components.
 
-Within those eight, the covered ground at 0.11.0 is wide: colors (including arbitrary hex and `/N`
+Within those eight, the covered ground at 0.12.0 is wide: colors (including arbitrary hex and `/N`
 opacity modifiers), gradients, borders, rings and outlines, corner radius, shadows, padding,
 margins, gap and `space-*`, `divide-*` separators, sizing and min/max constraints, position on all
 four edges, anchor point, translation, z-index, layout order, rotation, scale, opacity, aspect
@@ -47,6 +47,11 @@ included ([how far, and where it stops](/vela-rbxts/reference/utilities/#effects
 [plugins](/vela-rbxts/reference/config/#plugins). The
 [utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it with the exact accepted
 values.
+
+Two things cut across all of it since 0.12.0. Every pixel offset a utility lowers is a
+[rem unit](/vela-rbxts/guides/theming/#rem) that follows the viewport, rather than a literal pixel. And
+the whole set emits for [Vide](/vela-rbxts/guides/vide/) as well as React — one config key, the same
+utilities, the same diagnostics, and a byte-identical static emit.
 
 ## What is permanently out
 
@@ -78,13 +83,14 @@ prepends helper instances as its children; if the component does not forward its
 to a host element and render `children`, all of it vanishes. Nothing warns you, in the editor or in
 the build.
 
-**The runtime path is unchecked.** When a `className` is a dynamic expression, the compiler never
-sees the final string, so nothing warns about anything in it. Coverage is no longer the problem —
-since 0.8.0 the in-game resolver handles every family the static path does — but a typo like
-`bg-blu-600` is a diagnostic in a literal and total silence in a computed string. The theme is also
-re-parsed from serialized text there, so a value that is not shaped like `Color3.fromRGB(r, g, b)` or
-`new UDim(a, b)` degrades silently in game.
-[Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence.
+**A class value the compiler cannot read is unchecked.** Where the final string is only known in game,
+nothing warns about anything in it: a typo like `bg-blu-600` is a diagnostic in a literal and total
+silence in `` `flex ${tone}` ``. Coverage is not the problem — since 0.8.0 the in-game resolver handles
+every family the static path does — and the gap narrowed again in 0.12.0, when branches whose tokens are
+written out (`a ? "x" : "y"`, `["w-40", tall && "h-10"]`) started resolving at compile time with their
+diagnostics intact. What is left is genuinely opaque text. The theme is also re-parsed from serialized
+text there, so a value that is not shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades
+silently in game. [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence.
 
 **Gradient stops set to `transparent`.** `from-transparent`, `via-transparent`, and `to-transparent`
 produce no diagnostic — the stop is silently dropped, and a two-stop gradient quietly renders as a
@@ -130,15 +136,23 @@ version.
 
 ## Release state
 
-Every package in the repo is at **0.11.0**, versioned in lockstep: `vela-rbxts` itself and the
+Every package in the repo is at **0.12.0**, versioned in lockstep: `vela-rbxts` itself, the
 `@vela-rbxts/*` scope covering the compiler, config, core, IR, types, host adapter and language
-server, plus the `vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix
-anywhere moves everything. Releases are tagged from `v0.3.0` onward.
+server, the three `@rbxts/vela-runtime*` packages that ship the runtime into your place, and the
+`vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix anywhere moves
+everything. Releases are tagged from `v0.3.0` onward.
 
-Two consequences follow from the version being what it is. First, nothing is enforced at install
-time: no package declares `peerDependencies`, and the only `engines` field anywhere is the VS Code
-extension's `vscode: ^1.91.0`, so a mismatched roblox-ts or TypeScript will fail at build rather
-than at install. Second, prebuilt native binaries do not cover every platform — notably there is no
+The runtime is three packages rather than one, and the split is deliberate: `@rbxts/vela-runtime-core`
+holds the target-neutral half — the resolution engine, theme normalization, rem math, rich text, margin
+and divide computation — while `@rbxts/vela-runtime` and `@rbxts/vela-runtime-vide` are the React and
+Vide hosts over it. Rojo maps the whole `node_modules/@rbxts` directory into a place, so keeping the
+hosts apart is what stops a Vide game from shipping React.
+
+Two consequences follow from the version being what it is. First, almost nothing is enforced at install
+time: the only `peerDependencies` are each host's own UI library, declared **optional** so the host you
+do not emit for stays inert, and the only `engines` field anywhere is the VS Code extension's
+`vscode: ^1.91.0` — so a mismatched roblox-ts or TypeScript will fail at build rather than at install.
+Second, prebuilt native binaries do not cover every platform — notably there is no
 `aarch64-pc-windows-msvc` target, so Windows on ARM is not supported, and no linux arm64 musl build.
 
 ## A performance note

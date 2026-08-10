@@ -110,19 +110,44 @@ Since 0.5.0 it also emits two properties you did not ask for. A host element car
 
 ### The runtime path
 
-When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and inlines a helper module at the top of the module body. Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because the runtime host's prop type does not describe them, variant-conditional rules are serialized into a `__velaRules` JSON string prop, and the original tag is carried along as `__velaTag`. Structural work rides along in further internal props as needed: `__velaTransition` and `__velaAnimation` for the motion utilities, `__velaText` for case transforms and decorations on a computed `Text`, `__velaMargin` for the margin box, and `__velaDivide` for separators.
+When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and imports that host from `@rbxts/vela-runtime`, configuring it once at the top of the module body. Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because the runtime host's prop type does not describe them, conditional rules are serialized into a `__velaRules` prop with their conditions in `__velaTests`, and the original tag is carried along as `__velaTag`. Structural work rides along in further internal props as needed: `__velaTransition` and `__velaAnimation` for the motion utilities, `__velaText` for case transforms and decorations on a computed `Text`, `__velaMargin` for the margin box, and `__velaDivide` for separators.
 
 For a host element `__velaTag` is the tag string — `__velaTag="frame"`. For a component it is a live reference to the component itself — `__velaTag={Box}`, or `__velaTag={Switch.Root}` for a member expression — so the runtime helper renders your component rather than an intrinsic. Its tag type is `SupportedHostElementTag | ((props: never) => unknown)` accordingly.
 
 At runtime that component normalizes the theme strings into `Color3` and `UDim` values, reads the environment, applies whichever rules match, tokenizes the dynamic `className` and applies whichever utilities it understands, strips the internal props, and calls `React.createElement` with the original tag and the helper children.
 
-The inlined helper — a `forwardRef` component of roughly 2,300 generated lines — imports `React` from `@rbxts/react` and `{ TweenService, UserInputService, Workspace }` from `@rbxts/services`. It reads `Workspace.CurrentCamera.ViewportSize` for width, height and orientation, `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, and `MouseEnter`/`MouseLeave` on the element itself for `hover:`.
+Since 0.12.0 that host is a package rather than a copy. `@rbxts/vela-runtime` is one ModuleScript the whole place shares — a `forwardRef` component over the target-neutral `@rbxts/vela-runtime-core` — and a transformed module carries an import and the config it hands the host, not the implementation:
+
+```ts title="What a runtime-path module emits"
+import { createVelaRuntimeHost } from "@rbxts/vela-runtime";
+const VelaRuntimeHost = createVelaRuntimeHost({ preflight: true, theme: { … }, plugins: { … } });
+```
+
+Before that it was inlined whole into every module that needed one, so ten such components meant ten copies of the same 5,500 lines, each with its own camera subscription, its own rem binding and its own React context. A [Vide](/vela-rbxts/guides/vide/) project imports `@rbxts/vela-runtime-vide` in the same position.
+
+The host reads `Workspace.CurrentCamera.ViewportSize` for width, height, orientation and rem, `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, and `MouseEnter`/`MouseLeave` on the element itself for `hover:`.
+
+<Callout title="Most files send an emptied theme">
+The config in that call carries only what your project changed. The runtime holds the default theme
+itself, so an untouched scale sends `{}` — and a file whose host never has to *parse* a class value
+sends its scales emptied entirely, since the host only reads them while parsing text handed to it at
+render time. A variant, a branch, a margin, a `divide-*` or a preset animation all reach the host
+through props the compiler already resolved, and those tables would sit there unread.
+
+A file that does hand the host a class value it cannot see into — a computed `className`, or a host
+taking a spread, since a spread can carry one — keeps the full tables. `preflight`, `theme.rem` and
+the motion driver stay either way; the host reads those whatever it renders.
+
+An emptied table is marked in `theme.replaced`, which tells the runtime to take it as given rather than
+falling back on its own defaults — the same marker a top-level `theme.colors` uses to keep the defaults
+from being merged back underneath a scale you deliberately replaced.
+</Callout>
 
 ### What triggers the runtime path
 
 Any one of these conditions is sufficient:
 
-**A `className` expression that cannot collapse to static tokens.** A template literal with an interpolation, a variable, a ternary whose branches Vela cannot fold, an array or object `ClassValue` built at runtime, an empty expression container — anything the compiler cannot reduce to a known list of strings.
+**A `className` expression that does not collapse to one static token list.** A template literal with an interpolation, a variable, a call, a spread — anything the compiler cannot reduce to a known list of strings. Since 0.12.0 a **branch** is on this list only in the sense that it needs the host to read its conditions: `a ? "x" : "y"`, `["w-40", tall && "h-10"]` and `{ "px-4": roomy }` name their tokens in the source, so the compiler resolves all of them, with diagnostics, and hands the element the resolved props alongside the tests. Nothing is parsed in-game there.
 
 **Any token carrying a variant prefix.** This one catches people out. The twelve runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, `hover`, `active`, `focus`, and `dark`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
 
@@ -130,12 +155,14 @@ Any one of these conditions is sufficient:
 <frame className="w-full sm:w-1/2" />
 ```
 
-That injects the whole helper module into the file. There is no way to evaluate a breakpoint at compile time, so this is expected — but it is worth knowing that the trigger is the variant, not the dynamism.
+There is no way to evaluate a breakpoint at compile time, so this is expected — but it is worth knowing that the trigger is the variant, not the dynamism. Since 0.12.0 the cost is an import rather than a copy of the runtime, so the file grows by a few lines rather than a few thousand.
 
 **A structural utility.** Margins (`m-*` and friends, except the static `mx-auto`/`my-auto`), `divide-*`, and `animate-*` build wrapper frames, separator frames, or animation loops — things that cannot exist as static props — so any of them promotes the element even in a plain literal. The one motion utility that does *not* promote is `transition-*` on its own: with no variant rules and no dynamic `className` there is nothing to animate, so it warns `transition-without-runtime` and is dropped.
 
-<Callout title="The runtime path understands far less">
-The runtime token resolver handles the color, background, radius, padding, margin, gap, and sizing prefixes, plus `divide-*`, the case transforms, the text decorations, and the motion families. Every other utility inside a *dynamic* `className` — layout, alignment, text size and color, position, constraints — is dropped with no diagnostic; it simply does not appear in the output. Variant-prefixed static tokens are not affected by this limit; they go through the static resolver and are only evaluated at runtime.
+<Callout title="The in-game token resolver understands far less than the compiler">
+The runtime token resolver handles the color, background, radius, padding, margin, gap, and sizing prefixes, plus `divide-*`, the case transforms, the text decorations, and the motion families. Every other utility inside a *text* `className` the host has to parse — layout, alignment, text size, position, constraints — is dropped with no diagnostic; it simply does not appear in the output.
+
+This limit applies to text and nothing else. Variant-prefixed tokens go through the static resolver and are only *evaluated* at runtime, and since 0.12.0 so do the tokens inside a branch — which is why `big ? "text-lg" : "text-sm"` works while `` `text-${size}` `` silently does not.
 </Callout>
 
 The full list of divergences — including the runtime path accepting arbitrary bracket values the static path rejects, and `w-`/`h-` overwriting rather than merging — is in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/). Read it before you reach for a computed `className`.
@@ -147,9 +174,10 @@ These five habits keep that from happening, and they are the whole of what you n
 
 1. **Write `className` as a plain string literal.** A literal inside a `.map()` callback is still a
    literal — what matters is the expression in the attribute, not where it appears in the file.
-2. **When the look changes between known states, branch between two complete literals** rather than
-   computing one string. It duplicates the shared classes; it also keeps both looks on the static
-   path with the full utility set.
+2. **When the look changes between known states, write the branch out** — `[base, on ? "bg-blue-600" : "bg-slate-700"]`
+   — rather than interpolating a computed string. Since 0.12.0 that keeps both looks resolved and
+   checked at compile time; branching the whole JSX element still works and additionally avoids the
+   host.
 3. **When a number changes continuously, set the property directly** — `Size={UDim2.fromScale(health, 1)}`
    — and let the classes carry everything that does not change. Never set the same property from
    both a class and a prop: on a collision Vela emits after you and the class wins.
@@ -159,10 +187,10 @@ These five habits keep that from happening, and they are the whole of what you n
    in a plain literal — and they sum with the parent's gap.
 
 Variants are the deliberate exception. `hover:` on a control, a breakpoint on a handful of top-level
-layout containers — those earn the runtime helper. What does not earn it is a computed string written
-where a literal would do: since 0.8.0 the runtime resolver lowers everything the static path does, so
-what you lose is not the classes but every check on them.
+layout containers — those earn the host. What does not earn it is an *opaque* string written where a
+readable one would do: since 0.8.0 the runtime resolver lowers everything the static path does, so what
+you lose is not the classes but every check on them.
 
 ## Next step
 
-Get the honest boundaries of the project at 0.11.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).
+Get the honest boundaries of the project at 0.12.0 in [Scope and status](/vela-rbxts/getting-started/scope-and-status/).

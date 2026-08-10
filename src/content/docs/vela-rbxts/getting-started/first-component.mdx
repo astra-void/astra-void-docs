@@ -42,7 +42,7 @@ export function Panel() {
 }
 ```
 
-Every class here resolves at compile time. Nothing in this file reads the theme at runtime, and nothing in the output refers back to Vela.
+Every class here resolves at compile time — nothing in this file reads the theme at runtime. The one thing that does survive into the output is the rem scaler, which is what makes those offsets follow the player's viewport; [What comes out](#what-comes-out) shows it.
 
 <Callout title="Why every element carries a size">
 `h-24` on the panel and `w-full h-6` on the labels are not Vela requirements — they are Roblox
@@ -101,6 +101,10 @@ The `frame` classes split into two kinds of result: properties set directly on t
 | `border-slate-700` | `UIStroke.Color` and `Transparency` | `Color3.fromRGB(49, 65, 88)`, `0` |
 | `w-80 h-24` | `Size` | `UDim2.fromOffset(320, 96)` |
 
+Every offset in that column is a **rem** value written at the base viewport, not a fixed pixel count:
+`new UDim(0, 16)` is what `p-4` is worth at 1920×1020, and it scales from there. See
+[rem](/vela-rbxts/guides/theming/#rem).
+
 A few of those deserve a note.
 
 `flex` and `flex-col` write to the same instance. Bare `flex` sets `FillDirection` to `Horizontal`; `flex-col` then overwrites it with `Vertical`. Only one `UIListLayout` is emitted, no matter how many layout classes you stack on the element. If you only ever want a column, `flex-col` alone is enough.
@@ -120,30 +124,35 @@ Note that `text-*` is disambiguated by value, not by prefix: a known size key be
 The transformer removes `className` entirely, emits the resolved properties on the element, and prepends the helper instances as children ahead of whatever children you wrote. This is the actual emitted TSX, with line breaks added:
 
 ```tsx title="Transformed output (line breaks added; nothing else changed)"
+import { createVelaRemScaler, __VelaOpacity } from "@rbxts/vela-runtime";
+const __VelaRem = createVelaRemScaler({
+  base: 16, min: 8, max: 64, baseResolution: { x: 1920, y: 1020 },
+});
+
 <frame
   BackgroundColor3={Color3.fromRGB(29, 41, 61)}
-  Size={UDim2.fromOffset(320, 96)}
+  Size={__VelaRem.scale(UDim2.fromOffset(320, 96), 11)}
   BorderSizePixel={0}
 >
   <uilistlayout
     FillDirection={Enum.FillDirection.Vertical}
-    Padding={new UDim(0, 16)}
+    Padding={__VelaRem.scale(new UDim(0, 16), 4)}
     SortOrder={Enum.SortOrder.LayoutOrder}
   />
   <uipadding
-    PaddingTop={new UDim(0, 16)}
-    PaddingRight={new UDim(0, 16)}
-    PaddingBottom={new UDim(0, 16)}
-    PaddingLeft={new UDim(0, 16)}
+    PaddingTop={__VelaRem.scale(new UDim(0, 16), 5)}
+    PaddingRight={__VelaRem.scale(new UDim(0, 16), 6)}
+    PaddingBottom={__VelaRem.scale(new UDim(0, 16), 7)}
+    PaddingLeft={__VelaRem.scale(new UDim(0, 16), 8)}
   />
-  <uicorner CornerRadius={new UDim(0, 8)} />
-  <uistroke Thickness={1} Color={Color3.fromRGB(49, 65, 88)} Transparency={0} />
+  <uicorner CornerRadius={__VelaRem.scale(new UDim(0, 8), 9)} />
+  <uistroke Thickness={__VelaRem.scale(1, 10)} Color={Color3.fromRGB(49, 65, 88)} Transparency={0} />
   <textlabel
     Text="Loadout"
     TextXAlignment={Enum.TextXAlignment.Left}
     TextColor3={Color3.fromRGB(241, 245, 249)}
-    TextSize={18}
-    Size={new UDim2(1, 0, 0, 24)}
+    TextSize={__VelaRem.scaleText(18, 0)}
+    Size={__VelaRem.scale(new UDim2(1, 0, 0, 24), 1)}
     FontFace={new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBold)}
     BorderSizePixel={0}
     BackgroundTransparency={1}
@@ -152,19 +161,25 @@ The transformer removes `className` entirely, emits the resolved properties on t
     Text="Two slots remaining"
     TextXAlignment={Enum.TextXAlignment.Left}
     TextColor3={Color3.fromRGB(144, 161, 185)}
-    TextSize={14}
-    Size={new UDim2(1, 0, 0, 20)}
+    TextSize={__VelaRem.scaleText(14, 2)}
+    Size={__VelaRem.scale(new UDim2(1, 0, 0, 20), 3)}
     BorderSizePixel={0}
     BackgroundTransparency={1}
   />
 </frame>
 ```
 
-Three things in there were never in your class list. `BorderSizePixel` and the labels' `BackgroundTransparency` are [preflight](/vela-rbxts/reference/config/#preflight), as described above — the panel does not get the transparency because `bg-slate-800` paints it. `SortOrder = LayoutOrder` is emitted on every Vela layout so that `order-*` works at all.
+Four things in there were never in your class list. `BorderSizePixel` and the labels' `BackgroundTransparency` are [preflight](/vela-rbxts/reference/config/#preflight), as described above — the panel does not get the transparency because `bg-slate-800` paints it. `SortOrder = LayoutOrder` is emitted on every Vela layout so that `order-*` works at all.
+
+And every offset is wrapped in `__VelaRem.scale`. That is [rem](/vela-rbxts/guides/theming/#rem): the literal inside is the value at a 1920×1020 viewport, and the scaler is what follows the real one, so `p-4` reads the same on a phone and on a 4K monitor. The trailing number is a slot, so the file allocates one binding per scaled offset rather than one per render; `TextSize` goes through `scaleText`, which additionally caps at 100. Pin `theme.rem` and the wrappers disappear from the emit entirely, leaving the plain literals.
+
+That is why the **Lowered** tab above shows those plain literals and this block does not: a preview frame is a few hundred pixels wide, so every preview in these docs is compiled with rem pinned to keep the render one pixel per pixel. What you see here is the default emit — what your project gets.
+
+One more thing the compiler adds that is not shown above: a component definition's root is wrapped in `<__VelaOpacity.Fade>`, which is how an `opacity-*` written on an ancestor reaches a subtree that was lowered at compile time. It renders no instance, so the Roblox tree keeps its shape.
 
 Because the helpers are prepended, they always sort ahead of your own children in the emitted JSX. That does not affect layout — `UIListLayout` ignores non-`GuiObject` siblings — but it is worth knowing if you index children positionally.
 
-This is the **static path**, and it is the one you want. The element keeps its original tag, no helper module is injected, and the whole cost of Vela is paid at build time. The [pipeline page](/vela-rbxts/getting-started/how-it-works/) explains when that stops being true.
+This is the **static path**, and it is the one you want. The element keeps its original tag, no class list is parsed in game, and every token was resolved and checked at build time. The [pipeline page](/vela-rbxts/getting-started/how-it-works/) explains when that stops being true.
 
 ## Something that does not work
 

@@ -9,19 +9,53 @@ sidebar:
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Vela is a compile-time utility-class system for `roblox-ts` React. You write Tailwind-shaped class names on Roblox host elements and on your own components, and Vela rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
+Vela is a compile-time utility-class system for `roblox-ts` UI — React by default, and [Vide](https://centau.github.io/vide/) when the project says so. You write Tailwind-shaped class names on Roblox host elements and on your own components, and Vela rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
 
-Nothing about Vela is a runtime library you render. It is a compiler that runs over your `.tsx` files, plus a config file it reads from disk. **Where that compiler runs is yours to pick** — as a plugin inside `rbxtsc`, or as a command that runs before it. This page installs the package, sets up whichever you choose, and gets the config and the type declaration in place.
+Nothing about Vela is a component library you render. It is a compiler that runs over your `.tsx` files, plus a config file it reads from disk — and a runtime host the emit imports for the elements it could not settle at compile time, which arrives with the package and which you never write. **Where the compiler runs is yours to pick** — as a plugin inside `rbxtsc`, or as a command that runs before it. This page installs the packages, sets up whichever you choose, and gets the config and the type declaration in place.
 
-## Install the package
+## Install the packages
 
 <PackageInstall packageName="vela-rbxts" />
 
-`vela-rbxts` expects the ordinary roblox-ts React stack alongside it. Install those yourself if the project does not already have them.
+Then the ordinary roblox-ts stack, which Vela does not bring for you. Install the UI library you
+actually write JSX with — React:
 
 <PackageInstall packageName="@rbxts/react @rbxts/react-roblox @rbxts/services" />
 
-`@rbxts/react` and `@rbxts/services` matter beyond your own imports: when Vela takes its runtime path it inlines a helper module into your output that imports `React` from `@rbxts/react` and `{ UserInputService, Workspace }` from `@rbxts/services`. Both must resolve in the built place even if you never import them by hand. `@rbxts/react-roblox` is what you need to mount a tree at all.
+…or [Vide](https://centau.github.io/vide/), which also takes one config key — see [the Vide guide](/vela-rbxts/guides/vide/):
+
+<PackageInstall packageName="@rbxts/vide @rbxts/services" />
+
+`@rbxts/services` matters beyond your own imports: the runtime host reads `{ UserInputService, Workspace }`
+from it to resolve viewport, input mode and rem, so it must resolve in the built place even if you never
+import it by hand. `@rbxts/react-roblox` is what you need to mount a React tree at all; Vide mounts itself.
+
+<Callout title="You never name a runtime host">
+What Vela emits for an element it could not settle at compile time is an import of a **runtime host** —
+`@rbxts/vela-runtime` for React, `@rbxts/vela-runtime-vide` for Vide. Both ship as dependencies of
+`vela-rbxts`, so neither appears in the commands above and neither is yours to keep in sync.
+
+Each host declares *its* UI library as an optional peer, and that is what keeps the split honest:
+Rojo maps the whole `node_modules/@rbxts` directory into the place, so `@rbxts/react` in a Vide
+project would be React shipping to every player of a game that never renders it. It does not, because
+nothing pulls it in. The host you do not emit for is one inert ModuleScript that no module imports.
+</Callout>
+
+<Callout title="pnpm needs `nodeLinker: hoisted`">
+The runtime reaches your place *transitively*, and pnpm's default isolated linker does not put a
+transitive dependency where roblox-ts and Rojo look. Both resolve `@rbxts/*` by walking real
+directories, and under the default layout `node_modules/@rbxts/vela-runtime` simply does not exist —
+the package is real, but it lives inside `node_modules/.pnpm`. Set the linker once, at the workspace
+root:
+
+```yaml title="pnpm-workspace.yaml"
+nodeLinker: hoisted
+```
+
+Most roblox-ts projects have this already, for the same reason and not because of Vela. npm and Yarn
+hoist by default and need nothing. A nested `.npmrc` will not do it — pnpm reads `nodeLinker` only
+from the workspace root.
+</Callout>
 
 <PackageInstall
   dev
@@ -281,7 +315,19 @@ Either way, sync `out/` into Studio with Rojo the same way you already do:
 rojo serve
 ```
 
-You do not need a Rojo mapping for Vela, and there is no Vela runtime package to place in the DataModel. Everything Vela produces is either an ordinary Roblox property, a helper instance emitted as a JSX child, or — on the runtime path — a helper module inlined directly into the same output file. The only things that must exist in your place tree are `@rbxts/react` and `@rbxts/services`, which your existing `node_modules` → `ReplicatedStorage` mapping already covers.
+You do not need a Vela-specific Rojo mapping. Most of what Vela produces is an ordinary Roblox property
+or a helper instance emitted as a JSX child, and the rest is an import of `@rbxts/vela-runtime` — one
+ModuleScript the whole place shares, however many files reach it.
+
+That import resolves without any project change because of where the package sits. roblox-ts only
+resolves a package whose scope directory is one of the project's `typeRoots`, and `node_modules/@rbxts`
+is the one every roblox-ts project already lists and every Rojo template already maps to
+`ReplicatedStorage` — the same route `@rbxts/react` takes. The runtime is published under that scope
+on purpose. (This is the mapping the `nodeLinker` note above is about: the directory has to be real
+for either tool to walk into it.)
+
+So the things that must exist in your place tree are the runtime host, `@rbxts/services`, and your UI
+library — all of which your existing `node_modules` mapping already covers.
 
 ## Check that it actually took
 
@@ -322,6 +368,10 @@ Then check the emitted file — `out/` on track A, `.vela/src` on track B. `p-4`
 `<uipadding>` child and the `className` attribute should be gone entirely; if the attribute survived
 verbatim, the element was skipped.
 
+The padding values will read as `__VelaRem.scale(new UDim(0, 16), 0)` rather than a bare `new UDim(0, 16)`,
+and the file will have grown an import of `@rbxts/vela-runtime` at the top. That is [rem](/vela-rbxts/guides/theming/#rem)
+doing its job: `16` is the value at the base viewport, and the scaler is what follows the real one.
+
 ## Next steps
 
 - [Your first component](/vela-rbxts/getting-started/first-component/) — write a panel, put it on
@@ -331,3 +381,5 @@ verbatim, the element was skipped.
   non-VS Code client.
 - [The playground](/vela-playground/) — compile class strings in the browser against the real
   compiler, with no project at all.
+- [Vide](/vela-rbxts/guides/vide/) — what changes when the project emits for Vide instead of React,
+  and the two limits that are inherent to it.

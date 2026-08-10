@@ -1,18 +1,19 @@
 ---
 title: Vela
-description: Tailwind-style className compilation for roblox-ts React interfaces.
+description: Tailwind-style className compilation for roblox-ts UI — React or Vide.
 product: vela-rbxts
 section: home
 ---
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-Vela adds `className` to `roblox-ts` React elements and compiles it away. You write Tailwind-shaped
+Vela adds `className` to `roblox-ts` UI elements and compiles it away. You write Tailwind-shaped
 utility classes on Roblox host elements — and on your own components — and a TypeScript transformer
 rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau. `p-4`
 becomes a `UIPadding` child, `rounded-lg` becomes a `UICorner`, `bg-slate-700` becomes
-`BackgroundColor3`. Nothing about Vela survives into the shipped game unless a class genuinely needs
-the player's screen or input device to resolve.
+`BackgroundColor3`. It emits for [React](https://github.com/littensy/rbxts-react) by default and for
+[Vide](/vela-rbxts/guides/vide/) on one config key, and nothing about Vela survives into the shipped
+game unless a class genuinely needs the player's screen or input device to resolve.
 
 <VelaPreview
   height={200}
@@ -30,14 +31,16 @@ produced the same way: by the actual compiler, not by hand.
 **Static by default.** The common case — a plain string of classes — is lowered entirely at compile
 time. The `className` attribute disappears, the element keeps its tag, and the cost of Vela is paid
 once, on your machine. Only two things opt an element into runtime work: a `className` the compiler
-cannot collapse to fixed tokens, and responsive or input [variants](/vela-rbxts/guides/responsive-and-input-variants/),
-which by their nature depend on the player's device.
+cannot read, and responsive or input [variants](/vela-rbxts/guides/responsive-and-input-variants/),
+which by their nature depend on the player's device. A class list that merely *branches* —
+`on ? "bg-blue-600" : "bg-slate-700"` — is resolved at compile time like any other, with its
+diagnostics intact.
 
 **Diagnostics instead of silence.** On the compile-time path, a class Vela cannot lower is reported,
 not dropped — `tracking-wide` warns that the Roblox text engine has no letter spacing, `bg-brand`
 tells you the palette needs a shade, a typo in a theme key names the scale it searched. The
 [diagnostics reference](/vela-rbxts/reference/diagnostics/) lists every code. A few cases still fall through silently — a gradient stop set to `transparent`,
-utilities inside a dynamic `className` the runtime resolver does not know — and the docs flag each
+utilities inside a `className` the compiler cannot read — and the docs flag each
 one where it lives rather than pretending otherwise.
 
 **Editor tooling from the same compiler.** The `vela-rbxts-lsp` language server links the same Rust
@@ -77,6 +80,7 @@ From there, go where your task points:
   [layout and sizing](/vela-rbxts/guides/layout-and-sizing/),
   [colors and surfaces](/vela-rbxts/guides/colors-and-surfaces/), and
   [text and fonts](/vela-rbxts/guides/text-and-fonts/).
+- Writing Vide rather than React? [Vide](/vela-rbxts/guides/vide/) is the whole of the difference.
 - A class did nothing and you want to know why? Start at
   [troubleshooting](/vela-rbxts/guides/troubleshooting/) — it is organized by symptom.
 - Looking something up? The [utilities reference](/vela-rbxts/reference/utilities/) enumerates every

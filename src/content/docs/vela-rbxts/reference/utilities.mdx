@@ -1,6 +1,6 @@
 ---
 title: Utility reference
-description: Every utility class Vela supports at 0.11.0, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
+description: Every utility class Vela supports at 0.12.0, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-This is the complete list of what Vela compiles as of **0.11.0**. If a class is not on this page,
+This is the complete list of what Vela compiles as of **0.12.0**. If a class is not on this page,
 Vela does not implement it — an unknown family produces `unsupported-utility-family`, a real
 Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`, and a few (anything that
 looks like `text-*`) get misread as a color key instead. See
@@ -82,8 +82,8 @@ element — nothing checks that it does. See
 | `border-{color}` | theme color key, `[#hex]` | `UIStroke.Color` + `UIStroke.Transparency` | Helper instance |
 | `ring-{color}`, `outline-{color}` | theme color key, `[#hex]` | `UIStroke.Color` + `UIStroke.Transparency` | Same `UIStroke` as `border-*` |
 | `shadow-{color}` | theme color key, `[#hex]` | `UIShadow.Color` | Helper instance |
-| `divide-{color}` | theme color key, `[#hex]` | separator `BackgroundColor3` | Runtime-structural, no transparency channel |
-| `from-{color}`, `via-{color}`, `to-{color}` | theme color key, `[#hex]` | `UIGradient.Color` keypoints | Helper instance, no transparency channel |
+| `divide-{color}` | theme color key, `[#hex]` | separator `BackgroundColor3` + `BackgroundTransparency` | Runtime-structural |
+| `from-{color}`, `via-{color}`, `to-{color}` | theme color key, `[#hex]` | `UIGradient.Color` keypoints + `UIGradient.Transparency` | Helper instance |
 
 A color key is either a literal (`black`, `white`, or anything you define as a plain string) or a
 palette family plus a shade from `50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`. The shade
@@ -105,16 +105,35 @@ directly, bypassing the theme. A bracket payload that is not a hex color reports
 `unsupported-arbitrary-value`.
 
 **Opacity modifiers** append `/N` to a color, where `N` is an integer from 0 to 100:
-`bg-blue-600/50` emits the color plus `BackgroundTransparency = 0.5`. The modifier works on the
-families with a transparency channel — `bg`, `text`, `image`, `shadow`, `ring`, `outline` — and
-reports `unsupported-opacity-modifier` on the ones without (`placeholder`, `divide`, gradient
-stops, plain `border`... note that `border-{color}/50` is rejected by the border parser as a slash
-payload instead).
+`bg-blue-600/50` emits the color plus `BackgroundTransparency = 0.5`. Since **0.12.0** every family
+Roblox gives a transparency channel lowers the modifier to that channel:
+
+| Family | `/N` lowers to |
+|---|---|
+| `bg-*` | `BackgroundTransparency` |
+| `text-*` | `TextTransparency` |
+| `image-*` | `ImageTransparency` |
+| `shadow-*` | `UIShadow.Transparency` |
+| `border-*`, `ring-*`, `outline-*` | `UIStroke.Transparency` |
+| `divide-*` | the separator frames' `BackgroundTransparency` |
+| `from-*`, `via-*`, `to-*` | a `UIGradient.Transparency` sequence whose keypoints line up with the color stops |
+
+Before 0.12.0 only the first four worked: `border-{color}/N` reported the modifier as a missing theme
+key, and `divide-*` and the gradient stops reported `unsupported-opacity-modifier`, so a class list
+carried over from Tailwind lost exactly the alpha it was written for. A gradient's keypoints line up
+per stop, so fading one stop does not fade its neighbours.
+
+`placeholder-*` is the one family left. Roblox has no placeholder transparency, and fading the text
+itself would take the typed value with it, so it still reports `unsupported-opacity-modifier` — now
+with a message that says why.
 
 Two keywords behave specially. `transparent` sets the transparency property to `1` and removes the
-color property entirely; on `placeholder-*` and `divide-*`, which have no transparency property, it
-produces `unsupported-color-key`. `current` and `inherit` are rejected outright with
-`unsupported-color-key`.
+color property entirely; on `placeholder-*` and `divide-*` it produces `unsupported-color-key`.
+`current` and `inherit` are rejected outright with `unsupported-color-key`.
+
+Note the asymmetry that leaves on `divide-*`: `divide-white/10` lowers the modifier to the separators'
+`BackgroundTransparency`, while `divide-transparent` is still refused. The modifier and the keyword are
+separate parsers, and only the modifier moved in 0.12.0.
 
 Gradient stops are the remaining family with no transparency property, but they do not report
 anything: `from-transparent`, `via-transparent` and `to-transparent` are **silently dropped**, and
@@ -254,9 +273,14 @@ which one a family reads depends on the family.
 **Colors** — `[#rgb]` and `[#rrggbb]`, in every color family since 0.4.0. `bg-[#ff0000]`,
 `border-[#0f0]`, `shadow-[#000]`, `from-[#123456]`.
 
-**Lengths** — `[16px]`, `[16]` and `[50%]`, plus their negatives, since 0.7.0. The unit is optional
-and a bare number means pixels; a percentage becomes the scale half of a `UDim`, so `w-[50%]` is
-`UDim2.fromScale(0.5, 0)` while `w-[120px]` is `UDim2.fromOffset(120, 0)`.
+**Lengths** — `[16px]`, `[16]` and `[50%]`, plus their negatives, since 0.7.0, and `[1rem]` since
+0.12.0. The unit is optional and a bare number means pixels; a percentage becomes the scale half of a
+`UDim`, so `w-[50%]` is `UDim2.fromScale(0.5, 0)` while `w-[120px]` is `UDim2.fromOffset(120, 0)`.
+
+A `rem` payload is resolved against `theme.rem.base` — the same base the viewport scaling divides by —
+so it is worth exactly what the equivalent written on the spacing scale is, and follows the viewport
+from there like any other offset. Every family that counts in pixels reads it: `text-[1.5rem]` and
+`border-[0.125rem]` say what `text-[24px]` and `border-[2px]` say.
 
 | Family | Reads a bracket as | Example |
 |---|---|---|
@@ -363,7 +387,7 @@ values: both scales zero gives `UDim2.fromOffset(x, y)`, both offsets zero gives
 `UDim2.fromScale(x, y)`, and a mix gives the full `UDim2.new(sx, ox, sy, oy)`.
 
 `basis-*` accepts the same values and lowers onto the X axis of `Size`, regardless of the parent's
-fill direction — as of 0.11.0 it is `w-*` under another name. Reach for it only when porting Tailwind
+fill direction — as of 0.12.0 it is `w-*` under another name. Reach for it only when porting Tailwind
 markup; write `w-*`/`h-*` in new code.
 
 ## Constraints
@@ -482,7 +506,7 @@ at `gap-2`. `auto-cols-*` does the same for `grid-rows-*`. Both read the
 
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element writes `UIGridLayout.CellPadding`, which is the right target — but as of
-0.11.0 it **also** emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+0.12.0 it **also** emits the ordinary `UIListLayout` carrying the same value, leaving two layout
 instances fighting over the children. 0.6.0 made the grid usable without touching this. Until it is
 fixed upstream, set `CellPadding` as a prop on the grid element and leave `gap-*` off it.
 </Callout>

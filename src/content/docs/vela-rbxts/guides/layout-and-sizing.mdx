@@ -155,7 +155,7 @@ compensated for it, re-check the layout after upgrading.
 
 <Callout title="Keep gap-* off grid elements for now">
 `gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, which is the right target — but as of
-0.11.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
+0.12.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
 instances fighting over the children. Until the fix ships, set `CellPadding` as a prop on the grid
 element and leave `gap-*` off it.
 </Callout>
@@ -212,6 +212,16 @@ or `+` is rejected outright.
 `theme.spacing` ships with exactly `"4"`. Every other numeric spacing key you write works through
 the arithmetic fallback, not through the theme. Adding your own named keys is covered in
 [Theming](/vela-rbxts/guides/theming/).
+</Callout>
+
+<Callout title="Since 0.12.0 those offsets are rem, not pixels">
+`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**, not what it renders as everywhere.
+Every offset on this page is a rem unit: the emit carries it as `__VelaRem.scale(…)` and the value
+follows the player's viewport, clamped into `[min, max]`. The numbers here are the ones you get at
+1920×1020 — and the ones you get everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels).
+
+Scale-valued utilities are untouched: `w-full`, `h-1/2` and `translate-x-1/2` stay fractions of the
+parent, because there is no pixel in them to scale.
 </Callout>
 
 ## Sizing and `Size`

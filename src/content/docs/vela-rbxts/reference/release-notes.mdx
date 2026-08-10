@@ -1,6 +1,6 @@
 ---
 title: Release notes
-description: What changed in each Vela release — the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, the 0.7.0 plugin API, and the sharp edges still open.
+description: What changed in each Vela release — the 0.12.0 rem, runtime-as-a-package and Vide passes, the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, and the sharp edges still open.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -9,18 +9,118 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Every package in the repo moves in lockstep — `vela-rbxts`, the whole `@vela-rbxts/*` scope, and the
-`vela-rbxts-lsp` VS Code extension all carry the same version, so a fix anywhere bumps everything.
+Every package in the repo moves in lockstep — `vela-rbxts`, the whole `@vela-rbxts/*` scope, the three
+`@rbxts/vela-runtime*` packages, and the `vela-rbxts-lsp` VS Code extension all carry the same version,
+so a fix anywhere bumps everything.
 Releases are tagged from `v0.3.0` onward, and the upstream
 [`CHANGELOG.md`](https://github.com/astra-void/vela-rbxts/blob/main/CHANGELOG.md) carries the
 per-package detail behind this page. If you are installing Vela for the first time, you are on the
 current release and none of the upgrade notes below apply to you — skip to
 [what is still open](#still-open).
 
+## 0.12.0
+
+The current release, and the largest since 0.7.0. Four things landed together: offsets became rem
+units, the runtime became a package instead of a copy, branches started resolving at compile time, and
+Vela learned to emit for a second UI library.
+
+<Callout title="Two of these change what you already have">
+**Rendering moves on any viewport but the base one**, because every pixel offset now scales with the
+viewport. And **`className={a ? "x" : "y"}` now reports diagnostics it used to swallow**, so an upgrade
+can surface warnings on code that was already wrong. Neither needs a code change; both are worth
+reading before you ship.
+
+Nothing about install changes. Both runtime hosts arrive with `vela-rbxts`.
+</Callout>
+
+**Every pixel offset a utility lowers is a rem unit.** `p-4`, `w-40`, `rounded-lg`, `text-sm`,
+`border-2` and `top-2` are measured against the viewport rather than written as literal pixels: one rem
+is 16px at 1920×1020 and scales from there, so a class list reads at the same visual weight on a phone,
+a laptop and a 4K monitor. No provider, no hook, no wrapper component. The curve follows Littensy's rem
+provider — the viewport diagonal against `baseResolution`, capped at 19:9 so an ultrawide does not
+inflate the scale, gentler in portrait — rounded and clamped into `[min, max]`, all four of which are
+configurable under `theme.rem`.
+
+Scale-valued utilities are untouched: `w-full`, `h-1/2` and `translate-x-1/2` stay fractions of the
+parent. `TextSize` gains a ceiling of 100, which is where Roblox itself stops honoring it. To keep the
+old literal-pixel behavior exactly, close the clamp with `theme: { rem: { min: 16, max: 16 } }` — the
+compiler then drops the scaling from the emit entirely, back to plain `UDim2`/`UDim` literals with no
+binding and no import. See [rem](/vela-rbxts/guides/theming/#rem).
+
+**The runtime ships as `@rbxts/vela-runtime` instead of being copied into every file.** It used to be
+inlined whole into each module that needed it, so a place with ten such components carried ten copies of
+the same 5,500 lines — each running its own camera subscription, its own rem binding and its own React
+context. It is now one ModuleScript the whole place shares, and a transformed module gets an import and
+the config it hands the host. In the reference app one `App.luau` went from 190,260 bytes to 43,187, and
+the runtime is 166,682 bytes once however many files reach it.
+
+Setup is unchanged: the package installs with `vela-rbxts` and sits under the `@rbxts` scope, which is
+already in every roblox-ts project's `typeRoots` and already mapped by every Rojo template. Three
+things the inlined shape had forced went away with it — the opacity context no longer needs to live on
+`_G`, there is one camera subscription rather than one per module, and rem slots moved onto a per-module
+scaler since the emit numbers them from zero in each file.
+
+**The emit sends the theme you changed, not the whole palette.** The runtime carries the default theme
+itself, so a module sends only what differs — and a module whose host never has to *parse* a class value
+sends its scales emptied entirely, because those tables would sit there unread. That took the same
+`App.luau` from 43,187 bytes to 27,912, of which the config is 675 rather than 15,950. A top-level
+`theme.colors` still travels whole, marked in `theme.replaced` so the runtime does not merge its
+defaults back underneath a scale you deliberately replaced.
+
+**A branch's classes are resolved at compile time.** `active ? "text-lg" : "text-sm"` names every token
+it can ever apply — only which of them apply is undecided — and the whole class value used to travel to
+the runtime resolver, which parses a subset of the utility set. `text-lg` is not in that subset, so
+neither size ever reached the instance. Those branches are now resolved by the compiler, through the
+same call the static path makes, and the element is handed the resolved props alongside the tests that
+decide them:
+
+- the full utility set applies inside a branch, not the runtime resolver's prefixes
+- a bad utility written in a branch reports a diagnostic instead of vanishing
+- a variant inside a branch answers to both, as `hover:` **and** the branch's test
+- each test is evaluated exactly once, however many branches hang on it
+
+It reads ternaries, `&&`, the literal behind `||`, arrays and object maps, and resolves a branch among
+the tokens written around it — so `["w-40", tall && "h-10"]` is one `Size` rather than a branch that
+overwrites the width. A branch naming `m-*`, `divide-*`, `animate-*`, `transition*`, a text transform or
+`opacity-*` still takes the whole class value down the runtime path, because the host reads those off
+its own props. See [dynamic class names](/vela-rbxts/guides/dynamic-class-names/#a-branch-lowers-at-compile-time).
+
+**`/N` opacity modifiers lower on every family that has a transparency channel.** `bg-blue-600/50`
+already worked; `border-slate-500/25`, `divide-white/10` and the gradient stops did not — `border-*`
+reported the modifier as a missing theme key and the rest reported `unsupported-opacity-modifier`, so a
+class list carried over from Tailwind lost exactly the alpha it was written for. Each family now lowers
+it to the channel Roblox gives it, with a gradient's transparency keypoints lined up per colour stop.
+`placeholder-*` is the one family left, and its message now says why.
+
+**Vela emits for [Vide](https://centau.github.io/vide/).** One config key, `framework: "vide"`, or
+nothing at all — it is inferred from a `jsxFactory` beginning with `Vide.` in the nearest
+`tsconfig.json`. The whole token → utility pipeline is shared and a statically lowered element is
+identical under both targets; what differs is the runtime package the emit imports and the reactive
+seam, where a dynamic class value is written as a thunk because a Vide component body runs once. Two
+limits are inherent to that and both are narrow: a component element's prop names are fixed when it is
+called, and a `m-*` arriving out of an opaque call cannot be honoured, because the margin box is an
+instance above one that is already parented — the runtime warns there rather than rendering unspaced.
+See [the Vide guide](/vela-rbxts/guides/vide/).
+
+Smaller things in the same release: editor hovers and completions read viewport-scaled offsets in rem
+(`` `1rem` (16px at the base viewport)``) rather than in the pixels rem retired; arbitrary values read a
+`rem` unit, so `text-[1.5rem]` says what `text-[24px]` says; a base helper a variant rule overwrote
+(`p-4 hover:p-8`) no longer leaves two `UIPadding` under one instance; and the rule prop parser learned
+`Vector2`, `ColorSequence`, `NumberSequence` and `Font`, which is what `md:min-w-16`,
+`md:bg-gradient-to-r` and `md:font-bold` needed to stop assigning a string to a Roblox property and
+tearing down the tree.
+
+## 0.11.1
+
+A patch. A `className` carrying a state variant pulls the runtime host into the emit, where **your**
+compiler options typecheck it — and its indexed reads of parsed call arguments, enum segments and
+gradient stops were typed as if an index could never miss, so a project building under
+`noUncheckedIndexedAccess` failed on code it had not written. The runtime now typechecks under that flag
+and is built with it, so the seam cannot regress. Nothing else changed.
+
 ## 0.11.0
 
-The current release, and the first that does not change how a single class lowers. It makes the
-transformer optional.
+The first release that does not change how a single class lowers. It makes the transformer optional.
 
 **There is a `vela` command now.** Registering a roblox-ts transform plugin was the only way to run
 Vela, which shuts out any project that cannot register one — a pinned toolchain, a build system that
@@ -41,8 +141,9 @@ transpiling and running the file again for each one. The loaded config is now ke
 text, which collapses that to once per distinct config while leaving resolution alone. This lands on
 the transformer path too, not only under the CLI.
 
-Nothing else moved: no utility, variant, diagnostic or config key changed, and the inlined runtime is
-byte-identical to 0.10.0's. Upgrading from 0.10.0 cannot change your output.
+Nothing else moved: no utility, variant, diagnostic or config key changed, and the runtime — inlined,
+at that version — is byte-identical to 0.10.0's. Upgrading from 0.10.0 to 0.11.0 cannot change your
+output.
 
 ## 0.10.0
 
@@ -428,6 +529,15 @@ each is faded rather than the group — put them in a `canvasgroup` if you need 
 `{ a: "b", b: "a" }` from recursing terminates the expansion silently — no diagnostic, and the
 element comes out with only its preflight props.
 
+**`divide-transparent` is still refused while `divide-white/10` resolves.** The `/N` modifier moved to
+every family with a transparency channel in 0.12.0; the `transparent` *keyword* did not, and the two are
+separate parsers. `divide-transparent` reports `unsupported-color-key`.
+
+**Under Vide, a `m-*` the compiler cannot see is warned rather than rendered.** A margin box is an
+instance above the element, and Vide parents an element as soon as it builds one, so the box has to be
+decided up front. The compiler emits the hint whenever it can read a margin token anywhere in the class
+value; a margin arriving out of an opaque call is the case that is left, and the runtime warns there.
+
 **A theme value that is not a valid expression fails three different ways, none of them loud.** Vela
 splices in the first expression that parses out of your string and drops the rest, so
 `"Color3.fromRGB(1, 2, 3) // blue"` silently loses the comment, `"#3b82f6"` falls back to a string
@@ -449,7 +559,7 @@ have to build the compiler crate and the language server from source. The full t
 
 ## See also
 
-- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.10.0.
+- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.12.0.
 - [Configuration](/vela-rbxts/reference/config/#preflight) — the `preflight` opt-out, and
   [`plugins`](/vela-rbxts/reference/config/#plugins).
 - [Troubleshooting](/vela-rbxts/guides/troubleshooting/) — symptom-first, including the two entries

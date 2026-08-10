@@ -174,22 +174,36 @@ rather than silent. Plugin options are documented in
 | `@vela-rbxts/ir` | The intermediate style representation shared between the compiler and its consumers | No |
 | `@vela-rbxts/types` | Shared TypeScript types | No |
 | `@vela-rbxts/rbxtsc-host` | The roblox-ts adapter: file eligibility, config discovery, diagnostic mapping | No |
+| `@rbxts/vela-runtime-core` | The target-neutral half of the runtime: resolution engine, theme normalization, rem math, rich text, margin and divide computation | No, pulled in by whichever host you emit for |
+| `@rbxts/vela-runtime` | The React runtime host every transformed module imports, as one ModuleScript the place shares | No — it ships with `vela-rbxts` |
+| `@rbxts/vela-runtime-vide` | The same host for Vide, imported instead when the project sets `framework: "vide"` | No — it ships with `vela-rbxts` |
 | `@vela-rbxts/lsp` | The language server binary and its platform packages | Only if you wire up a non-VS Code editor yourself |
 | `vela-rbxts-lsp` | The VS Code extension, published as a VSIX rather than to npm | Install from the marketplace as `astra-void.vela-rbxts-lsp` |
 
 For almost every project the answer is the same: install `vela-rbxts`, add the transformer to
 `tsconfig.json`, and install the VS Code extension. Everything else arrives as a dependency.
 
+The three `@rbxts/vela-runtime*` packages are the exception to "nothing of Vela's reaches your place".
+They sit under the `@rbxts` scope on purpose: roblox-ts only resolves a package whose scope directory is
+one of the project's `typeRoots`, and `node_modules/@rbxts` is the one every roblox-ts project already
+lists and every Rojo template already maps. So they need no tsconfig change and no Rojo mapping — but
+pnpm does need `nodeLinker: hoisted` for the directory to be real, which is
+[covered in installation](/vela-rbxts/getting-started/installation/#install-the-packages).
+
+Each host declares its own UI library — `@rbxts/react`, `@rbxts/vide` — as an **optional** peer, which
+is what keeps a Vide project from installing React. The host you do not emit for is inert: nothing
+imports it.
+
 Since 0.11.0 the root package also declares two `bin` entries, `vela` and `vela-rbxts`, pointing at
 the same CLI. It lowers a source tree ahead of `rbxtsc` for projects that cannot register the
 transformer — see [the CLI reference](/vela-rbxts/reference/cli/).
 
-`@vela-rbxts/runtime` is deliberately not on that list. Since 0.9.0 the inlined runtime helper lives
-there as real TypeScript the repo typechecks and formats — it used to be a string literal inside the
-Rust crate — and the compiler reads it at build time. The package is private and never published, so
-there is still nothing of Vela's to install or to place in your DataModel.
+The runtime took three releases to get here. Before 0.9.0 it was a string literal inside the Rust
+crate; 0.9.0 moved it to real TypeScript the repo typechecks and formats, still inlined into every
+module that needed it; 0.12.0 published it, split into the neutral core and one host per target, and
+turned the inlining into an import.
 
-All packages are versioned in lockstep at **0.11.0**, including the VS Code extension. There is no
+All packages are versioned in lockstep at **0.12.0**, including the VS Code extension. There is no
 scenario in which you should mix versions across the `@vela-rbxts/*` scope. What changed in each
 release is in the [release notes](/vela-rbxts/reference/release-notes/).
 

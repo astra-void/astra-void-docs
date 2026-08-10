@@ -1,6 +1,6 @@
 ---
 title: Diagnostics
-description: Every diagnostic code Vela can emit at 0.11.0, how it reaches your build or editor, and the caveats that make some of them easy to miss.
+description: Every diagnostic code Vela can emit at 0.12.0, how it reaches your build or editor, and the caveats that make some of them easy to miss.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -65,7 +65,7 @@ Every code is a warning unless marked otherwise.
 | `no-roblox-equivalent` | A real Tailwind family that cannot be expressed in Roblox UI (`tracking-*`, `blur-*`, `cursor-*`, …); the message names the family |
 | `unknown-variant` | A colon prefix that is not one of the twelve variants; the message lists the supported set |
 | `unsupported-arbitrary-value` | A `[...]` payload the family cannot read — `w-[abc]`, `bg-[notacolor]`, `font-[600]`. Since 0.7.0 most length families *do* read brackets; see [arbitrary values](/vela-rbxts/reference/utilities/#arbitrary-values) |
-| `unsupported-opacity-modifier` | A `/N` opacity modifier on a family with no transparency channel |
+| `unsupported-opacity-modifier` | A `/N` opacity modifier on a family with no transparency channel. Since 0.12.0 that is `placeholder-*` alone, and the message says why |
 
 ### Theme and color
 
@@ -84,7 +84,7 @@ which family rejected what:
 
 | Code | Family |
 |---|---|
-| `unsupported-border-value` | `border-*` styles, sides, slashes, and off-list thicknesses |
+| `unsupported-border-value` | `border-*` styles, sides, and off-list thicknesses. A `/N` modifier is no longer among them — since 0.12.0 `border-slate-500/25` resolves |
 | `unsupported-stroke-value` | `ring-*` / `outline-*` off-list values, `inset`, `offset-*` |
 | `unsupported-rotation-value` | `rotate-*` outside the degree list |
 | `unsupported-scale-value` | `scale-*` outside the value list |

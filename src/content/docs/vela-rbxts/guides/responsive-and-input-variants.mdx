@@ -152,47 +152,47 @@ tokens are serialized into a `__velaRules` JSON prop, the original tag is passed
 
 <Callout title="A variant in a plain string literal is enough">
 You do not need a dynamic `className` to trigger this. `className="sm:w-full"` — a fully static
-string literal — is enough. One variant-prefixed token anywhere in the file causes the whole runtime
-helper module to be inlined at the top of that file's output.
+string literal — is enough. One variant-prefixed token anywhere in the file pulls the runtime host
+into that file's output.
 </Callout>
 
-That helper is roughly 3,900 lines of generated roblox-ts at 0.11.0, and it is the same 3,900 lines
-whatever your class list is — it grew as the runtime path reached parity with the static one, and
-again when `opacity-*` learned to cross a component boundary.
-Since 0.10.0 it arrives grouped into thirteen namespaces, which is what keeps it from crowding Luau's
-200-local-register limit; it does not make the emit smaller. It imports `@rbxts/react` and
-`{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your
-theme's color and spacing strings into `Color3` and `UDim` values at module load, and installs
-`useState`/`useEffect` subscriptions on each element that uses it.
+Since **0.12.0** what that costs the file is an import. The host lives in `@rbxts/vela-runtime`, one
+ModuleScript the whole place shares, and a file that needs it carries a `createVelaRuntimeHost(...)`
+call and the config it hands over — a few hundred bytes, or a few thousand for a file whose host has
+to parse a class value and therefore keeps the full theme tables. Before that the host was inlined
+whole into every such file: the same 5,500 lines twenty times over for twenty component files, each
+copy running its own camera subscription, its own rem binding and its own React context.
+
+The host imports `{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services` plus
+your UI library, normalizes your theme's color and spacing strings into `Color3` and `UDim` values,
+and installs subscriptions on each element that uses it.
 
 The practical consequences:
 
-- **Output size.** Every file that uses a variant carries its own copy of the helper. Sprinkling
-  `md:` across twenty component files inlines the helper twenty times.
 - **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment
   changes, instead of being a fixed set of props.
-- **Theme values are re-parsed from text.** The runtime path reads your theme from serialized JSON
-  through two narrow Luau parsers, so a value that is valid roblox-ts but not shaped like
-  `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades silently in game. This is the one runtime
-  divergence that can still bite a fully static class list, because a variant is enough to trigger
-  it — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
+- **Theme values are re-parsed from text.** A host that has to parse a class value reads your theme
+  from serialized text through two narrow Luau parsers, so a value that is valid roblox-ts but not
+  shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades silently in game — see
+  [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
+  A variant alone does not put you here: its rules are resolved by the compiler, so a variant-only
+  file ships its scales emptied.
 
-Diagnostics are **not** on that list: variant-prefixed tokens are analyzed statically, so you keep
-your warnings for them. Coverage is not on it either, as of 0.11.0 — the runtime path resolves every
-utility family the static path does.
+Output size is no longer on that list, and neither are diagnostics — variant-prefixed tokens are
+analyzed statically, so you keep your warnings for them. Coverage is not on it either, as of 0.12.0:
+the runtime path resolves every utility family the static path does.
 
-The recommendation follows directly: use variants where they earn their keep — a handful of
-top-level layout containers that genuinely need to reflow between phone and desktop, an input hint
-that only makes sense on gamepad, hover feedback on interactive controls — and keep leaf components
-on plain static classes. Concentrating variants in a few container components means only those files
-pay the inlining cost.
+The recommendation is softer than it was, and now rests on runtime work rather than emit size: use
+variants where they earn their keep — a handful of top-level layout containers that genuinely need to
+reflow between phone and desktop, an input hint that only makes sense on gamepad, hover feedback on
+interactive controls — and keep leaf components on plain static classes.
 
 ## Driving reflow yourself
 
 Variants are not the only way to reflow, and sometimes not the best one: when you want thresholds
-the three breakpoints do not cover, or you would rather not pull the runtime helper into a file, read
-the viewport yourself and branch between two static class strings. Both branches stay on the static
-path with the full utility set:
+the three breakpoints do not cover, or you would rather not pull the runtime host into a file at all,
+read the viewport yourself and branch between two static class strings. Branching the whole element
+keeps both looks on the static path, with no host and the full utility set:
 
 ```tsx title="src/client/ResponsiveShell.tsx"
 function useViewportWide(threshold: number) {
