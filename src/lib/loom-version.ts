@@ -17,10 +17,10 @@
  */
 
 /** Current release the docs are written against. */
-export const LOOM_VERSION = "0.10.0"
+export const LOOM_VERSION = "0.11.0"
 
 /** Pre-1.0 marker shown next to the version. */
 export const LOOM_STABILITY = "pre-1.0"
 
-/** `loom · v0.10.0 · pre-1.0` — the landing page badge. */
+/** `loom · v0.11.0 · pre-1.0` — the landing page badge. */
 export const LOOM_VERSION_LABEL = `loom · v${LOOM_VERSION} · ${LOOM_STABILITY}`
