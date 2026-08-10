@@ -16,10 +16,10 @@
  */
 
 /** Current release the docs are written against. */
-export const VELA_VERSION = "0.12.0"
+export const VELA_VERSION = "0.12.2"
 
 /** Pre-1.0 marker shown next to the version. */
 export const VELA_STABILITY = "pre-1.0"
 
-/** `vela-rbxts · v0.12.0 · pre-1.0` — the landing page badge. */
+/** `vela-rbxts · v0.12.2 · pre-1.0` — the landing page badge. */
 export const VELA_VERSION_LABEL = `vela-rbxts · v${VELA_VERSION} · ${VELA_STABILITY}`

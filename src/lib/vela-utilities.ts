@@ -16,7 +16,7 @@
  * `renderUtilityCell` in UtilityTable.astro.
  *
  * Nothing here is derived from the compiler: it is a transcription of what the
- * reference page states at 0.12.0, and a release that changes a mapping has to
+ * reference page states at 0.12.2, and a release that changes a mapping has to
  * change this file.
  */
 

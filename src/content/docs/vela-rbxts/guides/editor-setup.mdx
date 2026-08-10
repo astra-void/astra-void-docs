@@ -45,6 +45,15 @@ The declared capability set is small and deliberate.
 
 **Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete.
 
+<Callout title="A class value the compiler has to walk into counts as that context">
+Since **0.12.2** every capability on this page reads the class strings out of the shapes a `className`
+is really written in: a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a
+dynamic class value, plus a template's interpolations, `as const`, `satisfies`, string concatenation,
+and an object's computed keys and spreads. Before that a function had no arm in the walk at all, so
+`className={() => "bg-blue-600"}` got completions and hover only while the file was failing to parse
+and a lexical fallback was standing in for the real one.
+</Callout>
+
 **Hover.** Shows what a class token resolves to. Since 0.12.0 a viewport-scaled offset reads as its
 rem value first — `` Sets `UIPadding` to `1rem` (16px at the base viewport). `` — across padding, gap,
 margin, sizes, positions, radius, text size, stroke and separator thickness, and scrollbar width. That
@@ -77,7 +86,9 @@ sizing, spacing, colors, radius, typography, with variant-prefixed tokens last:
 
 **The sort never changes what your classes do.** Utilities that can write the same Roblox property
 are treated as one group and keep their relative order within it, so a `px-4` written after `p-2` — a
-collision the later token wins — stays after it.
+collision the later token wins — stays after it. A template keeps the whitespace around each
+interpolation, too: until **0.12.2** `` `bg-slate-700 p-4 ${flag}` `` came back as
+`` `p-4 bg-slate-700${flag}` ``, running the last token into whatever `flag` resolves to.
 
 Run it from the editor's source-action menu, or on save:
 

@@ -1,6 +1,6 @@
 ---
 title: Release notes
-description: What changed in each Vela release — the 0.12.0 rem, runtime-as-a-package and Vide passes, the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, and the sharp edges still open.
+description: What changed in each Vela release — the 0.12.x editor and framework-inference patches, the 0.12.0 rem, runtime-as-a-package and Vide passes, the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, and the sharp edges still open.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -18,11 +18,43 @@ per-package detail behind this page. If you are installing Vela for the first ti
 current release and none of the upgrade notes below apply to you — skip to
 [what is still open](#still-open).
 
+## 0.12.2
+
+The current release. A patch, and entirely in the editor — the compiler emits byte for byte what
+0.12.0 did.
+
+**The editor understands a class value written as a function.** `className={() => "bg-blue-600"}` is
+how a Vide project writes a dynamic one, and the walk that collects the class strings out of a
+`className` expression had no arm for a function at all. So completions, hover, diagnostics, color
+swatches and sorting saw nothing in it — except while the file was mid-edit and failing to parse,
+where a lexical fallback picked the strings up, which is a strange way to find out that the feature
+was missing. The walk follows what a function returns now, along with the shapes that were missing
+beside it: a template's interpolations, `as const`, `satisfies`, string concatenation, and an object's
+computed keys and spreads.
+
+**Two things around template interpolations.** The lexical fallback read a template's `${...}` as
+class text, so a half-typed file reported `${flag` and `?` as unknown utilities; it reads one quasi at
+a time now, keeping only the strings written *inside* the interpolation. And the sort dropped the
+whitespace either side of an interpolation — `` `bg-slate-700 p-4 ${flag}` `` came back as
+`` `p-4 bg-slate-700${flag}` ``, running the last token into whatever `flag` resolves to. That is a
+sort that changed what the classes do, which the sort is not allowed to do; the value's leading and
+trailing whitespace is kept.
+
+## 0.12.1
+
+A patch, and the one to be on if you write Vide. **A Vide project that never named `framework`
+compiled against the React host** — its emit imported `@rbxts/vela-runtime`, which such a project has
+no reason to have installed. The tsconfig inference only ever ran for a project with no
+`vela.config.ts` at all: `defineConfig()` resolves an unset framework to the default before it
+returns, and that resolved value was read back as a choice the project had made. So a Vide project
+with a config file that set anything else — a theme, a plugin — silently lost the inference. A config
+that names `framework` still wins over the tsconfig, which is the whole point of the key.
+
 ## 0.12.0
 
-The current release, and the largest since 0.7.0. Four things landed together: offsets became rem
-units, the runtime became a package instead of a copy, branches started resolving at compile time, and
-Vela learned to emit for a second UI library.
+The largest release since 0.7.0. Four things landed together: offsets became rem units, the runtime
+became a package instead of a copy, branches started resolving at compile time, and Vela learned to
+emit for a second UI library.
 
 <Callout title="Two of these change what you already have">
 **Rendering moves on any viewport but the base one**, because every pixel offset now scales with the
