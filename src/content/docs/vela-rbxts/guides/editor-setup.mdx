@@ -43,7 +43,7 @@ There is no `cargo run` fallback. If you are developing the server itself, build
 
 The declared capability set is small and deliberate.
 
-**Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete.
+**Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete. A completion rewrites the segment under the cursor and nothing else — since **0.12.3**, which is when accepting an item over the `hover:` in `hover:bg-slate-700` stopped taking `bg-slate-700` with it. **0.12.4** stopped offering `placeholder-transparent` on a `textbox`, which the compiler turned down the moment it was accepted; every other family that takes the `transparent` keyword still offers it.
 
 <Callout title="A class value the compiler has to walk into counts as that context">
 Since **0.12.2** every capability on this page reads the class strings out of the shapes a `className`
@@ -89,6 +89,14 @@ are treated as one group and keep their relative order within it, so a `px-4` wr
 collision the later token wins — stays after it. A template keeps the whitespace around each
 interpolation, too: until **0.12.2** `` `bg-slate-700 p-4 ${flag}` `` came back as
 `` `p-4 bg-slate-700${flag}` ``, running the last token into whatever `flag` resolves to.
+
+**And since 0.12.4 it does not change how they are laid out.** The tokens are the only thing that
+moves; the whitespace between them is carried over as it was written, so a class list broken across
+several lines stays broken across those lines instead of being flattened into one on every save.
+Two more sorting edges closed in **0.12.3**: a value containing an arbitrary payload with a space in
+it — `w-[calc(100% - 4px)]` — moves as the single class it is, and a value whose bracket is never
+closed is left alone entirely, since the pieces either side of an unclosed `[` are not independent
+classes and moving them apart would rewrite the source into something else.
 
 Run it from the editor's source-action menu, or on save:
 

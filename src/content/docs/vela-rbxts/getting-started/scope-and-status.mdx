@@ -1,6 +1,6 @@
 ---
 title: Scope and status
-description: What Vela covers at 0.12.2, which Tailwind families are permanently out, and where enforcement has gaps.
+description: What Vela covers at 0.12.4, which Tailwind families are permanently out, and where enforcement has gaps.
 product: vela-rbxts
 section: getting-started
 sidebar:
@@ -15,7 +15,7 @@ that cannot mean anything. What Vela ships instead is a Roblox-oriented mapping:
 correspond to real Roblox properties and helper instances, a few structural emulations where the
 correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes separator
 frames — and loud rejection of everything that cannot be expressed at all. This page is the honest
-map of where the edges are at **0.12.2**.
+map of where the edges are at **0.12.4**.
 
 ## What is in scope
 
@@ -33,7 +33,7 @@ Anything that is neither is skipped, keeps its `className` verbatim, and reports
 `classname-on-unsupported-host` — lowercase intrinsics Vela does not implement, such as `screengui`,
 and namespaced tags such as `<svg:rect />`, which never count as components.
 
-Within those eight, the covered ground at 0.12.2 is wide: colors (including arbitrary hex and `/N`
+Within those eight, the covered ground at 0.12.4 is wide: colors (including arbitrary hex and `/N`
 opacity modifiers), gradients, borders, rings and outlines, corner radius, shadows, padding,
 margins, gap and `space-*`, `divide-*` separators, sizing and min/max constraints, position on all
 four edges, anchor point, translation, z-index, layout order, rotation, scale, opacity, aspect
@@ -136,7 +136,7 @@ version.
 
 ## Release state
 
-Every package in the repo is at **0.12.2**, versioned in lockstep: `vela-rbxts` itself, the
+Every package in the repo is at **0.12.4**, versioned in lockstep: `vela-rbxts` itself, the
 `@vela-rbxts/*` scope covering the compiler, config, core, IR, types, host adapter and language
 server, the three `@rbxts/vela-runtime*` packages that ship the runtime into your place, and the
 `vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix anywhere moves

@@ -1,6 +1,6 @@
 ---
 title: Diagnostics
-description: Every diagnostic code Vela can emit at 0.12.2, how it reaches your build or editor, and the caveats that make some of them easy to miss.
+description: Every diagnostic code Vela can emit at 0.12.4, how it reaches your build or editor, and the caveats that make some of them easy to miss.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -64,7 +64,7 @@ Every code is a warning unless marked otherwise.
 | `unsupported-utility-family` | The token does not match any known utility family — including typos |
 | `no-roblox-equivalent` | A real Tailwind family that cannot be expressed in Roblox UI (`tracking-*`, `blur-*`, `cursor-*`, …); the message names the family |
 | `unknown-variant` | A colon prefix that is not one of the twelve variants; the message lists the supported set |
-| `unsupported-arbitrary-value` | A `[...]` payload the family cannot read — `w-[abc]`, `bg-[notacolor]`, `font-[600]`. Since 0.7.0 most length families *do* read brackets; see [arbitrary values](/vela-rbxts/reference/utilities/#arbitrary-values) |
+| `unsupported-arbitrary-value` | A `[...]` payload the family cannot read — `w-[abc]`, `bg-[notacolor]`, `font-[600]`. Since 0.7.0 most length families *do* read brackets, and since 0.12.3 a space inside them does not split the token, so `w-[calc(100% - 4px)]` reports this once rather than three times; see [arbitrary values](/vela-rbxts/reference/utilities/#arbitrary-values) |
 | `unsupported-opacity-modifier` | A `/N` opacity modifier on a family with no transparency channel. Since 0.12.0 that is `placeholder-*` alone, and the message says why |
 
 ### Theme and color
@@ -96,7 +96,7 @@ which family rejected what:
 | `unsupported-layout-order-value` | An unresolvable `order-*` |
 | `unsupported-space-value` | An unresolvable `space-x-*`/`space-y-*` |
 | `unsupported-margin-value` | An unresolvable margin payload |
-| `unsupported-negative-margin` | `-mr-*` or `-mb-*` — only top/left margins can be negative |
+| `unsupported-negative-margin` | `-mr-*` or `-mb-*` — only top/left margins can be negative. Since 0.12.4 a side holds one signed value and the last class written to it wins; see [margin](/vela-rbxts/reference/utilities/#margin) |
 | `unsupported-divide-value` | An unresolvable `divide-*` payload |
 | `unsupported-line-height-value` | A `leading-*` outside the six named keys |
 | `unsupported-text-size` | A `text-{size}` that cannot be resolved (not reachable in practice) |

@@ -60,6 +60,28 @@ Transitions animate *changes*, and a purely static element never changes. `trans
 without a variant rule or dynamic `className` is dropped with `transition-without-runtime` — add the
 `hover:` or breakpoint rule that gives it something to tween.
 
+## "The editor flags a class the build accepts"
+
+The build is the source of truth, so a squiggle the compiler does not agree with is an editor bug.
+Four of them were fixed in **0.12.3**, and upgrading is the whole fix for each:
+
+- **A theme key you defined is unknown to the editor and to nothing else.** `vela-rbxts/setConfigs`
+  is sent as a notification and was wired to a request handler, which tower-lsp drops without a word,
+  so the config the editor pushed never arrived and every key in it stayed unknown for the session.
+  The build read the same `vela.config.ts` correctly the whole time.
+- **`` `w-[${width}]` `` reports an unknown theme key and an unsupported family.** A template is read
+  one quasi at a time, so an interpolation splices into the class beside it and both halves were
+  analyzed as whole classes. A token an interpolation cuts into is left to the runtime now.
+- **An arbitrary value with a space in it reports three diagnostics.** `w-[calc(100% - 4px)]` was
+  tokenized as three classes; it is one now — see
+  [arbitrary values](/vela-rbxts/reference/utilities/#arbitrary-values).
+- **Every diagnostic, hover and swatch is one character off.** The file opens with a BOM: spans were
+  handed out over a source with it dropped and read back over a document that still had it.
+
+If you are on 0.12.3 or later and the editor still disagrees with the build, the two genuinely
+disagree by design in one direction — the per-host rules (`unsupported-host-utility`) are enforced in
+the editor and never by the build, which is the first entry on this page rather than a bug.
+
 ## "A breakpoint or orientation variant never applies"
 
 Check that the token's other conditions hold — a chained `md:touch:` needs both to match — and

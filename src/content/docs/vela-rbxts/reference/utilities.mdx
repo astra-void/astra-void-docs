@@ -1,6 +1,6 @@
 ---
 title: Utility reference
-description: Every utility class Vela supports at 0.12.2, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
+description: Every utility class Vela supports at 0.12.4, the exact values each one accepts, and the Roblox property or helper instance it lowers to.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout, UtilityTable } from "@/components/docs/mdx";
 
-This is the complete list of what Vela compiles as of **0.12.2**. If a class is not on this page,
+This is the complete list of what Vela compiles as of **0.12.4**. If a class is not on this page,
 Vela does not implement it — an unknown family produces `unsupported-utility-family`, a real
 Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`, and a few (anything that
 looks like `text-*`) get misread as a color key instead. See
@@ -119,7 +119,9 @@ with a message that says why.
 
 Two keywords behave specially. `transparent` sets the transparency property to `1` and removes the
 color property entirely; on `placeholder-*` and `divide-*` it produces `unsupported-color-key`.
-`current` and `inherit` are rejected outright with `unsupported-color-key`.
+`current` and `inherit` are rejected outright with `unsupported-color-key`. Since **0.12.4** the
+editor no longer offers `placeholder-transparent`, which it had been suggesting on a `textbox` right
+up to the moment the compiler turned it down.
 
 Note the asymmetry that leaves on `divide-*`: `divide-white/10` lowers the modifier to the separators'
 `BackgroundTransparency`, while `divide-transparent` is still refused. The modifier and the keyword are
@@ -250,6 +252,14 @@ Both lowering paths resolve these identically. A payload the family cannot read 
 `unsupported-arbitrary-value` and the token is dropped — `w-[abc]` and `bg-[notacolor]` both land
 there — and `z-[1.5]` has its own `unsupported-arbitrary-z-index`, since `ZIndex` is an integer.
 
+Since **0.12.3** a space inside the brackets does not end the class. `w-[calc(100% - 4px)]` used to
+tokenize as three classes — `w-[calc(100%`, `-` and `4px)]` — and collect a diagnostic each; it is one
+token now, and reports the one `unsupported-arbitrary-value` it is owed. (`calc()` is still not a
+payload any family reads. What changed is that you are told so once, about the value you wrote.) The
+runtime splits its class strings in Luau under the same rule, so a static class and a deferred one
+tokenize alike. A bracket that is never closed still splits, which keeps the classes written after a
+typo applying.
+
 Families not in the table above do not take a bracket. There is no arbitrary `font-[…]` weight, no
 arbitrary `duration-[…]`, and no arbitrary grid template.
 
@@ -266,6 +276,14 @@ Margins participate in the parent's list layout and sum with its `gap-*` — a `
 children carry `my-2` produces 16-pixel visual gaps, not 8. If all you need is space between list
 children, prefer `gap-*` on the parent: it is one property on one instance and keeps the element on
 the static path.
+
+A negative top or left margin cannot be padding on a box the element sits inside, so it moves the
+element instead. **Each side holds one signed value, and the last class written to it wins** — since
+0.12.4: `ml-4 -ml-2` shifts by 8, `-ml-2 ml-4` pads by 16, and `-ml-0` clears whatever was written
+before it. Below that version the padding and the shift were accumulated separately, so the two could
+not overwrite each other and both applied at once; [0.12.4](/vela-rbxts/reference/release-notes/#0124)
+has the shapes that were wrong. `-mr-*` and `-mb-*` remain `unsupported-negative-margin` — those
+would have to pull the *next* sibling closer, which a box around this element cannot reach.
 
 ## Gap and space
 

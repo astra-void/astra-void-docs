@@ -1,6 +1,6 @@
 ---
 title: Release notes
-description: What changed in each Vela release — the 0.12.x editor and framework-inference patches, the 0.12.0 rem, runtime-as-a-package and Vide passes, the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, and the sharp edges still open.
+description: What changed in each Vela release — the 0.12.4 margin and tokenizer fixes, the 0.12.x editor and framework-inference patches, the 0.12.0 rem, runtime-as-a-package and Vide passes, the 0.11.0 CLI, the 0.10.0 opacity model, the 0.8.0 runtime parity pass, and the sharp edges still open.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -18,10 +18,75 @@ per-package detail behind this page. If you are installing Vela for the first ti
 current release and none of the upgrade notes below apply to you — skip to
 [what is still open](#still-open).
 
+## 0.12.4
+
+The current release. Four fixes, one of which changes what a margin emits.
+
+**A margin side is one signed slot, so the last class written to it is the one that lands.** A negative
+top or left margin cannot be `UIPadding` — it moves the element instead — and that move was
+accumulated in a slot of its own, beside the padding the same side already held. Two slots meant
+neither could overwrite the other: `-ml-2 -ml-2` shifted by 16 rather than 8, `ml-4 -ml-2` applied a
+16 padding *and* an 8 shift, `-ml-2 ml-4` emitted exactly the same thing so the order the two were
+written in stopped mattering, and `-ml-0` had nothing to subtract and vanished, leaving the `ml-4` in
+front of it standing. Each side now holds one signed value: the last margin written to it wins, a side
+that ends up negative moves the element, one that ends up positive pads it. `-mr-*` and `-mb-*` still
+report `unsupported-negative-margin`, since those would have to pull the next sibling closer.
+
+**Sorting leaves the whitespace where its author put it.** The sort rebuilt the value by joining its
+tokens with single spaces, so a class list written across several lines came back as one long line —
+a reformat nobody asked for, on every save. The tokens are the only thing the sort is asked to move;
+the whitespace between them is carried over as it was written. 0.12.2 fixed the same shape of bug
+around a template interpolation.
+
+**`placeholder-transparent` is no longer offered.** Completion suggested it on a `textbox` and the
+compiler reported it unsupported the moment it was accepted, since Roblox gives a placeholder no
+transparency to lower to. Every other family that takes the `transparent` keyword keeps it.
+
+**The language server exits when the client asks it to.** tower-lsp ends its read loop on end of input
+and handles `exit` without ending it, so the notification alone left the process running — a client
+that sends it and holds stdin open, as one waiting for the server to go away does, waited on a server
+that never went. Most editors close the pipe right behind the notification and force-kill on a
+timeout, which is what kept this out of sight.
+
+## 0.12.3
+
+A patch, mostly in the editor — but two of these move the compiler as well: which classes it defers,
+and how a class value is split into tokens at all.
+
+**A class an interpolation splices into is left alone.** `` `w-[${width}]` `` reaches the editor as
+two pieces, `w-[` and `]`, because a template is read one quasi at a time — and both were analyzed as
+though they were whole classes, reporting an unknown theme key and an unsupported family for a class
+the compiler hands the runtime untouched. A token an interpolation cuts into is left to the runtime
+now; a token that merely sits beside one, with a space between, is checked as before.
+
+**Whitespace inside an arbitrary value no longer splits it.** `w-[calc(100% - 4px)]` was read as three
+classes — `w-[calc(100%`, `-` and `4px)]` — so the editor and the compiler both reported three
+diagnostics about fragments where one about the value was owed. Whitespace stops separating classes
+between a `[` and the `]` that closes it, and the runtime splits its class strings in Luau under the
+same rule, so a static class and a deferred one tokenize alike. A bracket that never closes still
+splits, which keeps the classes written behind a typo applying.
+
+**A config pushed by the editor never arrived.** `vela-rbxts/setConfigs` is sent as a notification and
+was wired to a request handler, which tower-lsp drops without a word — so a theme key defined in
+`vela.config.ts` stayed unknown to completion, hover and diagnostics for the whole session, while the
+same key compiled correctly.
+
+**A file that opens with a BOM answered one character to the left.** The source file drops the BOM
+before it hands out spans, while the offsets travel back over a document that still carries it, which
+shifted every diagnostic, hover and color swatch off the class it was about.
+
+**Completing inside a variant chain deleted the utility behind it.** Accepting an item over `hover:`
+in `hover:bg-slate-700` replaced the whole token, taking `bg-slate-700` with it. The segment under
+the cursor is the only part a completion may rewrite now, and the quick fix that offers completions
+for a diagnostic asks at the utility rather than at the token start.
+
+**Sorting a value whose bracket never closes rewrote it.** The pieces either side of an unclosed `[`
+are not independent classes, so moving them apart made the source say something else; such a value is
+now left where it is. A closed one sorts as the single class it is.
+
 ## 0.12.2
 
-The current release. A patch, and entirely in the editor — the compiler emits byte for byte what
-0.12.0 did.
+A patch, and entirely in the editor — the compiler emits byte for byte what 0.12.0 did.
 
 **The editor understands a class value written as a function.** `className={() => "bg-blue-600"}` is
 how a Vide project writes a dynamic one, and the walk that collects the class strings out of a
@@ -527,7 +592,7 @@ need it — which is why there is no Vela runtime to place in your DataModel.
 
 ## Still open
 
-These are known and unfixed as of 0.11.0.
+These are known and unfixed as of 0.12.4.
 
 **`gap-*` on a `grid` element emits a conflicting `UIListLayout`** alongside the `UIGridLayout` it
 correctly feeds, leaving two layout instances fighting over the children. 0.6.0 made the grid usable
@@ -591,7 +656,7 @@ have to build the compiler crate and the language server from source. The full t
 
 ## See also
 
-- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.12.0.
+- [Scope and status](/vela-rbxts/getting-started/scope-and-status/) — what is in and out at 0.12.4.
 - [Configuration](/vela-rbxts/reference/config/#preflight) — the `preflight` opt-out, and
   [`plugins`](/vela-rbxts/reference/config/#plugins).
 - [Troubleshooting](/vela-rbxts/guides/troubleshooting/) — symptom-first, including the two entries
