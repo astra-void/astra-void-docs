@@ -6,6 +6,7 @@ import {
   getDocs,
   getDocsShellData,
   type DocNavItem,
+  type DocsProduct,
   type DocsProductId,
 } from "@/lib/docs"
 import { mdxToMarkdown } from "@/lib/mdx-to-markdown"
@@ -37,6 +38,22 @@ export function getDocMarkdownPath(doc: DocNavItem, productId: DocsProductId) {
 
   // The product home has no slug of its own, so it lands on `index.md`.
   return `${product.href}${slug || "index"}.md`
+}
+
+/** The nav entries that point at one product's machine-readable copies. */
+export function getLlmsNavLinks(product: DocsProduct) {
+  return [
+    {
+      label: "llms.txt",
+      href: `${product.href}llms.txt`,
+      description: `Every ${product.title} page as a Markdown link, for pasting into an agent.`,
+    },
+    {
+      label: "llms-full.txt",
+      href: `${product.href}llms-full.txt`,
+      description: `Every ${product.title} page inlined as one Markdown file.`,
+    },
+  ]
 }
 
 export async function getLlmsDocs(productId: DocsProductId): Promise<LlmsDoc[]> {

@@ -1,5 +1,6 @@
 ---
 import type { DocsProduct, DocsSectionGroup } from "@/lib/docs"
+import { getLlmsNavLinks } from "@/lib/llms"
 
 interface Props {
   sections: DocsSectionGroup[]
@@ -8,6 +9,8 @@ interface Props {
 }
 
 const { sections, currentPath, product } = Astro.props as Props
+
+const llmsLinks = getLlmsNavLinks(product)
 ---
 
 <aside class="hidden w-64 shrink-0 lg:block">
@@ -69,6 +72,24 @@ const { sections, currentPath, product } = Astro.props as Props
           )}
         </div>
       ))}
+
+      <div class="border-t border-border pt-5">
+        <h4 class="mb-2 px-2 text-[0.8rem] font-medium text-muted-foreground">
+          For LLMs
+        </h4>
+        <div class="grid grid-flow-row auto-rows-max text-sm">
+          {llmsLinks.map((link) => (
+            <a
+              class="group flex w-full items-center rounded-md px-2 py-1.5 leading-5 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              href={link.href}
+              title={link.description}
+              data-astro-reload
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </div>
     </nav>
   </div>
 </aside>
