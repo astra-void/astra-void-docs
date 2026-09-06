@@ -22,7 +22,15 @@
  * The copy is cheap (a couple of dozen small files), and both generated roots are
  * rebuilt from scratch on every run, so it cannot go stale.
  */
-import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from "node:fs"
+import {
+  copyFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs"
 import { resolve } from "node:path"
 
 // Anchored on the working directory for the same reason lattice-source.ts is:
@@ -83,6 +91,7 @@ export function materializeVelaRuntime(
     shims[id] = resolve(target, "index.ts")
 
     materializeConfigDefaults(repo, target)
+    shimSetmetatable(resolve(target, "index.ts"))
   }
 
   return shims
@@ -110,4 +119,46 @@ function materializeConfigDefaults(repo: string, target: string) {
   if (existsSync(defaults)) {
     copyFileSync(defaults, written)
   }
+}
+
+/**
+ * Give a copied entry its own `setmetatable`.
+ *
+ * Vela 0.13.0 began keying two internal caches weakly —
+ * `setmetatable(new Map(), { __mode: "k" })` in the React runtime, and the same
+ * in the Vide one — and Loom
+ * [deliberately installs no metatable functions](/loom/reference/luau-globals/):
+ * there is no faithful way to give a plain JavaScript object a metatable's
+ * `__index` without proxying every table in the program. So the call throws
+ * `ReferenceError: setmetatable is not defined` the moment a scene mounts, which
+ * takes down every Vela preview and the playground with them.
+ *
+ * A module-scope declaration shadows the missing global for that file only, and
+ * returning the table unchanged is the honest browser answer: `__mode` is a
+ * garbage-collection hint, so dropping it costs a preview nothing but entries
+ * living longer than they would in a place.
+ *
+ * Written only when the file actually calls it, so this disappears on its own if
+ * the runtime stops needing it.
+ */
+function shimSetmetatable(entry: string) {
+  if (!existsSync(entry)) {
+    return
+  }
+
+  const source = readFileSync(entry, "utf8")
+  if (!/\bsetmetatable\s*\(/.test(source)) {
+    return
+  }
+
+  const preamble = [
+    "// Injected by the docs' preview pipeline — see shimSetmetatable in",
+    "// src/lib/vela-runtime-shims.ts. Loom installs no metatable functions.",
+    "function setmetatable<T>(target: T, _metatable: unknown): T {",
+    "\treturn target;",
+    "}",
+    "",
+  ].join("\n")
+
+  writeFileSync(entry, `${preamble}\n${source}`)
 }
