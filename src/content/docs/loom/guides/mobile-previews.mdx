@@ -9,47 +9,34 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-A preview lays the scene out against the stage it is given: whatever the mount measures **is** the
-Roblox viewport, mirrored onto `Workspace.CurrentCamera.ViewportSize` and fed to the layout engine.
-That holds at every width and on every device, so a phone gets a phone-sized viewport and the scene
-reflows into it exactly as the engine reflows there.
+A preview lays the scene out against the stage it is given: whatever the mount measures **is** the Roblox viewport, mirrored onto `Workspace.CurrentCamera.ViewportSize` and fed to the layout engine. So a phone gets a phone-sized viewport and the scene reflows exactly as the engine reflows there.
 
-Nothing here needs configuration. The generated pages also size with `dvh`, so a full-height stage
-does not hang underneath a mobile browser's toolbars.
+Nothing here needs configuration. The generated pages size with `dvh`, so a full-height stage does not hang under a mobile browser's toolbars.
 
 ## The stage is the viewport
 
-Text re-wraps at the narrow width, a `UIListLayout` with `Wraps` re-flows onto more lines,
-`AutomaticSize` re-measures, and a scene that branches on `ViewportSize` takes its narrow path. A
-layout built out of offsets that is wider than the screen runs off the edge and is clipped — which is
-what it does on a real device, and is usually the thing you opened the preview on a phone to find
-out.
+Text re-wraps, a `UIListLayout` with `Wraps` re-flows, `AutomaticSize` re-measures, and a scene
+branching on `ViewportSize` takes its narrow path. A layout of offsets wider than the screen runs
+off the edge and is clipped — what it does on a real device, and usually what you opened the preview
+on a phone to find out.
 
 <Callout title="Loom does not make your UI responsive">
-Roblox does not, so neither does loom. If a scene should adapt to a small screen, it adapts in the
-scene — a `UIScale`, a breakpoint on `ViewportSize`, an `AbsoluteSize` binding. The preview's job is
-to show you what the engine would show, including when that is a layout hanging off the edge.
+Roblox does not, so neither does loom. A scene that should adapt to a small screen adapts in the scene — a `UIScale`, a breakpoint on `ViewportSize`, an `AbsoluteSize` binding. The preview's job is to show what the engine would show, including a layout hanging off the edge.
 </Callout>
 
 ## Why zooming is not the default
 
-Until `0.10.2`, a coarse-pointer device below 960px wide kept a **960-wide logical viewport** and
-painted the whole stage scaled down by `hostWidth / 960`. It read as the same layout drawn smaller.
-It was not: it was a *different* layout, the one the engine gives at 960, shrunk to fit.
-
-`TextWrapped` text kept the line breaks it had at 960 instead of re-wrapping, a `UIListLayout` with
-`Wraps` kept its row count, `AutomaticSize` settled at the wide measurement, and scale-vs-offset
-mixes re-proportioned against the wrong number. Everything *looked* fine — just small — and was wrong
-in exactly the places a narrow viewport is the thing being checked.
-
-(`0.6.4` had already scoped the zoom off desktop for the same reason: an author dragging a window
-narrow is asking to see the reflow. `0.10.2` finished the job.)
+Zooming a narrow device to a fixed 960-wide logical viewport reads as the same layout drawn smaller.
+It is not — it is a *different* layout, the one the engine gives at 960, shrunk to fit.
+`TextWrapped` text keeps the line breaks it had at 960, a `UIListLayout` with `Wraps` keeps its row
+count, `AutomaticSize` settles at the wide measurement, and scale-vs-offset mixes re-proportion
+against the wrong number. Everything *looks* fine, just small, and is wrong in exactly the places a
+narrow viewport is the thing being checked.
 
 ## `?base=` keeps a wide composition
 
 The zoom is still there, because a page embedding a preview at a fixed narrow width sometimes wants
-the composition rather than the reflow — a thumbnail of a wide dashboard in a docs column, say. It
-just has to be asked for:
+the composition rather than the reflow. It just has to be asked for:
 
 | Value | Effect |
 | --- | --- |
@@ -62,15 +49,9 @@ just has to be asked for:
 /loom-preview/index.html?target=src%2Fscenes%2FCounter.loom.tsx&chrome=none&base=1280
 ```
 
-960 is the bare-`?base` fallback rather than a constant with one right answer — the wider the base,
-the more desktop layout survives intact and the smaller everything is drawn. It is wide enough that a
-two-column or fixed-panel layout still has room, and small enough that a phone renders at roughly 40%
-rather than the ~30% a 1280 base would give, where body text stops being readable.
+960 is the bare-`?base` fallback rather than a constant with one right answer: the wider the base, the more desktop layout survives and the smaller everything is drawn. It is wide enough for a two-column layout and small enough that a phone renders at roughly 40% rather than the ~30% a 1280 base gives, where body text stops being readable.
 
-With a base in effect the world still reads the mount's **untransformed** layout size, so the scene
-sees the logical viewport and you are previewing the wide layout, drawn smaller. The [debug
-panel](/loom/guides/debug-panel/) shows both boxes and the factor between them, which is how you tell
-a scene that laid out small from one that was painted small.
+With a base in effect the world reads the mount's **untransformed** layout size, so you are previewing the wide layout drawn smaller. The [debug panel](/loom/guides/debug-panel/) shows both boxes and the factor between them.
 
 `?base=` sits alongside the rest of the [URL
 contract](/loom/guides/static-builds-and-embedding/#the-url-contract).
@@ -78,8 +59,8 @@ contract](/loom/guides/static-builds-and-embedding/#the-url-contract).
 ## Pointer coordinates follow the scale
 
 Whenever `?base=` is scaling the stage, an on-screen pixel is not a layout pixel. The renderer
-converts back by reading the mount's own rendered-to-layout ratio, so hit testing lands where the
-scene *looks* like it is. That covers:
+converts back by reading the mount's rendered-to-layout ratio, so hit testing lands where the scene
+*looks* like it is:
 
 - `MouseEnter` / `Activated` / `InputChanged` positions
 - `GetMouseLocation`
@@ -89,9 +70,9 @@ Unscaled — the default — the ratio is 1 and the conversion is a no-op.
 
 ## ScrollingFrames scroll from a touch drag
 
-There is no wheel on a phone. A drag inside a `ScrollingFrame` moves `CanvasPosition` with the same
-clamping the wheel path uses, and past a small slop threshold it stops counting as a tap — so
-dragging past a button does not activate the button under your finger.
+There is no wheel on a phone, so a drag inside a `ScrollingFrame` moves `CanvasPosition` with the
+same clamping the wheel path uses. Past a small slop threshold it stops counting as a tap, so
+dragging past a button does not activate it.
 
 Two deliberate limits:
 
@@ -102,9 +83,6 @@ Two deliberate limits:
 
 ## The gallery chrome stacks
 
-In full-chrome gallery mode, the 248px sidebar becomes a top bar with a `targets` button. Opening it
-shows the target list; picking one closes it again, leaving the rest of the screen to the stage.
-
-`?chrome=none` — what the [docs-site
-iframes](/loom/guides/static-builds-and-embedding/) use — is unaffected, since there is no chrome to
-stack. Embedded previews get the touch handling and nothing else.
+In full-chrome gallery mode the 248px sidebar becomes a top bar with a `targets` button; picking a
+target closes it again. `?chrome=none` is unaffected — there is no chrome to stack, so embedded
+previews get the touch handling and nothing else.

@@ -9,16 +9,9 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Next.js owns its bundler and its dev server, so neither of loom's other entry points fits. The
-[Vite plugin](/loom/guides/vite-integration/) rewrites `react` and `@rbxts/*` for the whole config
-it lives in, so dropped into Next's webpack or Turbopack config it would hijack the app's own React.
-And [`loom-dev/embed`](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline) hands you
-a Connect middleware that `next dev` has no hook to mount. `loom-dev/next` closes the gap with the
-same isolation the embed API is built on: the gallery keeps a Vite instance of its own, and Next
-only ever forwards HTTP to it.
+Next.js owns its bundler and its dev server, so neither of loom's other entry points fits: the [Vite plugin](/loom/guides/vite-integration/) would hijack the app's own React, and [`loom-dev/embed`](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline) hands you a Connect middleware `next dev` has no hook to mount. `loom-dev/next` closes the gap — the gallery keeps a Vite instance of its own and Next only forwards HTTP to it.
 
-Everything below was verified end to end against two apps: Next 15.5 (pages router, webpack,
-React 18) and Next 16.2 (App Router, Turbopack, React 19) — the second running Fumadocs 16.
+Verified end to end against Next 15.5 (pages router, webpack, React 18) and Next 16.2 (App Router, Turbopack, React 19, Fumadocs 16).
 
 ## How it fits together
 
@@ -39,10 +32,9 @@ In dev, two servers run — but you only ever start one:
     └────────────── HMR WebSocket (direct, bypasses Next) ◄──┘
 ```
 
-Your app's React never meets the gallery's. The loom aliases (`react` pinned to 18,
-`@rbxts/*` → the loom adapters) live entirely inside the gallery's Vite instance; Next's own
-bundler config is untouched, which is why webpack and Turbopack behave identically — the
-integration sits at Next's routing layer, not its bundler.
+Your app's React never meets the gallery's. The loom aliases live entirely inside the gallery's Vite
+instance and Next's bundler config is untouched, which is why webpack and Turbopack behave
+identically: the integration sits at Next's routing layer, not its bundler.
 
 ## 1. Dependencies
 
@@ -50,16 +42,11 @@ integration sits at Next's routing layer, not its bundler.
 npm i -D loom-dev
 ```
 
-`withLoomGallery` ships in `loom-dev` 0.4.0 and newer. Nothing else to install: your app keeps
-whatever React and Next versions it already has, and no `@loom-dev/*` packages enter its
-dependency tree.
+Nothing else to install: your app keeps whatever React and Next versions it has, and no
+`@loom-dev/*` packages enter its dependency tree.
 
 <Callout title="If you prune devDependencies in production">
-`next start` evaluates `next.config` too, and the config imports `loom-dev/next` — so `loom-dev`
-must be resolvable wherever `next start` runs. If your deploy prunes devDependencies, list
-`loom-dev` under `dependencies` instead. The heavy part stays cheap either way: Vite is loaded
-lazily, only when the dev server boots or the build-time gallery is emitted — never under
-`next start`.
+`next start` evaluates `next.config` too, so `loom-dev` must be resolvable wherever it runs — list it under `dependencies` if your deploy prunes devDependencies. Vite is loaded lazily either way, never under `next start`.
 </Callout>
 
 ## 2. The config
@@ -79,20 +66,14 @@ export default withLoomGallery(
 That is the entire setup — no prebuild script, no manual `loom build`, no second terminal.
 
 <Callout title="Compose it outermost">
-The wrapper accepts *your* config as an object or a function, but what it returns is always the
-function form — object-shaped wrappers can't wrap that. So when composing, `withLoomGallery` goes
-on the outside: `withLoomGallery(withMDX(config), options)`, not the other way around.
+The wrapper returns Next's function form, which object-shaped wrappers cannot wrap. So `withLoomGallery` goes outermost: `withLoomGallery(withMDX(config), options)`.
 </Callout>
 
 ## 3. What each command does
 
 ### `next dev`
 
-The first time Next resolves its rewrites, the wrapper boots the gallery: the embed API's
-middleware behind a loopback HTTP server on an OS-assigned free port. Booting *inside* the
-`rewrites()` call is deliberate — Next evaluates `next.config` in more than one process, but only
-the process that actually serves resolves rewrites, so exactly one Vite instance starts however
-many times the config file is loaded.
+The first time Next resolves its rewrites, the wrapper boots the gallery behind a loopback HTTP server on a free port. Booting *inside* `rewrites()` is deliberate: Next evaluates `next.config` in several processes, but only the serving one resolves rewrites, so exactly one Vite instance starts.
 
 From there:
 
@@ -107,13 +88,9 @@ From there:
 ### `next build`
 
 The wrapper emits the static gallery into `public/loom-preview` — the identical bundle
-[`loom build`](/loom/guides/static-builds-and-embedding/) produces, per-scene async chunks,
-`wasm-opt`-processed binary and all — and then lets the app build proceed.
-
-Next re-evaluates the config in the worker processes it spawns during a build; an environment
-marker (`LOOM_NEXT_GALLERY_BUILT`, inherited by child processes) keeps them from rebuilding the
-gallery, so it is emitted exactly once per build. Two edge cases are handled asymmetrically, on
-purpose:
+[`loom build`](/loom/guides/static-builds-and-embedding/) produces — then lets the app build
+proceed. An environment marker keeps the worker processes Next spawns from rebuilding it, so it is
+emitted exactly once. Two edge cases are handled asymmetrically, on purpose:
 
 - **Zero targets** warns and skips — adding the wrapper before writing your first `*.loom.tsx`
   must not brick `next build`.
@@ -132,10 +109,9 @@ For a CI that runs `loom build` itself (or a repo that commits the static galler
 ### `next start`
 
 Nothing boots and nothing is built — the app serves the static gallery out of `public/`. The one
-piece Next won't do on its own is serve an `index.html` for a *directory* under `public/`, so the
-wrapper's `afterFiles` rewrite maps the bare `/loom-preview` onto `/loom-preview/index.html`.
-Asset URLs inside the bundle are absolute under the mount path (the gallery is built with
-`--base /loom-preview/`), so deep links and iframes work identically to dev.
+piece Next will not do on its own is serve an `index.html` for a *directory*, so the wrapper's
+`afterFiles` rewrite maps the bare `/loom-preview` onto its `index.html`. Asset URLs are absolute
+under the mount path, so deep links and iframes work identically to dev.
 
 ## 4. Options
 
@@ -163,12 +139,11 @@ an iframe written once works in both:
 />
 ```
 
-`target` takes the discovery-relative path of the scene, `chrome=none` drops the sidebar for a
-single-scene embed, `theme=light|dark` seeds the stage and `background=` overrides just its backdrop
-— [live theme switching](/loom/guides/static-builds-and-embedding/#live-theme-switching) via
-`postMessage` works through the proxy unchanged. Query strings pass through Next rewrites
-untouched, and the iframe is just an iframe: App Router, pages router, RSC or client component,
-none of it matters.
+`target` takes the scene's discovery-relative path, `chrome=none` drops the sidebar, and
+[live theme switching](/loom/guides/static-builds-and-embedding/#live-theme-switching) via
+`postMessage` works through the proxy unchanged. Query strings pass through Next rewrites untouched,
+and the iframe is just an iframe — App Router, pages router, RSC or client component, none of it
+matters.
 
 ## 6. Fumadocs
 
@@ -198,16 +173,14 @@ The iframe from the previous section drops straight into any MDX page under `con
 />
 ```
 
-Fumadocs' markdown-negotiation proxy (`proxy.ts`) only rewrites `/docs` paths, so it never
-collides with the gallery mount. Verified against Fumadocs 16 on Next 16 — App Router, Turbopack
-dev, React 19 in the host while the gallery runs its own React 18, which is the isolation doing
-its job.
+Fumadocs' markdown-negotiation proxy only rewrites `/docs` paths, so it never collides with the
+gallery mount — verified with React 19 in the host while the gallery ran its own React 18.
 
 ## 7. When you need the server yourself
 
-`startGalleryServer` is the piece `withLoomGallery` builds on: the embed middleware wrapped in a
-loopback HTTP server. Reach for it from a custom server, or any host that can only forward
-requests to a URL rather than mount a middleware:
+`startGalleryServer` is the piece `withLoomGallery` builds on — the embed middleware wrapped in a
+loopback HTTP server. Reach for it from a custom server, or any host that can only forward requests
+to a URL:
 
 ```ts
 import { startGalleryServer } from "loom-dev/next";
@@ -229,8 +202,7 @@ const gallery = await startGalleryServer({
 Requests outside `base` answer 404, so the server is safe to point a prefix-preserving proxy at.
 
 <Callout title="Dev upstream only">
-The server binds to `127.0.0.1` on purpose. It is a proxy upstream for local development, not
-something to expose — production serves the static build.
+The server binds to `127.0.0.1` on purpose: a proxy upstream for local development, not something to expose. Production serves the static build.
 </Callout>
 
 ## Routing details worth knowing

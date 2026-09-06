@@ -9,20 +9,17 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-`loom build` runs Vite's production build over the same gallery the dev server shows, and emits a
-self-contained client-only SPA. Nothing on the server side is required to host it. Its reason for
-existing is embedding: a docs site can iframe a single scene, and the reader gets a real interactive
-Roblox UI instead of a screenshot.
+`loom build` runs Vite's production build over the same gallery the dev server shows and emits a
+self-contained client-only SPA, with nothing needed server-side to host it. It exists for embedding:
+a docs site can iframe a single scene, and the reader gets a real interactive Roblox UI instead of a
+screenshot.
 
 ```bash title="Build a gallery"
 pnpm exec loom build ~/code/my-ui --targets src/scenes --out dist-preview --base ./
 ```
 
 <Callout title="Or plain `vite build`">
-The command is `loomPreview({ targets })` under `vite build` and nothing else. A project whose
-`vite.config.ts` passes `targets` gets the identical bundle from `pnpm vite build`, with `outDir` and
-`base` coming from its own config. See [Vite
-integration](/loom/guides/vite-integration/#6-gallery-mode-from-the-plugin).
+The command is `loomPreview({ targets })` under `vite build` and nothing else, so a project whose `vite.config.ts` passes `targets` gets the identical bundle from `pnpm vite build`. See [Vite integration](/loom/guides/vite-integration/#6-gallery-mode-from-the-plugin).
 </Callout>
 
 ## Flags
@@ -40,10 +37,7 @@ loom build [dir] --targets [glob] [--out <dir>] [--base <path>]
 Unlike `preview`, `build` does **not** read `loom.config.ts`. Pass `--targets` explicitly every time.
 
 <Callout title="`--out` is emptied before writing">
-The build runs with `emptyOutDir: true`, because the output directory normally sits outside Vite's
-root and Vite would otherwise refuse to clear it. Point `--out` at a directory that belongs to loom
-and nothing else. Aiming it at, say, your site's whole `public/` would delete the rest of that
-directory's contents.
+The build runs with `emptyOutDir: true`, since the output directory normally sits outside Vite's root. Point `--out` at a directory that belongs to loom and nothing else — aiming it at your site's whole `public/` would delete the rest of it.
 </Callout>
 
 ## What comes out
@@ -58,28 +52,19 @@ assets/CounterScene.loom-<hash>.js
 assets/roboto-latin-400-normal-<hash>.woff2   # …and ~110 more, since 0.9.0
 ```
 
-Each target becomes its own lazily-imported chunk, so a gallery with fifty scenes still loads one
-scene's code per view. The `.wasm` binary dominates the transfer size — about 178 kB, roughly 68 kB
-gzipped, from the `wasm-opt`-processed build published packages ship — and it is fetched once and
-cached. A binary built locally with the default `dev` profile skips `wasm-opt` and is roughly four
-times larger.
-
-As of `0.9.0` the [engine's typefaces](/loom/guides/fonts/) are part of that output: ~2.8 MB of
-`woff2` across the whole set, in about 110 files. What a *page* downloads is unchanged — Fontsource
-declares per-script `unicode-range` subsets, so a browser fetches only the families and scripts a
-scene actually paints with.
-
-Under the hood the plugin hands Rollup a genuine module graph rather than the dev server's virtual
-modules. The build input is a generated `index.html`, whose script is a generated entry that imports
-the globals installer *first*, then a generated target map of relative `import()`s — one async chunk
-each — then the shell. Globals-first is why a built gallery never throws `UDim2 is not defined`.
+Each target becomes its own lazily-imported chunk, so a fifty-scene gallery still loads one scene's
+code per view. The `.wasm` binary dominates transfer size — about 178 kB, 68 kB gzipped — and is
+fetched once and cached. The [engine's typefaces](/loom/guides/fonts/) are in there too, ~2.8 MB
+across ~110 files, but Fontsource declares per-script `unicode-range` subsets so a browser fetches
+only what a scene paints with. The build input is a generated `index.html` whose script imports the
+globals installer *first*, then a generated target map of relative `import()`s, then the shell.
+Globals-first is why a built gallery never throws `UDim2 is not defined`.
 
 ## `rbxassetid://` in a static build
 
-A page served from a bucket has no dev server to resolve asset ids for it, so until `0.7.0` they
-simply did not paint outside `loom preview`. The build now does the work up front: it works out
-which ids the page will ask for, resolves each one through Roblox's thumbnail API, downloads the
-image into the output, and writes a manifest the page reads on first use.
+A page served from a bucket has no dev server to resolve asset ids, so the build does the work up
+front: it works out which ids the page will ask for, resolves each through Roblox's thumbnail API,
+downloads the image into the output, and writes a manifest the page reads on first use.
 
 ```text title="dist-preview/"
 __loom/assets.json              # { "6031075938": "__loom/asset/6031075938.png" }
@@ -89,13 +74,14 @@ __loom/asset/6031075938.png     # the downloaded image
 Nothing else changes: `Image="rbxassetid://6031075938"` paints from your own origin, with no runtime
 request to Roblox.
 
-Working out *which* ids takes two passes, because reading the bundle is not enough on its own.
+Working out *which* ids takes two passes.
 
-- **The scan** reads the emitted output for `rbxassetid://<digits>`, which finds every id a source
-  spells out.
-- **The prerender** *(`0.9.5`)* covers the ids a source builds at runtime. A component library composes them: `` `rbxassetid://${iconId}` `` over a table of ids. After bundling that is a prefix and a few hundred bare numbers no scan can tell from any other number, so a gallery built from a real UI library used to paint none of its icons. Instead, the build *runs* your scenes:
-  every gallery target is mounted in node and its live tree is read for the images it actually
-  holds. A 700-icon set contributes the dozen icons your scenes render, not all 700.
+- **The scan** reads the emitted output for `rbxassetid://<digits>`, finding every id a source spells
+  out.
+- **The prerender** covers ids a source builds at runtime, like `` `rbxassetid://${iconId}` `` over a
+  table. After bundling those are bare numbers no scan can distinguish, so the build *runs* your
+  scenes: every target is mounted in node and its live tree read for the images it holds. A 700-icon
+  set contributes the dozen your scenes render.
 
 Three things are worth knowing before you rely on it:
 
@@ -110,9 +96,9 @@ Three things are worth knowing before you rely on it:
   prerender. Composition the prerender could not account for is warned about as well, rather than
   leaving a blank image unexplained.
 
-To keep a build off the network entirely, turn the bake off wherever the build is configured —
+To keep a build off the network entirely, turn the bake off wherever the build is configured:
 `loomPreview({ assets: false })`, `loom build --no-assets`, or `assets: false` on `buildGallery` and
-`withLoomGallery` *(`0.7.1`; earlier versions only had the plugin option)*.
+`withLoomGallery`.
 
 ## The URL contract
 
@@ -140,10 +126,10 @@ panel never turns up unasked on somebody's docs page.
 
 ### `?background=` for a backdrop that is not either theme
 
-`theme` picks a whole palette — chrome, text, and one of loom's two backdrops (`#14161a` or
-`#f6f9fc`). `background` overrides just the backdrop, so a plain white stage under the light palette
-is `?theme=light&background=white`, and `transparent` lets the host page show through the iframe. It
-applies in both gallery modes and to the static build.
+`theme` picks a whole palette — chrome, text, and one of loom's two backdrops. `background`
+overrides just the backdrop, so a white stage under the light palette is
+`?theme=light&background=white`, and `transparent` lets the host page show through. It applies in
+both gallery modes and the static build.
 
 <Callout title="Hex, without the `#`">
 A literal `?background=#ffffff` never reaches the gallery: `#` opens the URL fragment, which is also
@@ -153,15 +139,10 @@ the bare form is unambiguous.
 </Callout>
 
 Only colours are accepted, through an allowlist: hex, a bare identifier, and the functional forms
-(`rgb()`, `hsl()`, `oklch()`, `color()`, `light-dark()`, …) with arguments that cannot open a nested
-function. A gradient, a `url(...)` — anything that could turn a query parameter into a network fetch
-— is ignored and the theme's own backdrop stands. A misspelled colour name passes the shape test and
-simply fails to apply in the browser, which lands in the same place.
-
-The backdrop is decided in the page's `<head>` from `location.search` alone, before the first paint,
-so an embed no longer flashes the dark default while the bundle, the WASM engine and the target chunk
-load. That was up to half a second of black on a light or custom-coloured frame, repeated every time
-a host control changed a parameter and reloaded the iframe.
+with arguments that cannot open a nested function. A gradient or a `url(...)` — anything that could
+turn a query parameter into a network fetch — is ignored and the theme's backdrop stands. The
+backdrop is decided in the page's `<head>` from `location.search` before the first paint, so an
+embed never flashes the dark default while the bundle, the WASM engine and the target chunk load.
 
 ## Live theme switching
 
@@ -189,26 +170,15 @@ frame.contentWindow.postMessage(
 frame.contentWindow.postMessage({ type: "loom-background" }, GALLERY_ORIGIN);
 ```
 
-Both write to the same element the first-paint script did, which makes the shell's own first pass a
-no-op rather than a second paint.
-
-The shell listens for exactly `{ type: "loom-theme", theme: "light" | "dark" }` and
-`{ type: "loom-background", background?: string }`, and ignores everything else. Applying a theme
-does two things: it toggles a class on the gallery's root element,
-and it writes `LoomTheme` onto `Players.LocalPlayer.PlayerGui`. That second part is the useful one —
-a scene can read the host page's theme through plain Roblox APIs, including
-`GetPropertyChangedSignal("LoomTheme")`, with no DOM access from roblox-ts code.
+Both write to the same element the first-paint script did, so the shell's first pass is a no-op
+rather than a second paint. The shell listens for exactly those two messages and ignores everything
+else. Applying a theme toggles a class on the gallery root **and** writes `LoomTheme` onto
+`Players.LocalPlayer.PlayerGui` — the useful half, since a scene can then read the host page's theme
+through plain Roblox APIs, including `GetPropertyChangedSignal("LoomTheme")`, with no DOM access
+from roblox-ts code.
 
 <Callout title="Name the target origin, not a wildcard">
-`postMessage(msg, "*")` delivers to whatever document currently occupies that frame. A theme string
-is not worth stealing, but `"*"` is a habit that costs nothing to avoid and gets copied into
-messages that *are* worth stealing. Pass the origin you actually built the gallery for.
-
-The shell's own listener does **not** check `event.origin` — it accepts a well-formed `loom-theme` or
-`loom-background` message from any parent. That is deliberate for a dev tool meant to be iframed by
-arbitrary hosts, and it is a reason to keep the message vocabulary at exactly these two, both of
-which only repaint. If you fork the shell and add messages with side effects, add an origin check
-with them.
+`postMessage(msg, "*")` delivers to whatever document currently occupies that frame. A theme string is not worth stealing, but the habit gets copied into messages that are. Pass the origin you built the gallery for. The shell's own listener does **not** check `event.origin` — deliberate for a dev tool meant to be iframed by arbitrary hosts, and a reason to keep the vocabulary at exactly these two messages, both of which only repaint. If you fork the shell and add messages with side effects, add an origin check with them.
 </Callout>
 
 ```tsx title="A scene that follows the host page's theme"
@@ -225,14 +195,12 @@ useEffect(() => {
 
 ## A working embed pipeline
 
-Shelling out to `loom build` before every site build works, but it buys a generated artifact that
-goes stale the moment a scene changes, and no HMR while you edit one. If the host is a Vite-based
-framework, mount the gallery instead: [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api)
-exposes both pipelines as functions — a middleware-mode server for dev, a static build for the
-output directory. (A Next.js host gets the same two pipelines pre-wired through one config
-wrapper — see [Next.js integration](/loom/guides/nextjs-integration/).)
-
-These docs do exactly that, from a ~40-line Astro integration:
+Shelling out to `loom build` before every site build works, but the artifact goes stale the moment a
+scene changes and there is no HMR while you edit one. If the host is Vite-based, mount the gallery
+instead: [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api) exposes both
+pipelines as functions. (A Next.js host gets them pre-wired through one config wrapper — see
+[Next.js integration](/loom/guides/nextjs-integration/).) These docs do exactly that, from a
+~40-line Astro integration:
 
 ```ts title="src/integrations/loom-preview.ts (abridged)"
 import { buildGallery, createGalleryServer, findGalleryTargets } from "loom-dev/embed";
@@ -266,10 +234,8 @@ export default function loomPreview(): AstroIntegration {
 }
 ```
 
-Editing a scene in the library checkout now hot-reloads the frame in the docs page — no regeneration
-step, nothing to keep in sync, and no generated bundle in the repo.
-
-Three details are worth stealing:
+Editing a scene in the library checkout hot-reloads the frame in the docs page — nothing to keep in
+sync, and no generated bundle in the repo. Three details worth stealing:
 
 - **Mount under the host's own base**, not a hard-coded `/loom-preview/`, so the previews travel with
   the site when it moves to a subpath.
@@ -278,9 +244,9 @@ Three details are worth stealing:
   without starting anything. Gate strictness behind an env var for deploy builds.
 - **Pin the checkout path.** These docs link the component library into `.preview-src/`, which is also where CI checks it out, so one convention covers local and CI alike. Loom itself is an ordinary dependency: `@loom-dev/layout` ships its wasm engine prebuilt, so the host needs no Rust toolchain.
 
-The component that renders each frame sets `src` lazily through an `IntersectionObserver` (a gallery
-page can hold a dozen frames), appends `&theme=` from the site's current theme at load, and pushes
-later theme toggles into loaded frames with the `postMessage` above.
+The component rendering each frame sets `src` lazily through an `IntersectionObserver`, appends
+`&theme=` from the site's current theme, and pushes later toggles into loaded frames with the
+`postMessage` above.
 
 <Callout type="note" title="Non-Vite hosts">
 `loom build` is still the right tool when the host isn't a Vite app (a Hugo/Jekyll site, a CI job
@@ -290,7 +256,6 @@ pipeline behind a function call.
 
 ## Error containment survives the build
 
-The per-target error boundary is part of the shell, not the dev server. A target that throws in a
-built, deployed gallery still renders an inline error panel with its stack while the rest of the page
-keeps working — which is what you want in a docs site, where one broken example should not take down
-the page it lives on.
+The per-target error boundary is part of the shell, not the dev server, so a target that throws in a
+deployed gallery still renders an inline error panel with its stack while the rest of the page keeps
+working.

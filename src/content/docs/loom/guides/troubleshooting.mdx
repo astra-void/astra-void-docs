@@ -9,42 +9,34 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Every symptom below was reproduced on a real project. They are ordered roughly by how often they
-come up.
+Every symptom below was reproduced on a real project, ordered roughly by how often it comes up.
+
+<Callout title="Check your version before anything else">
+A long list of symptoms — missing Luau globals, text sizing and wrapping that disagrees between two
+machines or between `vite dev` and a deployed build, clipped descenders, a `ScrollingFrame` that
+never scrolls, `rbxassetid://` images blank in a static build, `AutomaticSize="XY"` collapsing to
+zero — are all fixed bugs whose only remedy is upgrading. Check `npm ls loom-dev` first, and see
+[Scope and status](/loom/getting-started/scope-and-status/) for what each release closed.
+</Callout>
 
 ## Quick index
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | Blank page, `[loom] nothing mounted into #loom-root after 2s` | Entry exports instead of mounting | Call `createRoot().render(...)` at top level |
-| `ReferenceError: UDim2 is not defined` in a built page | A pre-0.3.0 build, or a page whose entry the plugin could not see | Upgrade; or `import "@loom-dev/preview/globals"` first in the entry |
+| `ReferenceError: UDim2 is not defined` in a built page | A page whose entry the plugin could not see | `import "@loom-dev/preview/globals"` first in the entry |
 | `Invalid hook call` / two React copies | Stale optimizer cache, or React 19 installed | `rm -rf node_modules/.vite`; pin React 18 |
 | `Failed to resolve entry for package "@loom-dev/layout"` | Plugin imported by file path, not bare specifier | Import `@loom-dev/preview/vite` |
 | `Cannot find module '.../dist/vite.js'` when loading the config | `link:`ed checkout that was never built | `pnpm build:packages` in the checkout |
 | `no index.html and no client entry found` | Neither a conventional entry nor an `index.html` under the root | Pass `entry`, or `targets` for a gallery |
-| `loom.config.ts found, but its default export has no targets field` | A config in the pre-0.3.0 shape | Export `{ targets, port? }` |
 | `no targets matched … — nothing to build` | Glob missed, or unsupported glob syntax | Only `**`, `**/` and `*` are supported |
 | `Package "…" only provides a Lua/Luau runtime` | A declaration-only roblox-ts package | Add a [`shims`](/loom/guides/package-compatibility/#shims) entry |
-| `RollupError: Expected ';', '}' or <eof>` in a `.luau` file, build only | The same thing, reached by a target the dev server never loaded | As above — see [Package compatibility](/loom/guides/package-compatibility/) |
-| `does not provide an export named 'default'` from `@rbxts/react-roblox` | Loom older than 0.6.1 | Upgrade |
-| `table is not defined`, or another missing Luau global | Loom older than 0.8.0 | Upgrade — see [Luau globals](/loom/reference/luau-globals/) |
+| `RollupError: Expected ';', '}' or <eof>` in a `.luau` file, build only | The same thing, reached by a target the dev server never loaded | As above |
 | Renders, but looks wrong | Unimplemented property | Check [Supported instances and properties](/loom/reference/supported-properties/) |
-| Runs off the edge on a phone | Expected — the scene lays out against the real viewport, and so does the engine | `?base=960` keeps the wide composition and scales it to fit; see [Previews on a phone](/loom/guides/mobile-previews/) |
-| `no face is loaded for the Roblox font family "…"` | A family loom names but cannot redistribute — `Gotham`, `BuilderSans`, … | [Register your own copy](/loom/guides/fonts/#registering-a-face-yourself); on loom older than 0.9.0, upgrade first |
-| Text wraps differently on another machine | Loom older than 0.9.0, where every family fell through to a different fallback per OS | Upgrade — the preview loads the faces itself |
-| Text wraps wrong under `vite dev` but right when deployed | Loom older than 0.9.2 — a face that loaded after the first measurement notified nobody | Upgrade |
-| Descenders cut off wrapped text — `activity` painting as `activitv` | Loom older than 0.8.1 | Upgrade |
-| A label written `AutomaticSize="XY"` collapses to zero height | Loom older than 0.9.1, where a bare string was read as absent | Upgrade, or pass `Enum.AutomaticSize.XY` |
-| Text or buttons spill out of their container | Content wider than the parent allows | Expected as of `0.6.4` — [`AutomaticSize` is bounded](/loom/reference/supported-properties/#automaticsize-is-bounded-by-the-parent) and the engine overflows rather than widening |
-| A narrow desktop window stopped scaling | Deliberate as of `0.6.4` | It reflows instead. `?base=960` restores the old behaviour |
-| A phone stopped scaling too, and text now wraps differently there | Deliberate as of `0.10.2` — the zoom kept the 960-wide layout and only painted it small | It reflows like the engine. `?base=960` restores the old behaviour |
-| A list reordered itself after upgrading to `0.7.0` | `SortOrder` now defaults to `Name`, as it does in Studio | The engine ordered it that way all along — set `SortOrder={Enum.SortOrder.LayoutOrder}` for the old order |
-| `rbxassetid://` images are blank in a static build | Loom older than `0.9.5` could only bake an id the source spells out; from `0.9.5` the build mounts each target too, so what is left is an image the first render never reaches — behind a hover state, or from a later fetch | Upgrade. Beyond that, render it on load, pass a real URL, or install your own `setImageResolver` — see [static builds](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) |
-| A `ScrollingFrame` never scrolls, and draws no bar | Loom older than `0.9.3`, which capped a canvas at the window it was meant to outgrow | Upgrade — see [ScrollingFrame properties](/loom/reference/supported-properties/#scrollingframe-properties) |
-| Text is visibly bigger than in Studio, and wraps earlier | Loom older than `0.9.3` painted `font-size: TextSize`, which is 17–47% too large depending on the face | Upgrade — [`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size) |
-| A label with newlines in it reserves more height than it paints | Loom older than `0.9.3` measured the breaks and then painted through `white-space: normal` | Upgrade |
-| Wrapping matches Studio at some widths and not others | Loom older than `0.9.5`, before the engine's face box, its kerning, and a single wrap authority | Upgrade — [Where a line breaks](/loom/guides/fonts/#where-a-line-breaks) |
-| Text wraps wrong under `vite dev` only, with the right font named | Loom older than `0.9.6` applied a family's engine calibration on the strength of its *registration*, even when the file 404'd | Upgrade. The [debug panel](/loom/guides/debug-panel/) says which faces actually loaded |
+| Text or buttons spill out of their container | Content wider than the parent allows | Expected — [`AutomaticSize` is bounded](/loom/reference/supported-properties/#automaticsize-is-bounded-by-the-parent) and the engine overflows rather than widening |
+| Runs off the edge on a phone, or a narrow window reflows | Expected — the scene lays out against the real viewport, as the engine does | `?base=960` keeps the wide composition and scales it to fit; see [Previews on a phone](/loom/guides/mobile-previews/) |
+| `no face is loaded for the Roblox font family "…"` | A family loom names but cannot redistribute — `Gotham`, `BuilderSans`, … | [Register your own copy](/loom/guides/fonts/#registering-a-face-yourself) |
+| A list orders itself alphabetically | `SortOrder` defaults to `Name`, as it does in Studio | Set `SortOrder={Enum.SortOrder.LayoutOrder}` |
 | You cannot tell what a preview is doing at all | — | Open the [debug panel](/loom/guides/debug-panel/): `?debug=1`, the sidebar's `debug` button, or Ctrl+Alt+D |
 
 ## Blank page, `nothing mounted into #loom-root after 2s`
@@ -54,11 +46,9 @@ come up.
 createRoot().render(<App />) at the top level?
 ```
 
-The globals installer sets a two-second timer and checks whether `#loom-root` has any children. This
-warning means loom loaded fine and your entry did not mount anything.
-
-Almost always the entry exports a component instead of rendering one. Loom never calls your component
-for you:
+The globals installer sets a two-second timer and checks whether `#loom-root` has any children, so
+this means loom loaded fine and your entry mounted nothing. Almost always the entry exports a
+component instead of rendering one — loom never calls your component for you:
 
 ```tsx title="src/main.client.tsx"
 import { createRoot } from "@rbxts/react-roblox";
@@ -67,79 +57,45 @@ import { App } from "./App";
 createRoot().render(<App />);   // this line is the whole contract
 ```
 
-The other cause is loom picking a different entry than you expected. It takes the *first* match from a
-fixed candidate list, so a project with both `src/main.client.tsx` and `src/main.tsx` uses the former.
-Check the `<script src>` in the served page, and pass `loomPreview({ entry })` to override it.
+The other cause is loom picking a different entry than you expected. It takes the *first* match from
+a fixed candidate list, so a project with both `src/main.client.tsx` and `src/main.tsx` uses the
+former. Check the `<script src>` in the served page, and pass `loomPreview({ entry })` to override.
 
 ## `ReferenceError: UDim2 is not defined`
 
 The Roblox datatype globals were never installed. Under the dev server a plugin injects them as a
-script tag; under `vite build` the plugin prepends the globals import to the page's entry modules
-instead, because a tag injected by `transformIndexHtml` never joins the bundle.
+script tag; under `vite build` the plugin prepends the globals import to the page's entry modules,
+since a tag injected by `transformIndexHtml` never joins the bundle.
 
-If this happens in a page **you built** with loom **0.3.0 or newer**, the plugin could not see your
-entry — the likely cause is a `build.rollupOptions.input` of your own, or an entry pulled in by
-something other than a `<script type="module" src>` in the page. Add the import yourself as the first
-import of the entry:
+In a page **you built**, the plugin could not see your entry — likely a
+`build.rollupOptions.input` of your own, or an entry pulled in by something other than a
+`<script type="module" src>`. Add the import yourself, first in the entry:
 
 ```tsx
 import "@loom-dev/preview/globals";
 ```
 
-That import was **required** on every hand-rolled `vite build` before 0.3.0. It is idempotent, so
-keeping it costs nothing after upgrading.
-
-If it happens under the **dev server**, something is loading before the injected script — most likely
-an inline `<script type="module">` in your `index.html` that runs ahead of the injected head script.
-Move that logic into the entry module.
+Under the **dev server**, something is loading before the injected script — most likely an inline
+`<script type="module">` in your `index.html`. Move that logic into the entry module.
 
 ## `Warning: Invalid hook call` / "more than one copy of React"
 
-Two React instances are in the graph. The plugin works hard to prevent this — it aliases bare `react`
-and both JSX runtimes to one absolute path so the adapter, the reconciler and your components
-converge — so when it happens, one of three things is true:
+Two React instances are in the graph. The plugin aliases bare `react` and both JSX runtimes to one
+absolute path so the adapter, the reconciler and your components converge — so when it happens, one
+of three things is true:
 
-1. **A stale optimizer cache.** Observed once immediately after a dependency change, where Vite
-   re-optimized mid-session and served a mix of old and new pre-bundles. Fix:
-
-   ```bash
-   rm -rf node_modules/.vite
-   ```
-
-   Restart the server. This resolved it completely and it did not recur.
-
+1. **A stale optimizer cache**, where Vite re-optimized mid-session and served a mix of old and new
+   pre-bundles. `rm -rf node_modules/.vite` and restart.
 2. **React 19 is installed.** The adapter's `react-reconciler@0.29` reads React 18 internals that
    React 19 renamed. Pin React 18 in the preview project.
-
-3. **You merged `loomPreview()` into an app that has its own React.** The React aliases are global to
-   the Vite config. Give the preview its own Vite project — see [Vite
-   integration](/loom/guides/vite-integration/).
-
-## `does not provide an export named 'DefaultEventPriority'`
-
-```text
-SyntaxError: The requested module '/node_modules/.../react-reconciler/index.js'
-does not provide an export named 'DefaultEventPriority'
-```
-
-An installed `@loom-dev/react` whose CommonJS `react-reconciler` was served raw instead of
-pre-bundled. Loom 0.2.1 fixed this by pre-bundling the adapter (and aliasing every id involved to an
-absolute path, since Vite resolves `optimizeDeps` entries from *your* project root). Upgrade, and
-delete `node_modules/.vite` so the optimizer re-runs.
-
-Earlier versions also logged `Failed to resolve dependency: @loom-dev/preview > @loom-dev/react >
-react-reconciler, present in client 'optimizeDeps.include'` on startup. Those nested-specifier hints
-are gone; if you still see them, you are on an older version.
+3. **You merged `loomPreview()` into an app that has its own React.** The aliases are global to the
+   Vite config. Give the preview its own Vite project — see
+   [Vite integration](/loom/guides/vite-integration/).
 
 ## `Failed to resolve entry for package "@loom-dev/layout"`
 
-```text
-[commonjs--resolver] Failed to resolve entry for package "@loom-dev/layout".
-The package may have incorrect main/module/exports specified in its package.json.
-```
-
 You imported the plugin by file path instead of by bare specifier. The plugin resolves the modules it
-aliases relative to its own location; bundling it into your project's config moves that anchor.
+aliases relative to its own location, and bundling it into your config moves that anchor.
 
 ```ts
 import { loomPreview } from "@loom-dev/preview/vite";   // always this
@@ -147,57 +103,31 @@ import { loomPreview } from "@loom-dev/preview/vite";   // always this
 
 ## The config fails to load with `Cannot find module '.../dist/vite.js'`
 
-A `link:`ed source checkout that has never been built. Run `pnpm build:packages` in the checkout. If
-you need to work against unbuilt sources, `vite --configLoader runner` can load the config through
-Vite's module runner instead of pre-bundling it.
+A `link:`ed source checkout that has never been built. Run `pnpm build:packages` in the checkout. To
+work against unbuilt sources, `vite --configLoader runner` loads the config through Vite's module
+runner instead of pre-bundling it.
 
 ## `loom: no index.html and no client entry found`
 
-```text
-loom: no index.html and no client entry found in /Users/you/code/my-game
-      looked for: src/main.client.tsx, src/main.client.ts, src/client/main.client.tsx, ...
-      (or pass --targets to browse *.loom.tsx files as a gallery)
-```
-
-The directory has neither an `index.html` nor any of the eight recognized entry paths. Usually you
-aimed at a workspace root rather than an app. Either point deeper, name the entry
-(`loomPreview({ entry })`, since the CLI has no flag for it), or switch to gallery mode with
-`--targets` / `loomPreview({ targets })`.
-
-## `loom.config.ts found, but its default export has no targets field`
-
-```text
-loom: loom.config.ts found, but its default export has no `targets` field — skipping it
-(legacy config?). Use `--targets [glob]` or export
-`{ targets: string | string[], port?: number }` to enable gallery mode.
-```
-
-The current CLI reads exactly two fields, `targets` and `port`. A config in an older shape — nested
-`server.port`, a `targetDiscovery` object, `projectName` — is ignored *in full*, including its port.
-Rewrite it:
-
-```ts title="loom.config.ts"
-export default { targets: "src/scenes", port: 5204 };
-```
+The directory has neither an `index.html` nor any of the eight recognized entry paths — usually you
+aimed at a workspace root rather than an app. Point deeper, name the entry with
+`loomPreview({ entry })` (the CLI has no flag for it), or switch to gallery mode with `--targets`.
 
 ## `no targets matched ... — nothing to build`
 
-`loom build` found no files matching the glob. Remember that a bare directory is expanded to
-`<dir>/**/*.loom.tsx`, and that the matcher supports only `**`, `**/` and `*` — no braces, no `?`, no
-negation. Check the glob against the actual filenames, and remember the walk skips `node_modules` and
-dot-directories.
+`loom build` found no files matching the glob. A bare directory expands to `<dir>/**/*.loom.tsx`, and
+the matcher supports only `**`, `**/` and `*` — no braces, no `?`, no negation. The walk also skips
+`node_modules` and dot-directories.
 
 ## A scene renders but looks wrong
 
-Before assuming a loom bug, check the property you are relying on against [Supported instances and
-properties](/loom/reference/supported-properties/). A surprising number of "wrong render" reports are
-a prop that is typed, settable, and read by nothing — `TextScaled`, `UIScale.Scale`,
-`UIGradient.Offset`, `ScrollBarThickness`. Images, including 9-slice, tiling and sprite windows, are
-complete as of `0.7.0`; the one image combination loom cannot reproduce is tiling a sprite window,
-and it warns rather than pretending.
+Check the property against [Supported instances and
+properties](/loom/reference/supported-properties/) before assuming a loom bug. A surprising number of
+"wrong render" reports are a prop that is typed, settable, and read by nothing —
+`UIGradient.Offset`, `ScrollBarThickness`. The one image combination loom cannot reproduce is tiling
+a sprite window, and it warns rather than pretending.
 
-A preview is a high-fidelity approximation, not a Studio replacement — verify final visuals in
-Studio.
+A preview is a high-fidelity approximation, not a Studio replacement.
 
 ## Text is a different size, or wraps differently, than on your colleague's machine
 
@@ -206,35 +136,20 @@ loom: no face is loaded for the Roblox font family "Gotham" — its text is pain
 and measured in the system fallback instead, …
 ```
 
-A browser ships none of Roblox's typefaces, so before `0.9.0` every Roblox family resolved to the machine's `system-ui` — SF Pro, Segoe UI or Roboto depending on the OS. Since `AutomaticSize` and `TextWrapped` are driven by measuring glyph widths, the *layout* moved with the font, not just the paint. **Upgrading is the fix**: the preview loads 28 of the engine's families itself, with no
-import and no configuration.
+A browser ships none of Roblox's typefaces, and since `AutomaticSize` and `TextWrapped` are driven by
+measuring glyph widths, a missing face moves the *layout*, not just the paint. The preview loads 28
+of the engine's families itself, with no import and no configuration; the warning survives for the
+ones loom cannot redistribute — `Gotham`, `BuilderSans` and six more. Register your own copy with
+`registerFont`. Both halves are in [Fonts and text metrics](/loom/guides/fonts/).
 
-The warning survives that for the families loom cannot redistribute — `Gotham`, `BuilderSans` and
-six more. Register your own copy with `registerFont`; both halves are [Fonts and text
-metrics](/loom/guides/fonts/).
-
-If the *same* machine renders one way under the dev server and another way deployed, that is a
-different bug with the same symptom — and there have been two of them, both dev-server-only because a
-static build carries its fonts in its own output.
-
-- Fixed in `0.9.2`: loom heard about a finished font download through `document.fonts.ready`, which
-  under a dev server has usually already resolved by the time loom reads it, so a face that landed
-  later notified nobody. [Why `0.9.2` matters](/loom/guides/fonts/#a-late-face-re-lays-out).
-- Fixed in `0.9.6`: a family's engine calibration was applied on the strength of its *registration*,
-  which is only a claim about a file the page still has to fetch. When the fetch 404'd, the browser
-  painted the fallback while loom sized the text as though the registered face were there.
-  [The detail](/loom/guides/fonts/#textsize-is-not-a-font-size).
-
-The [debug panel](/loom/guides/debug-panel/)'s **fonts** section answers this directly: it lists every
-typeface the scene resolved to and whether the browser really loaded it.
+The [debug panel](/loom/guides/debug-panel/)'s **fonts** section answers this directly: it lists
+every typeface the scene resolved to and whether the browser really loaded it.
 
 ## Content spills out of its container
 
-As of `0.6.4` an `AutomaticSize` object grows only up to the room its parent leaves, which is what
-Roblox does. Content with an irreducible minimum — a long unbreakable word, a row of buttons that
-will not fit — therefore overflows the box instead of widening it, and that overflow is now the same
-overflow Studio shows. Before `0.6.4` loom grew unbounded, so the container silently got wider and a
-`45%`-wide card could paint over the card beside it.
+An `AutomaticSize` object grows only up to the room its parent leaves, which is what Roblox does.
+Content with an irreducible minimum — a long unbreakable word, a row of buttons that will not fit —
+therefore overflows the box instead of widening it, and that overflow is the same one Studio shows.
 
 If a preview overflows and Studio does not, the layout is genuinely too small for its content at that
 viewport: give the parent more room, or let the text wrap.
@@ -247,6 +162,6 @@ is usually a missing rebuild.
 
 ## A target throws and the page still works
 
-That is by design, not a bug. The gallery shell is plain DOM with a React error boundary around each
-target, so import failures, bad `preview` exports and render throws each land in an inline red panel
-with a stack while the sidebar stays usable. Switching targets clears it.
+By design. The gallery shell is plain DOM with a React error boundary around each target, so import
+failures, bad `preview` exports and render throws each land in an inline red panel with a stack while
+the sidebar stays usable. Switching targets clears it.

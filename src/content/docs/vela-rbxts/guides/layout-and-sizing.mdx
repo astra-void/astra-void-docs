@@ -9,17 +9,12 @@ sidebar:
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-Roblox has no box model. There is no document flow, no absolute-versus-relative distinction, and no
-native margin — an element is positioned by `Position` and `AnchorPoint`, sized by `Size` and
-`AutomaticSize`, and laid out by child instances like `UIListLayout` and `UIPadding`. Vela's layout
-utilities are an honest mapping onto those instances: direct where a direct mapping exists, an
-explicit emulation where one can be built (margins become a wrapper frame), and a warning where
-neither is possible. This guide walks through each family, what it emits, and where the mapping
-stops.
-
-Two rules explain most of the surprises on this page. First, a utility either sets a property on the
-element itself or sets a property on a *helper instance* that Vela prepends to the element's
-children. Second, several Tailwind names that look like siblings land on entirely different Roblox
+Roblox has no box model: an element is positioned by `Position` and `AnchorPoint`, sized by `Size`
+and `AutomaticSize`, and laid out by child instances like `UIListLayout` and `UIPadding`. Vela maps
+onto those instances directly where it can, emulates where it can build one honestly (margins become
+a wrapper frame), and warns where neither is possible. Two rules explain most of the surprises here.
+A utility sets a property either on the element or on a *helper instance* Vela prepends to its
+children. And several Tailwind names that look like siblings land on entirely different Roblox
 properties, because Roblox splits alignment and flex distribution into separate enums.
 
 ## Flex and `UIListLayout`
@@ -36,9 +31,8 @@ horizontal:
 | `flex-row` | `FillDirection = Enum.FillDirection.Horizontal` |
 | `flex-col` | `FillDirection = Enum.FillDirection.Vertical` |
 
-Any other `flex-*` direction word (`flex-row-reverse`, `flex-col-reverse`) produces
-`unsupported-flex-direction`. Roblox `UIListLayout` has no reversed fill direction; reorder the
-children, or invert their `order-*` values.
+`flex-row-reverse` and `flex-col-reverse` produce `unsupported-flex-direction` — `UIListLayout` has
+no reversed fill direction. Reorder the children, or invert their `order-*` values.
 
 ### `justify-*` splits across two properties
 
@@ -68,9 +62,9 @@ class winning. Pick one.
 properties: `content-start`/`content-center`/`content-end` set `VerticalAlignment`, and
 `content-between`/`content-around`/`content-evenly`/`content-stretch` set `VerticalFlex`.
 
-Note that these names are axis-fixed, not direction-relative: `justify-*` always drives the
-horizontal properties and `items-*` always drives the vertical ones, even under `flex-col`. That
-mirrors the Roblox property names, not CSS main-axis/cross-axis semantics.
+These names are axis-fixed, not direction-relative: `justify-*` always drives the horizontal
+properties and `items-*` the vertical, even under `flex-col`. That mirrors the Roblox property
+names, not CSS main/cross-axis semantics.
 
 ### Wrapping and gap
 
@@ -94,10 +88,9 @@ and the matching `FillDirection` in one token — `space-y-2` is exactly `flex f
   scene="LayoutScene"
 />
 
-The example above keeps to the alignment half of `justify-*`. The distribution values lower to
-`UIFlexAlignment`, which Roblox implements but the browser renderer behind these previews does not,
-so a `justify-between` preview would render as a plain left-aligned row and teach you the wrong
-thing.
+The example keeps to the alignment half of `justify-*`. The distribution values lower to
+`UIFlexAlignment`, which the browser renderer behind these previews does not implement, so a
+`justify-between` preview would render as a plain left-aligned row.
 
 ### Flex items and `UIFlexItem`
 
@@ -134,9 +127,8 @@ vertically. There are no spans — `col-span-*` and `row-span-*` have no `UIGrid
 and report `no-roblox-equivalent`.
 
 **The grid is the one layout that sizes its own children.** `UIGridLayout` stamps `CellSize` onto
-every child and ignores whatever `Size` the child set for itself, so a `w-*` on a cell does nothing
-— the track count decides the width. Since 0.6.0 `grid-cols-N` divides the axis it fills into N
-tracks and gives each cell back its share of the gap:
+every child and ignores its own `Size`, so a `w-*` on a cell does nothing — the track count decides
+the width. `grid-cols-N` divides the axis into N tracks and gives each cell its share of the gap:
 
 ```tsx title="grid grid-cols-2 gap-2.5"
 <uigridlayout FillDirectionMaxCells={2} CellSize={new UDim2(0.5, -5, 0, 100)} CellPadding={UDim2.fromOffset(10, 10)} />
@@ -146,18 +138,8 @@ The cross axis is not implied by a column count, so it stays at Roblox's 100px d
 it with `auto-rows-*` (or `auto-cols-*` under `grid-rows-*`). Both read the spacing scale, so
 `auto-rows-24` is a 96px row.
 
-<Callout title="Before 0.6.0, grid cells were unusable">
-`grid-cols-*` set only `FillDirection`, `FillDirectionMaxCells` and `CellPadding`, so every cell fell
-back to the engine's 100×100 default — a `grid-cols-2` of 430px cards collapsed into 100px squares
-whose content spilled across the neighbouring track. If you built a grid against that behavior and
-compensated for it, re-check the layout after upgrading.
-</Callout>
-
 <Callout title="Keep gap-* off grid elements for now">
-`gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, which is the right target — but as of
-0.12.0 it also emits the ordinary `UIListLayout` carrying the same value, leaving two layout
-instances fighting over the children. Until the fix ships, set `CellPadding` as a prop on the grid
-element and leave `gap-*` off it.
+`gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, the right target — but it also emits an ordinary `UIListLayout` carrying the same value, leaving two layouts fighting over the children. Set `CellPadding` as a prop and leave `gap-*` off.
 </Callout>
 
 ## Padding and `UIPadding`
@@ -190,9 +172,9 @@ literal. The variants:
 | `mx-auto`, `my-auto` | **static** centering: `AnchorPoint` 0.5 + `Position` scale 0.5, no wrapper |
 
 Because the wrapper participates in the parent's list layout, margins **sum with the parent's
-`gap-*`** — a `gap-2` column whose children carry `my-2` shows 16-pixel gaps. When all you want is
-space between list children, `gap-*` on the parent does the same job as one static property; save
-margins for the cases gap cannot express, such as asymmetric spacing around a single child.
+`gap-*`** — a `gap-2` column whose children carry `my-2` shows 16-pixel gaps. For plain spacing
+between list children, `gap-*` does the same job as one static property; save margins for what gap
+cannot express, like asymmetric spacing around a single child.
 
 ## The spacing value grammar
 
@@ -204,9 +186,8 @@ share one value resolver, and it runs in two steps.
 2. **Arithmetic fallback.** If the key is not in the theme, it is parsed as a number. It must be
    finite, non-negative, and an exact multiple of `0.5`. The result is `new UDim(0, key * 4)`.
 
-So `p-1.5` is `new UDim(0, 6)` and `p-40` is `new UDim(0, 160)`. `p-0.25` is not a multiple of
-`0.5`, so it fails both steps and emits `unknown-theme-key` for the `spacing` family. A leading `-`
-or `+` is rejected outright.
+So `p-1.5` is `new UDim(0, 6)` and `p-40` is `new UDim(0, 160)`. `p-0.25` fails both steps and emits
+`unknown-theme-key`; a leading sign is rejected outright.
 
 <Callout title="The built-in spacing scale has one key">
 `theme.spacing` ships with exactly `"4"`. Every other numeric spacing key you write works through
@@ -215,13 +196,7 @@ the arithmetic fallback, not through the theme. Adding your own named keys is co
 </Callout>
 
 <Callout title="Since 0.12.0 those offsets are rem, not pixels">
-`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**, not what it renders as everywhere.
-Every offset on this page is a rem unit: the emit carries it as `__VelaRem.scale(…)` and the value
-follows the player's viewport, clamped into `[min, max]`. The numbers here are the ones you get at
-1920×1020 — and the ones you get everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels).
-
-Scale-valued utilities are untouched: `w-full`, `h-1/2` and `translate-x-1/2` stay fractions of the
-parent, because there is no pixel in them to scale.
+`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**. Every offset on this page is a rem unit carried as `__VelaRem.scale(…)`, following the player's viewport and clamped into `[min, max]` — so these numbers are the ones you get at 1920×1020, and everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels). Scale-valued utilities are untouched.
 </Callout>
 
 ## Sizing and `Size`

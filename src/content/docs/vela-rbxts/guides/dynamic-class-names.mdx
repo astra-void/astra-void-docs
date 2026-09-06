@@ -1,6 +1,6 @@
 ---
 title: Dynamic class names
-description: Computing className is allowed and loses no utilities — and since 0.12.0 a branch whose classes are written out is resolved at compile time, diagnostics included. What is left to weigh is what a genuinely unreadable string costs.
+description: Computing className is allowed and loses no utilities — a branch whose classes are written out is resolved at compile time, diagnostics included. What is left to weigh is what a genuinely unreadable string costs.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -9,53 +9,33 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-`className` is typed as `ClassValue`, so you can compute it: template strings, ternaries, arrays, values from props or state. The type system will not stop you, and neither will the compiler.
+`className` is typed as `ClassValue`, so you can compute it: template strings, ternaries, arrays,
+values from props or state. Nothing stops you.
 
-What changes is *how* the class string is lowered. When Vela can collapse the expression to a fixed set of tokens at compile time, it takes the **static path** and lowers straight to props. When it cannot, the element falls onto the **runtime path**, where the runtime host does the same work in-game.
-
-Until 0.8.0 those two paths supported very different utility sets, and the difference was silent. That is over. And since **0.12.0** the choice is narrower still: an expression that *names* its tokens — a ternary, an `&&`, an array, an object map — is resolved at compile time even though which of them apply is left for render. What remains to weigh is the string the compiler genuinely cannot read.
+What changes is *how* the string is lowered. When Vela can collapse the expression to a fixed set of
+tokens, it takes the **static path** and lowers straight to props. When it cannot, the element falls
+onto the **runtime path**, where the runtime host does the same work in-game.
 
 ## The two paths resolve the same utilities
 
-As of **0.8.0** every utility family the [reference](/vela-rbxts/reference/utilities/) documents
-resolves on both paths, with the same semantics. That covers opacity modifiers (`bg-blue-600/50`)
-and arbitrary values (`w-[120px]`, `text-[13px]`). It also covers the families that only meet at the
-end — the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a grid track and the gap it
-gives back — each composed the way the static path composes it.
+Every utility family the [reference](/vela-rbxts/reference/utilities/) documents resolves on both
+paths, with the same semantics — opacity modifiers, arbitrary values, and the families that only meet
+at the end, like the two `Size` axes or `FontFace`.
 
-One asymmetry remains, and it favours the runtime path: **a utility the host element cannot carry is dropped rather than written.** Writing `TextColor3` onto a `Frame` is a hard Roblox error, so the runtime host checks the tag first. The static path does not — `<frame className="text-lg" />` emits `TextSize` on a `Frame` with no diagnostic and fails in game.
+One asymmetry remains, and it favours the runtime path: **a utility the host element cannot carry is
+dropped rather than written.** Writing `TextColor3` onto a `Frame` is a hard Roblox error, so the
+runtime host checks the tag first. The static path warns and writes it anyway.
 
-`opacity-*` is the one family where the paths deliberately hand off to each other. As of **0.10.0**
-the compiler stops fading the subtree under a computed `className` at compile time and leaves the
-whole class list to the host. The host resolves it and hands the children one alpha, so a fade
-written inside a variant recipe reaches the subtree it is written over, exactly as a literal one
-would. See [`opacity-*`](/vela-rbxts/reference/utilities/#effects).
-
-<Callout title="If you are on an older release, coverage is the problem">
-The parity work landed over three releases, and on anything earlier a computed `className` loses
-utilities **with no diagnostic at all** — no compile warning, no editor squiggle, no runtime error.
-
-- **Before 0.6.0**, every `text-{color}` in a computed string was dropped, so labels kept Roblox's
-  near-black default and went invisible on dark surfaces.
-- **Before 0.7.0**, `flex-row`, `items-*`, `justify-*`, `w-fit`/`h-auto`/`size-fit`, `text-<size>`,
-  `text-left|center|right` and `font-<weight>` were dropped. A computed `flex items-center gap-2`
-  produced a `UIListLayout` at its default **vertical** fill direction, so the row rendered as an
-  uncentered column.
-- **Before 0.8.0**, positioning, the box constraints, the grid, gradients, `ring-*`/`outline-*`,
-  shadows, `z-*`, `rotate-*`, `scale-*`, `opacity-*`, `order-*`, `leading-*`, `self-*`, `content-*`,
-  `object-*`, `pointer-events-*`, `space-*`, `whitespace-*` and the ScrollingFrame families were
-  dropped.
-
-Upgrading is the fix. If you cannot, keep the affected element on the static path.
-</Callout>
+`opacity-*` is the one family where the paths hand off to each other: the compiler leaves the whole
+class list to the host, which resolves it and hands the children one alpha, so a fade written inside
+a variant recipe reaches the subtree it is written over. See
+[`opacity-*`](/vela-rbxts/reference/utilities/#effects).
 
 ## A branch lowers at compile time
 
-Since **0.12.0**, an expression that writes its classes out is resolved by the compiler even though
-it cannot be collapsed to one class list. `active ? "text-lg" : "text-sm"` names every token it can
-ever apply; only *which* of them apply is undecided. Both are resolved here, through the same call
-the static path makes, and the element is handed the resolved props alongside the tests that decide
-them.
+An expression that writes its classes out is resolved by the compiler even though it cannot be
+collapsed to one class list. `active ? "text-lg" : "text-sm"` names every token it can ever apply;
+only *which* of them apply is undecided.
 
 ```tsx title="Both sizes reach the instance"
 // `text-lg` has no runtime resolution at all. Written as a branch it lowers here.
@@ -65,16 +45,17 @@ them.
 Four consequences, all of them the point:
 
 - **The full utility set applies inside a branch**, not the runtime resolver's narrower prefix list.
-- **A bad utility written in a branch reports a diagnostic** instead of vanishing. `p.on ? "bg-blu-600" : "bg-zinc-800"` is an `unknown-theme-key` warning now.
-- **A variant inside a branch answers to both** — `hover:bg-blue-700` in a branch applies as `hover:` *and* the branch's test, combined as one condition.
+- **A bad utility in a branch reports a diagnostic** instead of vanishing.
+- **A variant inside a branch answers to both** — a `hover:` in a branch applies as `hover:` *and*
+  the branch's test, combined as one condition.
 - **Each test is evaluated exactly once**, however many branches hang on it.
 
-It reads ternaries, `&&`, the literal behind `||`, arrays, and object maps, and it resolves a branch
-among the tokens written around it — so `["w-40", tall && "h-10"]` composes into one `Size` rather than
-a branch that overwrites the width.
+It reads ternaries, `&&`, the literal behind `||`, arrays and object maps, and resolves a branch among
+the tokens written around it — so `["w-40", tall && "h-10"]` composes into one `Size` rather than a
+branch that overwrites the width.
 
-The element still renders through the runtime host, because something has to read the tests. Nothing is
-*parsed* in-game.
+The element still renders through the runtime host, because something has to read the tests. Nothing
+is *parsed* in-game.
 
 ```tsx title="What the emit carries"
 <VelaRuntimeHost
@@ -92,142 +73,98 @@ The element still renders through the runtime host, because something has to rea
 Three things, and the whole class value goes — not just the offending branch:
 
 - **A token no rule can carry** — `m-*`, `divide-*`, `animate-*`, `transition*`, the text transforms
-  (`uppercase`, `underline`, …) and `opacity-*`. The runtime host reads these off its own props rather
-  than off the resolution, so one of them in any branch takes the class value down whole.
+  and `opacity-*`. The host reads these off its own props rather than off the resolution.
 - **A value the source never names** — `` `size-${n}` ``, a bare variable, a call, a spread.
-- **The left side of `||`**, which is the class value itself when it is truthy. The literal behind it is
+- **The left side of `||`**, which is the class value itself when truthy. The literal behind it is
   still resolved here.
 
-Two ordering rules worth knowing. Two branches touching the same property apply in written order, so
+Two ordering rules. Two branches touching the same property apply in written order, so
 `[a && "bg-red-500", b && "bg-blue-500"]` paints blue when both hold. Two branches touching different
-halves of one property are **not** merged: `[a && "w-40", b && "h-10"]` is two writes to `Size` and the
-later one wins — write the pair inside a single branch when both axes matter.
+halves of one property are **not** merged: `[a && "w-40", b && "h-10"]` is two writes to `Size` and
+the later wins — write the pair inside a single branch when both axes matter.
 
 ## What the runtime path still costs
 
 This is about a class value the compiler cannot read at all — `cn(...)`, a template string, a prop
-passed through. Parity is not equivalence, and three things follow from resolving such a string in-game.
+passed through. Three things follow.
 
-**No diagnostics.** The compiler never sees the final string, so nothing checks it. A typo like `bg-blu-600` is an `unknown-theme-key` warning on the static path — and, since 0.12.0, inside a branch as well — but complete silence here: the token resolves to nothing and the element renders without a background. This is the single strongest reason to write the tokens out.
+**No diagnostics.** The compiler never sees the final string, so nothing checks it. A typo like
+`bg-blu-600` is an `unknown-theme-key` warning in a literal or a branch, and complete silence here:
+the token resolves to nothing and the element renders without a background. This is the strongest
+reason to write the tokens out.
 
-**No editor support for the part nothing names.** Completions, hover and the color swatches all work
-from the literal text. Since 0.12.2 that includes the literal text *inside* an expression the
-compiler cannot fold: a template's quasis, the literal side of a concatenation, what a thunk
-returns. So `` `bg-slate-700 ${extra}` `` still gets a swatch on `bg-slate-700`. What `extra`
-resolves to is a string to the LSP, not a class list.
+**No editor support for the part nothing names.** Completions, hover and the swatches work from the
+literal text — including the literal text *inside* an expression the compiler cannot fold, so
+`` `bg-slate-700 ${extra}` `` still gets a swatch on `bg-slate-700`. A token an interpolation *cuts
+into*, as in `` `w-[${width}]` ``, is left alone rather than guessed at; one that merely sits beside
+an interpolation is checked normally.
 
-A token an interpolation *cuts into* is a third case, and since **0.12.3** the editor leaves it
-alone rather than guessing. `` `w-[${width}]` `` arrives as the two pieces `w-[` and `]`. Each used
-to be analyzed as a whole class and reported as broken — a warning about a class you did not write,
-on a value the compiler hands the runtime untouched. A token that merely sits *beside* an
-interpolation, with a space between, is still checked normally.
-
-**Theme values are re-parsed from text.** This is the sharpest remaining edge. The static path
-splices your theme's roblox-ts expression into the output. A class value the host has to parse
-carries your theme as string data instead, re-parsed in Luau by two hand-written parsers that accept
-exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`, with numeric arguments. A theme value that
-is valid roblox-ts but not in one of those shapes — `Color3.new(0.1, 0.2, 0.3)`,
-`Color3.fromHex(...)`, `new UDim(0, PADDING)` — compiles fine and then **silently degrades in
-game**. Unparseable colors drop out of the runtime scale; unparseable radius and spacing values fall
-back to `new UDim(0, 0)`. See
+**Theme values are re-parsed from text.** The sharpest remaining edge. The static path splices your
+theme's roblox-ts expression into the output; a class value the host has to parse carries your theme
+as string data instead, re-parsed in Luau by two parsers that accept exactly
+`Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with numeric arguments. Anything else —
+`Color3.new(0.1, 0.2, 0.3)`, `new UDim(0, PADDING)` — compiles fine and then **silently degrades in
+game**: colors drop out of the scale, radius and spacing fall back to `new UDim(0, 0)`. See
 [configuration](/vela-rbxts/reference/config/#values-are-roblox-ts-expression-strings).
 
-What is *not* on this list any more is code size. The runtime host used to be inlined whole into every
-module that needed it — a place with ten such components carried ten copies of the same 5,500 lines,
-each running its own camera subscription and its own React context. Since 0.12.0 it is
-`@rbxts/vela-runtime`, one ModuleScript the whole place shares, and a transformed module gets an import
-and the config it hands the host:
+Code size is *not* on this list. The runtime is `@rbxts/vela-runtime`, one ModuleScript the whole
+place shares, so a runtime-path module carries an import and its config rather than a copy:
 
-```ts title="What a runtime-path module now carries"
+```ts title="What a runtime-path module carries"
 import { createVelaRuntimeHost } from "@rbxts/vela-runtime";
 const VelaRuntimeHost = createVelaRuntimeHost({ /* … */ });
 ```
 
-In the reference app that took one `App.luau` from 190,260 bytes to 43,187 — 22.7% of what it was — and
-the runtime is 166,682 bytes once, however many files reach it. The element still renders as
-`VelaRuntimeHost` rather than your tag.
-
 ## Three degrees, not two
 
-"Static or runtime" is the shape of the emit. What actually decides how much checking you get is a
-third axis — whether the compiler could *read* the tokens — and there are three cases:
+"Static or runtime" is the shape of the emit. What decides how much checking you get is a third axis
+— whether the compiler could *read* the tokens:
 
 | What you wrote | Emitted as | Resolved by | Checked |
 |---|---|---|---|
 | `className="flex gap-2"`, or an array of literals | Your tag, plain props | The compiler | Yes |
-| A variant, a branch, a margin, a `divide-*` | `VelaRuntimeHost` with `__velaRules` | The compiler; the host only reads the conditions | Yes |
+| A variant, a branch, a margin, a `divide-*` | `VelaRuntimeHost` with `__velaRules` | The compiler; the host only reads conditions | Yes |
 | A string the compiler cannot read | `VelaRuntimeHost` with `className` | The host, in-game | No |
 
-Only the third row is the one with a cost worth weighing. The middle row has been how variants worked
-since they existed, and since 0.12.0 branches join it.
-
-So: **any variant prefix** puts an element in the middle row, including inside a plain string literal —
-`className="sm:w-full"` alone does it. So do the structural utilities (`m-*`, `divide-*`, `animate-*`),
-which build wrappers and separators no static prop can express.
+Only the third row has a cost worth weighing. **Any variant prefix** puts an element in the middle
+row, including inside a plain string literal — `className="sm:w-full"` alone does it. So do the
+structural utilities (`m-*`, `divide-*`, `animate-*`).
 
 <Callout title="An array of literals is still fully static">
 `className={["flex", "gap-2"]}` collapses to one class list and stays in the first row — there is no
-condition in it to read. A ternary does not collapse, but since 0.12.0 it lands in the *middle* row
-rather than the last: both branches are resolved and checked at compile time.
+condition in it to read. A ternary does not collapse, but it lands in the *middle* row rather than
+the last: both branches are resolved and checked at compile time.
 </Callout>
 
 ## How to tell which row an element landed in
 
-There is no diagnostic and no flag, so check the emitted roblox-ts. A first-row element keeps its
-original tag and gains plain props plus helper children. Anything else renders as `VelaRuntimeHost`
-and carries `__velaTag` — and then the distinction that matters is what sits beside it. `__velaRules`
-with `__velaTests` means the compiler resolved everything and the host is only reading conditions. A
-surviving `className` prop means the string is being parsed in-game, and that element is the one to
-look at twice.
+There is no diagnostic and no flag, so check the emitted roblox-ts. A first-row element keeps its tag
+and gains plain props plus helper children. Anything else renders as `VelaRuntimeHost` with
+`__velaTag`, and then what sits beside it matters: `__velaRules` with `__velaTests` means the
+compiler resolved everything and the host only reads conditions. A surviving `className` prop means
+the string is being parsed in-game, and that element is the one to look at twice.
 
 ## Writing for the checked rows
 
-Coverage no longer forces the choice, and neither does branching. Reach for tokens the compiler can
-read wherever losing the typo check would hurt, and compute freely elsewhere.
+Reach for tokens the compiler can read wherever losing the typo check would hurt, and compute freely
+elsewhere.
 
 ### Branch the classes, not the element
 
-Before 0.12.0 the advice here was to duplicate the whole JSX element so each branch held one literal.
-That is no longer necessary — a branch inside the `className` is resolved and checked just as well:
-
-```tsx title="Enough, since 0.12.0"
-<frame className={`flex flex-col items-center gap-2 p-4 rounded-lg ${emphasized ? "bg-slate-700" : "bg-slate-800"}`} />
-```
-
-…except that a template string is not a branch the compiler can read. Write it as one:
+A template string is not a branch the compiler can read. Write it as one:
 
 ```tsx title="Read, resolved and checked"
 <frame className={["flex flex-col items-center gap-2 p-4 rounded-lg", emphasized ? "bg-slate-700" : "bg-slate-800"]} />
 ```
 
-The old shape still works and still produces the leanest emit, since each branch is a complete literal
-on the static path with no host at all:
-
-```tsx title="src/client/Card.tsx"
-import React from "@rbxts/react";
-
-interface CardProps {
-  emphasized: boolean;
-}
-
-export function Card({ emphasized, children }: CardProps & { children?: React.Element }) {
-  return emphasized ? (
-    <frame className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700">
-      {children}
-    </frame>
-  ) : (
-    <frame className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-800">
-      {children}
-    </frame>
-  );
-}
-```
-
-Now the duplication buys less than it used to — no host at all, rather than checking you would otherwise lose. Spend it where an element is hot enough that the difference shows, and reach for the branch form everywhere else.
+Duplicating the whole element still produces the leanest emit — each branch is a complete literal on
+the static path with no host at all — but it now buys only that, not checking you would otherwise
+lose. Spend it where an element is hot enough that the difference shows.
 
 ### Or use a variant instead of computing
 
-If the thing driving the class is something Vela can observe — pointer, press, focus, viewport, input device, color scheme — a variant expresses it without any computation, and variants keep the full utility set:
+If the thing driving the class is something Vela can observe — pointer, press, focus, viewport, input
+device, colour scheme — a variant expresses it without any computation:
 
 ```tsx title="No computed string needed"
 <textbutton className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 transition" Text="Play" />
@@ -235,14 +172,16 @@ If the thing driving the class is something Vela can observe — pointer, press,
 
 ### Computing is fine for the rest
 
-A computed `className` for state your app owns is a normal thing to write, and at 0.12.0 it does what it says:
+A computed `className` for state your app owns is a normal thing to write, and every token in it
+resolves:
 
 ```tsx title="Fine — resolves fully, just without compile-time checking"
 const tone = disabled ? "bg-slate-800 text-slate-500" : "bg-blue-600 text-white";
 return <frame className={`flex items-center gap-2 p-2 rounded-md ${tone}`} />;
 ```
 
-Every token here resolves, including the `flex items-center` that would have been dropped before 0.7.0. What you give up is the typo check — the interpolation is what costs it, not the ternary. Hoisting the same ternary into the class value itself gets the checking back:
+What you give up is the typo check, and the interpolation is what costs it — not the ternary.
+Hoisting the same ternary into the class value gets the checking back:
 
 ```tsx title="Same rendering, checked"
 return (
@@ -257,18 +196,24 @@ return (
 
 ## Components take the same rows
 
-Everything on this page applies to `className` on your own components too — `<Panel className={classes} />` is lowered exactly like `<frame className={classes} />`, branch resolution included.
+Everything here applies to `className` on your own components — `<Panel className={classes} />` is
+lowered exactly like `<frame className={classes} />`, branch resolution included. The one visible
+difference is the tag: `__velaTag` carries a live reference rather than a string
+(`__velaTag={Panel}`), and the host renders your component with the resolved props and helper
+children.
 
-The one visible difference is the tag. Off the static path the component is swapped for `VelaRuntimeHost` as usual, but `__velaTag` carries a live reference rather than a string: `__velaTag={Panel}`, or `__velaTag={Switch.Root}` for a member expression. The host then renders your component with the resolved props and the helper children.
+Which means the component has to forward what it does not consume, or none of it lands — the trap
+worth internalizing before you reach for a computed `className` on a component. There is no
+diagnostic for getting it wrong. See
+[How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
 
-Which means the component has to forward what it does not consume, or none of it lands. That is the trap worth internalizing before you reach for a computed `className` on a component — it is described in full in [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components), and there is no diagnostic for getting it wrong.
-
-Note also that a component only emits the modifier-sibling shape — `<Switch.Root …><uicorner /><textbutton /></Switch.Root>` — on the **static** path. Go dynamic and the `UICorner` is built at runtime instead, so an element that exists to demonstrate that emit needs to stay static.
+A component only emits the modifier-sibling shape —
+`<Switch.Root …><uicorner /><textbutton /></Switch.Root>` — on the **static** path. Go dynamic and
+the `UICorner` is built at runtime instead.
 
 ## See also
 
 - [The five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path) — this page compressed to what you have to remember while writing code.
 - [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) — the other trigger for the runtime path.
-- [Release notes](/vela-rbxts/reference/release-notes/#080) — the parity work, release by release.
 - [How it works](/vela-rbxts/getting-started/how-it-works/) — the compile pipeline and where the two paths diverge.
-- [Vide](/vela-rbxts/guides/vide/) — the same three rows under the other target, where a dynamic class value is written as a thunk.
+- [Vide](/vela-rbxts/guides/vide/) — the same three rows under the other target.
