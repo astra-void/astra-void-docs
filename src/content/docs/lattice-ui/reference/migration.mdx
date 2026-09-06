@@ -15,17 +15,19 @@ Lattice UI is pre-1.0, so `0.x` minors may break. This page carries the code cha
 
 No work. A patch with no API change: `asChild` recognises UI modifier siblings under browser React as well as in Roblox, `UIShadow` joins the modifier set, and re-parented modifiers no longer collide keys with the element's own children. `npx lattice-ui upgrade` and carry on.
 
-The one thing worth knowing is *why* there were two spellings to get wrong, because it decides which renderers 0.8.0 was broken under. `@rbxts/react` rewrites a host tag to its Roblox class name before it builds the element, so in Roblox `<uicorner />` reaches `Slot` as `"UICorner"`. A browser React renderer — what the previews on this site run on — leaves the tag as written. 0.8.0 matched the first spelling only. If you ship to Roblox, 0.8.0 already worked; if you render Lattice primitives under browser React, `asChild` failed there on every styled subtree until this release.
+If you ship to Roblox, 0.8.0 already worked. If you render Lattice primitives under browser React — which leaves a host tag as written where `@rbxts/react` rewrites it to a class name — `asChild` failed on every styled subtree until this release.
 
 ## 0.7.x → 0.8.0
 
-A small release with one shape change: every motion host that was a `CanvasGroup` is now a `Frame`. Nothing about placement, presence timing, exit-before-unmount, dismissal boundaries, focus scoping or layering moves.
+One shape change: every motion host that was a `CanvasGroup` is now a `Frame`. Placement, presence
+timing, exit-before-unmount, dismissal boundaries, focus scoping and layering are untouched.
 
 ### 1. The `CanvasGroup`-only props stop compiling
 
-`Dialog.Content`, `Popover.Content`, `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`, `Select.Content`, `Combobox.Content` and `Toast.Root` forward props onto a `Frame` now, so `GroupTransparency` and `GroupColor3` are compile errors on those parts. Both were the only reason to know the host was a `CanvasGroup` in the first place.
-
-The reason to change it: a `CanvasGroup` flattens its whole subtree into one offscreen composited layer, so children could not carry their own transparency — and every menu and tooltip paid for that layer whether or not anything faded.
+`Dialog.Content`, `Popover.Content`, `Tooltip.Content`, `Menu.Content`, `ContextMenu.Content`,
+`Select.Content`, `Combobox.Content` and `Toast.Root` forward props onto a `Frame` now, so
+`GroupTransparency` and `GroupColor3` are compile errors there. Both were the only reason to know
+the host was a `CanvasGroup`.
 
 ### 2. A `GroupTransparency` fade becomes a `BackgroundTransparency` fade
 
@@ -36,9 +38,9 @@ Swap the recipe for its `Frame` counterpart:
 | `createCanvasGroupRevealRecipe()` | `createSurfaceRevealRecipe()` |
 | `createCanvasGroupPopperEntranceRecipe(placement)` | `createPopperEntranceRecipe(placement)` |
 
-Both canvas-group recipes stay exported, for a `canvasgroup` you slot in yourself through `asChild`. `createToastRevealRecipe` already fades `BackgroundTransparency` to match its new host.
+Both canvas-group recipes stay exported, for a `canvasgroup` you slot in yourself through `asChild`.
 
-`BackgroundTransparency` fades one instance's own background, not its children — so labels and icons inside a surface stay opaque while the surface fades. Fade them alongside it (`TextTransparency`, `ImageTransparency`), or bring the composited layer back deliberately:
+`BackgroundTransparency` fades one instance's own background, not its children, so labels and icons inside a fading surface stay opaque. Fade them alongside it, or bring the composited layer back deliberately:
 
 ```tsx title="Opt back into a one-layer fade"
 import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
@@ -50,16 +52,20 @@ import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
 
 ### 3. `Dialog.Content` is the one part with no drop-in replacement
 
-Its motion host spans the whole layer, so animating `BackgroundTransparency` there paints a full-screen rectangle rather than fading the panel. Two ways out, and `Dialog.Content` accepts `asChild` as of this release specifically to make the second one possible:
+Its motion host spans the whole layer, so animating `BackgroundTransparency` there paints a
+full-screen rectangle. Two ways out — `Dialog.Content` accepts `asChild` as of this release to make
+the second possible:
 
 - Give the content a `Position`-only config for the rise and put the fade on the overlay dim or on your own panel elements.
 - Pass `asChild` with your own `canvasgroup` and `createCanvasGroupRevealRecipe()`, which fades the surface as one layer the way the primitive used to. The outside-press boundary moves down to that element's first host child — the same panel a plain dialog renders directly under `Content` — and the dialog still owns `Size` and `Visible` on whatever element it renders.
 
 ### 4. `asChild` starts working on Vela-styled subtrees
 
-Not work, a fix to stop working around. The `Slot` runtime matched UI modifiers by their JSX tag, but `@rbxts/react` rewrites a host tag to its Roblox class name before it builds the element — `<uicorner />` arrives as `"UICorner"` — so every modifier missed the lookup and counted as a second target candidate. Any subtree carrying a `UICorner`, `UIPadding` or `UIListLayout` sibling, which is what a Tailwind-style `className` transform emits, failed with "expected exactly one child element besides any UI modifiers". Delete whatever you did to avoid it.
-
-In Roblox, that is the whole story. Under a browser React renderer the tag survives as written, and this release matched the class name only — see [0.8.0 → 0.8.1](#080--081), which recognises both.
+Not work, a fix to stop working around. `Slot` matched UI modifiers by JSX tag, so every modifier a
+Tailwind-style transform emits missed the lookup and counted as a second target candidate — any
+subtree with a `UICorner` or `UIListLayout` sibling failed with "expected exactly one child element
+besides any UI modifiers". Delete whatever you did to avoid it. Under a browser React renderer, see
+[0.8.0 → 0.8.1](#080--081).
 
 ### Upgrade checklist
 
@@ -70,19 +76,21 @@ In Roblox, that is the whole story. Under a browser React renderer the tag survi
 
 ## 0.6.x → 0.7.0
 
-0.7.0 is the largest breaking release so far. It strips every primitive down to behavior: colors, fixed sizes, font sizes, literal text and decorative children are gone. In exchange, any prop the underlying instance accepts now forwards straight through, so styling no longer requires `asChild`.
+The largest breaking release so far. Every primitive is stripped down to behavior — colors, fixed
+sizes, font sizes, literal text and decorative children are gone — and in exchange any prop the
+underlying instance accepts forwards straight through, so styling no longer requires `asChild`.
 
 <Callout title="Expect a visual diff, not a broken build">
-Most of this release does not fail to compile — it renders differently. A dialog that looked finished on 0.6 comes up as an invisible overlay and an unstyled panel on 0.7, because the appearance it was relying on came from the primitive. Budget a pass over every surface, not just the ones the compiler flags.
+Most of this release does not fail to compile — it renders differently. A dialog that looked finished on 0.6 comes up as an invisible overlay and an unstyled panel. Budget a pass over every surface, not just the ones the compiler flags.
 </Callout>
 
 ### 1. Every primitive renders unstyled
 
-Primitives now set behavior plus the minimum needed to neutralize Roblox's own instance defaults — a bare `textbutton` renders an opaque grey box labelled "Button", so parts still set `BackgroundTransparency = 1`, `BorderSizePixel = 0`, `Text = ""` and friends. Everything past that is yours.
+Primitives set behavior plus the minimum needed to neutralize Roblox's instance defaults — a bare `textbutton` renders an opaque grey box labelled "Button", so parts still set `BackgroundTransparency = 1`, `Text = ""` and friends. Everything past that is yours.
 
-Geometry the primitive *computes from state* is still owned by the primitive: progress fill ratios, slider thumb travel, popper-driven position, scroll thumb size, and the full-screen sizing that makes an overlay actually cover the screen.
+Geometry the primitive *computes from state* stays with the primitive: progress fill ratios, slider thumb travel, popper-driven position, scroll thumb size, and the full-screen sizing that makes an overlay cover the screen.
 
-Because props now forward, the fix is usually to move styling onto the part itself rather than reach for `asChild`:
+Since props now forward, the fix is usually to move styling onto the part itself rather than reach for `asChild`:
 
 ```tsx title="0.6 — appearance came from the primitive"
 <Dialog.Overlay />
@@ -99,15 +107,16 @@ Because props now forward, the fix is usually to move styling onto the part itse
 
 ### 2. Forwarded props are type-checked
 
-Each part checks forwarded props against the instance it actually renders. Passing a prop that instance does not accept is now a compile error instead of being silently dropped.
-
-That means you need to know what each part renders. `Dialog.Overlay` is a `textbutton`; the content and surface parts — `Dialog.Content`, `Menu.Content`, `Tooltip.Content`, `Popover.Content` and friends, `Toast.Root`, `Toast.Viewport`, `Menu.Group` — are all `frame`s. Passing `TextColor3` to a `frame` will not compile.
+Each part checks forwarded props against the instance it renders, so a prop that instance does not
+accept is a compile error rather than silently dropped. `Dialog.Overlay` is a `textbutton`; the
+content and surface parts are all `frame`s, so passing `TextColor3` to one will not compile.
 
 ### 3. Motion no longer has defaults
 
-No **presence** motion runs unless you ask for it. Presence timing is unchanged — content still stays mounted until an exit transition finishes — but with no `transition` the transition is instant.
-
-Motion that follows a value the primitive computes is unaffected: `Progress.Indicator` still settles its fill by default, and the slider thumb, slider range and switch thumb still follow their values. That motion is behavior, not decoration, so it stayed.
+No **presence** motion runs unless you ask for it. Timing is unchanged — content stays mounted until
+an exit transition finishes — but with no `transition` it is instant. Motion that follows a value
+the primitive computes is unaffected: `Progress.Indicator` still settles its fill, and the slider
+and switch thumbs still follow their values.
 
 ```tsx title="0.6 — animated with no configuration"
 <Dialog.Content>{/* ... */}</Dialog.Content>
@@ -131,13 +140,13 @@ The recipes that used to be applied for you are all still exported from `@lattic
 | `Checkbox.Indicator`, `RadioGroup.Indicator` | `createIndicatorRevealRecipe(size)` |
 | `Toast.Root` | `createToastRevealRecipe()` |
 
-Those hosts all render a `frame` now, so the fade reaches the surface's own background and not the labels inside it. Fade those with it, or pass `asChild` with your own `canvasgroup` and the canvas-group variant of the recipe.
+Those hosts render a `frame`, so the fade reaches the surface's background and not the labels inside it. Fade those with it, or pass `asChild` with your own `canvasgroup` and the canvas-group variant.
 
-The popper recipes took the **resolved** placement, so the motion originated from the side the surface actually landed on after any flip. Read it from `usePopper` if you want that behavior back; passing no placement animates from a fixed side.
+The popper recipes took the **resolved** placement, so motion originated from the side the surface landed on after any flip. Read it from `usePopper` to get that back; passing no placement animates from a fixed side.
 
-`Dialog.Content` is the one part whose old default needs a change to pass back. Its motion host is a `frame` rather than a `canvasgroup`, and a `frame` has no property that fades its descendants, so `createCanvasGroupRevealRecipe()` has nothing to write `GroupTransparency` to — unless you pass `asChild` with your own `canvasgroup`, which makes that element the motion host and the recipe fit again. Otherwise give the content a `Position`-only config for the rise and fade the overlay dim or your own panel elements — [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog) has both patterns.
+`Dialog.Content` is the one part whose old default needs a change — see [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog) for the two patterns.
 
-Prefer these over a hand-written config. Each one declares the correct **target contract** — which properties motion is allowed to own — so it cannot fight your layout. A `PresenceMotionConfig` written by hand needs `reveal`/`exit` as `{ values, intent }`, not bare properties:
+Prefer a recipe over a hand-written config: each declares the correct **target contract**, which properties motion may own, so it cannot fight your layout. A hand-written `PresenceMotionConfig` needs `reveal`/`exit` as `{ values, intent }`, not bare properties:
 
 ```tsx title="The config shape, if you do write one"
 transition={{
@@ -150,7 +159,7 @@ transition={{
 See [Presence and motion](/lattice-ui/guides/presence-and-motion/) for which parts take a `PresenceMotionConfig` and which take a `ResponseMotionConfig`, and [Motion recipes](/lattice-ui/guides/motion-recipes/) for the full catalog.
 
 <Callout title="Overlays animate through their own element">
-`Dialog.Overlay` does not accept `transition` — an unstyled overlay has nothing to fade. It still owns presence timing, so to animate a dim, put an element inside it (or use `asChild`) and animate that.
+`Dialog.Overlay` does not accept `transition` — an unstyled overlay has nothing to fade. It still owns presence timing, so animate a dim by putting an element inside it.
 </Callout>
 
 ### 4. Props removed
@@ -165,7 +174,9 @@ The `SwitchTrackColorMode` type is gone with them.
 
 ### 5. Contract changes per primitive
 
-**`Select.Item` and `Combobox.Item`** no longer render `textValue` as their label. Supply the label as a child. `textValue` still drives `Select.Value` and combobox filtering, so keep passing it when the label is not a plain string.
+**`Select.Item` and `Combobox.Item`** no longer render `textValue` as their label — supply it as a
+child. `textValue` still drives `Select.Value` and combobox filtering, so keep passing it when the
+label is not a plain string.
 
 ```tsx title="0.6"
 <Select.Item value="apple" textValue="Apple" />
@@ -183,7 +194,8 @@ The `SwitchTrackColorMode` type is gone with them.
 </Select.Item>
 ```
 
-**`Toast.Viewport`** renders its children instead of the toast queue markup it used to hardcode. Map over `useToast().visibleToasts` yourself — the same shape the `asChild` path already required:
+**`Toast.Viewport`** renders its children rather than hardcoded queue markup. Map over
+`useToast().visibleToasts` yourself:
 
 ```tsx title="0.7"
 const toast = useToast();

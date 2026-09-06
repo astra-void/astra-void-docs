@@ -9,11 +9,11 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-On Roblox, "focus" is gamepad and keyboard **selection**: a single `GuiObject` held by `GuiService.SelectedObject`. There is no DOM focus tree, no tab order, and no implicit notion of "the thing the user is on" beyond that one property. The moment you start layering surfaces — a dialog over a menu, a popover inside a panel — that single property becomes a contended resource. Open a modal and selection should move into it; close the modal and selection should land back on whatever opened it; while it is open, the player's gamepad should not be able to wander out of it.
+On Roblox, "focus" is gamepad and keyboard **selection**: a single `GuiObject` held by `GuiService.SelectedObject`. There is no focus tree and no tab order. The moment you layer surfaces, that one property becomes contended — open a modal and selection should move into it, close it and selection should land back on whatever opened it, and meanwhile the gamepad should not wander out.
 
-`@lattice-ui/react-focus` is the foundation that makes this deterministic. It maintains its own model of **focus scopes** and **focus nodes**, decides which node should be selected, and bridges that decision to `GuiService.SelectedObject`. Every layered primitive in lattice-ui — Dialog, Menu, Popover, Select, and the rest — sits on top of it, so trapping and restoring selection works the same way everywhere.
+`@lattice-ui/react-focus` makes that deterministic. It keeps its own model of **focus scopes** and **focus nodes**, decides which node should be selected, and bridges that decision to `GuiService.SelectedObject`. Every layered primitive sits on top of it.
 
-You rarely call this package directly when you compose primitives — Dialog and friends wire it for you. Reach for it when you are **building your own selectable surface** or need to drive selection by hand.
+You rarely call it directly — Dialog and friends wire it for you. Reach for it when building your own selectable surface, or driving selection by hand.
 
 ## Import
 
@@ -33,14 +33,14 @@ import {
 
 Two registrations drive everything.
 
-- A **focus node** is a selectable `GuiObject` the manager is allowed to select. You register one with `useFocusNode`, handing it a ref to the instance. The manager only ever selects a registered node (or an *implicit* node it infers when selection arrives from outside).
-- A **focus scope** is a region — a dialog body, a menu list — with rules about activity, trapping, and restoration. `FocusScope` registers one and shares its id through context so any `useFocusNode` rendered inside is owned by that scope.
+- A **focus node** is a selectable `GuiObject` the manager may select, registered with `useFocusNode`. The manager only selects a registered node, or an *implicit* one it infers when selection arrives from outside.
+- A **focus scope** is a region — a dialog body, a menu list — with rules about activity, trapping and restoration. `FocusScope` registers one and shares its id through context, so any `useFocusNode` inside belongs to it.
 
-The manager keeps both in ordered lists, resolves which node is currently focusable, and writes the result to `GuiService.SelectedObject`. When the selected object changes from outside (the player moves the gamepad), it reads it back and re-resolves. That two-way bridge is the whole point: your model and Roblox's selection stay in agreement.
+The manager resolves which node is focusable and writes it to `GuiService.SelectedObject`; when the player moves the gamepad it reads the change back and re-resolves. That two-way bridge is the point — your model and Roblox's selection stay in agreement.
 
 ### Registering a focusable node
 
-`useFocusNode` takes a ref to the `GuiObject` and registers it under the nearest scope. It returns a ref to the node id, which you generally do not need.
+`useFocusNode` takes a ref to the `GuiObject` and registers it under the nearest scope.
 
 ```tsx title="SelectableTile.tsx"
 import { React } from "@rbxts/react";
@@ -67,7 +67,7 @@ export function SelectableTile(props: { label: string; disabled?: boolean }) {
 ```
 
 <Callout title="Selectable is the source of truth">
-The manager will never select a node whose `GuiObject.Selectable` is `false`, whose `Visible` chain is broken, or whose `getDisabled()` returns `true`. Keep `Selectable` and `Active` in sync with your disabled state — `getDisabled` mirrors it in the model, but `Selectable` is what Roblox enforces.
+The manager never selects a node whose `Selectable` is `false`, whose `Visible` chain is broken, or whose `getDisabled()` returns `true`. Keep `Selectable` and `Active` in sync with your disabled state: `getDisabled` mirrors it in the model, `Selectable` is what Roblox enforces.
 </Callout>
 
 ### Defining a scope

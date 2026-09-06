@@ -9,14 +9,12 @@ draft: false
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Every interactive part of a Lattice primitive has to render *something* — a `Dialog.Trigger` needs a button to click, a `Menu.Item` needs a row to select. Each part renders a host element of a fixed class (usually a `textbutton`) with its behavior wired onto it.
+Every interactive part renders a host element of a fixed class, usually a `textbutton`, with its behavior wired onto it. `asChild` flips that around: the part takes the element *you* provide and merges its behavior — handlers, refs, selection flags — onto it. Your element becomes the host.
 
-`asChild` flips that around. Instead of rendering its own host, the part takes the element *you* provide and merges its behavior — event handlers, refs, and selection flags — onto it. Your element becomes the host; the primitive just enhances it.
-
-Under the hood this is powered by the `Slot` component from `@lattice-ui/react-runtime`, which clones your child and composes props onto it.
+It is powered by `Slot` from `@lattice-ui/react-runtime`, which clones your child and composes props onto it.
 
 <Callout title="You no longer need asChild just to style a part">
-Since 0.7.0 every part forwards unknown props onto the instance it renders, so `<Dialog.Overlay BackgroundColor3={...} />` works directly. Reach for `asChild` when you need a **different element class** than the part renders, or when the element comes from somewhere else — not merely to change how it looks.
+Every part forwards unknown props onto the instance it renders, so `<Dialog.Overlay BackgroundColor3={...} />` works directly. Reach for `asChild` when you need a **different element class**, or when the element comes from somewhere else — not merely to change how it looks.
 </Callout>
 
 ## The problem `asChild` solves
@@ -29,7 +27,9 @@ Each part renders one specific instance class. `Popover.Trigger` renders a `text
 </Popover.Trigger>
 ```
 
-That class is the primitive's choice, not yours. If your design system already has a `Button` component, or you want an `imagebutton`, no amount of forwarded props will get you there — forwarded props are type-checked against the instance the part renders, so `Image` on a `textbutton` is a compile error.
+That class is the primitive's choice. If your design system has its own `Button`, or you want an
+`imagebutton`, forwarded props will not get you there — they are type-checked against the instance
+the part renders, so `Image` on a `textbutton` is a compile error.
 
 With `asChild`, you hand the part your element and it merges behavior onto it:
 
@@ -39,11 +39,13 @@ With `asChild`, you hand the part your element and it merges behavior onto it:
 </Popover.Trigger>
 ```
 
-Now the `imagebutton` *is* the trigger. The primitive composes its `Activated` handler, its ref, and its selection flags onto your element instead of rendering a second node.
+Now the `imagebutton` *is* the trigger — the primitive composes its `Activated` handler, ref and
+selection flags onto your element rather than rendering a second node.
 
 ## How `Slot` merges props
 
-When a part is in `asChild` mode it renders through `Slot`. `Slot` takes exactly one child and clones it, combining the primitive's props with the child's props. The merge rules are important to understand:
+`Slot` takes exactly one child and clones it, combining the primitive's props with the child's.
+Three merge rules:
 
 - **Refs are composed.** Your child's ref and the primitive's ref both fire, so the primitive can measure or focus the node while your own ref still receives it. You never have to choose between them.
 - **`Event` and `Change` handler tables are chained.** If both the primitive and your child define a handler for the same signal (say `Activated`), both run — the child's handler first, then the primitive's. Neither one clobbers the other.
@@ -61,26 +63,20 @@ When a part is in `asChild` mode it renders through `Slot`. `Slot` takes exactly
 </Menu.Item>
 ```
 
-Because `Slot` composes rather than replaces, you can attach your own analytics or sound effects to the same event the primitive uses for its behavior.
+Because `Slot` composes rather than replaces, you can attach analytics or sound effects to the same
+event the primitive uses.
 
 <Callout title="asChild takes exactly one GuiObject — plus modifiers">
-`Slot` clones a single child, so the subtree must resolve to exactly one `GuiObject` element. Parts call ``error("... `asChild` requires a child element.")`` when it does not, so a wrong shape fails loudly rather than silently dropping behavior.
-
-Two things do **not** count against that one-element budget, as of 0.7.0:
+`Slot` clones a single child, so the subtree must resolve to exactly one `GuiObject`. A wrong shape errors rather than silently dropping behavior. Two things do **not** count against that budget:
 
 - **Fragments are looked through.** A fragment wrapping a single element resolves to that element.
 - **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uishadow`, `uigradient`, `uiscale`, the constraints, and the rest of the creatable `UIComponent` classes are re-parented under the element the props land on instead of competing to be the target.
 
-**On 0.7.x that second rule is documented but inert.** The lookup that recognises a modifier was
-keyed by the JSX tag, and `@rbxts/react` rewrites a host tag to its Roblox class name before it
-builds the element — `<uicorner />` reaches `Slot` as `"UICorner"`. Every modifier therefore missed
-the lookup and counted as a second candidate, so `asChild` failed with "expected exactly one child
-element besides any UI modifiers" on precisely the subtrees the rule was written for. Fixed in
-0.8.0.
-
-Which spelling arrives depends on the renderer, and 0.8.0 recognised only the Roblox one. A browser React renderer builds the element from the tag as written, so `"uicorner"` reaches `Slot` and the same failure appeared there instead — the previews on this site among them. From **0.8.1** the lookup accepts both, and `UIShadow` joins the set it was missing from.
-
-That second rule exists because Roblox attaches modifiers as *children* rather than properties, which is exactly the shape a Tailwind-style `className` transform emits when it lowers `rounded-md` or `p-2` at the call site — [vela-rbxts](/vela-rbxts/) being the one this was built against:
+The second rule exists because Roblox attaches modifiers as *children* rather than properties —
+exactly the shape a Tailwind-style `className` transform emits when it lowers `rounded-md` or `p-2`
+at the call site, [vela-rbxts](/vela-rbxts/) being the one this was built against. It only works
+correctly from **0.8.1**, which recognises a modifier under both the Roblox class name and the JSX
+tag:
 
 ```tsx title="A modifier sibling is re-parented, not cloned"
 <Dialog.Trigger asChild>
@@ -89,12 +85,9 @@ That second rule exists because Roblox attaches modifiers as *children* rather t
 </Dialog.Trigger>
 ```
 
-Two real `GuiObject` candidates are still an error — the primitive cannot know which one to enhance.
+Two real `GuiObject` candidates are still an error — the primitive cannot know which to enhance.
 
-This is what makes a class name on the *part* work: Vela emits its helper instances as the
-component's children, and they arrive here as siblings of your element rather than as rival slot
-candidates. [Styling with Vela](/lattice-ui/guides/styling-with-vela/) walks through all three
-placements.
+This is what makes a class name on the *part* work: Vela emits its helper instances as the component's children, so they arrive here as siblings rather than rival slot candidates. [Styling with Vela](/lattice-ui/guides/styling-with-vela/) walks through all three placements.
 </Callout>
 
 ## Where you'll use it
@@ -106,7 +99,8 @@ placements.
 - **Items** — `Menu.Item` and similar, so each row is your element.
 - **Overlays and content hosts** — so the backdrop or panel frame is yours, with the primitive's dismissal/positioning behavior merged on.
 
-A trigger that forwards its ref correctly also becomes the focus-restore target and the positioning anchor for free, because the primitive composes its ref onto your element.
+A trigger that forwards its ref becomes the focus-restore target and the positioning anchor for
+free, since the primitive composes its ref onto your element.
 
 ```tsx title="A custom Button as a dialog trigger"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -125,7 +119,7 @@ export function SettingsButton() {
 ```
 
 <Callout title="Your host must forward its ref">
-`Slot` composes the primitive's ref onto your child, but only if your child actually accepts and forwards a `ref` to a real `GuiObject`. A wrapper component that drops `ref` will break focus restoration, positioning, and outside-press detection. Make custom host components forward their ref to the underlying element.
+`Slot` composes the primitive's ref onto your child only if that child accepts and forwards a `ref` to a real `GuiObject`. A wrapper that drops `ref` breaks focus restoration, positioning and outside-press detection.
 </Callout>
 
 ## When to use it
