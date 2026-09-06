@@ -51,14 +51,14 @@ importers:
         specifier: ^4.3.0
         version: 4.3.0(vite@8.1.5(@types/node@25.9.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       '@vela-rbxts/compiler':
-        specifier: ^0.12.4
-        version: 0.12.4
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vela-rbxts/compiler-wasm':
-        specifier: ^0.12.4
-        version: 0.12.4
+        specifier: ^0.13.0
+        version: 0.13.0
       '@vela-rbxts/config':
-        specifier: ^0.12.4
-        version: 0.12.4
+        specifier: ^0.13.0
+        version: 0.13.0
       astro:
         specifier: ^7.1.3
         version: 7.1.3(@astrojs/markdown-remark@7.2.1)(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(@types/node@25.9.1)(jiti@2.7.0)(rollup@4.60.4)(yaml@2.9.0)
@@ -75,8 +75,8 @@ importers:
         specifier: ^6.0.2
         version: 6.0.2
       loom-dev:
-        specifier: ^0.11.0
-        version: 0.11.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
+        specifier: ^0.12.0
+        version: 0.12.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
       lucide-react:
         specifier: ^1.16.0
         version: 1.16.0(react@19.2.6)
@@ -1214,11 +1214,11 @@ packages:
   '@lezer/lr@1.4.10':
     resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
 
-  '@loom-dev/layout@0.11.0':
-    resolution: {integrity: sha512-hH5TMT3b6vOfR0zN19FpVLbIKzWrku3eh5E8dy/6OEagrBDBudns/jadRQneSi7SaQquGXpH+Swly49THrFgUw==}
+  '@loom-dev/layout@0.12.0':
+    resolution: {integrity: sha512-p7cfMH+vU5e3TDLQH3xYyk4+BYN8CDEEr68AnxVCLazedR54XoUAKhJmX91wLAGEU+MpAilG0q5Z2CudUb2w5Q==}
 
-  '@loom-dev/preview@0.11.0':
-    resolution: {integrity: sha512-WG7LdceSqp0/vCkLTd0caT43Qy2EEWUBvhyryB3N1xqJIEJtS2piWFkG7KPJPE7YH1fLqI8UgTYBbBpXodaU/A==}
+  '@loom-dev/preview@0.12.0':
+    resolution: {integrity: sha512-NoQuJh8AqAlJf2stSpu/xplRUDSVhNu2C/7vKE6w0AVVOVZKuai/7kc79GAwAQiUSdqbiSrj0zNaFp4oYRZjuw==}
     peerDependencies:
       react: ^18.3.1
       vite: ^6.0.0 || ^7.0.0
@@ -1226,19 +1226,19 @@ packages:
       vite:
         optional: true
 
-  '@loom-dev/react@0.11.0':
-    resolution: {integrity: sha512-IYCbqwyXyAzwKoxqrgDdfoq47B6ZuBXP8zcrKaMhDlZLfFnH5g0wF3Zl+8Nkmga0lPqJkdTvvc6y1DHsPtDaiA==}
+  '@loom-dev/react@0.12.0':
+    resolution: {integrity: sha512-dRp8JkHvE+KO8IhYeedc8MPK64KKI+WTzE4ivVoM/iO16Hndr0FGPqxIg3OzleVUNX6bCfbVC9Fy1Nwt/wqWDg==}
     peerDependencies:
       react: ^18.3.1
 
-  '@loom-dev/renderer@0.11.0':
-    resolution: {integrity: sha512-optyJ9o31ZoX0Y3WmOdfdMoLkX4O0uQM1emTCDkOSRRZcSJ2X+Yxn/XlCNlKPvWke1jojAFxoteoz5BO/W185w==}
+  '@loom-dev/renderer@0.12.0':
+    resolution: {integrity: sha512-UaO707VFk2irBRunFyUaSMf651RSvRgYFJwqh3ZwRf7FYl3So9y1vDeN+EDTpv1i9lsePIq0TXikHEOI5fp9yQ==}
 
-  '@loom-dev/runtime@0.11.0':
-    resolution: {integrity: sha512-hFag4qHRLeNr4fhpYiqtaRhDIqh2ZAtkOLvQqaReuwb7ndIAtBRXywgFfA+XqI4Xefodg93X0CT0QrkK6V7iIw==}
+  '@loom-dev/runtime@0.12.0':
+    resolution: {integrity: sha512-nNMPjxH4CJApYYyVnxAemGrMinDpqzUi7ZJ0fzxJzgLr5KWfp34c+HtynVIILWv/DfltJ9thoQ+SVIY1kjj4PQ==}
 
-  '@loom-dev/scene@0.11.0':
-    resolution: {integrity: sha512-KyJDhTUSud3DFvgdl6UDAl3g+SD3lySLM/8hV8rYlyWKgGQEcXBSlOxt7dbqyHj0CoAaNNHCo7Z7q1UwzXczWw==}
+  '@loom-dev/scene@0.12.0':
+    resolution: {integrity: sha512-COHRDZ2CK1s6w/jz/J6bSVOIDQlQQzNJEB0tpaKKUjz6dH7Mv7cLvCukoGY0ByomAsVUSgvf+f9Wr3+1mZ3ppw==}
 
   '@marijn/find-cluster-break@1.0.3':
     resolution: {integrity: sha512-FY+MKLBoTsLNJF/eLWaOsXGdz6uh3Iu1axjPf6TUq92IYumcTcXWHoS747JARLkcdlJ/Waiaxc5wQfFO8jC6NA==}
@@ -2493,59 +2493,55 @@ packages:
   '@ungap/structured-clone@1.3.1':
     resolution: {integrity: sha512-mUFwbeTqrVgDQxFveS+df2yfap6iuP20NAKAsBt5jDEoOTDew+zwLAOilHCeQJOVSvmgCX4ogqIrA0mnyr08yQ==}
 
-  '@vela-rbxts/compiler-darwin-arm64@0.12.4':
-    resolution: {integrity: sha512-TaQAcCa0ElT4SCcCnQB4I0mN709mBiNQzatT/Pwp6QV6n2g5czhCES9tUDDR0Q2gtB5ZzLu7zuyca48M7imuxA==}
+  '@vela-rbxts/compiler-darwin-arm64@0.13.0':
+    resolution: {integrity: sha512-WmXGzTxrqpVQmyAmiK111izWTBFo8hdp8ZnBv75VJLlLAbJHQN650r0BlolSgPVDfYAdOBxm6sPNXmtkTtf9VQ==}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [darwin]
 
-  '@vela-rbxts/compiler-darwin-x64@0.12.4':
-    resolution: {integrity: sha512-5M+pvi65FMB7RoR1LhrvIZaSZvT+jHMNrvp91cr4w4BvGhP0RqHmBpyNNAVe1DtDZrgF57+XvHzv7zTXcC1rNQ==}
+  '@vela-rbxts/compiler-darwin-x64@0.13.0':
+    resolution: {integrity: sha512-8+3eGPiHFRXoV9DE5A0y4pMwZYBczo2qOFVybdtI1I/ZESHsk9o1pq+3oXiuudWKl/z5LDgrkIhG6B5iEE3tWw==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [darwin]
 
-  '@vela-rbxts/compiler-linux-arm64-gnu@0.12.4':
-    resolution: {integrity: sha512-3fzpLe1PDWUSf/s3/NIhpToZ58gTGFwKuzM6ZgDp6U/LPyPBPdBQIaO7PvADS+72BsrAl6N/uVWozCJKGAUpsw==}
+  '@vela-rbxts/compiler-linux-arm64-gnu@0.13.0':
+    resolution: {integrity: sha512-BgY/tNX/UbpIu6pRrR72j+Gc8ES9IuoVx/vQYu+QS+WSWsAPCWD97zbjMr88IjdpCSFBF5hGMNQSMTLous1Tew==}
     engines: {node: '>=20'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@vela-rbxts/compiler-linux-x64-gnu@0.12.4':
-    resolution: {integrity: sha512-Ayy/0WUXRkzavZKK+T32bdE4nEXOgdFzFETS/6C435Sa6OBoEz2bC+bTEHNsgyrZn8t3FaVjIWwwLmMAg+HGHg==}
+  '@vela-rbxts/compiler-linux-x64-gnu@0.13.0':
+    resolution: {integrity: sha512-HMLmOV3nyIaN50B6u0g9/Ehx5YQ2pAtboh0Bsql4Ko3vP2Hf1D3cfABN5jQULSBzpZOORib3R7FBUgf132vS1g==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@vela-rbxts/compiler-linux-x64-musl@0.12.4':
-    resolution: {integrity: sha512-Ih32F8da6Fd0mBGY2S535VcrOnusD2HfTMSzz71O4XXRE7xeMpAoiPutRAWCxB1nOwuTRWjeP2n8cUnNCw325w==}
+  '@vela-rbxts/compiler-linux-x64-musl@0.13.0':
+    resolution: {integrity: sha512-bpQksfNewN5Wav8pi1NfYH4mBR3rahi99QFY3yMgNgYaKJNCuCTyCyyJuetC2cSq6pt6vyzEzDbhZFVLfF+ivw==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@vela-rbxts/compiler-wasm@0.12.4':
-    resolution: {integrity: sha512-aA7in6x3w/OmX00msKGc8IiCvnKPQnCJCHfPRQd4Rli1d1MQ5+64aOb3LtIu4AAHOgTiCB72jF4XeOckem3zwg==}
+  '@vela-rbxts/compiler-wasm@0.13.0':
+    resolution: {integrity: sha512-lAjftXSsm9DFDv6IgPRLJTTh0qolkCgNcV7lpGNDiZuToSZAMsce8YF8BcvXC23ACuzQyYwBEXX4bbbdKCILbQ==}
     engines: {node: '>=20'}
 
-  '@vela-rbxts/compiler-win32-x64-msvc@0.12.4':
-    resolution: {integrity: sha512-sD7TNtsRxwWZWSELOTuOjJGWEeHNznbI3aHv9bAIjbyIv3CbFZCxq+A2/f9ZhoEKUMZq6PvhiqBOL1r9hpsOrA==}
+  '@vela-rbxts/compiler-win32-x64-msvc@0.13.0':
+    resolution: {integrity: sha512-dQ4u2ADL59tuHY8dY9b7dnXIONPi/hvR5HJNhVhPcnyYBnmJGnKkuOcTabxLYtKrQ6dtoxP0hyCyOYUqBX3zvw==}
     engines: {node: '>=20'}
     cpu: [x64]
     os: [win32]
 
-  '@vela-rbxts/compiler@0.12.4':
-    resolution: {integrity: sha512-z/dD9Ut4J9PXUq/6/+PzoqcyBsrOEiwmiSUy3ds3PINF8efDGM5gPuThYlullgd3IlT8hYYtg18ojs8vkuWurQ==}
+  '@vela-rbxts/compiler@0.13.0':
+    resolution: {integrity: sha512-LjA+CPXQ0pl9IP2Ch03WMwxGB42J2f2T4YMaLPJndQ+EErBVSECQ8+Q3G5937Rfh2YM5ZF60md3fbpxETNMoFw==}
     engines: {node: '>=20'}
 
-  '@vela-rbxts/config@0.12.4':
-    resolution: {integrity: sha512-9yWGHhV1aJDv9tAPKnDdgXRC1Wj1il33wRPMNReAJgM4ATi1xrqEW/uT/bZeQwGPStg91+/qj512gDUKbGxUBQ==}
-    engines: {node: '>=20'}
-
-  '@vela-rbxts/types@0.12.4':
-    resolution: {integrity: sha512-nq6hQW4Ckaw6QZ05vGEIw5VHzu02KoXDj3L06jZdQ66ZPygsAcwXfiyS6pJhKxjn6GnwI5kf++YnSDtCJ5MX1w==}
+  '@vela-rbxts/config@0.13.0':
+    resolution: {integrity: sha512-C5yUkNIC3XuNWCqHh5n+1pBhBmJkYGpBWkcW8gotrbIkJpvrLUfxHLy4HDxfKxyXN4ON3yM/4JOqbYqBVhlyZw==}
     engines: {node: '>=20'}
 
   '@vitejs/plugin-react@5.2.0':
@@ -3683,8 +3679,8 @@ packages:
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
 
-  loom-dev@0.11.0:
-    resolution: {integrity: sha512-EjqOinIO4cxwRtosY4l1/j+Zt5CW2vfAOlI8TrtolScGB7BNEyRCr3/d9a97lh+FOdM7RI/qzgqnLF9EUBksng==}
+  loom-dev@0.12.0:
+    resolution: {integrity: sha512-mBIXlLUEplI9y/FJ+wNveParRuS/Lr30NDJ3coPTNsNSbGAQIvGshKxfvqzwsYIvB7lIL8AlBT0lTcAdHScSaw==}
     hasBin: true
 
   loose-envify@1.4.0:
@@ -6167,15 +6163,15 @@ snapshots:
     dependencies:
       '@lezer/common': 1.5.2
 
-  '@loom-dev/layout@0.11.0':
+  '@loom-dev/layout@0.12.0':
     dependencies:
-      '@loom-dev/scene': 0.11.0
+      '@loom-dev/scene': 0.12.0
 
-  '@loom-dev/preview@0.11.0(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
+  '@loom-dev/preview@0.12.0(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))':
     dependencies:
-      '@loom-dev/react': 0.11.0(react@18.3.1)
-      '@loom-dev/renderer': 0.11.0
-      '@loom-dev/runtime': 0.11.0
+      '@loom-dev/react': 0.12.0(react@18.3.1)
+      '@loom-dev/renderer': 0.12.0
+      '@loom-dev/runtime': 0.12.0
       happy-dom: 20.11.1
       react: 18.3.1
     optionalDependencies:
@@ -6184,16 +6180,16 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@loom-dev/react@0.11.0(react@18.3.1)':
+  '@loom-dev/react@0.12.0(react@18.3.1)':
     dependencies:
-      '@loom-dev/layout': 0.11.0
-      '@loom-dev/renderer': 0.11.0
-      '@loom-dev/runtime': 0.11.0
-      '@loom-dev/scene': 0.11.0
+      '@loom-dev/layout': 0.12.0
+      '@loom-dev/renderer': 0.12.0
+      '@loom-dev/runtime': 0.12.0
+      '@loom-dev/scene': 0.12.0
       react: 18.3.1
       react-reconciler: 0.29.2(react@18.3.1)
 
-  '@loom-dev/renderer@0.11.0':
+  '@loom-dev/renderer@0.12.0':
     dependencies:
       '@fontsource-variable/arimo': 5.3.0
       '@fontsource-variable/fredoka': 5.3.0
@@ -6223,14 +6219,14 @@ snapshots:
       '@fontsource/special-elite': 5.3.0
       '@fontsource/titillium-web': 5.3.0
       '@fontsource/ubuntu': 5.3.0
-      '@loom-dev/runtime': 0.11.0
-      '@loom-dev/scene': 0.11.0
+      '@loom-dev/runtime': 0.12.0
+      '@loom-dev/scene': 0.12.0
 
-  '@loom-dev/runtime@0.11.0':
+  '@loom-dev/runtime@0.12.0':
     dependencies:
-      '@loom-dev/scene': 0.11.0
+      '@loom-dev/scene': 0.12.0
 
-  '@loom-dev/scene@0.11.0': {}
+  '@loom-dev/scene@0.12.0': {}
 
   '@marijn/find-cluster-break@1.0.3': {}
 
@@ -7445,40 +7441,36 @@ snapshots:
 
   '@ungap/structured-clone@1.3.1': {}
 
-  '@vela-rbxts/compiler-darwin-arm64@0.12.4':
+  '@vela-rbxts/compiler-darwin-arm64@0.13.0':
     optional: true
 
-  '@vela-rbxts/compiler-darwin-x64@0.12.4':
+  '@vela-rbxts/compiler-darwin-x64@0.13.0':
     optional: true
 
-  '@vela-rbxts/compiler-linux-arm64-gnu@0.12.4':
+  '@vela-rbxts/compiler-linux-arm64-gnu@0.13.0':
     optional: true
 
-  '@vela-rbxts/compiler-linux-x64-gnu@0.12.4':
+  '@vela-rbxts/compiler-linux-x64-gnu@0.13.0':
     optional: true
 
-  '@vela-rbxts/compiler-linux-x64-musl@0.12.4':
+  '@vela-rbxts/compiler-linux-x64-musl@0.13.0':
     optional: true
 
-  '@vela-rbxts/compiler-wasm@0.12.4': {}
+  '@vela-rbxts/compiler-wasm@0.13.0': {}
 
-  '@vela-rbxts/compiler-win32-x64-msvc@0.12.4':
+  '@vela-rbxts/compiler-win32-x64-msvc@0.13.0':
     optional: true
 
-  '@vela-rbxts/compiler@0.12.4':
+  '@vela-rbxts/compiler@0.13.0':
     optionalDependencies:
-      '@vela-rbxts/compiler-darwin-arm64': 0.12.4
-      '@vela-rbxts/compiler-darwin-x64': 0.12.4
-      '@vela-rbxts/compiler-linux-arm64-gnu': 0.12.4
-      '@vela-rbxts/compiler-linux-x64-gnu': 0.12.4
-      '@vela-rbxts/compiler-linux-x64-musl': 0.12.4
-      '@vela-rbxts/compiler-win32-x64-msvc': 0.12.4
+      '@vela-rbxts/compiler-darwin-arm64': 0.13.0
+      '@vela-rbxts/compiler-darwin-x64': 0.13.0
+      '@vela-rbxts/compiler-linux-arm64-gnu': 0.13.0
+      '@vela-rbxts/compiler-linux-x64-gnu': 0.13.0
+      '@vela-rbxts/compiler-linux-x64-musl': 0.13.0
+      '@vela-rbxts/compiler-win32-x64-msvc': 0.13.0
 
-  '@vela-rbxts/config@0.12.4':
-    dependencies:
-      '@vela-rbxts/types': 0.12.4
-
-  '@vela-rbxts/types@0.12.4': {}
+  '@vela-rbxts/config@0.13.0': {}
 
   '@vitejs/plugin-react@5.2.0(vite@8.1.5(@types/node@25.9.1)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))':
     dependencies:
@@ -8775,9 +8767,9 @@ snapshots:
 
   longest-streak@3.1.0: {}
 
-  loom-dev@0.11.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0):
+  loom-dev@0.12.0(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0):
     dependencies:
-      '@loom-dev/preview': 0.11.0(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
+      '@loom-dev/preview': 0.12.0(react@18.3.1)(vite@6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
       react: 18.3.1
       vite: 6.4.3(@types/node@25.9.1)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0)
     transitivePeerDependencies:
