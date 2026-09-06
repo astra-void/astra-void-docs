@@ -13,10 +13,10 @@ import { Callout, VelaPreview } from "@/components/docs/mdx";
 `@lattice-ui/react-style` ships — `sx` for a one-off and `createRecipe` for a variant system. Both
 resolve at runtime, both read the current `Theme`, and both hand you a props object.
 
-There is a third option, and it is not ours: [**vela-rbxts**](/vela-rbxts/) is a roblox-ts
-transformer that turns Tailwind-shaped `className` strings into Roblox properties and helper
-instances **at compile time**. Nothing of it survives into the running game. Lattice has no
-dependency on it and never will — but the two fit together deliberately, and
+There is a third option, and it is not ours: [**vela-rbxts**](/vela-rbxts/) turns Tailwind-shaped
+`className` strings into Roblox properties and helper instances **at compile time**, with nothing
+surviving into the running game. Lattice has no dependency on it — but the two fit together
+deliberately, and
 [`asChild` accepting UI modifiers as siblings](/lattice-ui/guides/as-child-composition/) exists
 because of the shape Vela emits.
 
@@ -24,10 +24,7 @@ This page is about that seam: where the classes go, what each placement produces
 the toolkits' defaults disagree.
 
 <Callout title="This is an integration, not a dependency">
-Lattice primitives know nothing about Vela. You install and configure Vela in your own project — see
-[its installation guide](/vela-rbxts/getting-started/installation/) — and Lattice primitives simply
-turn out to be well-shaped targets for what it emits. Everything on this page also works with no
-Vela in the project at all; you would just be writing the props by hand.
+Lattice primitives know nothing about Vela — you install and configure it yourself, and the primitives turn out to be well-shaped targets for what it emits. Everything here also works with no Vela at all; you would just be writing the props by hand.
 </Callout>
 
 ## The three placements
@@ -44,8 +41,8 @@ Every row above is `Switch.Root` + `Switch.Thumb` with no styling of its own —
 ### On your own host element, inside `asChild`
 
 The plainest case. `asChild` hands the part's behavior to an element you render, and that element is
-an ordinary `textbutton` — so its `className` is lowered exactly as it would be anywhere else. All
-three rows paint their track from `checked`; the Wi-Fi row does it with a computed class value:
+an ordinary `textbutton`, so its `className` lowers exactly as it would anywhere else. All three
+rows paint their track from `checked`; the Wi-Fi row uses a computed class value:
 
 ```tsx title="Classes on the element you own"
 <Switch.Root asChild checked={wifi} onCheckedChange={setWifi}>
@@ -64,15 +61,14 @@ three rows paint their track from `checked`; the Wi-Fi row does it with a comput
 Nothing about this is Lattice-specific. Reach for it when the element is already yours.
 
 Note the `LayoutOrder` prop. A computed class value puts the element on Vela's
-[runtime path](/vela-rbxts/guides/dynamic-class-names/), where the layout families — `order-*`
-among them — are dropped, so the row's `UIListLayout` would sort this button by instance name
-instead. Properties you set as props are untouched by any of that, which makes a prop the reliable
-place for anything a dynamically-classed element still needs from the layout.
+[runtime path](/vela-rbxts/guides/dynamic-class-names/), where `order-*` is dropped and the row's
+`UIListLayout` would sort by instance name. Props are untouched by any of that, which makes them the
+reliable place for anything a dynamically-classed element still needs from the layout.
 
 ### On the part, with `asChild`
 
 Put the classes on `Switch.Root` and Vela lowers them onto **the component**: resolved props become
-JSX attributes on `Switch.Root`, and helper instances are prepended as its children. That puts the
+attributes on `Switch.Root`, and helper instances are prepended as its children — putting the
 `UICorner` next to the `textbutton` rather than inside it:
 
 ```tsx title="What Vela emits"
@@ -88,15 +84,11 @@ JSX attributes on `Switch.Root`, and helper instances are prepended as its child
 </Switch.Root>
 ```
 
-Two `GuiObject`-ish children where `asChild` clones exactly one — which is precisely the case Lattice
-0.7.0 added, and **0.8.0 is the release where it works in Roblox**. `Slot` re-parents the modifier
-under the element the props land on instead of treating it as a second slot candidate, so this renders
-the same tree as the first form. On 0.7.x the rule shipped keyed by the JSX tag rather than the Roblox
-class name `@rbxts/react` actually labels the element with, so every modifier missed it and the whole
-shape raised "expected exactly one child element besides any UI modifiers". A browser React renderer
-keeps the tag as written and so needed the other spelling, which **0.8.1** added — the previews on
-this page ran into exactly that. See
-[asChild composition](/lattice-ui/guides/as-child-composition/) for the full rule.
+Two `GuiObject`-ish children where `asChild` clones exactly one. `Slot` re-parents the modifier
+under the element the props land on instead of treating it as a second candidate, so this renders
+the same tree as the first form. It needs **0.8.1**, which recognises a modifier under both the
+Roblox class name and the JSX tag — see
+[asChild composition](/lattice-ui/guides/as-child-composition/).
 
 That emit is what the **static** path produces, and the Bluetooth row keeps it by branching the whole
 element between two literal class lists rather than computing one:
@@ -109,16 +101,15 @@ element between two literal class lists rather than computing one:
 )}
 ```
 
-It reads as duplication, and it buys something concrete: a computed value here — even a ternary
-between two string literals, which Vela does **not** fold — would lower to
+It reads as duplication and buys something concrete: a computed value here would lower to
 `VelaRuntimeHost __velaTag={Switch.Root}` instead, building the `UICorner` at runtime. The modifier
-never becomes a sibling, so the rule this section is about never comes up.
+never becomes a sibling, so this section's rule never comes up.
 
 ### On the part, without `asChild`
 
-Since 0.7.0 every part forwards unknown props onto the instance it renders, so `asChild` is no longer
-required to style one. The part renders its own `textbutton`, Vela's props ride along, and the
-`UICorner` lands as a child:
+Every part forwards unknown props onto the instance it renders, so `asChild` is not required to
+style one. The part renders its own `textbutton`, Vela's props ride along, and the `UICorner` lands
+as a child:
 
 ```tsx title="No asChild — the part renders the host"
 <Switch.Root
@@ -133,10 +124,10 @@ required to style one. The part renders its own `textbutton`, Vela's props ride 
 </Switch.Root>
 ```
 
-This row is computed, so it lowers to `VelaRuntimeHost __velaTag={Switch.Root}` — the runtime host
-renders the part itself, and the part still receives the resolved props, still forwards them, and
-still renders its children. A dynamic class value on a Lattice part works; it just costs you the
-static path's full utility set, which is why `LayoutOrder` is a prop here too.
+This row is computed, so it lowers to `VelaRuntimeHost __velaTag={Switch.Root}`: the host renders
+the part, which still receives the resolved props, forwards them and renders its children. A dynamic
+class value on a Lattice part works — it just costs the static path's checking, which is why
+`LayoutOrder` is a prop here too.
 
 That `opacity-100` is not decoration. It is the first of the two disagreements.
 
@@ -146,53 +137,40 @@ Both toolkits neutralize Roblox's opaque-gray `GuiObject` default, and they do i
 places. Most of the time that is invisible. Twice it is not.
 
 <Callout title="1. bg-* alone will not paint a part that renders its own instance">
-A Lattice part neutralizes the instance it renders with `BackgroundTransparency = 1` — deliberately,
-so a primitive never imposes a look. Vela's `bg-*` sets `BackgroundColor3` and nothing else, and
-Vela's own [preflight](/vela-rbxts/reference/config/#preflight) does not apply to components, because
-the host element a component will render is unknown to it.
+A Lattice part neutralizes the instance it renders with `BackgroundTransparency = 1`, so a primitive never imposes a look. Vela's `bg-*` sets `BackgroundColor3` and nothing else, and its [preflight](/vela-rbxts/reference/config/#preflight) does not apply to components, whose eventual host element is unknown.
 
-So `className="bg-sky-500"` on a part **without** `asChild` produces a fully transparent element
-painted an invisible blue. Add `opacity-100` — which lowers to `BackgroundTransparency = 0` — or move
-the classes onto your own element with `asChild`, where the part applies no neutral defaults at all.
+So `className="bg-sky-500"` on a part **without** `asChild` produces a transparent element painted
+an invisible blue. Add `opacity-100`, or move the classes onto your own element with `asChild`,
+where the part applies no neutral defaults.
 
 There is no diagnostic for this in either toolkit. The symptom is an element that is laid out
 correctly, sized correctly, and simply not there.
 </Callout>
 
 <Callout title="2. Theme switching is a runtime idea; a class list is not">
-`sx` and `createRecipe` read the live `Theme` from `ThemeProvider`, so a light/dark toggle re-renders
-into new colors. Vela resolves `bg-slate-800` to a literal `Color3` at compile time — there is
-nothing left to re-read.
+`sx` and `createRecipe` read the live `Theme` from `ThemeProvider`, so a light/dark toggle re-renders into new colours. Vela resolves `bg-slate-800` to a literal `Color3` at compile time — there is nothing left to re-read.
 
-Vela's theme lives in `vela.config.ts` and is a build-time palette, not a runtime context. If your UI
-switches themes at runtime, keep colors and typography on `sx`/recipes and let Vela carry the
-geometry — sizing, padding, gaps, radius, layout. That split works well and is the one we would
-recommend by default; the mistake is expecting a class list to follow a `ThemeProvider`.
+Vela's theme is a build-time palette, not a runtime context. If your UI switches themes at runtime, keep colours and typography on `sx`/recipes and let Vela carry the geometry — sizing, padding, gaps, radius, layout. The mistake is expecting a class list to follow a `ThemeProvider`.
 </Callout>
 
 ## What to keep off the class list
 
 Two Vela behaviors are worth knowing before you put them near a primitive.
 
-**Anything you cannot afford to get wrong silently.** Primitive state (`checked`, `highlighted`,
-`disabled`) is exactly the thing you want to paint from, and a computed `className` is the natural way
-to do it — the Wi-Fi row above does. As of Vela **0.8.0** every utility family resolves on the
-[runtime path](/vela-rbxts/guides/dynamic-class-names/) that a computed value puts the element on, so
-this is no longer about losing classes. It is about losing *checking*: nothing validates a class
-string the compiler never sees, so a typo in a computed value is silent where the same typo in a
-literal is a diagnostic.
+**Anything you cannot afford to get wrong silently.** Primitive state is exactly what you want to
+paint from, and a computed `className` is the natural way to do it. Every utility family resolves on
+the [runtime path](/vela-rbxts/guides/dynamic-class-names/) a computed value puts the element on, so
+this is not about losing classes — it is about losing *checking*. A typo in a computed value is
+silent where the same typo in a literal is a diagnostic.
 
-Two version notes if you are not current. On **0.7.x and earlier** the layout half of a computed class
-value — direction, alignment, `order-*`, position, text styling, constraints — was dropped outright
-with no diagnostic. And on **0.5.1 and earlier** a computed class value left one sizing axis at zero,
-so `w-11 h-6` on a track collapsed it and the track's `rounded-full` disappeared with it. Fixed in
-0.5.2 — the preview above only works because of it.
+On Vela older than 0.8.0 the layout half of a computed class value was dropped outright with no
+diagnostic, and older than 0.5.2 a computed value left one sizing axis at zero. Upgrading is the fix
+for both.
 
 **Geometry the primitive owns.** Progress fill ratios, slider thumb travel, popper-driven position,
-scroll thumb size, presence-driven `Visible` — those are computed by the primitive and written onto
-the instance. A class that sets the same property fights it, and Vela's value is emitted last, so the
-class wins and the behavior breaks. Style the parts *around* the moving one: the track, not the
-thumb's `Position`.
+scroll thumb size, presence-driven `Visible` are all computed and written onto the instance. A class
+setting the same property fights it, and Vela's value is emitted last, so the class wins and the
+behavior breaks. Style the parts *around* the moving one.
 
 ## Which tool for what
 
@@ -205,10 +183,9 @@ thumb's `Position`.
 | Painting from primitive state | natural | needs static literal branches |
 | Setup cost | none — already a dependency | a transformer, a config, a `.d.ts` |
 
-Neither replaces the other, and mixing them on one element is fine as long as each property is set by
-only one of them. If you already run Vela in your game, Lattice primitives will take your class names
-without complaint. If you do not, `sx` and recipes are not a lesser path — they are the ones with
-runtime theming.
+Neither replaces the other, and mixing them on one element is fine as long as each property is set
+by only one. If you already run Vela, Lattice primitives take your class names without complaint; if
+not, `sx` and recipes are not a lesser path — they are the ones with runtime theming.
 
 ## See also
 

@@ -9,12 +9,15 @@ draft: false
 
 import { Callout } from "@/components/docs/mdx";
 
-Every animatable Lattice part takes a typed `transition` prop — `Dialog.Content`, `Popover.Content`, `Checkbox.Indicator`, `Progress.Indicator`, and friends all expose one. You almost never hand-author the config that goes into it: `@lattice-ui/react-motion` ships **recipes**, small factory functions that return a tuned config with the correct timing and target contract baked in. This page is the practical catalog — which recipes exist, which parts they suit, and how to tune one.
+Every animatable Lattice part takes a typed `transition` prop. You almost never hand-author the
+config that goes into it: `@lattice-ui/react-motion` ships **recipes**, factory functions returning
+a tuned config with the correct timing and target contract baked in. This page is the catalog —
+which recipes exist, which parts they suit, and how to tune one.
 
 <Callout title="Presence motion is opt-in">
 Since 0.7.0 no primitive ships default **presence** motion. A `Content` or `Indicator` part with no `transition` still mounts, unmounts and holds its content until an exit finishes — it just does so instantly.
 
-**Response** motion that follows a computed value is the exception, because there the motion *is* the behavior: `Progress.Indicator` still settles its fill over 0.12s by default, and the slider thumb, slider range and switch thumb follow their values with recipes you cannot replace. For those, `transition` overrides a default; everywhere else it supplies one.
+**Response** motion following a computed value is the exception, because there the motion *is* the behavior: `Progress.Indicator` settles its fill by default, and the slider and switch thumbs follow their values with recipes you cannot replace. For those `transition` overrides a default; everywhere else it supplies one.
 </Callout>
 
 For the concepts behind all of this — presence vs response vs feedback, target contracts, the hooks themselves — read [Presence and motion](/lattice-ui/guides/presence-and-motion/) first. Full signatures live in the [Motion reference](/lattice-ui/reference/motion/).
@@ -23,13 +26,14 @@ For the concepts behind all of this — presence vs response vs feedback, target
 
 The `transition` prop's type tells you what kind of motion the part runs:
 
-- **`PresenceMotionConfig`** — reveal/exit motion for parts that mount and unmount. It has `initial`, `reveal`, and `exit` steps. `Dialog.Content`, `Popover.Content`, `Tooltip.Content`, `Menu.Content`, `Tabs.Content`, `Accordion.Content`, `Checkbox.Indicator`, and `RadioGroup.Indicator` all take one.
-- **`ResponseMotionConfig`** — settling motion for parts that stay mounted and ease between states. It has a single `settle` intent. `Progress.Indicator` and `Toast.Root` take one.
+- **`PresenceMotionConfig`** — reveal and exit motion for parts that mount and unmount, with `initial`, `reveal` and `exit` steps. Every content and indicator part takes one.
+- **`ResponseMotionConfig`** — settling motion for parts that stay mounted and ease between states, with a single `settle` intent. `Progress.Indicator` and `Toast.Root` take one.
 
-The rule of thumb: if the part appears and disappears, it wants a presence config; if it slides or recolors between values while staying on screen, it wants a response config. Passing the wrong kind is a type error, so you cannot mix them up silently.
+If the part appears and disappears it wants a presence config; if it slides or recolours while
+staying on screen, a response config. Passing the wrong kind is a type error.
 
 <Callout title="Not every part takes a transition">
-Some parts own presence timing without exposing a `transition` prop. `Dialog.Overlay` is the one you are most likely to hit: an unstyled overlay has nothing to fade, so it takes no transition at all. To animate a dim, style an element inside the overlay (or pass `asChild`) and animate that element yourself.
+Some parts own presence timing without exposing a `transition`. `Dialog.Overlay` is the one you are most likely to hit — an unstyled overlay has nothing to fade. Animate a dim by putting an element inside it.
 </Callout>
 
 ## Recipe catalog
@@ -54,13 +58,20 @@ Presence recipes return a `PresenceMotionConfig`; response recipes return a `Res
 | `createPressFeedbackEffect(duration?)` | Expressive accent on press, calm recover | Buttons, pressables |
 | `createFocusAccentEffect(duration?)` | Slower accent on focus, quick recover | Focus rings |
 
-Every recipe also sets the right **target contract** — `createOverlayFadeRecipe` uses an `appearance` target, the reveal and popper recipes use an `offset-wrapper`, `createIndicatorRevealRecipe` a `size-wrapper`. That is a large part of why you should prefer a recipe over a hand-written config: the ownership boundary comes for free.
+Every recipe also sets the right **target contract**: `appearance` for the overlay fade,
+`offset-wrapper` for the reveal and popper recipes, `size-wrapper` for the indicator. That is much
+of why a recipe beats a hand-written config — the ownership boundary comes for free.
 
-`Dialog.Content` is the one part with no recipe to reach for by default. It renders a full-screen `Frame`, so a transition can slide it but has no property that fades its descendants — write a `Position`-only config for it and fade the overlay or your own panel elements separately, or pass `asChild` with a `canvasgroup` and use `createCanvasGroupRevealRecipe()`. See [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
+`Dialog.Content` is the one part with no default recipe. It renders a full-screen `Frame`, so a
+transition can slide it but has no property that fades its descendants — write a `Position`-only
+config and fade the overlay or your own elements, or pass `asChild` with a `canvasgroup`. See
+[Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
 ## Giving a component a transition
 
-Pass a recipe's result straight to `transition`. Called with no arguments a recipe uses the house tokens — an 8-pixel rise over a 0.12s reveal, with the exit at 0.8x that. Call the same factory with arguments for a longer, larger reveal:
+Pass a recipe's result straight to `transition`. With no arguments it uses the house tokens — an
+8-pixel rise over a 0.12s reveal, exiting at 0.8x that. Call the same factory with arguments for
+more:
 
 ```tsx title="ShopTabs.tsx"
 import { createSurfaceRevealRecipe } from "@lattice-ui/react-motion";
@@ -87,7 +98,9 @@ export function ShopTabs() {
 }
 ```
 
-Every part uses the config you pass **as-is**. Nothing is merged underneath it, so a partial config animates only the steps it defines — and where a part does have a default (`Progress.Indicator`), your config replaces it wholesale rather than layering over it. To vary one step of a recipe, spread it and replace that step; see [Tuning beyond the factory arguments](#tuning-beyond-the-factory-arguments) below.
+Every part uses the config **as-is**, with nothing merged underneath, so a partial config animates
+only the steps it defines — and where a part has a default, yours replaces it wholesale. To vary one
+step, spread the recipe and replace that step.
 
 The same pattern works for indicators. `createIndicatorRevealRecipe` takes the size the indicator should settle at, so it has to match the box you are rendering:
 
@@ -123,7 +136,8 @@ export function SlowProgress(props: { value: number }) {
 
 ## Tuning beyond the factory arguments
 
-Recipe factories expose the knobs that are safe to turn — an offset or placement distance in pixels, a `duration` in seconds, a reveal `size`. The **tempo** (`"instant" | "swift" | "steady" | "gentle"`) and **tone** (`"calm" | "responsive" | "expressive"`) of each step are baked in; they are the house style.
+Recipe factories expose the knobs that are safe to turn — a distance in pixels, a `duration` in
+seconds, a reveal `size`. Each step's **tempo** and **tone** are baked in as the house style.
 
 When a recipe is almost right, spread its result and override just the step you care about instead of authoring a config from scratch. The recipe's target contract and remaining steps carry over:
 
@@ -145,14 +159,18 @@ const snappyExit: PresenceMotionConfig = {
 
 Two constraints to keep in mind when editing steps:
 
-- **Match the transparency property to the instance.** No primitive renders a `CanvasGroup` any more, so the canvas-group recipes only fit a `canvasgroup` you supply yourself through `asChild`; everything else fades `BackgroundTransparency`, which reaches one instance's own background rather than its children. On a part whose host spans the layer, like `Dialog.Content`, neither fade does what you want.
-- **Stay inside the target contract.** If you add `Position` values to a recipe whose target is `appearance`, the write is rejected and reported as a diagnostic. Keep the recipe's `target` when you keep its properties; see [target contracts](/lattice-ui/guides/presence-and-motion/#target-contracts-who-owns-the-property).
+- **Match the transparency property to the instance.** No primitive renders a `CanvasGroup`, so the canvas-group recipes only fit one you supply through `asChild`. Everything else fades `BackgroundTransparency`, which reaches an instance's own background rather than its children.
+- **Stay inside the target contract.** Adding `Position` values to a recipe whose target is `appearance` is rejected and reported as a diagnostic. Keep the recipe's `target` when you keep its properties.
 
 ## Reduced motion is automatic
 
-You do not opt recipes into reduced motion — every hook that consumes them reads the ambient `MotionPolicy`. When motion is disabled, configs collapse to instant property writes: the final values still land, exits still fire `onExitComplete`, and response settling still reaches its target. Your overridden transitions inherit this for free.
+You do not opt recipes into reduced motion — every hook reads the ambient `MotionPolicy`. When
+motion is disabled, configs collapse to instant property writes: the final values still land, exits
+still fire `onExitComplete`, and settling still reaches its target.
 
-The policy disables motion in two cases: you set it explicitly, or the player has Roblox's system reduced-motion setting enabled. `MotionProvider` respects the system setting by default (`respectSystemReducedMotion` defaults to `true`), and `useSystemReducedMotion` / `useMotionPolicy` let you read the resolved state yourself:
+The policy disables motion when you set it explicitly, or when the player has Roblox's system
+reduced-motion setting on — which `MotionProvider` respects by default. `useSystemReducedMotion` and
+`useMotionPolicy` read the resolved state:
 
 ```tsx title="App.tsx"
 import { MotionProvider, useMotionPolicy } from "@lattice-ui/react-motion";
@@ -171,7 +189,8 @@ function DebugMotionState() {
 }
 ```
 
-`useMotionPolicy` folds the system setting into its result — `disableAllMotion` is `true` whenever the provider disables motion *or* `respectSystemReducedMotion` is on and the player's system setting is enabled. There is no reduced-motion branch to write in your components: build the animated path, and the instant path falls out of the policy.
+`useMotionPolicy` folds the system setting into its result, so there is no reduced-motion branch to
+write in your components. Build the animated path and the instant path falls out of the policy.
 
 ## Related
 

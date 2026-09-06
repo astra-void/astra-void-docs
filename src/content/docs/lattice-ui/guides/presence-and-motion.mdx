@@ -9,13 +9,16 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-UI motion on Roblox is just property tweening over time — `BackgroundTransparency` easing to `0`, a `Position` sliding into place. The hard part is not the tween; it is **coordination**. A surface that fades out has to stay mounted until the fade finishes. A property the layout system owns must not also be driven by an animation, or they overwrite each other every frame. And motion should collapse cleanly to an instant state change when a player has motion disabled.
+UI motion on Roblox is property tweening over time. The hard part is not the tween but
+**coordination**: a surface that fades out has to stay mounted until the fade finishes, a property
+the layout system owns must not also be driven by an animation, and motion should collapse cleanly
+to an instant state change when a player has it disabled.
 
 `@lattice-ui/react-motion` is the foundation that solves this. It splits animation into three intents, each with a hook and a set of recipes:
 
-- **Presence** — reveal and exit motion tied to whether a node should exist. Keeps the node mounted through its exit.
-- **Response** — state-driven settling between two visual states (selected/unselected, on/off). Eases toward the active state.
-- **Feedback** — short one-shot accents for input (press, focus). Accent on, recover off.
+- **Presence** — reveal and exit motion tied to whether a node should exist, keeping it mounted through its exit.
+- **Response** — state-driven settling between two visual states, easing toward the active one.
+- **Feedback** — short one-shot accents for input: accent on, recover off.
 
 Underpinning all three is the **target contract**, which declares *which properties motion is allowed to own* on a given instance — the mechanism that stops motion and layout from stepping on each other.
 
@@ -64,12 +67,14 @@ const custom = motionTargets.custom({
 ```
 
 <Callout title="Reserved properties are never animated">
-`AbsolutePosition`, `AbsoluteSize`, `AutomaticSize`, `LayoutOrder`, `Parent`, `Visible`, and `ZIndex` are reserved for Roblox/layout ownership and are rejected regardless of role. Attempting to animate a property the contract does not own is dropped and reported as a motion diagnostic — it will not silently fight your layout. If motion needs to own geometry, animate a dedicated wrapper with an `offset-wrapper`/`size-wrapper` contract instead of the laid-out node itself.
+`AbsolutePosition`, `AbsoluteSize`, `AutomaticSize`, `LayoutOrder`, `Parent`, `Visible` and `ZIndex` are reserved for layout ownership and rejected regardless of role — animating one is dropped and reported as a diagnostic rather than silently fighting your layout. If motion needs to own geometry, animate a dedicated wrapper instead of the laid-out node.
 </Callout>
 
 ## Presence: reveal and exit
 
-`usePresenceMotion(present, config, onExitComplete?)` returns a ref you attach to the animated instance. When `present` flips to `false`, the node is **not** torn down immediately — the exit motion runs first, and `onExitComplete` fires when it finishes. This is what lets you delay unmount until the animation is done.
+`usePresenceMotion(present, config, onExitComplete?)` returns a ref for the animated instance. When
+`present` flips to `false` the node is **not** torn down immediately: the exit runs first and
+`onExitComplete` fires when it finishes.
 
 ```tsx title="RevealCard.tsx"
 import { React } from "@rbxts/react";
@@ -120,16 +125,21 @@ Prefer a shared recipe over hand-rolling a config — they encode tested timing 
 - `createIndicatorRevealRecipe(size)` — grow-from-zero for indicators (`size-wrapper`).
 
 <Callout title="Match the transparency property to the instance">
-The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup` — no primitive renders one, so they are for a `canvasgroup` you attach the ref to yourself. The plain surface recipes animate `BackgroundTransparency`, which fades that instance's own background and not its children. Pick the recipe that matches the instance you attach the ref to, or the property write is rejected by the target contract.
+The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup` — no primitive renders one, so they are for a `canvasgroup` you attach the ref to yourself. The plain surface recipes animate `BackgroundTransparency`, which fades one instance's own background. Match the recipe to the instance, or the write is rejected by the target contract.
 </Callout>
 
 ### forceMount and the lifecycle
 
-`usePresenceMotion` keeps the node mounted through exit for you. If you need finer control — keeping the node alive even before it has ever entered, or reading the animation phase — use the lower-level `usePresenceMotionController`, which returns `{ ref, phase, mounted, isExiting, isVisible, ... }`. The phase walks through `exited → mounted → preparing → ready → visible → exiting`, so you can gate other behavior (like enabling input only once `isVisible`).
+For finer control — keeping a node alive before it has entered, or reading the animation phase — use
+`usePresenceMotionController`, which returns `{ ref, phase, mounted, isExiting, isVisible, ... }`.
+The phase walks `exited → mounted → preparing → ready → visible → exiting`, so you can gate other
+behavior on it.
 
 ## Response: settling between states
 
-`useResponseMotion(active, properties, config?)` eases an instance between an **active** and **inactive** property set whenever `active` changes. Unlike presence, there is no mount/unmount story — it is for nodes that stay mounted and change appearance. The first application is instant (no animation on mount); subsequent changes settle.
+`useResponseMotion(active, properties, config?)` eases an instance between an **active** and
+**inactive** property set whenever `active` changes — for nodes that stay mounted and change
+appearance. The first application is instant; subsequent changes settle.
 
 ```tsx title="SelectableChip.tsx"
 import { useResponseMotion, createSelectionResponseRecipe } from "@lattice-ui/react-motion";
@@ -158,7 +168,7 @@ export function SelectableChip(props: { selected: boolean; label: string }) {
 This is the exact pattern lattice-ui's own Checkbox and Radio group use. Recipes for response motion include `createSelectionResponseRecipe`, `createToggleResponseRecipe`, `createSliderThumbResponseRecipe(isDragging)`, `createFieldResponseRecipe`, and `createToastResponseRecipe`.
 
 <Callout title="active and inactive must define the same keys">
-`useResponseMotion` writes whichever set matches the current state, so both objects should describe the same properties. If `active` sets `BackgroundColor3` but `inactive` does not, the color will not return when the state flips back.
+`useResponseMotion` writes whichever set matches the current state, so both objects should describe the same properties — otherwise a colour set only in `active` never returns when the state flips back.
 </Callout>
 
 ## Feedback: one-shot accents
@@ -197,7 +207,9 @@ export function PressableButton(props: { label: string }) {
 
 ## Respecting the motion policy
 
-All three hooks read a `MotionPolicy` from context. When `disableAllMotion` is set, every animation collapses to an **instant** property write — the end state is applied immediately, with no tween, and presence still completes its exit so unmount logic runs. Wrap your app (or a subtree) in `MotionProvider` to control it:
+All three hooks read a `MotionPolicy` from context. With `disableAllMotion` set, every animation
+collapses to an **instant** property write, and presence still completes its exit so unmount logic
+runs. Wrap your app or a subtree in `MotionProvider`:
 
 ```tsx title="App.tsx"
 import { MotionProvider } from "@lattice-ui/react-motion";
@@ -212,14 +224,17 @@ export function App(props: { reduceMotion: boolean; children: React.ReactNode })
 ```
 
 <Callout title="Motion stays correct, not just pretty">
-Because disabled motion still applies the final values and still fires `onExitComplete`, you never have to special-case reduced motion in your component logic. Build for the animated path; the instant path falls out for free.
+Because disabled motion still applies the final values and fires `onExitComplete`, you never special-case reduced motion in component logic. Build the animated path; the instant one falls out.
 </Callout>
 
 ## How primitives wire all of this
 
-The layered primitives accept a `transition` prop that is exactly a `PresenceMotionConfig`, and pass `forceMount` through so you can keep content mounted while you drive motion yourself. Passing `transition` is how you give them an entrance and exit without rebuilding the lifecycle.
+The layered primitives accept a `transition` that is exactly a `PresenceMotionConfig`, and pass
+`forceMount` through so you can keep content mounted and drive motion yourself.
 
-They ship none by default. The lifecycle above runs either way — a part with no `transition` still mounts, still stays mounted until its exit resolves, and still fires `onExitComplete` — so adding a transition later never changes when things unmount, only what happens in between. [Motion recipes](/lattice-ui/guides/motion-recipes/) lists the recipe that suits each part.
+They ship none by default, and the lifecycle runs either way: a part with no `transition` still
+mounts, stays mounted until its exit resolves, and fires `onExitComplete`.
+[Motion recipes](/lattice-ui/guides/motion-recipes/) lists the recipe that suits each part.
 
 ```tsx
 import { createPopperEntranceRecipe } from "@lattice-ui/react-motion";
@@ -228,7 +243,9 @@ import { createPopperEntranceRecipe } from "@lattice-ui/react-motion";
 <Popover.Content transition={createPopperEntranceRecipe("bottom", 12, 0.2)} />
 ```
 
-`Dialog.Content` is the exception: its host is a full-screen `Frame`, so give it a `Position`-only config and fade the overlay or your own panel elements — or pass `asChild` with a `canvasgroup` to fade the surface as one layer. See [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
+`Dialog.Content` is the exception: its host is a full-screen `Frame`, so give it a `Position`-only
+config and fade the overlay or your own elements — or pass `asChild` with a `canvasgroup`. See
+[Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
 ## Related
 
