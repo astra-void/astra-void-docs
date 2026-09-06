@@ -44,13 +44,13 @@ type ButtonVariants = VariantProps<typeof buttonVariants>;
 buttonVariants({ variant: "outline", size: "sm", className: "w-full" });
 ```
 
-Resolution order inside a recipe: **base → each matching variant → matching compound variants →
-the caller's `className`**. The caller lands last, on purpose. That is the whole story of the next
+Resolution order inside a recipe: **base → each matching variant → matching compound variants → the
+caller's `className`**. The caller lands last, on purpose — which is the whole story of the next
 section.
 
-Recipes hold no colour, size, or font value of their own. They name tokens; Vela resolves those from
-your `vela.config.ts` at compile time. That is what makes a copied component themeable without you
-editing the component.
+Recipes hold no colour, size or font value of their own — they name tokens, which Vela resolves from
+your `vela.config.ts` at compile time. That is what makes a copied component themeable without
+editing it.
 
 ### Compound variants
 
@@ -73,19 +73,17 @@ came from the caller or from `defaultVariants`.
 shadcn's `cn` is `clsx` + `twMerge`. Facet's is only the flattener, and the reason `twMerge` exists
 does not survive the port.
 
-**On the web**, class order in the attribute means nothing. Tailwind emits utilities in a canonical
-stylesheet order and the later *rule* wins, so `p-4 p-2` is 1rem of padding and so is `p-2 p-4`.
-`tailwind-merge` exists to make attribute order mean what everyone assumes it already means — without
-it, a consumer's `className` cannot reliably override a recipe.
+**On the web**, class order in the attribute means nothing: Tailwind emits utilities in a canonical
+stylesheet order and the later *rule* wins, so `p-4 p-2` and `p-2 p-4` are the same.
+`tailwind-merge` exists to make attribute order mean what everyone assumes it does.
 
-**In Vela**, tokens resolve left to right into instance properties and a later token overwrites an
-earlier one. Class order *is* specificity. `fv()` already appends the caller's `className` last, so
-within one class list a later token wins by construction — the behaviour `twMerge` simulates is
-native.
+**In Vela**, tokens resolve left to right into instance properties and a later one overwrites an
+earlier one, so class order *is* specificity. `fv()` appends the caller's `className` last, which
+makes the behaviour `twMerge` simulates native.
 
-("The caller" here means whatever code calls the recipe, which is the component itself. A `className`
-passed in from *outside* the component is a different story — see
-[Overriding from the call site](#overriding-from-the-call-site).)
+"The caller" here is whatever code calls the recipe — the component itself. A `className` passed in
+from *outside* is a different story; see
+[Overriding from the call site](#overriding-from-the-call-site).
 
 The cross-family cases agree too:
 
@@ -95,8 +93,8 @@ p-2 px-4    → x from px-4, y from p-2     (twMerge keeps both; same result)
 w-fit w-9   → w-9                          (same family, later wins)
 ```
 
-A merge pass would cost a token table tracking every Vela family, kept in sync with a compiler that
-is still adding families, to reproduce an outcome that is already correct.
+A merge pass would cost a token table tracking every Vela family, kept in sync with a compiler still
+adding families, to reproduce an outcome that is already correct.
 
 ## The one rule
 
@@ -123,17 +121,13 @@ The same rule is why `TextSlot` takes no `className` — see
 
 ### When to revisit this
 
-If Vela ever stops resolving last-token-wins, or grows a mechanism that lets a recipe's tokens land
-after the consumer's, this breaks silently — a consumer override that simply does nothing. It is
-worth re-reading whenever Vela's resolution order changes.
+If Vela ever stops resolving last-token-wins, this breaks silently: a consumer override that simply
+does nothing. Worth re-reading whenever Vela's resolution order changes.
 
 ## Overriding from the call site
 
 <Callout title="A className passed to a Facet component does nothing">
-This is measured, not predicted: a `<Button className="bg-destructive" Text="Override" />` rendered
-in the docs' own preview gallery comes out `bg-primary` — white on the default dark theme, exactly
-like a `<Button />` with no `className` at all. The class is dropped in silence, with no diagnostic
-on either side.
+Measured, not predicted: a `<Button className="bg-destructive" Text="Override" />` rendered in the docs' own preview gallery comes out `bg-primary`, exactly like a `<Button />` with no `className`. The class is dropped in silence, with no diagnostic on either side.
 </Callout>
 
 Two Vela behaviors compose into it, and neither is wrong on its own:
@@ -147,10 +141,10 @@ so the component never receives a string:
 <Label Text="1,200 coins" TextColor3={Color3.fromRGB(161, 161, 170)} />
 ```
 
-`props.className` inside `Label` is `undefined`. The recipe slot it would have been threaded into
-never sees it. (This is the same mechanism that makes
+`props.className` inside `Label` is `undefined`, so the recipe slot never sees it. The same
+mechanism makes
 [`TextSlot` take no `className`](/facet/guides/text-and-labels/#textslot-takes-no-classname) —
-there it is load-bearing, here it is in the way.)
+load-bearing there, in the way here.
 
 **2. A component's own class-derived props are emitted after its spreads.** Whatever the author
 wrote, Vela moves the resolution to the end of the prop list:
@@ -167,9 +161,9 @@ component's own recipe. Both halves of the override lose.
 
 ### What that means for a copied component
 
-**The answer is the model's answer: edit the file.** That is what a copied component is for, and it
-is the only override that reliably works. `variant` and `size` cover the cases the component
-anticipated; anything else is a change to source you own.
+**The answer is the model's answer: edit the file.** That is what a copied component is for, and the
+only override that reliably works. `variant` and `size` cover the cases the component anticipated;
+anything else is a change to source you own.
 
 What still crosses the boundary is any instance property the component's classes do not set —
 `LayoutOrder`, `Position`, `Visible`, `ZIndex`, event handlers. Those arrive through passthrough and

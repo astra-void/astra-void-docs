@@ -55,12 +55,10 @@ imports, which need no tsconfig `paths`.
 Then, in order:
 
 1. Writes `facet.json`.
-2. Creates `vela.config.ts` pre-wired with `facetTheme()` **only if it does not exist**. An existing
-   one is never rewritten — if it does not use `facetTheme`, the exact lines to add are printed.
+2. Creates `vela.config.ts` pre-wired with `facetTheme()` **only if it does not exist** — an existing one is never rewritten, and the exact lines to add are printed instead.
 3. Installs `@facet-ui/theme` and `vela-rbxts@^0.9.0` as dev dependencies.
-4. Runs `add utils`, because every component imports `~/lib/utils`. This is also what installs
-   `@facet-ui/react-variants`.
-5. Checks `tsconfig.json` for `vela-rbxts/transformer` and prints the snippet if it is absent.
+4. Runs `add utils`, since every component imports `~/lib/utils`. This also installs `@facet-ui/react-variants`.
+5. Checks `tsconfig.json` for `vela-rbxts/transformer` and prints the snippet if absent.
 
 Refuses to run if `facet.json` already exists, unless `--force`.
 
@@ -77,9 +75,9 @@ npx facet-rbxts add <names...> [--overwrite] [--dry-run] [--no-deps] [--yes]
 | `--no-deps` | Skip the package install |
 | `--yes` | Answer the provider-wiring prompt with yes instead of asking |
 
-Resolves the named items plus their `registryDependencies`, transitively and in dependency order.
-For each file: rewrites `~/` imports for where the file will land, then writes it. All writes go
-through one transaction that commits or rolls back as a unit.
+Resolves the named items plus their `registryDependencies`, transitively and in dependency order,
+rewriting each file's `~/` imports for where it will land. All writes go through one transaction
+that commits or rolls back as a unit.
 
 Files that already exist are **skipped**, not overwritten, and reported as `exists`. `--overwrite`
 replaces them wholesale — there is no merge.
@@ -89,8 +87,8 @@ manager your lockfile implies (`pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, 
 bun, `package-lock.json` → npm; then the `packageManager` field; then npm).
 
 Finally, if `vela.config.ts` does not use `facetTheme` and the added components name tokens, it says
-so with the token list — rather than letting the next build be the messenger with a Vela diagnostic
-on a file you never wrote.
+so with the token list — rather than letting the next build report it as a Vela diagnostic on a file
+you never wrote.
 
 <Callout title="Lockfile over the packageManager field">
 The field states intent; the lockfile states what the project actually installed with. Installing
@@ -100,9 +98,8 @@ with the wrong one leaves two lockfiles disagreeing.
 ### Wiring a provider
 
 If an added component declares a [`providers`](/facet/reference/registry-format/#providers) entry —
-today that is [`dialog`](/facet/components/dialog/) and its `PortalProvider` — `add` offers to wrap
-your client entry in it. This is the **one file the CLI edits that it did not write**, and the bar
-for doing so is deliberately high.
+today only [`dialog`](/facet/components/dialog/) — `add` offers to wrap your client entry in it.
+This is the **one file the CLI edits that it did not write**, and the bar is deliberately high.
 
 ```
 PortalProvider has to wrap your app — Lattice reads the portal target from it,
@@ -111,17 +108,13 @@ and throws when a dialog opens without one
 ? Add it to src/client/main.client.tsx? (Y/n)
 ```
 
-Why this and nothing else: every other thing the CLI reports is a **build-time** failure. A missing
-transformer means every class is inert on the next `rbxtsc`. A missing token is a Vela diagnostic.
-Both are loud, and both land in front of the person who just ran the command. A missing
-`PortalProvider` compiles, type-checks, passes CI, ships — and throws the first time a player opens
-the dialog, hundreds of lines of package-manager output after the snippet would have been printed.
+Why this and nothing else: everything else the CLI reports is a **build-time** failure, loud and in
+front of the person who just ran the command. A missing `PortalProvider` compiles, type-checks,
+passes CI, ships — and throws the first time a player opens the dialog.
 
 **The parser is used for positions, never for output.** `@babel/parser` answers where the last
-import ends and where the render call's argument starts; the edit itself is two string splices.
-Everything outside those two offsets comes out byte for byte identical — no re-quoted strings, no
-moved comments, no re-indented JSX on a file you arranged deliberately. A test asserts the exact
-bytes.
+import ends and where the render call's argument starts; the edit itself is two string splices, so
+everything outside those offsets comes out byte for byte identical. A test asserts it.
 
 **Anything ambiguous is reported, not guessed:**
 
@@ -134,15 +127,13 @@ bytes.
 | The entry does not parse | Snippet |
 | Provider already imported | Nothing, and it says so |
 
-The `PlayerGui` case is the one worth explaining. Writing
-`Players.LocalPlayer.WaitForChild("PlayerGui")` into the file also means adding `Players` to an
-`@rbxts/services` import that may or may not exist — a second, riskier edit for a situation that
-barely occurs, since a client that mounts React always names its `PlayerGui` already. So the CLI
-reuses the expression that is there and stops when there is none.
+Writing `Players.LocalPlayer.WaitForChild("PlayerGui")` would also mean adding `Players` to an
+`@rbxts/services` import that may not exist — a second, riskier edit for a situation that barely
+occurs, since a client that mounts React already names its `PlayerGui`. So the CLI reuses the
+expression that is there and stops when there is none.
 
 <Callout title="Not being asked is not the same as saying no">
-The prompt defaults to yes and is the last thing `add` does, so nothing scrolls past it. `--yes`
-writes without asking.
+The prompt defaults to yes and is the last thing `add` does, so nothing scrolls past it; `--yes` writes without asking.
 
 A **non-interactive** run without `--yes` writes nothing and prints the snippet, reported as *"nothing here to ask, and this is not a file to edit unasked"*. stdin not being a terminal is not consent. It is also not you having declined, which is why the two read differently.
 </Callout>
@@ -161,15 +152,12 @@ npx facet-rbxts list [--registry <url|path>]
 
 Every item in the registry with its description, alphabetically, plus which registry was read.
 
-**Inside a project it reads that project's `registry` field**, so a project pinned to a revision or
-pointed at a fork is shown what it can actually add. **Outside one it falls back to the default** —
-a missing or unreadable `facet.json` is an ordinary outcome here, not an error, because listing what
-exists is what you run *before* `init`.
+**Inside a project it reads that project's `registry` field**, so a pinned project is shown what it
+can actually add. **Outside one it falls back to the default** — a missing `facet.json` is an
+ordinary outcome here, since listing what exists is what you run *before* `init`.
 
 <Callout title="This was wrong until 0.3.1">
-`list` was the one command that never opened `facet.json`, so a pinned project was still shown the
-moving registry — offering components an `add` in that project could not fetch. Found by pinning a
-real project to a published revision and watching `list` report the registry underneath it.
+`list` was the one command that never opened `facet.json`, so a pinned project was shown the moving registry — offering components its own `add` could not fetch.
 </Callout>
 
 ## `remove`
@@ -187,12 +175,8 @@ because you removed `button`.
 
 Two refusals:
 
-- **A file that differs from the registry**, compared after replaying the same `~/` rewrite `add`
-  applied on the way in, so a file that was only ever copied reads as untouched. `--force` overrides
-  this.
-- **A component another installed component still imports.** `--force` does **not** override this
-  one. The check runs to a fixed point: if one item stays behind because it was modified, anything it
-  imports stops being free to delete.
+- **A file that differs from the registry**, compared after replaying the same `~/` rewrite `add` applied, so a file that was only ever copied reads as untouched. `--force` overrides this.
+- **A component another installed component still imports.** `--force` does **not** override this. The check runs to a fixed point: if one item stays behind because it was modified, anything it imports stops being free to delete.
 
 Directories are left alone, and so is anything you added next to the removed files.
 
@@ -204,12 +188,11 @@ npx facet-rbxts diff [name]
 
 With no argument, walks everything the registry knows about that also exists in the project.
 
-Compares each file against what the registry would write there today, replaying the `~/` rewrite
-first so your alias and directory choices are not reported as changes. Direction is registry →
-project: `-` is the registry, `+` is your file.
+Compares each file against what the registry would write today, replaying the `~/` rewrite first so
+your alias and directory choices are not reported as changes. Direction is registry → project.
 
-Facet records nothing at copy time, so this **cannot tell your edit from an upstream change** — and
-it says so in its own output rather than implying otherwise. See
+Facet records nothing at copy time, so this **cannot tell your edit from an upstream change**, and
+says so in its own output. See
 [Updating copied components](/facet/guides/updating-copied-components/).
 
 ## `doctor`
@@ -231,33 +214,28 @@ Eight checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-ze
 | **packages** | a package is missing, or older than the floor the copied files need |
 | **providers** | an installed component declares a provider and the client entry is not wrapped in it |
 
-The providers check is the only one whose failure is not a build failure. A
-[`dialog`](/facet/components/dialog/) with no `PortalProvider` above it compiles, ships, and throws
-the first time a player opens it — and nothing in the copied file can prevent that, because the
-wiring lives in a file Facet does not own. When it fails it prints the snippet; when it cannot find
-a single client entry to look at, it *warns* rather than failing, and says to check by hand.
+The providers check is the only one whose failure is not a build failure: a `dialog` with no
+`PortalProvider` compiles, ships, and throws the first time a player opens it, and nothing in the
+copied file can prevent that. When it fails it prints the snippet; when it cannot find a single
+client entry it warns rather than failing.
 
-The packages check is the one that catches a project set up by an older CLI: the copied files are
-current and the versions under them are not. It reads the version actually sitting in
-`node_modules` — walking up, because a project inside a workspace has its dependencies hoisted —
-rather than the declared range, since the two differ exactly when someone installed once and never
-again.
+The packages check catches a project set up by an older CLI, where the copied files are current and
+the versions under them are not. It reads the version actually in `node_modules`, walking up for a
+workspace, rather than the declared range — the two differ exactly when someone installed once and
+never again.
 
 A registry it cannot reach is a **gap in the report**, not the end of it: the first four checks
-stand on their own, and the last three are skipped with a warning saying so.
+stand alone, and the last three are skipped with a warning.
 
 <Callout title="Half an item is not a missing item">
-An item counts as present the moment one of its files does. Deleting a copied file is allowed — it
-is your file — so a half-installed item is reported, not treated as absent. Its tokens and packages
-are still needed by whatever is left.
+An item counts as present the moment one of its files does. Deleting a copied file is allowed, so a half-installed item is reported rather than treated as absent — its tokens and packages are still needed by whatever is left.
 </Callout>
 
 ### Version comparison is deliberately not semver
 
 The comparison answers one question — *is what is installed at least the version this needs?* — for
-the shapes Facet actually writes (`^0.9.0`, `>=0.8.0`, `0.1.1`). Anything it cannot read is reported
-as **unverifiable** rather than guessed at, because a doctor that invents a failure is worse than one
-that admits a gap.
+the shapes Facet writes. Anything it cannot read is reported as **unverifiable** rather than guessed
+at.
 
 ## Environment variables
 

@@ -9,16 +9,16 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Facet is early. The whole chain works end to end. All three packages are on npm, the registry is
-live, and `npm i -D facet-rbxts` → `facet init` → `facet add button` → `rbxtsc` compiles in a
-project set up from scratch. The registry holds twenty-one components. What has *not* been checked
-is how most of them look.
+Facet is early, but the whole chain works end to end: all three packages are on npm, the registry is
+live, and `npm i -D facet-rbxts` → `facet init` → `facet add button` → `rbxtsc` compiles from
+scratch. The registry holds twenty-one components. What has *not* been checked is how most of them
+look.
 
 ## What ships at 0.4.0
 
-**Every command the CLI advertises is written.** `list`, `init`, `add`, `remove`, `diff`, `doctor` —
-all implemented, all covered by tests that put a fixture project through them offline against a
-registry built into a temporary directory. See the [CLI reference](/facet/reference/cli/).
+**Every command the CLI advertises is written** — `list`, `init`, `add`, `remove`, `diff`, `doctor`
+— each covered by tests that run a fixture project offline against a registry built into a temporary
+directory. See the [CLI reference](/facet/reference/cli/).
 
 **The registry holds twenty-three items** — twenty-one components and the two helpers they import.
 
@@ -62,23 +62,18 @@ Plus [`button`](/facet/components/button/), which is its own case — a recipe, 
 `registry:lib` items everything else imports.
 
 <Callout title="Five of the twenty-one have been opened in Studio">
-`button`, `badge`, `card`, `label` and `separator` have been rendered and looked at. **Everything
-else has not** — it compiles through `rbxtsc`, it renders in the playground and in the previews on
-these pages, and that is a weaker claim.
+`button`, `badge`, `card`, `label` and `separator` have been rendered and looked at. **Everything else has not** — it compiles and it renders in the previews, which is a weaker claim.
 
-The distinction is worth keeping because it has already cost something: compiling is a static
-result, and Roblox runtime behavior does not show up in it. Reading the emitted Luau was not enough
-either — `card`'s description had no `font-*` in it, so it kept Roblox's LegacyArial default and was
-the only thing on screen in another typeface. Nobody caught that from the source.
+The distinction has already cost something. Compiling is a static result, and reading the emitted Luau was not enough either: `card`'s description had no `font-*`, so it kept Roblox's LegacyArial default and was the only thing on screen in another typeface. Nobody caught that from the source.
 </Callout>
 
-**The registry is versioned.** Every push republishes the moving `r/`, and also writes an immutable
-`r/<sha>/` that never changes again. A project pins one through the `registry` field `facet.json`
-already had — see [pinning a revision](/facet/reference/facet-json/#pinning-a-revision).
+**The registry is versioned.** Every push republishes the moving `r/` and writes an immutable
+`r/<sha>/` beside it. Pin one through the `registry` field in `facet.json` — see
+[pinning a revision](/facet/reference/facet-json/#pinning-a-revision).
 
 **`facet add` edits your client entry, once.** `dialog` declares a `PortalProvider`, and a missing
-one is the only failure on this page that happens at *runtime* rather than at build time. So the CLI
-parses the entry, asks, and writes it — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
+one is the only failure here that happens at *runtime* rather than build time — so the CLI parses
+the entry, asks, and writes it. See [wiring a provider](/facet/reference/cli/#wiring-a-provider).
 
 ## What the one-primitive tier established
 
@@ -86,27 +81,16 @@ Three rules came out of building twelve components on twelve primitives, and eve
 them inherits all three. They are written up in
 [Component conventions](/facet/guides/component-conventions/#wrapping-a-lattice-primitive).
 
-1. **State a component styles by is mirrored, not reached for.** Lattice keeps its contexts private,
-   so a wrapper holds the value itself with `useControllableState` — the same hook the primitive
-   uses — and drives the primitive controlled.
-2. **A `className` on a primitive call site has to be visible to the transformer.** Vela rewrites the
-   call sites it can *see*; a `className` tucked into a shared spread reaches the primitive as a raw
-   prop and is dropped in silence.
-3. **Where the primitive owns a property, the recipe stays off it.** The slider's track carries no
-   `flex-*`, the switch's thumb no position, the textarea's input no height.
+1. **State a component styles by is mirrored, not reached for.** Lattice keeps its contexts private, so a wrapper holds the value with `useControllableState` and drives the primitive controlled.
+2. **A `className` on a primitive call site has to be visible to the transformer.** Vela rewrites the call sites it can *see*; one tucked into a shared spread reaches the primitive as a raw prop and is dropped silently.
+3. **Where the primitive owns a property, the recipe stays off it.** The slider's track carries no `flex-*`, the switch's thumb no position, the textarea's input no height.
 
 ## What is not covered
 
 <Callout title="A preview is not Studio">
-Every component page carries a live preview, and it is the real thing as far as it goes: the actual
-registry source, lowered by the actual Vela compiler against the actual `@facet-ui/theme` tokens,
-rendered by [Loom](/loom/). What it is *not* is Roblox. Loom reimplements Roblox's layout and text
-measurement; it does not run the engine, and its fidelity is
-[deliberately partial](/loom/getting-started/scope-and-status/).
+Every component page carries a live preview, and it is the real thing as far as it goes: the actual registry source, lowered by the actual Vela compiler against the actual theme tokens, rendered by [Loom](/loom/). What it is *not* is Roblox — Loom reimplements the layout and text measurement rather than running the engine, and its fidelity is [deliberately partial](/loom/getting-started/scope-and-status/).
 
-So a preview is strong evidence and weak proof. Where these pages state what something looks like on
-screen, it is because someone opened Studio and looked — that is still the only claim worth making
-about runtime behavior, and it is a different and stronger claim than "the preview looks right".
+So a preview is strong evidence and weak proof. Where these pages state what something looks like on screen, someone opened Studio and looked.
 </Callout>
 
 - **The geometry of the one-primitive tier is unverified.** All twelve compile and render, but what
@@ -146,17 +130,18 @@ get proven before anything complicated depends on them.
 **One Lattice primitive** — **done as of 0.4.0**, pending Studio verification.
 
 `toggle` came off this list without being built: `@lattice-ui/react-toggle` does not exist, and a
-standalone pressed state is exactly the controlled/uncontrolled logic that belongs in Lattice rather
-than in a copied file. It returns when the primitive does — or a
-[one-item `toggle-group`](/facet/components/toggle-group/#toggle-is-not-in-the-registry) covers it.
+standalone pressed state is the kind of controlled/uncontrolled logic that belongs in Lattice rather
+than a copied file. A
+[one-item `toggle-group`](/facet/components/toggle-group/#toggle-is-not-in-the-registry) covers it
+meanwhile.
 
 **Layered** — needs portals, focus trapping, or popper. [`dialog`](/facet/components/dialog/) is
 built; the rest is `alert-dialog` · `popover` · `tooltip` · `dropdown-menu` · `context-menu` ·
 `select` · `combobox` · `toast` · `sheet` · `command`.
 
-Each of them declares the same `PortalProvider` `dialog` does, so the entry edit happens once.
-`dropdown-menu` will wrap `@lattice-ui/react-menu` — there is no `react-dropdown-menu` — and
-`alert-dialog` and `sheet` are both `react-dialog` again with different chrome.
+Each declares the same `PortalProvider` `dialog` does, so the entry edit happens once.
+`dropdown-menu` wraps `@lattice-ui/react-menu`, and `alert-dialog` and `sheet` are `react-dialog`
+again with different chrome.
 
 **Blocks** — multi-file compositions, once the singles settle: `login-form` · `settings-panel` ·
 `inventory-grid` · `shop-row`.

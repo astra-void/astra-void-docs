@@ -16,8 +16,8 @@ npx facet-rbxts doctor
 ```
 
 It checks the config, the import aliases, the transformer, the theme, which components are
-installed, whether the tokens they name resolve, and whether the packages underneath them meet the
-floors those files need. Most of what follows is something `doctor` would have told you.
+installed, whether their tokens resolve, and whether the packages underneath meet the floors those
+files need. Most of what follows is something `doctor` would have told you.
 
 ## Nothing is styled at all
 
@@ -33,9 +33,9 @@ Everything renders as grey Roblox defaults. No error, no warning, and the build 
 }
 ```
 
-`facet init` and `facet doctor` both check for this textually and neither edits the file for you —
-roblox-ts tsconfigs are routinely JSONC, and a pattern-matched edit that mangles one is worse than a
-printed snippet.
+`facet init` and `facet doctor` both check for this textually and neither edits the file — roblox-ts
+tsconfigs are routinely JSONC, and a pattern-matched edit that mangles one is worse than a printed
+snippet.
 
 ## A component renders zero pixels wide
 
@@ -47,15 +47,15 @@ h-9 px-4        → 0 × 36. Invisible.
 h-9 w-fit px-4  → correct.
 ```
 
-If the component is a container, check the whole chain rather than the outermost level: a container
-that hugs its content can only measure children that already know their own size, so one label with
-an unresolved axis collapses everything above it.
+For a container, check the whole chain rather than the outermost level: one that hugs its content
+can only measure children that already know their own size, so a single label with an unresolved
+axis collapses everything above it.
 
 ## A class compiles but does nothing
 
 **Suspect the code path before the class.** Every Facet class string comes out of `fv()`, so it is a
-computed expression, and Vela resolves those at runtime rather than at compile time. That runtime
-path implemented a strict subset of the static lowering for a long time:
+computed expression that Vela resolves at runtime rather than at compile time. That runtime path was
+a strict subset of the static lowering for a long time:
 
 | Below Vela | These silently do nothing |
 | --- | --- |
@@ -69,8 +69,7 @@ grep -o 'startsWith(token, "[a-z0-9-]*")' out/shared/ui/button.luau | sort -u
 ```
 
 Whatever is missing there is missing at runtime, whatever the static path says. The CLI's
-`vela-rbxts@^0.9.0` floor keeps you above the whole list — `facet doctor` is what verifies you are
-actually on it.
+`vela-rbxts@^0.9.0` floor clears the whole list, and `facet doctor` verifies you are on it.
 
 ## `Out of local registers`
 
@@ -78,16 +77,15 @@ actually on it.
 Out of local registers when trying to allocate CardHeader
 ```
 
-Pointing at generated code nobody wrote. **You are on Vela 0.8.x.** That release inlined Vela's
-runtime into every transformed file, spending roughly 96 of Luau's 200 local registers before the
-file declared anything of its own — and `card` does not fit in what is left.
+Pointing at generated code nobody wrote. **You are on Vela 0.8.x**, which inlined the runtime into
+every transformed file and spent roughly 96 of Luau's 200 local registers before the file's own
+first line. `card` does not fit in what is left.
 
 Upgrade to `vela-rbxts@^0.9.0`, which scopes the runtime into one initializer; emitted files drop
 from ~106 module-scope locals to ~24.
 
-If you hit this on a component you wrote, the same limit is the cause: each exported name costs a
-register. `card` exports one `cardVariants` object rather than six separate recipes for exactly this
-reason.
+On a component you wrote, the same limit applies: each exported name costs a register, which is why
+`card` exports one `cardVariants` object rather than six recipes.
 
 ## One label is in a different font
 
@@ -103,13 +101,13 @@ which font. `card`'s description shipped this way until someone opened Studio.
 Two causes, both about `className` arriving at the wrong place.
 
 **You are using `asChild`.** `TextSlot` never renders on that path, so the label recipe is not
-applied and the child draws its own text at Roblox's default. Style the child yourself —
-`buttonLabelVariants` is exported for it. See [Button](/facet/components/button/#aschild).
+applied and the child draws its own text at Roblox's default. Style the child yourself;
+`buttonLabelVariants` is exported for it.
 
 **Or a wrapper re-applied `className` internally.** Vela lowers `className` at the *call site*, so
-`<TextSlot className={…}>` becomes a runtime host whose resolved `TextColor3` / `TextSize` /
-`FontFace` arrive as ordinary props. A component that accepts a `className` prop and re-applies it
-inside drops those props instead. `TextSlot` takes no `className` for this reason.
+the resolved `TextColor3` / `TextSize` / `FontFace` arrive as ordinary props — and a component that
+accepts a `className` and re-applies it inside drops them. That is why `TextSlot` takes no
+`className`.
 
 ## The dialog throws the first time it opens
 
@@ -118,8 +116,8 @@ inside drops those props instead. `TextSlot` takes no `className` for this reaso
 ```
 
 **There is no `PortalProvider` above your app.** `Dialog.Portal` reads the `PlayerGui` it renders
-into from a strict context. Everything before this point succeeds — it compiles, it type-checks, it
-ships — and the failure lands on a player pressing the button.
+into from a strict context, so everything before this succeeds — it compiles, type-checks and ships
+— and the failure lands on a player pressing the button.
 
 The `.Provider` in the message is Lattice's generic strict-context wording; the component to reach
 for is `PortalProvider` itself.
@@ -134,17 +132,16 @@ root.render(
 );
 ```
 
-One wrapper for the whole app, not one per dialog. `facet add dialog` offers to write it for you —
+One wrapper for the whole app, not one per dialog. `facet add dialog` offers to write it —
 [what it does and when it refuses](/facet/reference/cli/#wiring-a-provider) — and `facet doctor`
 reports it missing.
 
 ## `border-b` boxes my element instead of underlining it
 
-**A one-sided border is not a thing Roblox can draw.** `border-*` lowers to a `UIStroke`, which
-outlines the whole instance, so Vela treats every side-specific key — `border-b`, `border-t`,
-`border-x` and their prefixed forms — as
-[unsupported and drops it](/vela-rbxts/guides/colors-and-surfaces/#borders), silently. What is left
-is `border-border`, which colours a stroke that then draws on all four sides.
+**Roblox cannot draw a one-sided border.** `border-*` lowers to a `UIStroke`, which outlines the
+whole instance, so every side-specific key is
+[dropped silently](/vela-rbxts/guides/colors-and-surfaces/#borders). What is left is
+`border-border`, colouring a stroke that draws on all four sides.
 
 Reach for `divide-x` / `divide-y` on the parent instead: Vela lowers those to real one-pixel frames
 interleaved between its children, so a stack gets a rule between each pair and none after the last.
