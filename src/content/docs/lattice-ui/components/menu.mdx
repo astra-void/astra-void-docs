@@ -16,9 +16,12 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy } from "@/components/
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
-Menu is the primitive for a list of actions that opens from a trigger: context menus, dropdown actions, overflow menus, and command lists. It coordinates open state, ordered item movement, positioning, dismissal, and exit motion so your component only has to render the items and their contents.
-
-Reach for Menu when you need a surface of **selectable actions** that **moves selection in order** (gamepad up/down and arrow keys), **anchors** to its trigger through the popper foundation, and **dismisses on selection or outside interaction**. Menu is **modal by default** — selection is trapped inside the open menu and restored to the trigger on close.
+Menu is the primitive for a list of actions that opens from a trigger: dropdown actions, overflow
+menus, command lists. It coordinates open state, ordered item movement, positioning, dismissal and
+exit motion. Reach for it when you need **selectable actions** that **move selection in order**,
+**anchor** to the trigger through the popper foundation, and **dismiss on selection or outside
+interaction**. Menu is **modal by default** — selection is trapped inside it and restored to the
+trigger on close.
 
 ## Import
 
@@ -65,7 +68,8 @@ Compose the parts you need. `Root`, `Trigger`, `Portal`, and `Content` form the 
 
 ### Basic actions menu
 
-The smallest useful menu: an uncontrolled root, a trigger, and a few items. Every part here renders its default element — the trigger is a `textbutton` labeled `"Toggle Menu"`, and each item is a left-aligned 220x34 `textbutton` that highlights on hover and gamepad selection — so you can wire up actions before styling anything. Selecting an item runs its `onSelect` and closes the menu.
+An uncontrolled root, a trigger, and a few items. Selecting an item runs its `onSelect` and closes
+the menu.
 
 ```tsx title="BasicActionsMenu.tsx"
 import { Menu } from "@lattice-ui/react-menu";
@@ -88,14 +92,14 @@ export function BasicActionsMenu() {
 ```
 
 <Callout title="Uncontrolled by default">
-Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen` (closed by default). Reach for controlled state only when something outside the menu needs to open or close it — see [Controlled right-click menu](#controlled-right-click-menu).
+Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen`. Reach for controlled state only when something outside the menu drives it — see [Controlled right-click menu](#controlled-right-click-menu).
 </Callout>
 
 ### Groups, labels, and separators
 
-`Group` wraps related items, `Label` puts a non-interactive heading above them, and `Separator` marks a division. None of them register with selection movement — Up/Down skips straight from the last item of one group to the first enabled item of the next.
+`Group` wraps related items, `Label` is a non-interactive heading, `Separator` marks a division. None register with selection movement — Up/Down skips from the last item of one group to the first enabled item of the next.
 
-All three render unstyled. As of 0.7.0 `Menu.Group` no longer supplies a vertical `UIListLayout` or forces `AutomaticSize` — it was one of the last two primitives holding an opinion about how children lay out, so give it a layout of its own. `Label` renders no copy, and `Separator` draws nothing until you size and color it.
+All three render unstyled: give `Group` a layout of its own, `Label` its copy, and `Separator` a size and colour.
 
 ```tsx title="InventoryItemMenu.tsx"
 import { Menu } from "@lattice-ui/react-menu";
@@ -154,7 +158,10 @@ export function InventoryItemMenu(props: { itemName: string }) {
 
 ### Icon items with asChild
 
-`asChild` on `Item` merges the selection behavior — activation, Up/Down movement, hover and gamepad highlight — onto your own single element through the shared `Slot`. The slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires. The primitive tracks the highlight but never paints it — read `useMenuItemContext().highlighted` and render it yourself (see [How it behaves](#items-and-activation)).
+`asChild` on `Item` merges activation, Up/Down movement and the hover and gamepad highlight onto
+your own element. The slot's `Active`, `Selectable` and ref win over the child's, and event handlers
+compose — use a `textbutton` or `imagebutton` so `Activated` fires. The primitive tracks the
+highlight but never paints it; read `useMenuItemContext().highlighted` and render it yourself.
 
 ```tsx title="IconActionsMenu.tsx"
 import { Menu } from "@lattice-ui/react-menu";
@@ -215,10 +222,13 @@ export function IconActionsMenu(props: { onAction: (id: string) => void }) {
 
 ### Controlled right-click menu
 
-Pass `open` and `onOpenChange` when something other than the trigger's own activation should open the menu — here a right-click (or long-press-style secondary input) on an inventory slot. The trigger still has to exist because it is the positioning anchor and the focus-restore target; with `asChild` its toggle behavior composes with your slot's own handlers, so a left-click `Activated` also toggles as usual.
+Pass `open` and `onOpenChange` when something other than the trigger's own activation opens the menu
+— here a right-click on an inventory slot. The trigger still has to exist: it is the positioning
+anchor and the focus-restore target, and under `asChild` its toggle behavior composes with your own
+handlers.
 
 <Callout title="Anchored to the slot, not the pointer">
-This opens the menu **against the trigger**, which is what you want when the slot is small and the menu should hug it. If you want the menu to appear **at the cursor** instead, that is [Context Menu](/lattice-ui/components/context-menu/) — it anchors to the click position and needs no controlled state to do so. The trade-off is that Context Menu is pointer-only: it has no ordered gamepad or keyboard movement.
+This opens the menu **against the trigger**. For one that appears **at the cursor**, use [Context Menu](/lattice-ui/components/context-menu/), which anchors to the click position and needs no controlled state — at the cost of being pointer-only, with no ordered gamepad or keyboard movement.
 </Callout>
 
 ```tsx title="SlotContextMenu.tsx"
@@ -268,7 +278,10 @@ export function SlotContextMenu(props: { slotIcon: string; onAction: (id: string
 
 ### Placement tuning
 
-`Menu.Content` accepts the popper positioning options. `placement` requests a side (`"top" | "bottom" | "left" | "right"`, default `"bottom"`), `sideOffset` adds a pixel gap between the trigger and the content, `alignOffset` shifts the content along the trigger's cross axis, and `collisionPadding` sets the minimum distance kept from the screen edge (default `8`). The requested side is a preference, not a guarantee — when it would overflow, the popper tries the opposite side, then the two orthogonal sides, and finally clamps the best candidate inside the viewport.
+`Menu.Content` accepts the popper options: `placement` requests a side, `sideOffset` adds a gap from
+the trigger, `alignOffset` shifts along the cross axis, and `collisionPadding` keeps a minimum
+distance from the screen edge. The requested side is a preference — on overflow the popper tries the
+opposite side, then the orthogonal ones, then clamps the best candidate inside the viewport.
 
 ```tsx title="SidebarOverflowMenu.tsx"
 import { Menu } from "@lattice-ui/react-menu";
@@ -305,7 +318,9 @@ export function SidebarOverflowMenu() {
 
 ### Disabled items and staying open
 
-`disabled` on an item blocks activation, removes it from gamepad selection, and skips it during Up/Down movement. `onSelect` receives a `MenuSelectEvent`; calling `event.preventDefault()` marks it default-prevented, and the item then skips the automatic close — the one thing the default behavior does — so the menu stays open. That makes toggle-style items possible, like a filter list you can flip several times in one visit.
+`disabled` on an item blocks activation, removes it from gamepad selection and skips it during
+Up/Down movement. `onSelect` receives a `MenuSelectEvent`, and calling `event.preventDefault()`
+skips the automatic close, so the menu stays open — which is what makes toggle-style items possible.
 
 ```tsx title="LootFilterMenu.tsx"
 import { useState } from "@rbxts/react";

@@ -16,15 +16,17 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy, ForwardedProps, Loom
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
-Context Menu is the primitive for actions that belong to a specific object rather than to a button: right-click a slot, a plot, a player name, and get a menu at the pointer. It differs from [Menu](/lattice-ui/components/menu/) in one decisive way — the menu is anchored to **where you clicked**, not to the element you clicked. The trigger is a region, not a button.
-
-Reach for Context Menu when the action list belongs to a **region of the screen**, when the menu should appear **under the pointer**, and when a **secondary (right) click** is the natural way to ask for it. Reach for [Menu](/lattice-ui/components/menu/) instead when a visible button opens the list, or when gamepad and keyboard users must be able to move through the items.
+Context Menu is for actions that belong to a specific object rather than a button: right-click a
+slot, a plot, a player name. It differs from [Menu](/lattice-ui/components/menu/) in one decisive
+way — the menu anchors to **where you clicked**, not to the element you clicked, so the trigger is a
+region rather than a button. Use Menu instead when a visible button opens the list, or when gamepad
+and keyboard users must move through the items.
 
 <Callout title="Pointer-driven only">
-Context Menu opens on `MouseButton2` and tracks hover on its items (exposed through `useContextMenuItemContext`, for you to render). Unlike Menu, its items do **not** register with the focus manager: there is no automatic focus of the first item, no `Up`/`Down` movement, and no focus restore on close. On a gamepad-first or keyboard-first surface, use [Menu](/lattice-ui/components/menu/).
+Context Menu opens on `MouseButton2` and tracks item hover through `useContextMenuItemContext`. Unlike Menu, its items do **not** register with the focus manager — no automatic focus, no `Up`/`Down` movement, no focus restore. On a gamepad- or keyboard-first surface, use [Menu](/lattice-ui/components/menu/).
 </Callout>
 
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive. Right-click inside the card to open the menu at the pointer.
+Right-click inside the card to open the menu at the pointer.
 
 <LoomPreview scene="ContextMenuExampleScene" height={320} />
 
@@ -134,7 +136,9 @@ Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOp
 
 ### A real trigger region
 
-`asChild` merges the secondary-click listener onto your own element, which is the normal way to use this primitive: the trigger is the thing the actions belong to. The child keeps all of its own props and handlers — the slot only adds `InputBegan` and `Active` — so a left-click `Activated` on the same element still does whatever it did before.
+`asChild` merges the secondary-click listener onto your own element, which is the normal way to use
+this primitive. The child keeps its own props and handlers — the slot only adds `InputBegan` and
+`Active` — so a left-click `Activated` still does whatever it did before.
 
 ```tsx title="PlotContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -230,7 +234,10 @@ export function InventorySlotContextMenu(props: { icon: string }) {
 
 ### Placement tuning
 
-`ContextMenu.Content` takes the same popper options as the other anchored primitives, but the anchor is a zero-height virtual frame at the pointer, as wide as the measured content. That is what makes the default `placement="bottom"` drop the menu's top-left corner at the cursor, the way a desktop context menu behaves. Change `placement` when you want it to grow the other way — near the bottom of the screen the popper flips it for you regardless.
+`ContextMenu.Content` takes the same popper options as the other anchored primitives, but the anchor
+is a zero-height virtual frame at the pointer, as wide as the measured content — which is what drops
+the menu's top-left corner at the cursor. Change `placement` to grow the other way; near the bottom
+of the screen the popper flips it regardless.
 
 ```tsx title="MinimapContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -395,15 +402,23 @@ export function ControlledContextMenu(props: { editable: boolean }) {
 
 ### Open state and the anchor
 
-`ContextMenu.Root` is controllable on `open`/`onOpenChange`, with `defaultOpen` for uncontrolled usage (defaulting to closed). `ContextMenu.Trigger` watches `InputBegan` and reacts only to `Enum.UserInputType.MouseButton2`: it converts the raw pointer position into the inset-adjusted space that `GuiObject.AbsolutePosition` uses, stores it on the root, and opens the menu. That stored position survives until the next secondary click, so a controlled root can reopen the menu at the same spot.
+Controllable on `open`/`onOpenChange`, with `defaultOpen` for uncontrolled usage. `Trigger` watches
+`InputBegan` for `MouseButton2` only: it converts the pointer position into the inset-adjusted space
+`AbsolutePosition` uses, stores it on the root, and opens the menu. That position survives until the
+next secondary click, so a controlled root can reopen at the same spot.
 
 A `disabled` trigger ignores the secondary click entirely and never updates the stored position.
 
 ### Positioning
 
-`ContextMenu.Content` mounts an invisible virtual anchor at the stored pointer position and hands it to the shared popper machinery. The anchor has **zero height and the measured content's width**, which is what makes the resolved placement land the menu's top-left corner at the cursor instead of centering it under the pointer.
+The content mounts an invisible virtual anchor at the stored pointer position, with **zero height
+and the measured content's width** — which is what lands the menu's top-left corner at the cursor
+rather than centring it under the pointer.
 
-From there it behaves like every other anchored surface: the requested `placement` (default `"bottom"`) is a preference, and on collision the popper tries the opposite side, then the orthogonal sides, then clamps the best candidate inside the viewport with `collisionPadding` (default `8`) kept from every edge. `sideOffset` and `alignOffset` shift the result. Until the first measurement completes the content is parked off-screen, so it never flashes at the wrong position.
+From there it behaves like every other anchored surface: `placement` is a preference, and on
+collision the popper tries the opposite side, then the orthogonal ones, then clamps inside the
+viewport with `collisionPadding` from every edge. Until the first measurement the content is parked
+off-screen, so it never flashes at the wrong position.
 
 ### Items and activation
 
@@ -413,14 +428,21 @@ The item renders an unstyled `textbutton`. It tracks hover through `MouseEnter`/
 
 ### Dismissal
 
-`ContextMenu.Content` participates in dismissable-layer behavior: only the top-most enabled layer receives outside interactions, so nested overlays dismiss one at a time. Context Menu is **modal by default**, so a full-screen blocker stops interaction behind the surface and an outside press dismisses the menu. Before dismissal, `onPointerDownOutside` fires for outside pointer presses and `onInteractOutside` fires for the interaction in general; both receive a `LayerInteractEvent` (`{ originalEvent, defaultPrevented, preventDefault() }`), and calling `preventDefault()` in either handler vetoes the dismissal while still letting you observe the interaction.
+Only the top-most enabled layer receives outside interactions, so nested overlays dismiss one at a
+time. Context Menu is **modal by default**: a full-screen blocker stops interaction behind it, and
+an outside press dismisses it. `onPointerDownOutside` and `onInteractOutside` fire first with a
+`LayerInteractEvent`, and `preventDefault()` in either vetoes the dismissal while still letting you
+observe it.
 
 ### Motion and presence
 
-`ContextMenu.Content` runs no motion of its own. Pass a `transition` to animate it; `createPopperEntranceRecipe(placement)` from `@lattice-ui/react-motion` matches the `frame` the content renders, and taking the **resolved** placement makes the motion originate from the side the menu actually landed on — so a menu the popper flipped above the pointer animates from above. `forceMount` keeps the content mounted through its exit. The content wrapper is an automatically-sized `frame`, so your surface defines the measured size.
+The content runs no motion of its own. Pass a `transition`; `createPopperEntranceRecipe(placement)`
+matches the `frame` it renders, and taking the **resolved** placement makes the motion originate
+from the side the menu actually landed on. `forceMount` keeps it mounted through its exit. The
+wrapper is an automatically-sized `frame`, so your surface defines the measured size.
 
 <Callout title="No ordered movement">
-`ContextMenu.Item` does not register a focus node. There is no automatic focus on open, no `Up`/`Down` movement between items, and no focus restore on close — `modal` here means "blocks pointer interaction behind the surface", not "traps selection". If your surface has to be operable without a mouse, build it with [Menu](/lattice-ui/components/menu/) instead.
+`ContextMenu.Item` registers no focus node: no automatic focus on open, no `Up`/`Down` movement, no focus restore. `modal` here means "blocks pointer interaction behind the surface", not "traps selection". For a surface operable without a mouse, use [Menu](/lattice-ui/components/menu/).
 </Callout>
 
 <Callout title="The item highlight is yours to render">

@@ -16,13 +16,13 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime"]}
 />
 
-Scroll Area is the primitive for building a scroll container with custom-styled scrollbars on top of Roblox's native `ScrollingFrame`. `Viewport` is the scrolling surface; `Root` reads its canvas metrics and decides when scrollbars should show; and `Scrollbar`/`Thumb` render a draggable indicator wired to the viewport's `CanvasPosition`. `Corner` fills the gap where both axes overlap.
-
-Reach for Scroll Area when you want the **native scroll feel** of a `ScrollingFrame` — wheel, touch drag, momentum — but with **scrollbars you style yourself** and **overflow-aware visibility** that hides them when there is nothing to scroll.
+Scroll Area builds a scroll container with custom-styled scrollbars on top of Roblox's native
+`ScrollingFrame`. `Viewport` is the scrolling surface, `Root` reads its canvas metrics and decides
+when scrollbars show, and `Scrollbar`/`Thumb` render a draggable indicator wired to
+`CanvasPosition`. Reach for it when you want the **native scroll feel** — wheel, touch drag,
+momentum — with **scrollbars you style yourself** and **overflow-aware visibility**.
 
 ## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
 
 <LoomPreview scene="ScrollAreaExampleScene" height={340} />
 
@@ -34,7 +34,8 @@ import { ScrollArea } from "@lattice-ui/react-scroll-area";
 
 ## Anatomy
 
-`Root` provides the metrics context and renders no instance of its own. `Viewport` holds your content. Add a `Scrollbar` (with a `Thumb` directly inside its track) per axis, and a `Corner` when you show both.
+`Root` provides the metrics context and renders no instance. `Viewport` holds your content. Add a
+`Scrollbar` per axis, with a `Thumb` directly inside its track, and a `Corner` when you show both.
 
 <PrimitiveAnatomy title="ScrollArea anatomy">
 
@@ -62,7 +63,9 @@ import { ScrollArea } from "@lattice-ui/react-scroll-area";
 
 ### Basic vertical list
 
-The smallest useful composition: the default viewport (a 260x160 `scrollingframe`), the default scrollbar track (8px wide, pinned to the right), and the default rounded thumb. Because `Root` renders no instance, the parts sit in a plain container frame you provide. Wheel and touch scrolling work immediately; the scrollbar appears only once the list actually overflows.
+The default viewport, scrollbar track and thumb. Because `Root` renders no instance, the parts sit
+in a plain container frame you provide. Wheel and touch scrolling work immediately, and the
+scrollbar appears only once the list overflows.
 
 ```tsx title="PatchNotes.tsx"
 import { ScrollArea } from "@lattice-ui/react-scroll-area";
@@ -97,7 +100,9 @@ export function PatchNotes(props: { lines: string[] }) {
 
 ### Horizontal scroll row
 
-A single row that overflows sideways — hotbars, category chips, cosmetic carousels. Pass `orientation="horizontal"` to both `Scrollbar` and `Thumb`, and use `asChild` on the viewport and scrollbar to size them into your layout: the viewport fills the container minus the track height, and the track pins to the bottom edge.
+A single row that overflows sideways — hotbars, category chips, carousels. Pass
+`orientation="horizontal"` to both `Scrollbar` and `Thumb`, and use `asChild` to size the viewport
+and track into your layout.
 
 ```tsx title="CosmeticRow.tsx"
 import { ScrollArea } from "@lattice-ui/react-scroll-area";
@@ -147,7 +152,9 @@ export function CosmeticRow(props: { cosmetics: string[] }) {
 
 ### Both axes with a corner
 
-Content that overflows in both directions — maps, skill trees, wide tables. Provide one scrollbar/thumb pair per axis and a `Corner` for the square where the two tracks would overlap; the corner shows itself only while both scrollbars are visible. Each track is shortened by the other track's thickness so they meet at the corner instead of crossing.
+Content that overflows in both directions — maps, skill trees, wide tables. Provide one
+scrollbar/thumb pair per axis plus a `Corner`, which shows only while both scrollbars are visible.
+Each track is shortened by the other's thickness so they meet at the corner instead of crossing.
 
 ```tsx title="WorldMap.tsx"
 import { ScrollArea } from "@lattice-ui/react-scroll-area";
@@ -207,7 +214,10 @@ export function WorldMap() {
 
 ### Scrollbar visibility modes
 
-`type` controls when visible scrollbars appear. `"auto"` (the default) and `"always"` show a scrollbar while its axis overflows and keep it on screen. `"scroll"` is the transient mode: the bar appears on scroll activity and fades out after `scrollHideDelayMs` of inactivity — a good fit for chat logs and feeds where a permanent track is visual noise. In every mode, an axis with no overflow shows no scrollbar at all.
+`type` controls when scrollbars appear. `"auto"` and `"always"` keep one on screen while its axis
+overflows. `"scroll"` is transient: the bar appears on scroll activity and fades after
+`scrollHideDelayMs` — a good fit for chat logs and feeds. In every mode, an axis with no overflow
+shows nothing.
 
 ```tsx title="ChatLog.tsx"
 import { ScrollArea } from "@lattice-ui/react-scroll-area";
@@ -252,7 +262,11 @@ export function ChatLog(props: { messages: string[] }) {
 
 ### Custom track and thumb with asChild
 
-Use `asChild` on `Scrollbar` and `Thumb` when you need a different element class than the frames they render. The scrollbar's Slot projects visibility and track-press handling onto your track element; the thumb's Slot projects its computed `Position` and `Size` (both scale-based) plus drag handling onto your handle. Do not set `Position` or `Size` on the thumb element — the primitive owns them — and style it with corners, strokes, and colors instead. Keep the `Thumb` a direct child of the track element: the thumb measures its parent to map drags to canvas positions.
+Use `asChild` when you need a different element class than the frames these render. The scrollbar
+slot projects visibility and track-press handling onto your track; the thumb slot projects its
+computed `Position` and `Size` plus drag handling onto your handle. Do not set `Position` or `Size`
+on the thumb — the primitive owns them — and keep it a direct child of the track, which it measures
+to map drags to canvas positions.
 
 ```tsx title="QuestLog.tsx"
 import { ScrollArea } from "@lattice-ui/react-scroll-area";
@@ -310,7 +324,12 @@ export function QuestLog(props: { quests: string[] }) {
 
 ### Scrolling and metrics
 
-`ScrollArea.Viewport` renders a `ScrollingFrame` with `AutomaticCanvasSize` on both axes, `ScrollingDirection` set to XY, and the native scrollbars hidden (`ScrollBarThickness = 0`, fully transparent image). It registers the frame with `Root` and listens to `CanvasPosition`, `AbsoluteCanvasSize`, and `AbsoluteWindowSize` changes, pushing the per-axis `viewportSize`, `contentSize`, and `scrollPosition` into context on every change (with an equality bail-out so identical measurements never re-render). Because the underlying control is a real `ScrollingFrame`, mouse-wheel, touch-drag, and momentum scrolling all work natively — the primitive layers custom scrollbars on top of that. The default viewport is a fixed 260x160 frame; use `asChild` to supply your own `scrollingframe` sized to your layout.
+`ScrollArea.Viewport` renders a `ScrollingFrame` with `AutomaticCanvasSize` on both axes,
+`ScrollingDirection` set to XY, and the native scrollbars hidden. It registers the frame with `Root`
+and pushes the per-axis `viewportSize`, `contentSize` and `scrollPosition` into context on every
+change, with an equality bail-out so identical measurements never re-render. Because the control is
+a real `ScrollingFrame`, wheel, touch-drag and momentum scrolling all work natively. Use `asChild`
+to supply your own `scrollingframe` sized to your layout.
 
 ### Scrollbar visibility
 

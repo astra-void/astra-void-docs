@@ -16,13 +16,13 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
-Tooltip is the primitive for a small, transient surface that explains a control: button hints, icon labels, and stat breakdowns. It opens on hover or gamepad selection and positions itself against the trigger with popper, so your component only renders the label.
-
-Reach for Tooltip when a surface should **appear on hover or selection**, **wait a beat before showing** (and skip that wait when moving between nearby triggers), **anchor to its trigger** with collision-aware placement, and **dismiss** when the pointer or selection leaves.
+Tooltip is the primitive for a small, transient surface that explains a control: button hints, icon
+labels, stat breakdowns. It opens on hover or gamepad selection and positions itself against the
+trigger with popper. Reach for it when a surface should **appear on hover or selection**, **wait a
+beat before showing** — skipping that wait between nearby triggers — **anchor** with collision-aware
+placement, and **dismiss** when the pointer or selection leaves.
 
 ## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
 
 <LoomPreview scene="TooltipExampleScene" height={220} />
 
@@ -63,7 +63,8 @@ import { Tooltip } from "@lattice-ui/react-tooltip";
 
 ### Basic usage
 
-The smallest useful tooltip: a provider for timing, a trigger projected onto your own button with `asChild`, and an app-owned label surface inside the portal. Hovering the button waits out the provider delay, then the content animates in above it; moving the pointer away closes it.
+A provider for timing, a trigger projected onto your own button, and a label surface inside the
+portal. Hovering waits out the provider delay, then the content animates in above the button.
 
 ```tsx title="StatTooltip.tsx"
 import { Tooltip } from "@lattice-ui/react-tooltip";
@@ -100,7 +101,10 @@ export function StatTooltip() {
 
 ### Shared delay across a toolbar
 
-One `Provider` around a row of icon buttons gives every tooltip the same delay and — more importantly — the skip window. The first hover waits the full `delayDuration`; once any tooltip has opened, moving to a neighboring trigger within `skipDelayDuration` opens its tooltip after at most that short window, so scrubbing across the toolbar feels instant.
+One `Provider` around a row of icon buttons gives every tooltip the same delay and, more
+importantly, the same skip window. The first hover waits the full `delayDuration`; once any tooltip
+has opened, a neighbouring trigger opens within `skipDelayDuration` instead, so scrubbing across the
+toolbar feels instant.
 
 ```tsx title="ActionToolbar.tsx"
 import { Tooltip } from "@lattice-ui/react-tooltip";
@@ -150,7 +154,9 @@ export function ActionToolbar() {
 
 ### Rich content
 
-`Tooltip.Content` accepts arbitrary children, so a tooltip can be a small card rather than a single line — here a keybind hint with a title row and a description. Keep it non-interactive: the tooltip closes as soon as the pointer leaves the trigger, so buttons inside it are unreachable by design.
+`Tooltip.Content` accepts arbitrary children, so a tooltip can be a small card rather than one line.
+Keep it non-interactive — the tooltip closes as soon as the pointer leaves the trigger, so buttons
+inside it are unreachable by design.
 
 ```tsx title="KeybindHint.tsx"
 import { Tooltip } from "@lattice-ui/react-tooltip";
@@ -212,7 +218,9 @@ export function KeybindHint() {
 
 ### Placement and offset tuning
 
-`placement` picks the preferred side (`"top"`, `"bottom"`, `"left"`, `"right"`), `sideOffset` sets the gap from the trigger, `alignOffset` slides the content along that side, and `collisionPadding` keeps it off the viewport edges. Popper flips or shifts away from the preferred side when it would collide, and the default entrance recipe follows the side that was actually resolved.
+`placement` picks the preferred side, `sideOffset` sets the gap from the trigger, `alignOffset`
+slides along that side, and `collisionPadding` keeps it off the viewport edges. Popper flips or
+shifts on collision, and the entrance recipe follows the side that actually resolved.
 
 ```tsx title="InventorySlotTooltip.tsx"
 import { Tooltip } from "@lattice-ui/react-tooltip";
@@ -249,7 +257,9 @@ export function InventorySlotTooltip() {
 
 ### Controlled and force-open
 
-Pass `open` and `onOpenChange` when something outside the tooltip should decide visibility — an onboarding step that pins a hint open until acknowledged, or a tutorial that walks through controls. Hover and selection still report through `onOpenChange`, so you choose whether to honor them; here they are ignored while the onboarding step is active.
+Pass `open` and `onOpenChange` when something outside decides visibility — an onboarding step
+pinning a hint open until acknowledged. Hover and selection still report through `onOpenChange`, so
+you choose whether to honour them.
 
 ```tsx title="OnboardingHint.tsx"
 import { useState } from "@rbxts/react";
@@ -300,12 +310,14 @@ export function OnboardingHint() {
 ```
 
 <Callout title="Outside interactions still dismiss">
-Even in controlled mode the content runs as a dismissable layer: a press outside asks the tooltip to close through `onOpenChange(false)`. If the hint must survive outside presses, keep your controlled `open` true and ignore those change requests, as above.
+Even controlled, the content runs as a dismissable layer, so an outside press asks it to close through `onOpenChange(false)`. To survive that, keep your `open` true and ignore the request.
 </Callout>
 
 ### Gamepad selection
 
-The trigger listens to `SelectionGained`/`SelectionLost` alongside hover, and selection opens are immediate — no delay — because a gamepad user has already committed to the control. Nothing extra to wire: make the trigger selectable (the default trigger and the `asChild` slot both set `Selectable`) and D-pad focus shows the tooltip the moment the control is selected.
+The trigger listens to `SelectionGained`/`SelectionLost` alongside hover, and selection opens are
+immediate — a gamepad user has already committed to the control. Nothing extra to wire: make the
+trigger selectable and D-pad focus shows the tooltip the moment the control is selected.
 
 ```tsx title="GamepadStatTooltip.tsx"
 import { Tooltip } from "@lattice-ui/react-tooltip";
@@ -340,42 +352,61 @@ export function GamepadStatTooltip() {
 
 ### Open behavior
 
-`Tooltip.Trigger` tracks two activity sources — hover (`MouseEnter`/`MouseLeave`) and selection focus (`SelectionGained`/`SelectionLost`). The tooltip opens when either source becomes active and closes only when both are inactive, so moving the mouse off a still-selected trigger keeps the tooltip up. Hover opens go through the delay; selection opens call straight into open with no delay, which suits gamepad and keyboard navigation.
+`Tooltip.Trigger` tracks two activity sources, hover and selection focus. The tooltip opens when
+either becomes active and closes only when both are inactive, so moving the mouse off a
+still-selected trigger keeps it up. Hover opens go through the delay; selection opens skip it.
 
-Setting `disabled` on the trigger stops it from opening (activity is still tracked, but open actions are dropped), closes the tooltip as soon as activity ends, and flipping `disabled` to true mid-hover resets the activity state and closes immediately. A disabled trigger also clears `Active` and `Selectable`, removing it from gamepad selection.
+`disabled` on the trigger drops open actions while still tracking activity, and flipping it true
+mid-hover closes immediately. It also clears `Active` and `Selectable`, removing the trigger from
+gamepad selection.
 
 ### Open delay and skip window
 
-Hover opens wait for a delay before showing. The delay resolves from `Root`'s `delayDuration` if set, otherwise the `Provider`'s `delayDuration` (default `700` ms). A resolved delay of `0` (or less) opens synchronously — set `delayDuration={0}` on a root for an instant tooltip. Leaving the trigger cancels any pending open, and unmounting the root cancels it too.
+The delay resolves from `Root`'s `delayDuration` if set, otherwise the `Provider`'s (default `700`
+ms). A resolved delay of `0` or less opens synchronously. Leaving the trigger cancels a pending
+open, and so does unmounting the root.
 
-The skip window lives on the provider: every open — hover, selection, or a controlled open through the trigger — stamps a timestamp, and when the next hover open starts within `skipDelayDuration` (default `300` ms) of it, the wait is shortened to at most that skip window. Moving between adjacent triggers under one provider therefore feels instant instead of re-waiting the full delay.
+The skip window lives on the provider: every open stamps a timestamp, and a hover open starting
+within `skipDelayDuration` (default `300` ms) waits at most that long. Moving between adjacent
+triggers therefore feels instant instead of re-waiting the full delay.
 
 ### Positioning
 
-`Tooltip.Content` positions itself with popper, anchored to the trigger ref. Set `placement` for the preferred side (`"top"`, `"bottom"`, `"left"`, or `"right"`), `sideOffset` for the gap from the trigger, `alignOffset` to shift along the side, and `collisionPadding` for the minimum distance kept from the viewport edges. Until popper has measured and positioned the content it is parked far off-screen, so it never flashes at the wrong spot; the entrance motion also waits for positioning before it plays.
+`Tooltip.Content` positions itself with popper against the trigger ref, taking `placement`,
+`sideOffset`, `alignOffset` and `collisionPadding`. Until popper has measured and positioned it, the
+content is parked off-screen and the entrance is held back, so it never flashes at the wrong spot.
 
 ### Layering
 
-`Tooltip.Portal` renders the content into a `ScreenGui` outside the local component tree. With no props it reuses the surrounding portal context; pass `container` to target a specific `PlayerGui` or `displayOrderBase` to order the generated `ScreenGui` against other layered surfaces — either prop switches the portal onto its own provider with those overrides.
+`Tooltip.Portal` renders the content into a `ScreenGui` outside the local tree, reusing the
+surrounding portal context by default. Pass `container` or `displayOrderBase` to override it —
+either switches the portal onto its own provider.
 
 ### Dismissal
 
-`Tooltip.Content` runs as a non-modal dismissable layer: it never blocks interaction behind it, and an outside interaction closes it. `onPointerDownOutside` fires for outside presses and `onInteractOutside` for other outside interactions, both before the close, so you can observe (or record) the interaction. Dismissal goes through the same `setOpen` path as hover, so controlled tooltips see it as an `onOpenChange(false)` request.
+The content is a non-modal dismissable layer: it never blocks interaction behind it, and an outside
+interaction closes it. `onPointerDownOutside` and `onInteractOutside` fire before the close.
+Dismissal goes through the same `setOpen` path as hover, so a controlled tooltip sees it as
+`onOpenChange(false)`.
 
 ### Motion and presence
 
-`Tooltip.Content` wraps its children in a `frame` and runs no motion of its own. Pass a `transition` to animate it — `createPopperEntranceRecipe(placement)` keyed to the **resolved** placement slides and fades from the trigger's actual side, even after a collision flip. Pass `forceMount` to keep the content mounted while closed and through its exit, bypassing the presence wrapper when you drive visibility yourself. With `asChild`, your single child is rendered inside the positioned surface with its position zeroed and its `Visible` bound to the motion state.
+The content wraps its children in a `frame` and runs no motion of its own.
+`createPopperEntranceRecipe(placement)` keyed to the **resolved** placement slides and fades from
+the trigger's actual side, even after a flip. `forceMount` keeps it mounted while closed and through
+its exit. Under `asChild`, your child renders inside the positioned surface with its position zeroed
+and `Visible` bound to the motion state.
 
 <Callout title="The skip window needs a Provider">
-Without a `Tooltip.Provider`, each tooltip still gets the 700 ms default delay, but there is no shared skip window — every hover re-waits the full delay. Wrap a region in a provider whenever neighboring tooltips should hand off instantly, and use `Root`'s own `delayDuration` for per-tooltip overrides.
+Without a `Tooltip.Provider` each tooltip still gets the 700 ms default delay, but there is no shared skip window, so every hover re-waits it. Wrap a region in a provider whenever neighbouring tooltips should hand off instantly.
 </Callout>
 
 <Callout title="Selection opens skip the delay">
-Only hover opens are delayed. `SelectionGained` opens immediately, so gamepad users never wait — and if a delayed hover open is pending when selection arrives, the open simply happens right away. Design your content to be readable at instant-open speeds.
+Only hover opens are delayed. `SelectionGained` opens immediately, and a pending hover open resolves right away when selection arrives — so design content to be readable at instant-open speeds.
 </Callout>
 
 <Callout title="The default trigger is a transparent placeholder">
-Without `asChild`, `Tooltip.Trigger` renders a transparent 140x36 `textbutton` labeled "Tooltip Trigger" — handy for wiring, not for shipping. In real UI, pass `asChild` and project the hover/selection handlers and anchor ref onto your own button; the slot's `Active` and `Selectable` follow the `disabled` prop.
+Without `asChild`, `Tooltip.Trigger` renders a transparent 140x36 placeholder — handy for wiring, not for shipping. Pass `asChild` and project the hover and selection handlers and anchor ref onto your own button; the slot's `Active` and `Selectable` follow `disabled`.
 </Callout>
 
 ## API reference

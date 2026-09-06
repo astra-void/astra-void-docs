@@ -16,13 +16,13 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
-Radio Group is the primitive for picking exactly one option from a set: difficulty selectors, team pickers, quality settings, and any mutually-exclusive choice. `Root` owns the selected value; `Item` registers itself in the group, reflects whether it is checked, and handles activation and directional navigation; `Indicator` reveals a marker on the selected item.
-
-Reach for Radio Group when a choice is **single-select**, the options should be **navigable as a unit** with the arrow keys or a gamepad, and selection should **follow focus** the way native radio groups do. For a choice that lives behind a trigger and opens in a popup, [Select](/lattice-ui/components/select/) is usually the better fit.
+Radio Group is the primitive for picking exactly one option from a set. `Root` owns the value,
+`Item` registers itself and handles activation and directional navigation, and `Indicator` marks the
+selected one. Reach for it when a choice is **single-select**, the options should be **navigable as
+a unit**, and selection should **follow focus** the way native radio groups do. For a choice behind
+a trigger, [Select](/lattice-ui/components/select/) fits better.
 
 ## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
 
 <LoomPreview scene="RadioGroupExampleScene" height={300} />
 
@@ -34,7 +34,8 @@ import { RadioGroup } from "@lattice-ui/react-radio-group";
 
 ## Anatomy
 
-Wrap a set of `Item`s in a `Root`. Each `Item` carries a `value` and may contain an `Indicator` that shows only while that item is checked. `Root` renders no instance of its own — it only provides context — so the surrounding container and layout are yours (see [How it behaves](#root-renders-no-container)).
+Each `Item` carries a `value` and may contain an `Indicator` that shows only while checked. `Root`
+renders no instance of its own, so the container and layout are yours.
 
 <PrimitiveAnatomy title="RadioGroup anatomy">
 
@@ -58,7 +59,8 @@ Wrap a set of `Item`s in a `Root`. Each `Item` carries a `value` and may contain
 
 ### Basic usage
 
-The smallest possible group: uncontrolled state seeded with `defaultValue` and the default item visuals. Each default item is a `textbutton` labeled with its own `value` and tinted by whether it is checked, which makes it useful for wiring things up before you style anything. Because `Root` renders no container, the group borrows the layout of whatever frame it sits in.
+Uncontrolled state seeded with `defaultValue`. Because `Root` renders no container, the group
+borrows the layout of whatever frame it sits in.
 
 ```tsx title="BasicRadioGroup.tsx"
 import { RadioGroup } from "@lattice-ui/react-radio-group";
@@ -83,7 +85,8 @@ export function BasicRadioGroup() {
 
 ### Controlled group
 
-Pass `value` and `onValueChange` when something outside the group needs to read or set the choice — persisting a setting, syncing with a server, or resetting from elsewhere. `onValueChange` fires with the newly selected value and never with `undefined`, so it is safe to store directly.
+Pass `value` and `onValueChange` when something outside the group needs to read or set the choice.
+It fires with the newly selected value and never with `undefined`, so it is safe to store directly.
 
 ```tsx title="QualitySetting.tsx"
 import { useState } from "@rbxts/react";
@@ -115,7 +118,9 @@ export function QualitySetting(props: { onSave: (quality: string) => void }) {
 
 ### Orientation and arrow keys
 
-`orientation` picks the arrow-key axis: a vertical group (the default) moves on `Up`/`Down`, a horizontal group on `Left`/`Right`. The prop does not lay the items out — pair it with a `uilistlayout` whose `FillDirection` matches so the keys move the way the group looks. Movement clamps at both ends rather than wrapping, so holding `Right` on the last item keeps it selected.
+`orientation` picks the arrow-key axis: vertical (the default) moves on `Up`/`Down`, horizontal on
+`Left`/`Right`. It does not lay the items out — pair it with a matching `uilistlayout`
+`FillDirection`. Movement clamps at both ends rather than wrapping.
 
 ```tsx title="TeamPicker.tsx"
 import { useState } from "@rbxts/react";
@@ -146,7 +151,9 @@ export function TeamPicker() {
 
 ### Card-style items with asChild
 
-Use `asChild` to project the item behavior — activation, gamepad selection, and the arrow-key wiring — onto your own button, and place an `Indicator` inside it as the selection dot. The item no longer touches your element's color, so branch on the checked state yourself. The indicator only animates if you give it a `transition`.
+Use `asChild` to project activation, gamepad selection and the arrow-key wiring onto your own
+button, with an `Indicator` inside it as the dot. The item never touches your element's colour, so
+branch on the checked state yourself.
 
 ```tsx title="DifficultyCards.tsx"
 import { useState } from "@rbxts/react";
@@ -209,7 +216,9 @@ export function DifficultyCards() {
 
 ### Disabled items
 
-`disabled` on an item makes it inert and removes it from navigation entirely: it cannot be activated, it drops out of gamepad selection, and arrow movement resolves the next item from the enabled entries only — so stepping "through" a disabled item lands on the next enabled one. Setting `disabled` on `Root` freezes the whole group instead. Here a locked mode stays visible but cannot be chosen.
+`disabled` on an item makes it inert and removes it from navigation: it cannot be activated, drops
+out of gamepad selection, and arrow movement steps over it to the next enabled entry. `disabled` on
+`Root` freezes the whole group.
 
 ```tsx title="GameModePicker.tsx"
 import { useState } from "@rbxts/react";
@@ -240,7 +249,9 @@ export function GameModePicker() {
 
 ### Dynamic item lists
 
-Items register with the group on mount and unregister on unmount, and directional navigation walks that registry in **mount order** (see [How it behaves](#item-registration-order)). For a list that grows at runtime, appending to the end keeps mount order and visual order aligned; inserting into the middle of the array renders in the middle but navigates last, so prefer append-only growth or a `LayoutOrder` that mirrors mount order.
+Directional navigation walks the registry in **mount order**. For a list that grows at runtime,
+appending keeps mount and visual order aligned; inserting into the middle renders in the middle but
+navigates last, so prefer append-only growth or a `LayoutOrder` that mirrors mount order.
 
 ```tsx title="LoadoutPicker.tsx"
 import { useState } from "@rbxts/react";
@@ -280,31 +291,47 @@ export function LoadoutPicker() {
 
 ### Value and selection
 
-`RadioGroup.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage. With no `defaultValue`, the group starts with nothing selected until an item is activated. An `Item` is checked when its `value` equals the group value, and `onValueChange` is only ever called with a defined string — there is no way to clear the selection through interaction, matching native radio behavior.
+Controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage; with neither
+the group starts empty. An `Item` is checked when its `value` equals the group value, and
+`onValueChange` only ever receives a defined string — there is no way to clear the selection through
+interaction, matching native radio behavior.
 
 Activating an item calls the group's `setValue` with that item's value. When `Root` is `disabled`, `setValue` drops every change, so neither activation nor programmatic movement can alter the value; an individual `disabled` item just refuses its own activation.
 
 ### Activation
 
-An item selects itself on any of three inputs: `Activated` (click or tap), `Return`/`Space` via `InputBegan`, and `SelectionGained` — meaning that on a gamepad, merely moving selection onto an item commits it. The item is `Active` and `Selectable` only while enabled, so a disabled item drops out of gamepad selection and cannot fire any of these paths.
+An item selects itself on `Activated`, on `Return`/`Space`, and on `SelectionGained` — so on a
+gamepad, moving selection onto an item commits it. An item is `Active` and `Selectable` only while
+enabled.
 
 With `asChild`, these handlers are merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Orientation and arrow-key navigation
 
-`Root` takes an `orientation` of `"vertical"` (default) or `"horizontal"`, which selects the arrow-key axis each item listens on: `Up`/`Down` in a vertical group, `Left`/`Right` in a horizontal one; the other axis is ignored. A matching arrow press asks the group to move selection one step: the group resolves the next entry from the ordered registry, focuses it through the [focus manager](/lattice-ui/guides/focus-management/), and selects it in the same step — selection follows focus.
+`orientation` selects the arrow-key axis each item listens on; the other axis is ignored. A matching
+press moves selection one step: the group resolves the next entry from the ordered registry, focuses
+it through the [focus manager](/lattice-ui/guides/focus-management/), and selects it in the same
+step.
 
-Movement is computed over **available** entries only — an entry is skipped if it is disabled, its instance is not `Visible`, or it is not `Selectable`. The step index is clamped to the ends of that list, so movement never wraps: pressing past the last item is a no-op. If the currently selected item is itself unavailable (say it became disabled), the next forward move lands on the first available item and the next backward move on the last.
+Movement covers **available** entries only — an entry is skipped if it is disabled, not `Visible`,
+or not `Selectable` — and clamps to the ends, so it never wraps. If the selected item is itself
+unavailable, the next forward move lands on the first available item and the next backward move on
+the last.
 
 ### Item registration order
 
-Items register themselves with `Root` on mount and unregister on unmount, each stamped with a monotonically increasing `order` on its first render. An item keeps its order for its whole lifetime; remounting assigns a fresh, higher one. Directional navigation sorts the registry by this order, so navigation tracks **mount order rather than visual position**. Keep the two aligned: render items from one array, append new entries at the end, and lay them out with a `uilistlayout` whose `SortOrder` follows the same sequence.
+Each item is stamped with a monotonically increasing `order` on its first render and keeps it for
+its lifetime; remounting assigns a fresh, higher one. Navigation sorts by that order, so it tracks
+**mount order rather than visual position**. Keep the two aligned: render from one array, append new
+entries, and lay them out with a matching `SortOrder`.
 
 ### Item rendering and color
 
 An `Item` renders an unstyled `textbutton` — no size, no label, no colors. It does not render `value` as its text; pass a `Text` of your own, or children.
 
-Its `BackgroundColor3` is yours as of 0.7.0. The item used to animate between a fixed accent palette with no opt-out, which is also why `RadioGroup.Item` no longer accepts a `transition` — that prop existed only to time the removed color animation. Derive the color from the checked state and animate it yourself if you want it to ease.
+The item never writes `BackgroundColor3`, which is why it accepts no `transition` — that prop only
+ever timed a colour animation the primitive no longer runs. Derive the colour from the checked state
+and animate it yourself.
 
 ### Indicator presence and motion
 
@@ -312,18 +339,20 @@ Its `BackgroundColor3` is yours as of 0.7.0. The item used to animate between a 
 
 ### Root renders no container
 
-`RadioGroup.Root` renders no instance — it only provides context — so its children are parented to whatever frame surrounds it. Supply the container and `uilistlayout` yourself, which also means one group's items can share a layout with neighboring elements (a heading, a divider) without extra nesting.
+`RadioGroup.Root` renders no instance, so its children parent to whatever frame surrounds it. Supply
+the container and layout yourself — which also lets a group's items share a layout with neighbouring
+elements without extra nesting.
 
 <Callout title="Selection follows focus">
-On a gamepad, moving selection onto an item selects it immediately (via `SelectionGained`), and arrow navigation both focuses and selects in one step. This matches the native radio pattern, but it means a group should not be the default-selected element if you do not want the first hover to commit a choice.
+On a gamepad, moving selection onto an item selects it immediately, and arrow navigation focuses and selects in one step. That matches the native radio pattern, but means a group should not be the default-selected element unless you want the first hover to commit a choice.
 </Callout>
 
 <Callout title="Arrow movement clamps at the ends">
-Directional movement clamps to the first and last available items instead of wrapping around. Pressing past either end keeps the current selection, and disabled or invisible items are stepped over as if they were not there.
+Movement clamps to the first and last available items rather than wrapping, and steps over disabled or invisible ones as if they were not there.
 </Callout>
 
 <Callout title="The primitive tints the item">
-Before 0.7.0 the item drove your element's `BackgroundColor3` between fixed checked and unchecked accents, and `transition` timed that animation. Both are gone: the item never writes color, and `RadioGroup.Item` no longer accepts `transition`. A background you set stays put.
+The item never writes colour, and accepts no `transition`. A background you set stays put.
 </Callout>
 
 ## API reference

@@ -16,13 +16,13 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
-Accordion is the primitive for a stack of disclosure sections where each section can expand to reveal content: FAQ lists, settings groups, inventory categories, and quest logs. It owns which items are open, keyed by a string `value`, and handles the reveal/exit motion of each section's content so your component only renders the header, trigger, and body.
+Accordion is the primitive for a stack of disclosure sections: FAQ lists, settings groups, inventory
+categories, quest logs. It owns which items are open, keyed by a string `value`, and handles each
+section's reveal and exit motion.
 
 Reach for Accordion when you have **multiple labelled sections** that share an expansion policy — only one open at a time (`single`) or any number open at once (`multiple`) — and you want that policy, plus per-section motion, handled for you.
 
 ## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
 
 <LoomPreview scene="AccordionExampleScene" height={290} />
 
@@ -63,7 +63,9 @@ Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wra
 
 ### Basic accordion
 
-An uncontrolled `single` root seeded with `defaultValue`. Every part renders unstyled — the trigger is a `textbutton` with no label of its own, so pass `Text` and a size or you will have a working accordion you cannot see. Because `Root` renders no instance, the item frames sit directly under your layout container.
+An uncontrolled `single` root seeded with `defaultValue`. Every part renders unstyled, so pass the
+trigger a `Text` and a size or you get a working accordion you cannot see. Because `Root` renders no
+instance, the item frames sit directly under your layout container.
 
 ```tsx title="FaqAccordion.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -208,7 +210,9 @@ export function SettingsAccordion() {
 
 ### Controlled accordion
 
-Pass `value` and `onValueChange` when something outside the accordion needs to open sections — a "track quest" button, a deep link from a notification, or a reset. In single mode the value is a string, and `""` means nothing is open, so external code can both jump to a section and collapse everything.
+Pass `value` and `onValueChange` when something outside needs to open sections — a "track quest"
+button, a deep link, a reset. In single mode the value is a string and `""` means nothing is open,
+so external code can both jump to a section and collapse everything.
 
 ```tsx title="QuestLog.tsx"
 import { useState } from "@rbxts/react";
@@ -265,7 +269,9 @@ export function QuestLog() {
 
 ### Rotating chevron trigger
 
-Use `asChild` on `Trigger` to project the toggle behavior onto your own button and add a chevron that flips when the section opens. Item open state is not exposed to your components (see [How it behaves](#open-state-stays-internal)), so control the root and derive `open` from your own value — which is also what you branch on for the trigger's colors, since the primitive no longer writes them.
+Use `asChild` on `Trigger` to project the toggle onto your own button and add a chevron that flips
+when the section opens. Item open state is not exposed to your components, so control the root and
+derive `open` from your own value — which is also what you branch on for the trigger's colours.
 
 ```tsx title="ChevronAccordion.tsx"
 import { useState } from "@rbxts/react";
@@ -336,7 +342,9 @@ export function ChevronAccordion() {
 
 ### Keeping content mounted
 
-`forceMount` keeps the content frame mounted while its item is closed (visibility is still bound to presence), so children keep their state and you can measure or drive motion yourself. Pair it with `transition` to give the body a reveal — here `createSurfaceRevealRecipe` for a 12-pixel rise over 0.2 seconds.
+`forceMount` keeps the content frame mounted while closed, with visibility still bound to presence,
+so children keep their state and you can measure or drive motion yourself. Pair it with `transition`
+for a reveal.
 
 ```tsx title="PatchNotes.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -378,10 +386,12 @@ export function PatchNotes() {
 
 `Accordion.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage. State is stored as the item value(s) that are open, not booleans. The `type` prop selects the policy:
 
-- `type="single"` (the default) keeps at most one item open. The value is treated as a single string; opening a new item replaces the previously open one, and `onValueChange` receives a string (`""` when everything is collapsed).
-- `type="multiple"` lets any number of items be open at once. The value is an array of open item values, de-duplicated, and `onValueChange` receives an array.
+- `type="single"` (the default) keeps at most one item open. Opening a new one replaces the last, and `onValueChange` receives a string — `""` when everything is collapsed.
+- `type="multiple"` allows any number. The value is a de-duplicated array, and `onValueChange` receives an array.
 
-The root normalizes whatever shape it is given: in single mode an array collapses to its first entry and an empty string means nothing is open; in multiple mode a lone string is wrapped and duplicates are dropped. The same normalization and toggle logic are exported as [`normalizeAccordionValue` and `nextAccordionValues`](#helpers) if you need to mirror them outside the tree.
+The root normalizes whatever shape it is given: in single mode an array collapses to its first
+entry; in multiple mode a lone string is wrapped and duplicates dropped. The same logic is exported
+as [`normalizeAccordionValue` and `nextAccordionValues`](#helpers).
 
 `Accordion.Item` reads the root's open values and considers itself open when its `value` is in that set. Each `Accordion.Trigger` toggles its own item through the shared toggle, so controlled and uncontrolled accordions behave identically.
 
@@ -391,11 +401,17 @@ The root normalizes whatever shape it is given: in single mode an array collapse
 
 ### Structure and layout
 
-`Accordion.Root` renders no instance of its own — only a context provider — so item frames become direct children of whatever container you render around the accordion, and a `uilistlayout` on that container stacks them. `Accordion.Item` and `Accordion.Header` each render a transparent frame with no size of its own (or your element via `asChild`). Every part forwards GUI props onto the instance it renders, so size and position them yourself — nothing auto-flows inside an item.
+`Accordion.Root` renders no instance, so item frames become direct children of whatever container
+surrounds the accordion, and a `uilistlayout` there stacks them. `Item` and `Header` each render a
+transparent frame with no size of its own. Every part forwards GUI props onto the instance it
+renders — nothing auto-flows inside an item.
 
 ### Focus and selection
 
-`Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and also on the `Return` and `Space` keys via `InputBegan`, so gamepad and keyboard activation both work without extra wiring. A disabled item's trigger ignores activation and key input alike, and drops `Active`. The trigger sets `Selectable={false}` on itself; if you need it reachable by gamepad selection, render your own selectable element through `asChild`.
+`Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and on `Return`/`Space`, so
+gamepad and keyboard activation work without extra wiring. A disabled item's trigger ignores both
+and drops `Active`. It sets `Selectable={false}` on itself — render your own selectable element
+through `asChild` if you need gamepad reach.
 
 With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, event handlers, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
@@ -407,11 +423,15 @@ The trigger's `BackgroundColor3` is yours as of 0.7.0. It used to animate betwee
 
 `Accordion.Content` is presence-driven: it mounts when its item opens and unmounts when it closes, holding through any exit transition first. It runs no motion of its own and renders an unstyled frame.
 
-To animate it, pass a `PresenceMotionConfig` as `transition` — `createSurfaceRevealRecipe()` from `@lattice-ui/react-motion` gives the rise-and-fade this part used to run. That recipe animates `BackgroundTransparency`, so give the body a background or animate its children instead. Pass `forceMount` to keep it mounted while closed and through its exit, bypassing the presence wrapper so you can drive motion or measurement yourself. With `asChild`, your single child element is rendered in place of the frame the part renders and its `Visible` is bound to the presence state.
+To animate it, pass a `PresenceMotionConfig` as `transition`; `createSurfaceRevealRecipe()` gives a
+rise-and-fade. It animates `BackgroundTransparency`, so give the body a background or animate its
+children instead. `forceMount` keeps it mounted while closed and through its exit. Under `asChild`,
+your element replaces the frame and its `Visible` is bound to presence.
 
 ### Open state stays internal
 
-The accordion's item context (open, value, disabled) is internal to the package — there is no hook or render-prop for reading whether an item is open from your own components. When your visuals need to branch on open state, like the rotating chevron above, control the root with `value`/`onValueChange` and derive the flag from your own state.
+The item context is internal to the package — there is no hook for reading whether an item is open.
+When your visuals need to branch on it, control the root and derive the flag from your own state.
 
 <Callout title="Controlled vs uncontrolled values">
 Match the shape of `value`/`defaultValue` to `type`. With `type="single"` pass a string; with `type="multiple"` pass an array of strings. The root normalizes mismatches, but keeping the shape consistent makes your `onValueChange` handler predictable.

@@ -16,13 +16,12 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
-Combobox is the primitive for a filterable, single-value picker: searchable selects, command palettes, and autocomplete fields. It coordinates value state, input text, query filtering, item registration, positioning, and dismissal so your component only has to render the field, the listbox, and the items.
-
-Reach for Combobox when a select needs **type-to-filter** behavior: an input narrows a registered list of items by text, the user picks one, and the chosen value drives the field. Combobox owns three pieces of state at once — the selected **value**, the **input text**, and the **open** state — and keeps them in sync, repairing a selection that no longer resolves to an enabled item so the field does not point at a value that no longer exists.
+Combobox is the primitive for a filterable, single-value picker: searchable selects, command
+palettes, autocomplete fields. Reach for it when a select needs **type-to-filter** behavior. It owns
+three pieces of state at once — the selected **value**, the **input text** and the **open** state —
+keeps them in sync, and repairs a selection that no longer resolves to an enabled item.
 
 ## Preview
-
-The component running live in the browser — the same `@rbxts/react` tree Roblox renders, fully interactive.
 
 <LoomPreview scene="ComboboxExampleScene" height={400} />
 
@@ -76,7 +75,9 @@ Compose the parts you need. `Root`, `Portal`, `Content`, and `Item` form the wor
 
 ### Basic filtered list
 
-An uncontrolled root, an input textbox as the anchor, and items on a plain list surface. Typing narrows the list in place — each item hides itself when it stops matching — and selecting an item sets the value, fills the field, and closes the list.
+An uncontrolled root, an input textbox as the anchor, and items on a plain list surface. Typing
+narrows the list in place, and selecting an item sets the value, fills the field and closes the
+list.
 
 Since 0.7.0 `textValue` no longer renders as the item's label, so each item is given a `Text` of its own here. `textValue` still drives filtering and the resolved value label; it defaults to `value`.
 
@@ -111,7 +112,11 @@ export function BiomePicker() {
 
 ### Controlled value and input
 
-Control both trios when something outside the combobox needs to read or drive them — persisting the selection, reporting the live query to a search service, or resetting the field from elsewhere. The two pieces are independent: `value`/`onValueChange` tracks the committed selection, while `inputValue`/`onInputValueChange` tracks the field text. Expect `onInputValueChange` to fire for programmatic syncs too — selecting an item sets the input to that item's text, and closing the list re-syncs it from the value.
+Control both when something outside the combobox needs to read or drive them. The two are
+independent: `value`/`onValueChange` tracks the committed selection,
+`inputValue`/`onInputValueChange` the field text. Expect `onInputValueChange` to fire for
+programmatic syncs too — selecting sets the input to the item's text, and closing re-syncs it from
+the value.
 
 ```tsx title="QuestSearch.tsx"
 import { useState } from "@rbxts/react";
@@ -164,12 +169,14 @@ export function QuestSearch() {
 ```
 
 <Callout title="Uncontrolled usage">
-Omit `value`/`onValueChange` (and `inputValue`/`open`) and pass `defaultValue`, `defaultInputValue`, or `defaultOpen` instead to let Combobox own its state. Each of value, input text, and open state can be controlled independently — control only the pieces something outside the combobox needs to drive.
+Pass `defaultValue`, `defaultInputValue` or `defaultOpen` to let Combobox own its state. Value, input text and open state are independently controllable — control only what something outside needs to drive.
 </Callout>
 
 ### Custom filter function
 
-The root's `filterFn` decides whether each item matches the current query. The default is a case-insensitive substring match; swap it for prefix matching, token search, or locale-aware comparison. Define the function at module scope (or memoize it) so its identity stays stable — it is shared through context, and a new function every render churns every item.
+The root's `filterFn` decides whether each item matches the query; the default is a case-insensitive
+substring match. Define it at module scope or memoize it — it is shared through context, and a new
+function every render churns every item.
 
 ```tsx title="CommandPalette.tsx"
 import { Combobox } from "@lattice-ui/react-combobox";
@@ -207,7 +214,9 @@ export function CommandPalette() {
 
 ### Groups and labels
 
-`Group`, `Label`, and `Separator` structure longer lists. They are purely visual: they do not affect filtering or selection, and a label is not query-aware — it stays visible even when every item under it is filtered out. All three render unstyled — `Group` is a bare frame with no layout or sizing of its own, so give it a layout and, for a growing list, `AutomaticSize`.
+`Group`, `Label` and `Separator` are purely visual: they do not affect filtering or selection, and a
+label stays visible even when every item under it is filtered out. All three render unstyled, so
+give `Group` a layout and, for a growing list, `AutomaticSize`.
 
 ```tsx title="ServerRegionPicker.tsx"
 import { Combobox } from "@lattice-ui/react-combobox";
@@ -286,7 +295,10 @@ export function ServerRegionPicker() {
 
 ### Empty state when nothing matches
 
-Filtering hides items one by one — the listbox itself stays open and mounted even when every item is filtered out, and there is no built-in empty-state part. To show a "no matches" message, control `inputValue` and mirror the primitive's filtering with the exported `filterComboboxOptions` helper (it applies `defaultComboboxFilter` unless you pass the same custom `filterFn` you gave the root). When the match count hits zero, render your own label inside the content.
+Filtering hides items one by one, so the listbox stays open and mounted even when nothing matches,
+and there is no built-in empty-state part. To show "no matches", control `inputValue` and mirror the
+filtering with the exported `filterComboboxOptions` helper, then render your own label when the
+count hits zero.
 
 ```tsx title="SpellSearch.tsx"
 import { useState } from "@rbxts/react";
@@ -332,7 +344,10 @@ export function SpellSearch() {
 
 ### Custom input styling with asChild
 
-Use `asChild` on `Combobox.Input` to project the input behavior onto your own `textbox`. The primitive drives `Text`, `TextEditable`, `PlaceholderText`, `ClearTextOnFocus`, the text-change handler, and the anchor ref onto your element, so keep the `placeholder` prop on the `Combobox.Input` part (the slot's value wins) and put your styling in colors, strokes, corners, and padding.
+Use `asChild` on `Combobox.Input` to project the input behavior onto your own `textbox`. The
+primitive drives `Text`, `TextEditable`, `PlaceholderText`, `ClearTextOnFocus`, the change handler
+and the anchor ref, so keep `placeholder` on the part itself and put your styling in colours,
+strokes, corners and padding.
 
 ```tsx title="StyledCosmeticSearch.tsx"
 import { Combobox } from "@lattice-ui/react-combobox";
@@ -381,30 +396,37 @@ export function StyledCosmeticSearch() {
 
 ### Open state
 
-`Combobox.Root` is controllable. Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled (defaults to closed). `Combobox.Trigger` toggles the list on activation (and on `Return`/`Space`). `Combobox.Input` opens the list when it gains focus — with an empty query every item matches, so the user sees the full set and then types to narrow it — and typing keeps it open. Selecting an item closes the list. A disabled root refuses to open, but can still close.
+Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled.
+`Trigger` toggles on activation and on `Return`/`Space`. `Input` opens the list when it gains focus
+— with an empty query every item matches — and typing keeps it open. Selecting closes it. A disabled
+root refuses to open but can still close.
 
 ### Value and input state
 
-The selected **value** and the **input text** are separate, independently controllable pieces of state. Selecting an item sets the value and syncs the input to that item's display text; selecting a disabled item is ignored. Typing in the input updates the query (and opens the list) without changing the value until a selection is made; when the list closes, the input is re-synced from the current value so the field always shows the selected item.
+Value and input text are separate, independently controllable state. Selecting sets the value and
+syncs the input to that item's display text; a disabled item is ignored. Typing updates the query
+and opens the list without changing the value, and closing re-syncs the input from the value.
 
-While the list is open, Combobox reconciles the value against the item registry: a selected value that no longer resolves to an enabled registered item is replaced with the first enabled item. This repair only replaces an invalid selection — it never fills an empty one, so an untouched combobox stays empty until the user picks something. `onValueChange` fires only for defined values.
+While the list is open, a selected value that no longer resolves to an enabled registered item is
+replaced with the first enabled one. The repair never *fills* an empty selection, so an untouched
+combobox stays empty. `onValueChange` fires only for defined values.
 
 `Combobox.Value` displays the selected item's text, resolved from the item registry, or its `placeholder` when nothing is selected. `disabled` blocks all state changes; `readOnly` blocks input edits but still allows selection through items.
 
 ### Filtering
 
-Filtering is per-item, not per-list. `Combobox.Item` declares a `value` and an optional `textValue`
-— the text matched and displayed, defaulting to `value`. Each item evaluates the root's
-`filterFn(textValue, query)` itself: a non-matching item sets its own `Visible` to false and becomes
-non-interactive, both for the button the part renders and for your element under `asChild`. The
-content never removes or reorders nodes, so your layout simply collapses around hidden items.
+Filtering is per-item, not per-list. Each item evaluates the root's `filterFn(textValue, query)`
+itself, and a non-matching one sets its own `Visible` to false and becomes non-interactive — under
+`asChild` too. The content never removes or reorders nodes, so your layout collapses around hidden
+items.
 
-The active query is the text the user typed. Selecting an item syncs the field text without changing
-the open list's query, so the list does not collapse to the selected item at the moment of
-selection. When the list closes, the query is re-synced from the field text, so reopening from the
-trigger shows the list filtered by the selected item's text.
+The active query is the text the user typed. Selecting syncs the field text without changing the
+open list's query, so the list does not collapse to the selected item at that moment. Closing
+re-syncs the query from the field text, so reopening shows the list filtered by the selection.
 
-The default filter is a case-insensitive plain substring match. The package also exports the pieces as plain functions — `defaultComboboxFilter`, `filterComboboxOptions`, and `resolveComboboxInputValue` — so you can mirror the primitive's filtering in your own logic, such as an empty-state check or an external result count.
+The default filter is a case-insensitive substring match. `defaultComboboxFilter`,
+`filterComboboxOptions` and `resolveComboboxInputValue` are exported as plain functions, so you can
+mirror the filtering in your own logic.
 
 ### Positioning
 
@@ -412,22 +434,24 @@ The default filter is a case-insensitive plain substring match. The package also
 
 ### Dismissal
 
-`Combobox.Content` participates in dismissable-layer behavior and is always **non-modal**, so the rest of the UI stays interactive while the list is open. The trigger and input are registered as inside refs, so interacting with them does not dismiss the list. Any other outside press closes it. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto those interactions before the list closes.
+`Combobox.Content` is always **non-modal**, so the rest of the UI stays interactive. The trigger and
+input are registered as inside refs; any other outside press closes the list. Use
+`onPointerDownOutside` and `onInteractOutside` to observe or veto first.
 
 ### Motion and presence
 
 `Combobox.Content` runs no motion of its own. Pass a `transition` to animate it — `createPopperEntranceRecipe(placement)` matches the `frame` the content renders and animates from the resolved placement. `forceMount` keeps the content mounted through its exit (useful when you drive motion yourself or need the node to persist).
 
 <Callout title="Three states, kept in sync">
-Combobox tracks value, input text, and open state separately and reconciles them automatically: selecting syncs the input, closing re-syncs the input from the value, and an invalid selection is repaired against the registry while the list is open. Control each piece only when you need to — mixing controlled value with uncontrolled input is fully supported.
+Combobox reconciles the three automatically: selecting syncs the input, closing re-syncs it from the value, and an invalid selection is repaired against the registry while the list is open. Mixing a controlled value with an uncontrolled input is fully supported.
 </Callout>
 
 <Callout title="Items hide themselves — there is no built-in empty state">
-Filtering works by each item toggling its own visibility, so the listbox stays open and mounted even when nothing matches. Detect zero matches yourself with `filterComboboxOptions` over your own option data (passing your custom `filterFn` if you use one) and render your own empty label, as in the [empty state example](#empty-state-when-nothing-matches).
+Each item toggles its own visibility, so the listbox stays open and mounted even when nothing matches. Detect zero matches with `filterComboboxOptions` over your own option data and render your own label — see the [empty state example](#empty-state-when-nothing-matches).
 </Callout>
 
 <Callout title="required is wiring-only">
-`required` is exposed on context for your own form/validation wiring and does not change interaction on its own. The open-list value repair runs regardless of `required`, and it never fills an empty value — if you need a selection before submit, validate `value !== undefined` in your form logic.
+`required` is exposed on context for your own validation wiring and changes no interaction. The value repair runs regardless and never fills an empty value, so validate `value !== undefined` yourself before submit.
 </Callout>
 
 ## API reference
