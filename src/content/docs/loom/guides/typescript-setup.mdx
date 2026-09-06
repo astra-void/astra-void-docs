@@ -139,6 +139,11 @@ If your preview app is a separate package that imports your UI library by worksp
 TypeScript source at *runtime*, and TypeScript resolves them through the workspace link at *check*
 time. The two paths agree.
 
+**Your own aliases resolve at runtime too, since `0.12.0`.** The preview plugin reads `baseUrl` and
+`paths` out of the project's `tsconfig.json`, so a project whose source imports non-relatively —
+`import { Button } from "@/ui/Button"` — starts at all. Before that release those imports resolved
+during a typecheck and nowhere else, and the preview failed on the first one it hit.
+
 ## Typechecking is optional
 
 Since esbuild ignores types entirely, a preview app that never runs `tsc` still renders. Whether to

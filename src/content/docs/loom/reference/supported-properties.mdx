@@ -13,7 +13,7 @@ import { Callout } from "@/components/docs/mdx";
 level. This page answers "does `AutomaticCanvasSize` work?" at the property level, so you know
 exactly how far a preview can be trusted before you open Studio.
 
-Everything below describes loom `0.11.0`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
+Everything below describes loom `0.12.0`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
 `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
 
 ## How to read this
@@ -32,10 +32,13 @@ edits.
 <Callout title="An enum prop can be written as a bare string">
 The engine takes the string wherever it takes the item — `AutomaticSize="XY"` *is*
 `Enum.AutomaticSize.XY`, and roblox-ts's own React typings offer both spellings. Loom reads either,
-everywhere, as of `0.9.1`. Before that release the Scene IR encoded a string happily but every place
-the adapters read one *back* off an instance insisted on an `EnumItem`: a label written
-`AutomaticSize="XY"` was auto-sized by the layout and measured by nobody, so it collapsed to zero and
-spilled its text. `FontSize` written as a string was ignored the same way.
+everywhere, as of `0.9.1`. Before that release the Scene IR encoded a string happily, but every place the adapters read one *back* off an instance insisted on an `EnumItem`. A label written `AutomaticSize="XY"` was auto-sized by the layout and measured by nobody, so it collapsed to zero and spilled its text. `FontSize` written as a string was ignored the same way.
+</Callout>
+
+<Callout title="`EnumItem.Value` changed in `0.12.0`">
+It reports the engine's own number now, rather than the item's position in loom's declaration list.
+Code that compares `.Value` against a hardcoded integer may need updating; comparing items directly,
+or matching on `.Name`, is unaffected — as is the layout engine, which matches by name.
 </Callout>
 
 ## Instances
@@ -126,10 +129,11 @@ inside a flex item inside a card), and the card — the one node with a real wid
 actually runs out.
 
 The re-wrap settles inside the paint that caused it. The wrap width comes from the layout that paint
-produces, so the first measurement after a container narrows is still against the old width; the
-adapter re-encodes and re-lays-out until the two agree (up to four passes, then it defers to the next
-frame) and patches the DOM once, with the settled result. Rendering the first pass would put a label
-wider than its container on screen for a frame — which, during a live window drag, is every frame.
+produces, so the first measurement after a container narrows is still against the old width. The
+adapter re-encodes and re-lays-out until the two agree — up to four passes, then it defers to the
+next frame — and patches the DOM once, with the settled result. Rendering the first pass would put a
+label wider than its container on screen for a frame — which, during a live window drag, is every
+frame.
 
 A `RichText` string is measured run by run in the font its own tags ask for, so a bold or resized run
 does not clip. An empty `TextBox` is measured against its `PlaceholderText`, which is what it
@@ -139,12 +143,12 @@ Both adapters do this. The `vide` adapter measured by splitting on newlines only
 `TextWrapped` did nothing there and the same scene laid out differently through vide than through
 react — the one thing a shared Scene IR is supposed to rule out.
 
-The wrap width also carries the `UIPadding` insets in between, **including scale ones**: the layout
+The wrap width also carries the `UIPadding` insets in between, **including scale ones**. The layout
 engine resolves a scale inset against the node's own width where its X axis is a real one, and
-against zero where the axis is automatic (a scale inset on an automatic axis is circular — the width
-sets the padding sets the width). Until `0.8.1` the adapter read offsets only, which is the right
-answer for the automatic case and wrong for the other, so a wrapped label under a
-`PaddingLeft={new UDim(0.15, 0)}` ancestor was measured against a width that ignored the inset and
+against zero where the axis is automatic — a scale inset on an automatic axis is circular, since the
+width sets the padding sets the width. Until `0.8.1` the adapter read offsets only — the right
+answer for the automatic case and wrong for the other. A wrapped label under a
+`PaddingLeft={new UDim(0.15, 0)}` ancestor was measured against a width that ignored the inset, and
 came out with a box built for fewer lines than it was then painted with.
 
 ### `TextSize` is a face height, not a font size
@@ -162,10 +166,10 @@ Which ratio to divide by is itself calibrated per family — see
 [`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
 
 Until `0.8.1` the text overlay was also clipped to the box the layout computed, so the browser's
-taller line boxes had nowhere to go and the clip took the difference out of the glyphs — a
-paragraph's last line lost the tails of its `y`, `p` and `g`, and at a large `TextSize` the first line
-lost the tops of its ascenders. The clip rect carries that overhang now, with padding handing the
-content box its original height straight back. Nothing about the layout moves: `TextBounds`,
+taller line boxes had nowhere to go and the clip took the difference out of the glyphs. A
+paragraph's last line lost the tails of its `y`, `p` and `g`, and at a large `TextSize` the first
+line lost the tops of its ascenders. The clip rect carries that overhang now, with padding handing
+the content box its original height straight back. Nothing about the layout moves: `TextBounds`,
 `AbsoluteSize` and every rect around the label are the values they were, and a label still clips its
 own text at its left and right edges.
 
@@ -174,7 +178,7 @@ own text at its left and right edges.
 Roblox bounds automatic growth: an object with `AutomaticSize` on an axis grows up to the maximum
 size its parent allows, and a `TextWrapped` label grows until that maximum and only *then* wraps.
 Until `0.6.4` loom grew unbounded, so any content with an irreducible minimum — a row of buttons, a
-long word — pushed its container past the slot positioning it, and at a narrow viewport a `45%`-wide
+long word — pushed its container past the slot positioning it. At a narrow viewport a `45%`-wide
 card grew over the card beside it.
 
 Every auto-sized node now carries the ceiling its parent leaves, inherited through the padding in
@@ -219,14 +223,9 @@ Roblox's thumbnail API sends no CORS headers, so the browser cannot resolve an a
 
 - **Under a dev server** (`loom preview`, the embedded server, Next dev) the id is resolved
   server-side and answered as a redirect from `<base>__loom/asset/<id>`.
-- **In a static build** (`loom build`, `vite build`) there is no server later, so the ids are
-  resolved *at build time*, the images are downloaded into the output, and a `__loom/assets.json`
-  manifest points the page at them — see [Static builds and
-  embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
+- **In a static build** (`loom build`, `vite build`) there is no server later. The ids are resolved *at build time*, the images downloaded into the output, and a `__loom/assets.json` manifest points the page at them — see [Static builds and embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
 
-The build finds those ids two ways: it reads the emitted output for `rbxassetid://<digits>`, and —
-since `0.9.5` — it mounts each gallery target in node and reads the live tree, which is what catches
-an id composed at runtime (`` `rbxassetid://${iconId}` ``). An image the first render never reaches
+The build finds those ids two ways. It reads the emitted output for `rbxassetid://<digits>`, and — since `0.9.5` — it mounts each gallery target in node and reads the live tree, which catches an id composed at runtime (`` `rbxassetid://${iconId}` ``). An image the first render never reaches
 is still missed. Anywhere else, install your own resolver with `setImageResolver` from
 `@loom-dev/renderer`.
 </Callout>
@@ -253,9 +252,7 @@ is still missed. Anywhere else, install your own resolver with `setImageResolver
 | `VerticalScrollBarInset` `HorizontalScrollBarInset` | **Accepted** | The bar is always painted *over* the canvas — Roblox's `ScrollBarInset.None`, which is also the engine's default. `AbsoluteWindowSize` reserves nothing for it, so a layout that budgets for an inset bar comes out that many pixels wider here than in Studio. |
 
 <Callout title="Scrolling only started working in `0.9.3`">
-A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, and
-loom capped every child's automatic growth at its parent's box — right for a `45%` column, wrong for
-a canvas, where outgrowing the window is the whole point. The column came out exactly the window's
+A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, and loom capped every child's automatic growth at its parent's box. Right for a `45%` column; wrong for a canvas, where outgrowing the window is the whole point. The column came out exactly the window's
 height, so the canvas equalled the window, nothing overflowed and nothing scrolled. And with no bar
 drawn, a frame that *did* have something to scroll looked like a static clipped box.
 
@@ -322,8 +319,8 @@ each line's own children are the cells:
 A column is as wide as its widest cell and a row as tall as its tallest, both measured against the
 **table's** content box — so a `0.25` scale cell is a quarter of the table, not of its row. A line
 spans the whole table on its minor axis, which is what the engine reports for the row frames
-themselves; the line's own `Size` is ignored, and so is any `UIPadding` on it (insetting each line
-separately would slide its cells off the columns they define).
+themselves. The line's own `Size` is ignored, and so is any `UIPadding` on it — insetting each line
+separately would slide its cells off the columns they define.
 
 `FillEmptySpaceColumns` / `FillEmptySpaceRows` scale the tracks **proportionally** so the table spans
 its container — in both directions, so a table whose natural width overruns is squeezed by the same
@@ -369,16 +366,21 @@ with a Roblox-shaped name. So a `ref` behaves the way a `ref` does in a place.
 | --- | --- |
 | Identity | `ClassName`, `Name`, `Parent`, `IsA`, `GetFullName` |
 | Tree | `GetChildren`, `GetDescendants`, `FindFirstChild` (with `recursive`), `FindFirstChildOfClass`, `FindFirstAncestor`, `FindFirstAncestorOfClass`, `FindFirstAncestorWhichIsA`, `IsDescendantOf` |
-| Lifetime | `Destroy`, `ClearAllChildren`, and the `Destroying` / `ChildAdded` / `ChildRemoved` / `AncestryChanged` signals |
+| Lifetime | `Destroy`, `ClearAllChildren`, `Clone` with `Archivable` — *(`0.12.0`)* — and the `Destroying` / `ChildAdded` / `ChildRemoved` / `AncestryChanged` signals |
 | Change notification | `GetPropertyChangedSignal(name)` and `Changed`, which fires with the property name |
 | Geometry | `AbsolutePosition` / `AbsoluteSize`, written back after each layout pass and signalled only when they actually move |
 | Attributes | `GetAttribute`, `SetAttribute`, `GetAttributes`, `GetAttributeChangedSignal`, `AttributeChanged` — *(`0.11.0`)* |
 | `TextBox` | `CaptureFocus`, `ReleaseFocus`, `IsFocused` |
 | `BindableEvent` | `Event` and `Fire`, class-scoped so no other class answers for those names |
 
-**`WaitForChild` does not yield.** The runtime is synchronous, so it returns the child if it is already
-there and otherwise warns and returns `undefined` rather than blocking the frame. Code that waits on a
-child built later in the same render needs restructuring, not patience.
+**`WaitForChild` does not yield.** The runtime is synchronous, so it returns the child if it is
+already there and otherwise warns rather than blocking the frame. Code that waits on a child built
+later in the same render needs restructuring, not patience.
+
+**A property read before it is written answers with a typed default**, since `0.12.0` — `0` for a
+number, `""` for a string, the class's own default for a datatype — the way Roblox reflection does,
+rather than `undefined`. A UI that reads `frame.BackgroundTransparency` before setting it used to get
+`undefined` and propagate a `NaN` through whatever it computed.
 
 ### Attributes
 
@@ -407,17 +409,24 @@ A name a real place would refuse throws here rather than working in the preview 
 
 Pointer and keyboard input route through the real runtime, not DOM shims: `Activated`,
 `MouseButton1Click`, `InputBegan` / `InputChanged` / `InputEnded`, `UserInputService`, focus and
-`TextBox` editing all behave as in Roblox, including input-sinking. Only `TextButton`,
+`TextBox` editing all behave as in Roblox, including input-sinking.
+
+`0.12.0` closed the gap where the rest of the mouse events were **connectable but never dispatched**,
+which is worse than absent — a handler attached to one silently did nothing.
+`MouseButton1Down` / `MouseButton1Up`, `MouseButton2Click` and `MouseMoved` fire now, and keyboard
+input reaches the runtime at all, so `UserInputService.IsKeyDown` and a `KeyCode` comparison answer
+what the user actually pressed. `Enum.KeyCode` gained its digits, modifiers and gamepad buttons in the
+same release, which is what a keyboard-driven UI was missing to match against. Only `TextButton`,
 `ImageButton`, `TextBox`, `ScrollingFrame` and anything with `Active = true` sink pointer input —
 a transparent `Frame` is click-through, exactly as in Roblox.
 
-`Active` governs *sinking*, not *hearing*: a plain `Frame` with an `InputBegan` handler — a slider
-handle, say — is hit-testable whether or not it is `Active`, while a frame with no listeners stays
-click-through so a transparent positioning layer does not swallow clicks.
+`Active` governs *sinking*, not *hearing*. A plain `Frame` with an `InputBegan` handler — a slider
+handle, say — is hit-testable whether or not it is `Active`. A frame with no listeners stays
+click-through, so a transparent positioning layer does not swallow clicks.
 
 ## What this list is not
 
-It is a description of loom `0.11.0`, not a compatibility promise. The project is pre-1.0 and rows
+It is a description of loom `0.12.0`, not a compatibility promise. The project is pre-1.0 and rows
 move — an **Accepted** here is a gap someone can close without a breaking change. When a preview and
 Studio disagree and the property is not on this page, treat Studio as correct and
 [file it](https://github.com/astra-void/loom/issues).

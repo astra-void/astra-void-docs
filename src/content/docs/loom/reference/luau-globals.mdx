@@ -36,7 +36,9 @@ before it ever rendered. `bit32`, `utf8`, `debug` and `buffer` arrived in the sa
 | `debug` | `traceback`, `profilebegin`, `profileend`, `setmemorycategory`, `resetmemorycategory`, `info` |
 | `buffer` | `create`, `fromstring`, `tostring`, `len`, the `readi8`…`readf64` / `writei8`…`writef64` pairs, `readstring`, `writestring`, `copy`, `fill` |
 | `task` | `spawn`, `defer`, `delay`, `cancel`, `wait` — mapped onto browser timers |
-| `coroutine` | `create`, `wrap`, `status`, `running` — [inert](#the-stubs), for feature detection |
+| `coroutine` | `create`, `resume`, `yield`, `wrap`, `status`, `running`, `isyieldable`, `close` — real since 0.12.0 |
+| `Random` | A seeded generator with `NextInteger` / `NextNumber` / `NextUnitVector` / `Clone`. Added in 0.12.0 |
+| `DateTime` | `now`, `fromUnixTimestamp`, the format and component readers. Added in 0.12.0 |
 | Free functions | `select`, `unpack`, `rawget`, `rawset`, `rawequal`, `rawlen`, `typeOf`, `typeIs`, `pcall`, `xpcall`, `pairs`, `ipairs`, `next`, `tostring`, `tonumber`, `error`, `warn`, `print`, `assert`, `tick` |
 
 ## `table` counts from 1
@@ -66,7 +68,9 @@ table.sort(rows, (a, b) => a.order < b.order);   // boolean, not -1 / 0 / 1
 ```
 
 A JS-style comparator returning a number is truthy for `-1` *and* `1`, so it sorts nothing in
-particular. The default order, with no comparator, is `<` as in Luau.
+particular. The default order, with no comparator, is `<` as in Luau. Since 0.12.0
+`Array.prototype.sort` accepts the same boolean predicate, so a `.sort()` written in roblox-ts style
+orders correctly too.
 
 ### Where loom is forgiving
 
@@ -95,6 +99,15 @@ an empty one when nothing matched:
 const [start, finish] = string.find(label, "%d+");
 const [name] = string.match(path, "([^/]+)$");
 for (const [word] of string.gmatch(sentence, "%a+")) { /* … */ }
+```
+
+Since 0.12.0 `gsub` takes a **function or a table** as its replacement, not only a string, and
+`format` understands the Lua specifiers a UI reaches for — width, padding and precision:
+
+```ts
+string.gsub("a b", "%a", (c) => c.upper());        // "A B", 2
+string.gsub("a b", "%a", { a: "X", b: "Y" });      // "X Y", 2
+string.format("%02d:%05.1f | %-10s|", 7, 3.14159, "ab");
 ```
 
 roblox-ts also calls these off a string receiver, so `String.prototype` carries `.lower()`,
@@ -153,7 +166,6 @@ Installed so the code path exists, and doing nothing meaningful:
 
 | Global | What it actually does |
 | --- | --- |
-| `coroutine` | `create` / `wrap` hand the function back and `running` is always `nil`. There are no Luau threads in a browser; this is enough for a feature-detection branch, not for real coroutines. |
 | `math.noise` | Returns `0` for every input. A UI that jitters with noise renders still rather than crashing. |
 | `debug.info` | The empty tuple. The engine reads its answers out of the Luau VM, which does not exist here, so callers destructure nils instead of crashing on a missing function. |
 | `debug.setmemorycategory` `resetmemorycategory` | Nothing. A browser has no Roblox memory categories to attribute to. |

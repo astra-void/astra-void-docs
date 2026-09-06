@@ -9,13 +9,13 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Next.js owns its bundler and its dev server, so neither of loom's other entry points fits: the
+Next.js owns its bundler and its dev server, so neither of loom's other entry points fits. The
 [Vite plugin](/loom/guides/vite-integration/) rewrites `react` and `@rbxts/*` for the whole config
-it lives in — dropped into Next's webpack or Turbopack config it would hijack the app's own React —
-and [`loom-dev/embed`](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline) hands
-you a Connect middleware that `next dev` has no hook to mount. `loom-dev/next` closes the gap with
-the same isolation the embed API is built on: the gallery keeps a Vite instance of its own, and
-Next only ever forwards HTTP to it.
+it lives in, so dropped into Next's webpack or Turbopack config it would hijack the app's own React.
+And [`loom-dev/embed`](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline) hands you
+a Connect middleware that `next dev` has no hook to mount. `loom-dev/next` closes the gap with the
+same isolation the embed API is built on: the gallery keeps a Vite instance of its own, and Next
+only ever forwards HTTP to it.
 
 Everything below was verified end to end against two apps: Next 15.5 (pages router, webpack,
 React 18) and Next 16.2 (App Router, Turbopack, React 19) — the second running Fumadocs 16.
@@ -102,10 +102,7 @@ From there:
 - **The proxy rules are `beforeFiles` rewrites**, which Next consults ahead of `public/` — so a
   stale static gallery committed to `public/loom-preview` can never shadow the live one during
   development.
-- **A gallery that fails to boot does not take `next dev` down.** The error is logged
-  (`loom: gallery dev server failed to start`), your own rewrites are kept, the proxy rules are
-  skipped — `/loom-preview` 404s — and the boot is retried the next time Next asks for the
-  rewrites (a config reload) rather than the failure being cached forever.
+- **A gallery that fails to boot does not take `next dev` down.** The error is logged (`loom: gallery dev server failed to start`), your own rewrites are kept, and the proxy rules are skipped, so `/loom-preview` 404s. The boot is retried the next time Next asks for the rewrites — a config reload — rather than the failure being cached forever.
 
 ### `next build`
 

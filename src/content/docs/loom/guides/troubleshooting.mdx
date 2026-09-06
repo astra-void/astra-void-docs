@@ -206,10 +206,7 @@ loom: no face is loaded for the Roblox font family "Gotham" — its text is pain
 and measured in the system fallback instead, …
 ```
 
-A browser ships none of Roblox's typefaces, so before `0.9.0` every Roblox family resolved to the
-machine's `system-ui` — SF Pro, Segoe UI or Roboto depending on the OS — and since `AutomaticSize`
-and `TextWrapped` are driven by measuring glyph widths, the *layout* moved with the font, not just
-the paint. **Upgrading is the fix**: the preview loads 28 of the engine's families itself, with no
+A browser ships none of Roblox's typefaces, so before `0.9.0` every Roblox family resolved to the machine's `system-ui` — SF Pro, Segoe UI or Roboto depending on the OS. Since `AutomaticSize` and `TextWrapped` are driven by measuring glyph widths, the *layout* moved with the font, not just the paint. **Upgrading is the fix**: the preview loads 28 of the engine's families itself, with no
 import and no configuration.
 
 The warning survives that for the families loom cannot redistribute — `Gotham`, `BuilderSans` and

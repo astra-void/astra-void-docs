@@ -54,6 +54,14 @@ browser meaning is unambiguous, and lets you write one for anything else.
 | `@rbxts/ui-labs` | The **non-story** `Environment` — root specifier only. |
 | `@rbxts/ripple` `@rbxts/react-ripple` | A port of the published spring/tween/motion implementation. |
 
+<Callout title="`Promise` is a binding, not a global">
+Since `0.12.0` the preview plugin injects the roblox-ts `Promise` (evaera's) at module scope in
+previewed source. Before it, any preview that loaded data died on its first call — the API was absent
+entirely. It is injected rather than installed as a global on purpose: the page's own `Promise`
+belongs to the host, and the two disagree about `all` and `allSettled`, so overwriting the global
+would break the bundler, React and loom itself.
+</Callout>
+
 Everything below is the detail on the last two.
 
 ### `@rbxts/ui-labs`

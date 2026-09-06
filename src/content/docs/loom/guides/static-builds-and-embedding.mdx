@@ -70,7 +70,7 @@ declares per-script `unicode-range` subsets, so a browser fetches only the famil
 scene actually paints with.
 
 Under the hood the plugin hands Rollup a genuine module graph rather than the dev server's virtual
-modules: a generated `index.html` as the build input, whose script is a generated entry that imports
+modules. The build input is a generated `index.html`, whose script is a generated entry that imports
 the globals installer *first*, then a generated target map of relative `import()`s — one async chunk
 each — then the shell. Globals-first is why a built gallery never throws `UDim2 is not defined`.
 
@@ -93,10 +93,7 @@ Working out *which* ids takes two passes, because reading the bundle is not enou
 
 - **The scan** reads the emitted output for `rbxassetid://<digits>`, which finds every id a source
   spells out.
-- **The prerender** *(`0.9.5`)* covers the ids a source builds at runtime. A component library
-  composes them — `` `rbxassetid://${iconId}` `` over a table of ids — and after bundling that is a
-  prefix and a few hundred bare numbers no scan can tell from any other number, so a gallery built
-  from a real UI library used to paint none of its icons. Instead, the build *runs* your scenes:
+- **The prerender** *(`0.9.5`)* covers the ids a source builds at runtime. A component library composes them: `` `rbxassetid://${iconId}` `` over a table of ids. After bundling that is a prefix and a few hundred bare numbers no scan can tell from any other number, so a gallery built from a real UI library used to paint none of its icons. Instead, the build *runs* your scenes:
   every gallery target is mounted in node and its live tree is read for the images it actually
   holds. A 700-icon set contributes the dozen icons your scenes render, not all 700.
 
@@ -279,10 +276,7 @@ Three details are worth stealing:
 - **Make a missing checkout a graceful skip**, not a hard failure — CI and fresh clones should still
   build the site, just without previews. `findGalleryTargets()` answers "is there anything to serve?"
   without starting anything. Gate strictness behind an env var for deploy builds.
-- **Pin the checkout path.** These docs link the component library into `.preview-src/`, which is
-  also where CI checks it out, so one path convention covers local and CI alike. (Loom itself is an
-  ordinary dependency — `@loom-dev/layout` ships its wasm engine prebuilt, so the host needs no Rust
-  toolchain.)
+- **Pin the checkout path.** These docs link the component library into `.preview-src/`, which is also where CI checks it out, so one convention covers local and CI alike. Loom itself is an ordinary dependency: `@loom-dev/layout` ships its wasm engine prebuilt, so the host needs no Rust toolchain.
 
 The component that renders each frame sets `src` lazily through an `IntersectionObserver` (a gallery
 page can hold a dozen frames), appends `&theme=` from the site's current theme at load, and pushes

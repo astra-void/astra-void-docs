@@ -1,6 +1,6 @@
 ---
 title: Services
-description: The Roblox services loom implements for the browser — what each one provides, and why importing an unimplemented one is an error rather than a stub.
+description: The Roblox services loom implements for the browser — what each one provides, and why the ones it cannot implement fail at the call rather than at the import.
 product: loom
 section: reference
 sidebar:
@@ -27,23 +27,31 @@ HttpService === game.GetService("HttpService"); // true
 | `Debris` | `AddItem(instance, lifetime)` on a real timer — the instance really is destroyed. |
 | `GuiService` | `SelectedObject` with selection signals, `GetGuiInset`, `ReducedMotionEnabled`. |
 | `HttpService` | `GenerateGUID` and the JSON pair — [see below](#httpservice). |
-| `Players` | `LocalPlayer` with a pre-built `PlayerGui`. |
-| `RunService` | `RenderStepped` / `Heartbeat` / `PostSimulation`, `IsStudio` / `IsRunning` / `IsClient`. |
+| `ContentProvider` | `PreloadAsync` and `RequestQueueSize`. Added in 0.12.0. |
+| `Players` | `LocalPlayer` with a pre-built `PlayerGui`, plus `UserId`, `DisplayName` and `GetUserThumbnailAsync` since 0.12.0. |
+| `RunService` | `RenderStepped` / `Heartbeat` / `PostSimulation` / `Stepped`, `BindToRenderStep`, `IsStudio` / `IsRunning` / `IsClient` / `IsServer`. |
 | `StarterGui` | A real container; `SetCore` / `GetCore` / `SetCoreGuiEnabled` / `GetCoreGuiEnabled` as no-ops. |
 | `TextService` | `GetTextSize` / `GetTextBoundsAsync` — [see below](#textservice). |
 | `TweenService` | `Create` and real tween playback — see [Animation](/loom/guides/animation/#tweenservice). |
-| `UserInputService` | Input signals, `GetMouseLocation`, `GetFocusedTextBox`, capability flags. |
-| `Workspace` | `CurrentCamera` with a live `ViewportSize`. |
+| `UserInputService` | Input signals, `GetMouseLocation`, `GetFocusedTextBox`, capability flags, and since 0.12.0 the key and touch state readers (`IsKeyDown`, `GetKeysPressed`, `IsMouseButtonPressed`). |
+| `Workspace` | `CurrentCamera` with a live `ViewportSize`. Reachable as `game.Workspace` since 0.12.0, like every other service. |
 
 Plus the services that are only *containers* in a client, exported so a tree can be parented into
 them: `Lighting`, `ReplicatedFirst`, `ReplicatedStorage`, `ServerScriptService`, `ServerStorage`,
 `SoundService`, `StarterPack`, `StarterPlayer` and `Teams`. They have no behaviour to model, so
 before `0.7.0` they resolved to a warned stub; now they are ordinary instances.
 
-<Callout title="The list is deliberate, not exhaustive">
-Importing a service loom does *not* implement fails with the normal ESM missing-export error. That is
-better than a stub that quietly does nothing in a scene you are trying to trust — a silent no-op
-looks like working code right up until you open Studio.
+<Callout title="Unimplemented services are exported, and fail where you use them">
+`AnalyticsService`, `DataStoreService`, `LocalizationService`, `LogService`, `MarketplaceService`,
+`MessagingService`, `PolicyService`, `Stats`, `TeleportService` and `TextChatService` are exported but
+not implemented. Each is a service a browser cannot honestly stand in for — purchases, teleports,
+cross-server messaging, datastores, moderation policy and telemetry all need a Roblox server on the
+other end, and inventing an answer for `UserOwnsGamePassAsync` would be worse than saying nothing.
+
+They resolve to a warned stub: one console warning at startup, then a throw naming the member on the
+line that actually calls it. Leaving the name unexported instead would be a *build* error, which takes
+down a preview whose only sin was importing a service beside the ones it uses. Loud where the problem
+is beats fatal where it is not.
 
 To stand one up yourself, point a [shim](/loom/guides/package-compatibility/#shims) at
 `@rbxts/services` and re-export loom's singletons alongside your own.

@@ -9,10 +9,10 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-`loomPreview()` is the whole product. The `loom` CLI is a thin wrapper around it — a Vite server with
-`configFile: false` and this one plugin — so anything the CLI does, your own `vite.config.ts` gets by
-calling the plugin yourself, including the parts that used to be CLI-only: the generated page, the
-client-entry detection, and gallery mode.
+`loomPreview()` is the whole product. The `loom` CLI is a thin wrapper around it: a Vite server with
+`configFile: false` and this one plugin. Anything the CLI does, your own `vite.config.ts` gets by
+calling the plugin yourself — including the parts that used to be CLI-only, namely the generated
+page, the client-entry detection and gallery mode.
 
 Everything below was verified end to end against Vite 6.4.3 and pnpm 11, on a project sitting outside
 loom's own workspace.
@@ -29,7 +29,7 @@ loom's own workspace.
     "build": "vite build"
   },
   "devDependencies": {
-    "@loom-dev/preview": "^0.11.0",
+    "@loom-dev/preview": "^0.12.0",
     "react": "^18.3.1",
     "vite": "^6.0.0"
   }

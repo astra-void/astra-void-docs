@@ -12,16 +12,14 @@ compiled to WASM; the result is painted into plain DOM nodes. Clicks, keyboard i
 route back through `UserInputService` and instance signals, so a preview is interactive, not a
 screenshot.
 
-The delivery mechanism is Vite. A single plugin — `loomPreview()` — aliases `@rbxts/react`,
-`@rbxts/react-roblox` and `@rbxts/services` onto browser adapters, installs the Roblox datatype
-globals (`UDim2`, `Color3`, `Enum`, `game`) and the Luau standard library before your entry
-evaluates, rewrites roblox-ts
-`import X = require(...)` statements to ESM, and resolves roblox-ts packages whose `main` points at
-uncompiled Luau straight to their TypeScript source. There is no roblox-ts build step in the loop:
-esbuild transpiles the same TSX, and HMR works.
+The delivery mechanism is Vite. One plugin — `loomPreview()` — does all of it. It aliases
+`@rbxts/react`, `@rbxts/react-roblox` and `@rbxts/services` onto browser adapters, installs the
+Roblox datatype globals (`UDim2`, `Color3`, `Enum`, `game`) and the Luau standard library before
+your entry evaluates, rewrites roblox-ts `import X = require(...)` statements to ESM, and resolves
+packages whose `main` points at uncompiled Luau straight to their TypeScript source. There is no
+roblox-ts build step in the loop — esbuild transpiles the same TSX, and HMR works.
 
-One plugin is the whole setup — it generates the page too, so a roblox-ts source tree needs no
-`index.html` and no entry wiring:
+It generates the page too, so a roblox-ts source tree needs no `index.html` and no entry wiring:
 
 ```ts title="vite.config.ts"
 import { loomPreview } from "@loom-dev/preview/vite";
