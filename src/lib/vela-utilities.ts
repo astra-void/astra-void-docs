@@ -16,7 +16,7 @@
  * `renderUtilityCell` in UtilityTable.astro.
  *
  * Nothing here is derived from the compiler: it is a transcription of what the
- * reference page states at 0.12.4, and a release that changes a mapping has to
+ * reference page states at 0.13.0, and a release that changes a mapping has to
  * change this file.
  */
 
@@ -191,7 +191,7 @@ export const VELA_UTILITY_GROUPS: UtilityGroup[] = [
     label: "Radius",
     category: "Borders & effects",
     summary:
-      "A pure lookup in `theme.radius` — there is no numeric fallback, so a value off the scale has to be bracketed.",
+      "A pure lookup in `theme.radius` — there is no numeric fallback, so a value off the scale has to be bracketed. A directional form squares off the corners it does not name.",
     rows: [
       {
         classes: ["rounded"],
@@ -209,6 +209,29 @@ export const VELA_UTILITY_GROUPS: UtilityGroup[] = [
         values: "pixels, percent",
         target: "`UICorner.CornerRadius`",
         notes: "Arbitrary value, since 0.7.0",
+      },
+      {
+        classes: ["rounded-t-{key}", "rounded-b-{key}"],
+        values: "any key in `theme.radius`, or a bracketed value",
+        target: "`UICorner.TopLeftRadius` + `TopRightRadius`, `BottomLeftRadius` + `BottomRightRadius`",
+        notes: "Since 0.13.0. The other pair is squared to `0`",
+      },
+      {
+        classes: ["rounded-l-{key}", "rounded-r-{key}"],
+        values: "any key in `theme.radius`, or a bracketed value",
+        target: "`UICorner.TopLeftRadius` + `BottomLeftRadius`, `TopRightRadius` + `BottomRightRadius`",
+        notes: "Since 0.13.0. The other pair is squared to `0`",
+      },
+      {
+        classes: [
+          "rounded-tl-{key}",
+          "rounded-tr-{key}",
+          "rounded-bl-{key}",
+          "rounded-br-{key}",
+        ],
+        values: "any key in `theme.radius`, or a bracketed value",
+        target: "The one matching `UICorner` radius property",
+        notes: "Since 0.13.0. Beats `rounded-{key}` on the corner it names, in either order",
       },
     ],
   },
@@ -614,6 +637,11 @@ export const VELA_UTILITY_GROUPS: UtilityGroup[] = [
         target: "`VerticalAlignment = Top, Center, Bottom`",
       },
       {
+        classes: ["justify-stretch"],
+        target: "`HorizontalFlex = Enum.UIFlexAlignment.Fill`",
+        notes: "Different property. Since 0.12.7",
+      },
+      {
         classes: ["items-stretch"],
         target: "`VerticalFlex = Enum.UIFlexAlignment.Fill`",
         notes: "Different property",
@@ -814,8 +842,8 @@ export const VELA_UTILITY_GROUPS: UtilityGroup[] = [
       },
       {
         classes: ["transition-shadow"],
-        target: "—",
-        notes: "`unsupported-transition-value` — helper instances apply instantly",
+        target: "Narrow the tween to the `UIShadow` properties",
+        notes: "Since 0.13.0, when transitions began moving the helper instances",
       },
       { classes: ["transition-none"], target: "Disable tweening" },
       {
@@ -1013,13 +1041,29 @@ export const VELA_UTILITY_GROUPS: UtilityGroup[] = [
     label: "Variants",
     category: "Variants",
     summary:
-      "Twelve prefixes, chained with colons and combined with AND. Any variant-prefixed token forces the runtime helper into the module, literal or not.",
+      "Chained with colons and combined with AND. Any variant-prefixed token forces the runtime helper into the module, literal or not.",
     targetLabel: "Condition",
     classLabel: "Variant",
     rows: [
-      { classes: ["sm:"], target: "Viewport width ≥ 640", runtime: true },
-      { classes: ["md:"], target: "Viewport width ≥ 768", runtime: true },
-      { classes: ["lg:"], target: "Viewport width ≥ 1024", runtime: true },
+      {
+        classes: ["sm:", "md:", "lg:", "xl:", "2xl:"],
+        target: "Viewport width ≥ 640, 768, 1024, 1280, 1536",
+        notes: "`xl` and `2xl` since 0.13.0. Every threshold is a `theme.screens` key",
+        runtime: true,
+      },
+      {
+        classes: ["max-sm:", "max-md:", "max-lg:", "max-xl:", "max-2xl:"],
+        target: "Viewport width < the same threshold",
+        notes:
+          "Since 0.13.0. The exact complement of the bare form, so the two cover every viewport once. Chains, as `md:max-lg:`",
+        runtime: true,
+      },
+      {
+        classes: ["attr-[{Name}={value}]:"],
+        target: "The styled instance carries that Roblox attribute",
+        notes: "Since 0.13.0. `addVariant()` registers the same condition under a name",
+        runtime: true,
+      },
       {
         classes: ["portrait:"],
         target: "Viewport width less than height",

@@ -26,6 +26,7 @@ The extension contributes three settings and **no commands**. There is no "resta
     { name: "velaRbxts.lsp.serverPath", type: "string", description: "Explicit path to a server binary. A relative path is resolved against the workspace root. Defaults to \"\", meaning auto-resolve." },
     { name: "velaRbxts.lsp.trace.server", type: "\"off\" | \"messages\" | \"verbose\"", description: "LSP protocol trace level written to the extension's output channel. Defaults to \"off\"." },
     { name: "velaRbxts.lsp.enabled", type: "boolean", description: "Whether to start the language client at all. Defaults to true." },
+    { name: "velaRbxts.inlayHints.enabled", type: "boolean", description: "Show what each class lowers to as an inlay hint after the class. Added in 0.13.0. Defaults to false." },
   ]}
 />
 
@@ -46,10 +47,7 @@ The declared capability set is small and deliberate.
 **Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete. A completion rewrites the segment under the cursor and nothing else — since **0.12.3**, which is when accepting an item over the `hover:` in `hover:bg-slate-700` stopped taking `bg-slate-700` with it. **0.12.4** stopped offering `placeholder-transparent` on a `textbox`, which the compiler turned down the moment it was accepted; every other family that takes the `transparent` keyword still offers it.
 
 <Callout title="A class value the compiler has to walk into counts as that context">
-Since **0.12.2** every capability on this page reads the class strings out of the shapes a `className`
-is really written in: a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a
-dynamic class value, plus a template's interpolations, `as const`, `satisfies`, string concatenation,
-and an object's computed keys and spreads. Before that a function had no arm in the walk at all, so
+Since **0.12.2** every capability on this page reads the class strings out of the shapes a `className` is really written in. Chief among them a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a dynamic class value — plus a template's interpolations, `as const`, `satisfies`, string concatenation, and an object's computed keys and spreads. Before that a function had no arm in the walk at all, so
 `className={() => "bg-blue-600"}` got completions and hover only while the file was failing to parse
 and a lexical fallback was standing in for the real one.
 </Callout>
@@ -68,7 +66,19 @@ gets the old pixel wording back, matching the emit it produces.
 
 **Document highlight.** Highlights other occurrences of the token under the cursor.
 
-That is the complete list. The server does **not** provide go-to-definition, references, rename, formatting, semantic tokens, inlay hints, or signature help. Those requests are not advertised, so your editor falls back to its TypeScript language service for them, which is the correct behavior — Vela only understands the inside of `className`.
+**Inlay hints, since 0.13.0.** The editor can show what each class lowers to, after the class:
+
+```tsx
+<frame className="p-4 rounded-l-lg" />
+//                 ↑ UIPadding.PaddingTop/Right/Bottom/Left
+//                      ↑ UICorner.TopLeftRadius, BottomLeftRadius
+```
+
+They are **off by default**, behind `velaRbxts.inlayHints.enabled`. The labels are built from the
+compiler's own lowering, read back through an editor API — not from a second semantic model that could
+drift from what the build emits.
+
+That is the complete list. The server does **not** provide go-to-definition, references, rename, formatting, semantic tokens, or signature help. Those requests are not advertised, so your editor falls back to its TypeScript language service for them, which is the correct behavior — Vela only understands the inside of `className`.
 
 ### Sorting class names
 
@@ -91,12 +101,12 @@ interpolation, too: until **0.12.2** `` `bg-slate-700 p-4 ${flag}` `` came back 
 `` `p-4 bg-slate-700${flag}` ``, running the last token into whatever `flag` resolves to.
 
 **And since 0.12.4 it does not change how they are laid out.** The tokens are the only thing that
-moves; the whitespace between them is carried over as it was written, so a class list broken across
-several lines stays broken across those lines instead of being flattened into one on every save.
-Two more sorting edges closed in **0.12.3**: a value containing an arbitrary payload with a space in
-it — `w-[calc(100% - 4px)]` — moves as the single class it is, and a value whose bracket is never
-closed is left alone entirely, since the pieces either side of an unclosed `[` are not independent
-classes and moving them apart would rewrite the source into something else.
+moves. The whitespace between them is carried over as written, so a class list broken across several
+lines stays that way instead of being flattened on every save. Two more sorting edges closed in
+**0.12.3**. A value containing an arbitrary payload with a space in it — `w-[calc(100% - 4px)]` —
+moves as the single class it is. And a value whose bracket never closes is left alone entirely: the
+pieces either side of an unclosed `[` are not independent classes, so moving them apart would
+rewrite the source into something else.
 
 Run it from the editor's source-action menu, or on save:
 
@@ -122,6 +132,12 @@ Inside a component's `className` the rule is dropped rather than merely unenforc
 </Callout>
 
 The editor also suppresses `unknown-theme-key` while the payload you have typed so far is still a prefix of a real theme key, so `bg-sla` on the way to `bg-slate-800` never flashes a warning — while `bg-nope`, which no key starts with, warns immediately.
+
+<Callout title="A config the extension cannot read now says so">
+Until **0.12.7** a `vela.config.ts` the extension failed to load was written to its output channel and nowhere else. The session stayed silently on the default theme, reporting every key the project defined as unknown while the same file compiled without complaint. It is a notification now, naming
+the file and the reason, and a config that loads on a later save clears it. **0.12.8** fixed the
+reason most people hit it: the published extension shipped with no config loader at all.
+</Callout>
 
 ## Other editors
 

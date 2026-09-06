@@ -18,14 +18,14 @@ symptom; each entry gives the most likely cause first and the quickest way to co
 
 Work down this list in order — it is sorted by how often each one turns out to be the answer.
 
-**1. You are below 0.8.0 and the element is on the runtime path.**
-A computed `className`, any variant prefix, or a margin/`divide-*`/`animate-*` utility moves the
-element onto the [runtime path](/vela-rbxts/guides/dynamic-class-names/). Before 0.8.0 the in-game
-resolver implemented only part of the static path and **dropped the rest with no diagnostic** —
-text colors before 0.6.0, layout and alignment and text sizing before 0.7.0, and positioning,
-constraints, grid, gradients, shadows and transforms before 0.8.0. Confirm with `npm ls
-@vela-rbxts/compiler`; fix by upgrading. If you cannot, branch between two fully static string
-literals instead of computing one.
+**1. You are below 0.8.0 and the element is on the runtime path.** A computed `className`, any
+variant prefix, or a margin/`divide-*`/`animate-*` utility moves the element onto the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/). Before 0.8.0 the in-game resolver
+implemented only part of the static path and **dropped the rest with no diagnostic**. Text colors
+were missing before 0.6.0; layout, alignment and text sizing before 0.7.0; and positioning,
+constraints, grid, gradients, shadows and transforms before 0.8.0. Confirm with
+`npm ls @vela-rbxts/compiler`; fix by upgrading. If you cannot, branch between two fully static
+string literals instead of computing one.
 
 At 0.8.0 this is no longer a coverage problem — but the runtime path is still **unchecked**, so a
 typo that would warn in a literal is silent in a computed string. A runtime-path element renders as
@@ -65,9 +65,7 @@ without a variant rule or dynamic `className` is dropped with `transition-withou
 The build is the source of truth, so a squiggle the compiler does not agree with is an editor bug.
 Four of them were fixed in **0.12.3**, and upgrading is the whole fix for each:
 
-- **A theme key you defined is unknown to the editor and to nothing else.** `vela-rbxts/setConfigs`
-  is sent as a notification and was wired to a request handler, which tower-lsp drops without a word,
-  so the config the editor pushed never arrived and every key in it stayed unknown for the session.
+- **A theme key you defined is unknown to the editor and to nothing else.** `vela-rbxts/setConfigs` is sent as a notification but was wired to a request handler, which tower-lsp drops without a word. The config the editor pushed never arrived, so every key in it stayed unknown for the session.
   The build read the same `vela.config.ts` correctly the whole time.
 - **`` `w-[${width}]` `` reports an unknown theme key and an unsupported family.** A template is read
   one quasi at a time, so an interpolation splices into the class beside it and both halves were
@@ -79,14 +77,15 @@ Four of them were fixed in **0.12.3**, and upgrading is the whole fix for each:
   handed out over a source with it dropped and read back over a document that still had it.
 
 If you are on 0.12.3 or later and the editor still disagrees with the build, the two genuinely
-disagree by design in one direction — the per-host rules (`unsupported-host-utility`) are enforced in
-the editor and never by the build, which is the first entry on this page rather than a bug.
+disagree by design in one direction. The per-host rules (`unsupported-host-utility`) are enforced in
+the editor and never by the build — the first entry on this page, not a bug.
 
 ## "A breakpoint or orientation variant never applies"
 
-Check that the token's other conditions hold — a chained `md:touch:` needs both to match — and
-remember the thresholds are min-width only, measured on the viewport's X dimension, so a phone-sized
-viewport matches none of the three. A square viewport counts as `landscape`, not `portrait`.
+Check that the token's other conditions hold — a chained `md:touch:` needs both to match. Bare
+thresholds are min-width, measured on the viewport's X dimension, so a phone-sized viewport matches
+none of them; since 0.13.0 the `max-` forms cover the other side. A square viewport counts as
+`landscape`, not `portrait`.
 
 If none of that explains it, check your version: breakpoints and orientation were broken outright in
 **0.4.0** and fixed in 0.4.1 ([release notes](/vela-rbxts/reference/release-notes/#041)). The input
@@ -150,14 +149,14 @@ a stray `vela.config.ts` in a subdirectory shadows the root one for files beneat
 
 **`opacity-*` does nothing on a label, or does not reach the children under it.** Below 0.9.0 the
 family lowered to `BackgroundTransparency` alone — invisible on a label whose background is already
-transparent — and reached nothing below the instance it was written on. 0.9.0 fades every channel the
-element paints and walks the JSX beneath it; 0.10.0 carries the alpha across component boundaries too,
-so `{props.children}` and component children are no longer out of reach. Confirm with `npm ls
-@vela-rbxts/compiler`. On 0.9.x specifically, the compiler tells you: an unreachable child reports
-`opacity-unreachable-child`.
+transparent — and reached nothing below the instance it was written on. 0.9.0 fades every channel
+the element paints and walks the JSX beneath it, and 0.10.0 carries the alpha across component
+boundaries, so `{props.children}` and component children are no longer out of reach. Confirm with
+`npm ls @vela-rbxts/compiler`. On 0.9.x specifically, the compiler tells you: an unreachable child
+reports `opacity-unreachable-child`.
 
-**`opacity-*` fades a transparency you set yourself.** Expected on 0.12.0 when the fade comes from an
-ancestor *component*: the alpha arrives as a React context, and a consumer reading it cannot tell your
+**`opacity-*` fades a transparency you set yourself.** Expected when the fade comes from an ancestor
+*component*. The alpha arrives as a React context, and a consumer reading it cannot tell your
 `BackgroundTransparency` prop from one Vela lowered, so it composes over both. The static path can,
 and leaves yours alone. Write the fade on the element itself, or push the value into a class.
 
@@ -193,10 +192,10 @@ honoring it. `text-6xl` and up reach that ceiling on a large viewport.
 
 ## "`@rbxts/vela-runtime` does not resolve"
 
-The runtime reaches your place as a dependency of `vela-rbxts` rather than as something you installed,
-and pnpm's default isolated linker does not put a transitive dependency where roblox-ts and Rojo look —
-both walk real directories, and under that layout `node_modules/@rbxts/vela-runtime` does not exist.
-Set the linker at the workspace root:
+The runtime reaches your place as a dependency of `vela-rbxts` rather than as something you
+installed, and pnpm's default isolated linker does not put a transitive dependency where roblox-ts
+and Rojo look. Both walk real directories, and under that layout `node_modules/@rbxts/vela-runtime`
+does not exist. Set the linker at the workspace root:
 
 ```yaml title="pnpm-workspace.yaml"
 nodeLinker: hoisted
@@ -242,20 +241,20 @@ before 0.9.0 the ~96 top-level declarations the inlined runtime helper contribut
 every transformed file before it declared anything of its own. A component with enough parts crossed
 the line and failed to compile outright — a six-part `card` was enough.
 
-0.9.0 folds the runtime into a single initializer (96 module-scope locals down to 12) and 0.10.0
-splits that initializer into thirteen namespaces (177 registers down to 65), with a budget of 120
+0.9.0 folds the runtime into a single initializer (96 module-scope locals down to 12). 0.10.0 splits
+that initializer into thirteen namespaces (177 registers down to 65), against a budget of 120
 asserted in the repo's own tests. 0.12.0 removes the pressure at the source: the runtime is
-`@rbxts/vela-runtime`, an import rather than a copy, so a transformed file contributes a handful of
-locals of its own. **The fix is to upgrade.** If you are pinned below 0.9.0, split the module until
-each file's own declarations fit in what is left.
+`@rbxts/vela-runtime`, an import rather than a copy, so a transformed file contributes only a
+handful of locals of its own. **The fix is to upgrade.** If you are pinned below 0.9.0, split the
+module until each file's own declarations fit in what is left.
 
 ## "Configuring a motion driver takes the whole UI down at mount"
 
 Fixed in 0.10.0. A driver written the documented way — `transition(instance, goal, spec) { … }` —
-compiles to a method carrying an implicit `self`, and the runtime read it off the table and called it
+compiles to a method carrying an implicit `self`. The runtime read it off the table and called it
 detached, so every argument landed one place to the left and the driver died on `spec.time`. React
-caught that at mount and unwound the tree, so the symptom was the entire interface disappearing rather
-than an animation misbehaving.
+caught that at mount and unwound the tree, so the symptom was the entire interface disappearing
+rather than an animation misbehaving.
 
 Upgrade. Since 0.10.0 the driver type states its members as methods, so roblox-ts rejects the arrow form
 outright instead of silently shifting arguments — if your driver was written with arrows, it becomes a
@@ -272,22 +271,21 @@ compile error you can see. See [the motion driver](/vela-rbxts/reference/config/
 
 ## "The build got slower, or the output got bigger"
 
-If the output got bigger and you are below 0.12.0, this is the inlined runtime: every file with a
-variant-prefixed token or other runtime trigger carried its own copy — a few thousand lines of generated
-roblox-ts — so twenty component files meant twenty copies. Upgrading is the fix. Since 0.12.0 the
+If the output got bigger and you are below 0.12.0, this is the inlined runtime. Every file with a variant-prefixed token or other runtime trigger carried its own copy — a few thousand lines of generated roblox-ts — so twenty component files meant twenty copies. Upgrading is the fix. Since 0.12.0 the
 runtime is `@rbxts/vela-runtime`, one ModuleScript the place shares, and a transformed file carries an
 import and its config instead. In the reference app that took one `App.luau` from 190,260 bytes to
 27,912.
 
-On 0.12.0, a file that is still larger than you expect is usually one whose host has to **parse** a
-class value — a computed `className`, or a host taking a spread — because that is the only case that
-keeps the full theme tables in the emit. Writing the branch out instead of interpolating it is often
-enough to drop them.
+From 0.12.0 on, a file that is still larger than you expect is usually one whose host has to
+**parse** a class value: a computed `className`, or a host taking a spread. That is the only case
+that keeps the full theme tables in the emit. Writing the branch out instead of interpolating it is
+often enough to drop them.
 
-If the slowdown predates 0.11.0, suspect the config: below that version `vela.config.ts` was re-read,
-re-transpiled and re-executed for **every** eligible source file. 0.11.0 caches the load against the
-config's own text, so it now runs once per distinct config — upgrading is the fix. Keeping it a plain
-`defineConfig` call with literal values is still worth doing, since it is executed as real code.
+If the slowdown predates 0.11.0, suspect the config. Below that version `vela.config.ts` was
+re-read, re-transpiled and re-executed for **every** eligible source file. 0.11.0 cached the load
+against the config's own text, and since 0.13.0 it resolves once per directory per build. Upgrading
+is the fix. Keeping it a plain `defineConfig` call with literal values is still worth doing, since
+it is executed as real code.
 
 ## Still stuck?
 

@@ -20,13 +20,23 @@ values and four types, and a second subpath exports the transformer you wire int
 import {
   defaultConfig,
   defineConfig,
+  definePreset,
+  plugin,
   createTransformer,
   type TailwindConfig,
   type TailwindConfigInput,
+  type VelaPreset,
+  type ThemeScreens,
+  type VariantDefinition,
   type ClassValue,
   type StylableProps,
 } from "vela-rbxts";
 ```
+
+`definePreset`, `VelaPreset` and `ThemeScreens` arrived with
+[presets and configurable breakpoints](/vela-rbxts/reference/config/#presets) in 0.13.0; the plugin
+and variant types are re-exports of `@vela-rbxts/config`, so nothing needs to be installed to reach
+them.
 
 ### defineConfig
 
@@ -95,6 +105,12 @@ no error explaining why.
       type: "{ theme?: { colors?; radius?; spacing?; extend?: { colors?; radius?; spacing? } } }",
       description:
         "The authoring shape — everything optional, with the extend branch. What you pass to defineConfig.",
+    },
+    {
+      name: "VelaPreset",
+      type: "TailwindConfigInput",
+      description:
+        "A shareable slice of configuration. Same shape as what you pass to defineConfig; definePreset() types one without resolving it, so it still merges as an input rather than as a finished config. Added in 0.13.0.",
     },
     {
       name: "ClassValue",
@@ -199,11 +215,11 @@ the same CLI. It lowers a source tree ahead of `rbxtsc` for projects that cannot
 transformer — see [the CLI reference](/vela-rbxts/reference/cli/).
 
 The runtime took three releases to get here. Before 0.9.0 it was a string literal inside the Rust
-crate; 0.9.0 moved it to real TypeScript the repo typechecks and formats, still inlined into every
-module that needed it; 0.12.0 published it, split into the neutral core and one host per target, and
-turned the inlining into an import.
+crate. 0.9.0 moved it to real TypeScript the repo typechecks and formats, still inlined into every
+module that needed it. 0.12.0 published it — split into the neutral core and one host per target —
+and turned the inlining into an import.
 
-All packages are versioned in lockstep at **0.12.4**, including the VS Code extension. There is no
+All packages are versioned in lockstep at **0.13.0**, including the VS Code extension. There is no
 scenario in which you should mix versions across the `@vela-rbxts/*` scope. What changed in each
 release is in the [release notes](/vela-rbxts/reference/release-notes/).
 

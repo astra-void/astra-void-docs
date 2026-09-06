@@ -14,8 +14,8 @@ everything this documentation says about utilities, variants, the theme and the 
 says the same thing under either target.
 
 **A Vide project needs no Vela config for this.** With `framework` unset — which includes having no
-`vela.config.ts` at all — Vela reads the target off your `tsconfig.json`, and the setting it reads is
-the one a Vide project already has so that roblox-ts compiles its JSX:
+`vela.config.ts` at all — Vela reads the target off your `tsconfig.json`. The setting it reads is
+the one a Vide project already has, so that roblox-ts compiles its JSX:
 
 ```json title="tsconfig.json — enough on its own"
 {
@@ -31,9 +31,7 @@ There is nothing else to install either. Both runtime hosts ship with `vela-rbxt
 not emit for is an inert ModuleScript no module imports — see [installation](/vela-rbxts/getting-started/installation/#install-the-packages).
 
 <Callout title="Be on 0.12.1 or later if you have a config file at all">
-On 0.12.0 the inference ran only for a project with **no** `vela.config.ts` whatsoever, so a Vide
-project whose config set a theme or a plugin compiled against the React host and emitted an import of
-`@rbxts/vela-runtime` — a package it has no reason to have installed. Fixed in
+On 0.12.0 the inference ran only for a project with **no** `vela.config.ts` whatsoever. A Vide project whose config set a theme or a plugin therefore compiled against the React host, emitting an import of `@rbxts/vela-runtime` — a package it has no reason to have installed. Fixed in
 [0.12.1](/vela-rbxts/reference/release-notes/#0121). On 0.12.0, name `framework: "vide"` explicitly.
 </Callout>
 
@@ -101,12 +99,12 @@ runtime the host is imported from.
 
 ## What the runtime host does differently
 
-Nothing you have to think about, on a host element. The Vide host binds an effect that writes whatever
-the current resolution names, which is what a re-render is for React: a property that appears is
-written, one that disappears goes back to what the element declared, or to the class default where it
-declared nothing. Interaction variants, `transition-*` and `animate-*`, the text transforms, `divide-*`
-separators and the `opacity-*` model all behave as the React host's do — they run on the same
-target-neutral core.
+Nothing you have to think about, on a host element. The Vide host binds an effect that writes
+whatever the current resolution names — what a re-render is for React. A property that appears is
+written; one that disappears goes back to what the element declared, or to the class default where
+it declared nothing. Interaction variants, `transition-*` and `animate-*`, the text transforms,
+`divide-*` separators and the `opacity-*` model all behave as the React host's do — they run on the
+same target-neutral core.
 
 The reactive seams underneath are different, and two of their consequences reach you.
 
@@ -146,10 +144,10 @@ than a layout you have to reverse-engineer.
 
 ## Naming the target explicitly
 
-The inference is a walk, and it is worth knowing how far it reaches before you decide you need to
-override it: from each source file's directory upward to the nearest `tsconfig.json`, following a
-**relative** `extends` up to eight levels, reading `compilerOptions.jsxFactory`. A factory beginning
-with `Vide.` selects Vide; anything else, or none found, leaves the default of React.
+The inference is a walk, and it is worth knowing how far it reaches before overriding it. From each
+source file's directory upward to the nearest `tsconfig.json`, following a **relative** `extends` up
+to eight levels, reading `compilerOptions.jsxFactory`. A factory beginning with `Vide.` selects
+Vide; anything else, or none found, leaves the default of React.
 
 Naming the key in `vela.config.ts` always wins, and it wins by being **present** rather than by its
 value:
@@ -167,9 +165,7 @@ in the ordinary way has no reason to write either.
 
 <Callout title="One target per project, not per file">
 `jsxFactory` is a program-wide TypeScript setting, so a project pointing it at Vide cannot compile React
-JSX at all. The choice is per project by construction, and this is also why an unset `framework` is read
-as *the default* rather than as a positive request for React — a project that never mentioned Vela's
-config but compiles Vide JSX is asking for Vide.
+JSX at all. The choice is per project by construction. It is also why an unset `framework` is read as *the default* rather than as a positive request for React: a project that never mentioned Vela's config but compiles Vide JSX is asking for Vide.
 </Callout>
 
 ## Writing the declaration file

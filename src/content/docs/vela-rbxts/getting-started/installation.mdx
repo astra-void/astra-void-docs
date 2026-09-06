@@ -46,9 +46,7 @@ npm and Yarn hoist by default and need nothing.
 </Callout>
 
 <Details title="Why the linker matters, and why a nested .npmrc will not do">
-Both roblox-ts and Rojo resolve `@rbxts/*` by walking real directories, and under pnpm's default
-layout `node_modules/@rbxts/vela-runtime` simply does not exist — the package is real, but it lives
-inside `node_modules/.pnpm`.
+Both roblox-ts and Rojo resolve `@rbxts/*` by walking real directories. Under pnpm's default layout `node_modules/@rbxts/vela-runtime` simply does not exist: the package is real, but it lives inside `node_modules/.pnpm`.
 
 Most roblox-ts projects have `nodeLinker: hoisted` already, for the same reason and not because of
 Vela. A nested `.npmrc` will not do it — pnpm reads `nodeLinker` only from the workspace root.
@@ -63,10 +61,10 @@ and a build that dies on the first file:
 src/client/Panel.tsx:1:1 - error TS89000: [@vela-rbxts/rbxtsc-host] compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')
 ```
 
-`5.9.3` is what the Vela repo pins and tests against; `6.x` also builds. Nothing enforces this — no
-package in the repo declares a `peerDependency`, and the only `engines` field anywhere is the VS Code
-extension's `vscode: ^1.91.0` — so your package manager will not warn you, and the error you get names
-neither TypeScript nor a version.
+`5.9.3` is what the Vela repo pins and tests against; `6.x` also builds. Nothing enforces this. No
+package in the repo declares a `peerDependency`, and the only `engines` field anywhere is the VS
+Code extension's `vscode: ^1.91.0`, so your package manager will not warn you — and the error you
+get names neither TypeScript nor a version.
 
 The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0.0`**,
 `@rbxts/compiler-types ^3.0.0-types.0`, `@rbxts/types ^1.0.935`, `@rbxts/react ^17.3.7-ts.1`, and
@@ -78,14 +76,12 @@ What Vela emits for an element it could not settle at compile time is an import 
 `@rbxts/vela-runtime` for React, `@rbxts/vela-runtime-vide` for Vide. Both ship as dependencies of
 `vela-rbxts`, so neither appears in the commands above and neither is yours to keep in sync.
 
-Each host declares *its* UI library as an optional peer, and that is what keeps the split honest:
-Rojo maps the whole `node_modules/@rbxts` directory into the place, so `@rbxts/react` in a Vide
-project would be React shipping to every player of a game that never renders it. It does not, because
+Each host declares *its* UI library as an optional peer, which is what keeps the split honest. Rojo
+maps the whole `node_modules/@rbxts` directory into the place, so `@rbxts/react` in a Vide project
+would be React shipping to every player of a game that never renders it. It does not, because
 nothing pulls it in. The host you do not emit for is one inert ModuleScript that no module imports.
 
-`@rbxts/services` matters beyond your own imports for the same reason: the host reads
-`{ UserInputService, Workspace }` from it to resolve viewport, input mode and rem, so it must resolve
-in the built place even if you never import it by hand. `@rbxts/react-roblox` is what you need to
+`@rbxts/services` matters beyond your own imports for the same reason. The host reads `{ UserInputService, Workspace }` from it to resolve viewport, input mode and rem, so it must resolve in the built place even if you never import it by hand. `@rbxts/react-roblox` is what you need to
 mount a React tree at all; Vide mounts itself.
 </Details>
 
@@ -206,8 +202,7 @@ replaces the entire registry *and* discards `theme.extend.colors` silently. Full
 the [theming guide](/vela-rbxts/guides/theming/).
 
 <Details title="Where the file goes, and where Vela looks for it">
-Vela looks for `vela.config.ts` or `vela.config.json` (the `.ts` form wins when both exist), walking
-up from the directory of each source file until it finds one or hits the filesystem root. There are no
+Vela looks for `vela.config.ts` or `vela.config.json` — the `.ts` form wins when both exist — walking up from each source file's directory until it finds one or hits the filesystem root. There are no
 `.js`, `.mjs` or `.cjs` variants and no `package.json` key.
 
 Keep it at the project root, **outside** `rootDir` — Vela loads it itself, with Node, so it is build
@@ -322,15 +317,14 @@ rojo serve
 You need no Vela-specific Rojo mapping.
 
 <Details title="Why the runtime import resolves with no project change">
-Most of what Vela produces is an ordinary Roblox property or a helper instance emitted as a JSX child,
-and the rest is an import of `@rbxts/vela-runtime` — one ModuleScript the whole place shares, however
-many files reach it.
+Most of what Vela produces is an ordinary Roblox property or a helper instance emitted as a JSX child. The rest is an import of `@rbxts/vela-runtime`, one ModuleScript the whole place shares however many files reach it.
 
-That import resolves because of where the package sits. roblox-ts only resolves a package whose scope
-directory is one of the project's `typeRoots`, and `node_modules/@rbxts` is the one every roblox-ts
-project already lists and every Rojo template already maps to `ReplicatedStorage` — the same route
-`@rbxts/react` takes. The runtime is published under that scope on purpose. (This is the mapping the
-`nodeLinker` note above is about: the directory has to be real for either tool to walk into it.)
+That import resolves because of where the package sits. roblox-ts only resolves a package whose
+scope directory is one of the project's `typeRoots`, and `node_modules/@rbxts` is the one every
+roblox-ts project already lists and every Rojo template already maps to `ReplicatedStorage`. It is
+the same route `@rbxts/react` takes. The runtime is published under that scope on purpose. (This is
+the mapping the `nodeLinker` note above is about: the directory has to be real for either tool to
+walk into it.)
 
 So the things that must exist in your place tree are the runtime host, `@rbxts/services`, and your UI
 library — all of which your existing `node_modules` mapping already covers.

@@ -34,17 +34,17 @@ Those last three are toggles (`skipNodeModules`, `requireClassName`, `requireJsx
 
 **The adapter finds your config.** For each eligible file, Vela walks up from that file's directory looking for `vela.config.ts` or `vela.config.json` — the `.ts` form wins when a directory has both. A TypeScript config is read, stripped of every `import … from "vela-rbxts"` statement, transpiled with `ts.transpileModule`, and executed in a function scope where `defineConfig` and `defaultConfig` are injected as parameters. That injection is why the stripped import still works. A TypeScript diagnostic in your config throws; an export that is neither a resolved config nor an input-shaped object throws. A JSON config is parsed directly, with its `$schema` key stripped. Finding nothing at all is fine — you get the default theme.
 
-<Callout title="Discovery runs per file; loading is cached since 0.11.0">
+<Callout title="Discovery runs per file; loading runs once per build">
 The upward walk is **per file** — that is what lets two directories carry different configs — and each
 eligible file still reads the config file it lands on. What no longer repeats is the expensive part.
 Before 0.11.0, `vela.config.ts` was re-transpiled and re-executed once for every eligible source file
-in the project, which on a large tree was a measurable share of build time. It is now cached against
-the file's own text, so the transpile and the execution happen once per distinct config content and a
-second file resolving to the same config reuses the result.
+in the project, which on a large tree was a measurable share of build time. Since 0.13.0 the host
+resolves a config per directory and reuses it, re-reading the file only when its contents changed.
 
-The cache is keyed on content, not on a timestamp, so editing the config invalidates it on the next
-read. `vela watch` also clears it outright when it sees a config change, which is why a theme edit
-rebuilds the whole tree rather than only the next file you touch.
+A config that **throws** is cached alongside one that resolves, so a typo is reported once instead of
+once per file, and the next edit is what lifts it — which is what makes a watch process recoverable.
+`vela watch` also clears the cache outright on a config change, which is why a theme edit rebuilds the
+whole tree rather than only the next file you touch.
 
 Keeping the config small and side-effect-free is still worth doing — it is executed as real code —
 but it is no longer a per-file cost.
@@ -110,11 +110,21 @@ Since 0.5.0 it also emits two properties you did not ask for. A host element car
 
 ### The runtime path
 
-When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost` and imports that host from `@rbxts/vela-runtime`, configuring it once at the top of the module body. Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because the runtime host's prop type does not describe them, conditional rules are serialized into a `__velaRules` prop with their conditions in `__velaTests`, and the original tag is carried along as `__velaTag`. Structural work rides along in further internal props as needed: `__velaTransition` and `__velaAnimation` for the motion utilities, `__velaText` for case transforms and decorations on a computed `Text`, `__velaMargin` for the margin box, and `__velaDivide` for separators.
+When Vela cannot finish the job at compile time, it swaps the element's tag for `VelaRuntimeHost`
+and imports that host from `@rbxts/vela-runtime`, configuring it once at the top of the module body.
+Static props it did resolve are emitted with an `as never` cast — `ZIndex={(10 as never)}` — because
+the runtime host's prop type does not describe them. Conditional rules are serialized into a
+`__velaRules` prop with their conditions in `__velaTests`, and the original tag travels as
+`__velaTag`. Structural work rides along in further internal props as needed: `__velaTransition` and
+`__velaAnimation` for the motion utilities, `__velaText` for case transforms and decorations on a
+computed `Text`, `__velaMargin` for the margin box, and `__velaDivide` for separators.
 
 For a host element `__velaTag` is the tag string — `__velaTag="frame"`. For a component it is a live reference to the component itself — `__velaTag={Box}`, or `__velaTag={Switch.Root}` for a member expression — so the runtime helper renders your component rather than an intrinsic. Its tag type is `SupportedHostElementTag | ((props: never) => unknown)` accordingly.
 
-At runtime that component normalizes the theme strings into `Color3` and `UDim` values, reads the environment, applies whichever rules match, tokenizes the dynamic `className` and applies whichever utilities it understands, strips the internal props, and calls `React.createElement` with the original tag and the helper children.
+At runtime that component normalizes the theme strings into `Color3` and `UDim` values, reads the
+environment, and applies whichever rules match. It then tokenizes the dynamic `className`, applies
+the utilities it understands, strips the internal props, and calls `React.createElement` with the
+original tag and the helper children.
 
 Since 0.12.0 that host is a package rather than a copy. `@rbxts/vela-runtime` is one ModuleScript the whole place shares — a `forwardRef` component over the target-neutral `@rbxts/vela-runtime-core` — and a transformed module carries an import and the config it hands the host, not the implementation:
 
@@ -128,28 +138,33 @@ Before that it was inlined whole into every module that needed one, so ten such 
 The host reads `Workspace.CurrentCamera.ViewportSize` for width, height, orientation and rem, `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, and `MouseEnter`/`MouseLeave` on the element itself for `hover:`.
 
 <Callout title="Most files send an emptied theme">
-The config in that call carries only what your project changed. The runtime holds the default theme
-itself, so an untouched scale sends `{}` — and a file whose host never has to *parse* a class value
-sends its scales emptied entirely, since the host only reads them while parsing text handed to it at
-render time. A variant, a branch, a margin, a `divide-*` or a preset animation all reach the host
+The config in that call carries only what your project changed. The runtime holds the default theme itself, so an untouched scale sends `{}`. A file whose host never has to *parse* a class value sends its scales emptied entirely: the host only reads them while parsing text handed to it at render time. A variant, a branch, a margin, a `divide-*` or a preset animation all reach the host
 through props the compiler already resolved, and those tables would sit there unread.
 
 A file that does hand the host a class value it cannot see into — a computed `className`, or a host
 taking a spread, since a spread can carry one — keeps the full tables. `preflight`, `theme.rem` and
 the motion driver stay either way; the host reads those whatever it renders.
 
-An emptied table is marked in `theme.replaced`, which tells the runtime to take it as given rather than
-falling back on its own defaults — the same marker a top-level `theme.colors` uses to keep the defaults
-from being merged back underneath a scale you deliberately replaced.
+An emptied table is marked in `theme.replaced`, telling the runtime to take it as given rather than falling back on its own defaults. It is the same marker a top-level `theme.colors` uses to keep the defaults from being merged back underneath a scale you deliberately replaced.
 </Callout>
 
 ### What triggers the runtime path
 
 Any one of these conditions is sufficient:
 
-**A `className` expression that does not collapse to one static token list.** A template literal with an interpolation, a variable, a call, a spread — anything the compiler cannot reduce to a known list of strings. Since 0.12.0 a **branch** is on this list only in the sense that it needs the host to read its conditions: `a ? "x" : "y"`, `["w-40", tall && "h-10"]` and `{ "px-4": roomy }` name their tokens in the source, so the compiler resolves all of them, with diagnostics, and hands the element the resolved props alongside the tests. Nothing is parsed in-game there.
+**A `className` expression that does not collapse to one static token list.** A template literal
+with an interpolation, a variable, a call, a spread — anything the compiler cannot reduce to a known
+list of strings. Since 0.12.0 a **branch** is on this list only in the sense that it needs the host
+to read its conditions. `a ? "x" : "y"`, `["w-40", tall && "h-10"]` and `{ "px-4": roomy }` all name
+their tokens in the source. The compiler resolves every one of them, with diagnostics, and hands the
+element the resolved props alongside the tests that pick between them. Nothing is parsed in-game
+there.
 
-**Any token carrying a variant prefix.** This one catches people out. The twelve runtime variants are `sm`, `md`, `lg`, `portrait`, `landscape`, `touch`, `mouse`, `gamepad`, `hover`, `active`, `focus`, and `dark`, and a variant necessarily depends on the live environment. So even a plain, fully static string literal forces the runtime path if it contains one:
+**Any token carrying a variant prefix.** This one catches people out. A variant necessarily depends
+on the live environment: the breakpoints and their `max-` complements, `portrait`, `landscape`,
+`touch`, `mouse`, `gamepad`, `hover`, `active`, `focus`, `dark`, and the attribute-backed states you
+register yourself. So even a plain, fully static string literal forces the runtime path if it
+contains one:
 
 ```tsx title="Static string, runtime path"
 <frame className="w-full sm:w-1/2" />
@@ -157,7 +172,11 @@ Any one of these conditions is sufficient:
 
 There is no way to evaluate a breakpoint at compile time, so this is expected — but it is worth knowing that the trigger is the variant, not the dynamism. Since 0.12.0 the cost is an import rather than a copy of the runtime, so the file grows by a few lines rather than a few thousand.
 
-**A structural utility.** Margins (`m-*` and friends, except the static `mx-auto`/`my-auto`), `divide-*`, and `animate-*` build wrapper frames, separator frames, or animation loops — things that cannot exist as static props — so any of them promotes the element even in a plain literal. The one motion utility that does *not* promote is `transition-*` on its own: with no variant rules and no dynamic `className` there is nothing to animate, so it warns `transition-without-runtime` and is dropped.
+**A structural utility.** Margins (`m-*` and friends, except the static `mx-auto`/`my-auto`),
+`divide-*` and `animate-*` build wrapper frames, separator frames or animation loops. None can exist
+as a static prop, so any of them promotes the element even in a plain literal. The one motion
+utility that does *not* promote is `transition-*` on its own: with no variant rules and no dynamic
+`className` there is nothing to animate, so it warns `transition-without-runtime` and is dropped.
 
 <Callout title="The in-game token resolver understands far less than the compiler">
 The runtime token resolver handles the color, background, radius, padding, margin, gap, and sizing prefixes, plus `divide-*`, the case transforms, the text decorations, and the motion families. Every other utility inside a *text* `className` the host has to parse — layout, alignment, text size, position, constraints — is dropped with no diagnostic; it simply does not appear in the output.

@@ -138,7 +138,7 @@ the fill instead and let the classes carry everything that does not change:
 ```
 
 One rule makes this safe: **never set the same property from a class and a prop on one element.**
-When they collide, Vela emits its value after yours and the class wins — a `h-full` next to that
+When they collide, Vela emits its value after yours and the class wins. An `h-full` next to that
 `Size` prop would quietly overwrite the whole thing with `Size = (0, 1)` scale. Keep the classes on
 properties the prop does not touch, as above, and the two compose cleanly.
 

@@ -1,6 +1,6 @@
 ---
 title: Diagnostics
-description: Every diagnostic code Vela can emit at 0.12.4, how it reaches your build or editor, and the caveats that make some of them easy to miss.
+description: Every diagnostic code Vela can emit at 0.13.0, how it reaches your build or editor, and the caveats that make some of them easy to miss.
 product: vela-rbxts
 section: reference
 sidebar:
@@ -37,7 +37,7 @@ before concluding your code is clean.
 
 **Some spans are still guessed, and some are not spans at all.** A diagnostic carries a real source
 range whenever the compiler could anchor it, which covers every token inside a static string
-`className` — those squiggles land on the class you actually wrote, even if the same token appears
+`className`. Those squiggles land on the class you actually wrote, even if the same token appears
 elsewhere in the file. `tsx-parse-failed` is anchored too, and its message names the line and
 column: `Failed to parse TSX input at line 2, column 53: Unexpected token …`.
 
@@ -63,7 +63,10 @@ Every code is a warning unless marked otherwise.
 |---|---|
 | `unsupported-utility-family` | The token does not match any known utility family — including typos |
 | `no-roblox-equivalent` | A real Tailwind family that cannot be expressed in Roblox UI (`tracking-*`, `blur-*`, `cursor-*`, …); the message names the family |
-| `unknown-variant` | A colon prefix that is not one of the twelve variants; the message lists the supported set |
+| `unknown-variant` | A colon prefix that is not a supported variant; the message lists the set, the configured breakpoints, and the `attr-[…]` form |
+| `unknown-breakpoint` | Since 0.13.0: a `max-` in front of something that is not a breakpoint. The message names the configured ones and points at `theme.screens` |
+| `invalid-breakpoint-range` | Since 0.13.0: a chain whose width bounds leave no viewport, as `lg:max-md:` or `md:max-md:`. Emitting it would produce a rule that never fires |
+| `malformed-attribute-variant` | Since 0.13.0: an `attr-[…]` that does not parse — brackets left open, or no value to compare against. The message names which |
 | `unsupported-arbitrary-value` | A `[...]` payload the family cannot read — `w-[abc]`, `bg-[notacolor]`, `font-[600]`. Since 0.7.0 most length families *do* read brackets, and since 0.12.3 a space inside them does not split the token, so `w-[calc(100% - 4px)]` reports this once rather than three times; see [arbitrary values](/vela-rbxts/reference/utilities/#arbitrary-values) |
 | `unsupported-opacity-modifier` | A `/N` opacity modifier on a family with no transparency channel. Since 0.12.0 that is `placeholder-*` alone, and the message says why |
 
@@ -111,7 +114,7 @@ which family rejected what:
 | `unsupported-pointer-events-value` | A `pointer-events-*` outside `none`/`auto` |
 | `unsupported-overscroll-value` | An `overscroll-*` outside `auto`/`contain`/`none` |
 | `unsupported-scroll-value` | A `scroll-*` outside `x`/`y`/`xy`/`none` — which is where Tailwind's `scroll-smooth` and `scroll-m-*` land |
-| `unsupported-transition-value` | An unresolvable transition/duration/delay/ease payload, including `transition-shadow` |
+| `unsupported-transition-value` | An unresolvable transition/duration/delay/ease payload. `transition-shadow` stopped landing here in 0.13.0, when transitions began moving the helper instances |
 | `unsupported-animation-value` | An `animate-*` outside the presets |
 
 Z-index gets four codes of its own, so the message tells you exactly what went wrong: `z-auto` is
@@ -121,10 +124,10 @@ fractional `z-[1.5]` is `unsupported-arbitrary-z-index`, and any other unbracket
 
 **`font-*` now falls through to `unknown-theme-key`.** Since 0.7.0 the prefix resolves the fixed
 weight names first and reads anything else as a key in
-[`theme.fontFamily`](/vela-rbxts/reference/config/#fontfamily), so an unrecognized payload is a
-missing theme key rather than a bad weight: `font-nope`, `font-600` and `font-extrablack` all report
-`unknown-theme-key` in the `fontFamily` family. `unsupported-font-weight` still exists in the code
-table but no payload reaches it.
+[`theme.fontFamily`](/vela-rbxts/reference/config/#fontfamily). An unrecognized payload is therefore
+a missing theme key rather than a bad weight: `font-nope`, `font-600` and `font-extrablack` all
+report `unknown-theme-key` in the `fontFamily` family. `unsupported-font-weight` still exists in the
+code table but no payload reaches it.
 
 `unsupported-scroll-value` and the `transition-shadow` case of `unsupported-transition-value` both
 arrived in 0.7.0 with the [scrolling families](/vela-rbxts/reference/utilities/#scrolling) and the

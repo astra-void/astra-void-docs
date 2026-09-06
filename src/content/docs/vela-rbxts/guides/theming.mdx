@@ -10,7 +10,12 @@ draft: false
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-A Vela theme has exactly five axes: `colors`, `radius`, `spacing`, `fontFamily` since 0.7.0, and `rem` since 0.12.0. There is nothing else in `theme`. No `content`, no `presets`, no `darkMode`, no `prefix`, no `safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you write them. (`plugins` does exist since 0.7.0, but it sits beside `theme` rather than inside it; see [the config reference](/vela-rbxts/reference/config/#plugins).)
+A Vela theme has exactly five axes: `colors`, `radius`, `spacing`, `fontFamily` since 0.7.0, and
+`rem` since 0.12.0. There is nothing else in `theme`. No `content`, no `darkMode`, no `prefix`, no
+`safelist`, no `variants` — those Tailwind config keys do not exist here and are ignored if you
+write them. Two do exist, and sit beside `theme` rather than inside it:
+[`plugins`](/vela-rbxts/reference/config/#plugins) since 0.7.0, and
+[`presets`](/vela-rbxts/reference/config/#presets) since 0.13.0.
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -42,7 +47,11 @@ That preview is compiled against that config, plus a [pinned `rem`](#pinning-off
 
 ## Values are source code, not values
 
-The single most surprising thing about the config: **every theme value is an expression string written in the roblox-ts dialect.** It is not a color object, not a hex string, not a number. On the static path Vela parses the string you write and splices the resulting expression into the TSX it emits, where roblox-ts compiles it like any other expression in your source, so it has to be an expression that evaluates in Roblox.
+The single most surprising thing about the config: **every theme value is an expression string
+written in the roblox-ts dialect.** It is not a color object, not a hex string, not a number. On the
+static path Vela parses the string you write and splices the resulting expression into the TSX it
+emits. roblox-ts then compiles it like any other expression in your source, so it has to be one that
+evaluates in Roblox.
 
 That means colors are written as `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values as `"new UDim(0, 6)"` — roblox-ts syntax, not the `UDim.new(0, 6)` you would write in Luau. Writing `"#3b82f6"` or `6` does not work, but the two fail very differently. A number is rejected at config-load time — every theme value must be a `string`, so `radius: { pill: 999 }` throws while the config is being read. A string is never rejected at all: Vela parses it as an expression and splices in **the first expression that parses**, discarding whatever follows. Nothing is validated, and no diagnostic is ever emitted for any of this.
 
@@ -80,7 +89,7 @@ export default defineConfig({
 ```
 
 <Callout title="The runtime path understands only two exact shapes">
-Everything above describes the **static** path, where your string becomes a real roblox-ts expression. A class that has to be resolved at runtime — anything reaching the runtime host through a dynamic `className` — takes a different route: your theme travels as string *data* and is re-parsed in Luau by two small hand-written parsers that accept exactly two textual forms.
+Everything above describes the **static** path, where your string becomes a real roblox-ts expression. A class resolved at runtime — anything reaching the runtime host through a dynamic `className` — takes a different route. Your theme travels as string *data*, re-parsed in Luau by two small hand-written parsers that accept exactly two textual forms.
 
 - `Color3.fromRGB(r, g, b)` — the prefix must be literally that, with three numeric arguments in `0`–`255`.
 - `new UDim(a, b)` — two numeric arguments.
@@ -148,9 +157,9 @@ Reach for a top-level family only when you genuinely want to start from an empty
 ## Rem
 
 Since **0.12.0**, every pixel offset a utility lowers is a rem unit rather than a raw pixel. `p-4`,
-`w-40`, `rounded-lg`, `text-sm`, `border-2` and `top-2` all follow the viewport: one rem is 16px at a
-1920×1020 viewport and scales from there, so the same class list reads at the same visual weight on a
-phone, a laptop and a 4K monitor.
+`w-40`, `rounded-lg`, `text-sm`, `border-2` and `top-2` all follow the viewport. One rem is 16px at
+a 1920×1020 viewport and scales from there, so the same class list reads at the same visual weight
+on a phone, a laptop and a 4K monitor.
 
 It is on by default. There is no provider to mount, no hook to call and no wrapper component — the
 scaling lives in the emit and in the runtime the emit already imports.
@@ -168,10 +177,11 @@ export default defineConfig({
 });
 ```
 
-The curve follows [Littensy's rem provider](https://github.com/littensy/slither/blob/main/src/client/providers/rem-provider.tsx):
-the viewport diagonal measured against `baseResolution`, with the width first capped at a 19:9 aspect
-ratio so an ultrawide does not inflate the scale, a gentler falloff in portrait, then rounded and
-clamped into `[min, max]`.
+The curve follows
+[Littensy's rem provider](https://github.com/littensy/slither/blob/main/src/client/providers/rem-provider.tsx).
+It measures the viewport diagonal against `baseResolution`, capping the width at a 19:9 aspect ratio
+first so an ultrawide does not inflate the scale, with a gentler falloff in portrait, then rounds
+and clamps into `[min, max]`.
 
 `rem` is the one axis where extend and replace are the same thing. It is a record of four settings
 rather than a scale of keys, so `theme.rem` and `theme.extend.rem` both merge field by field — naming
@@ -197,9 +207,9 @@ export default defineConfig({
 });
 ```
 
-With no room left in it every viewport resolves the same rem, and the compiler drops the scaling from
-the emit **entirely** — offsets lower to plain `UDim2`/`UDim` literals with no binding and no scaler,
-exactly as they did before rem existed:
+With no room left in it every viewport resolves the same rem, and the compiler drops the scaling
+from the emit **entirely**. Offsets lower to plain `UDim2`/`UDim` literals with no binding and no
+scaler, exactly as before rem existed:
 
 ```tsx title='className="p-4 w-40" with the clamp closed'
 <frame Size={UDim2.fromOffset(160, 0)}>
@@ -210,6 +220,15 @@ exactly as they did before rem existed:
 Pinning somewhere *other* than `base` is still a scale, by a constant ratio, so it keeps the binding.
 An inverted clamp (`min` above `max`) collapses onto `min` during config resolution rather than
 erroring in-game.
+
+**A `SurfaceGui` is pinned already, since 0.12.5.** It takes its pixel space from the part it is
+drawn on and its `PixelsPerStud`, and a `BillboardGui` sizes itself the same way. A panel written to
+fit its part should not grow and shrink with the player's screen. `rem.pinnedUnder` names those
+containers — `["surfacegui", "billboardgui"]` by default — and what is written under one lexically
+lowers to literal offsets with no binding at all. A component rendered there, compiled in its own
+file against the viewport, reads the pin at its root and is handed back the offsets it was written
+with. Emptying the list puts both back on the curve; a container the compiler never sees, built in
+Luau or in a file a React root is mounted into, needs the closed clamp above.
 
 ### What the emit looks like
 
@@ -232,9 +251,7 @@ An element that already needs the runtime host keeps plain values and is handed 
 to scale — it re-renders on a rem change anyway, so a binding would be redundant.
 
 <Callout title="This changes rendering on any viewport but the base one">
-Upgrading to 0.12.0 without touching your config will move pixels. A place that was tuned by eye at
-1920×1080 keeps its proportions there and gains them everywhere else, which is the point — but if you
-have layouts you cannot re-check right now, pin the clamp above, ship, and turn it on deliberately.
+Upgrading to 0.12.0 without touching your config will move pixels. A place tuned by eye at 1920×1080 keeps its proportions there and gains them everywhere else, which is the point. If you have layouts you cannot re-check right now, pin the clamp above, ship, and turn it on deliberately.
 </Callout>
 
 ## Semantic colors and shade palettes
@@ -266,7 +283,9 @@ Which one a class name means is decided by `split_color_key`. It splits the clas
 
 So `bg-my-color` looks up the semantic key `my-color`. It is not read as the family `my` with the shade `color`. Multi-word semantic names are safe, and the only names you cannot use are ones that end in a hyphen plus a shade number.
 
-The failure modes are distinct diagnostics: referencing a palette that defines no `DEFAULT` without a shade is `color-missing-shade`, giving a literal a shade is `color-invalid-shade`, asking a palette for a shade it does not define is also `color-invalid-shade`, and a name that is not in the theme at all is `unknown-theme-key`.
+The failure modes are distinct diagnostics. Referencing a palette that defines no `DEFAULT` without
+a shade is `color-missing-shade`. Giving a literal a shade, or asking a palette for a shade it does
+not define, is `color-invalid-shade`. A name that is not in the theme at all is `unknown-theme-key`.
 
 ## What ships by default
 
@@ -310,6 +329,24 @@ Two consequences worth internalising. First, you almost never need to add spacin
 Completions offer a familiar-looking scale — `0`, `0.5`, `1`, `1.5`, `2`, `3`, `4`, `6`, `8`, `12`, `16`, `20`, `24`, `32`, `40`, `64`, `80`. That list is hardcoded editor sugar to make autocomplete useful. It is not theme data, and any other multiple of `0.5` works just as well.
 </Callout>
 
+### Screens
+
+`theme.screens` ships the five breakpoint widths the responsive variants are named after — `sm` 640,
+`md` 768, `lg` 1024, `xl` 1280, `2xl` 1536 — and became configurable in 0.13.0. It follows the same
+replace-versus-extend rule as the scales above, and every key defines two prefixes: a minimum width
+and its `max-` complement.
+
+```ts title="vela.config.ts"
+export default defineConfig({
+  theme: { extend: { screens: { tablet: 900 } } },
+});
+```
+
+That is `tablet:` and `max-tablet:` in two lines. Replacing rather than extending removes `sm`
+through `2xl`, and any class still naming one reports `unknown-breakpoint`. Values are plain numbers,
+not expression strings — this axis and `fontFamily` are the two exceptions to the rule the rest of
+this page is built on.
+
 ### Font family
 
 `theme.fontFamily` ships three keys, and it is the newest axis — added in 0.7.0, when `font-*` stopped being hard-coded to Source Sans Pro.
@@ -322,7 +359,11 @@ Completions offer a familiar-looking scale — `0`, `0.5`, `1`, `1.5`, `2`, `3`,
 
 `sans` is the family an element gets when it names no other, so redefining it changes the default typeface everywhere.
 
-This axis breaks the rule the rest of the page is built on: **these values are not expression strings.** A font family value is the plain asset path that goes into `Font`'s first argument, so `"rbxassetid://12345678"` is correct as written, and the [runtime re-parsing caveat](#values-are-source-code-not-values) does not apply — there is nothing to parse.
+This axis breaks the rule the rest of the page is built on: **these values are not expression
+strings.** A font family value is the plain asset path that goes into `Font`'s first argument, so
+`"rbxassetid://12345678"` is correct as written. The
+[runtime re-parsing caveat](#values-are-source-code-not-values) does not apply — there is nothing to
+parse.
 
 Keys are looked up by `font-*` after the fixed weight names, so avoid naming one after a weight: a `fontFamily.bold` would never resolve, because `font-bold` is a weight first.
 

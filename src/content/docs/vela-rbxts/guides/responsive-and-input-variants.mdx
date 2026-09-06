@@ -1,6 +1,6 @@
 ---
 title: Responsive and input variants
-description: The twelve variant prefixes including hover, active, focus and dark, the exact breakpoints, how orientation and input mode are detected, and the compile-time cost of using a variant at all.
+description: Every variant prefix — the configurable breakpoints and their max- complements, the attribute-backed state variants, hover, active, focus and dark — how each condition is detected, and the compile-time cost of using one at all.
 product: vela-rbxts
 section: guides
 sidebar:
@@ -9,14 +9,14 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela supports twelve variant prefixes. Each one is a condition evaluated at runtime on the player's
-client, and a token only applies when its condition matches.
+A variant is a condition evaluated at runtime on the player's client; a token only applies when its
+condition matches.
 
 | Variant | Matches when |
 | --- | --- |
-| `sm` | viewport width is at least 640 |
-| `md` | viewport width is at least 768 |
-| `lg` | viewport width is at least 1024 |
+| `sm` `md` `lg` `xl` `2xl` | viewport width is at least 640, 768, 1024, 1280, 1536 |
+| `max-sm` … `max-2xl` | viewport width is below that same threshold |
+| `attr-[Name=value]` | the styled instance carries that Roblox attribute |
 | `portrait` | viewport width is less than viewport height |
 | `landscape` | viewport width is greater than or equal to viewport height |
 | `touch` | the active input mode is touch |
@@ -39,25 +39,39 @@ Prefixes chain, and a chained token requires **all** of its conditions to match:
 <frame className="hidden touch:portrait:visible" />
 ```
 
-`active:`, `focus:` and `dark:` arrived in 0.7.0. There is still no `not-` form, no arbitrary
-variant, no `disabled:`, and no group or peer variants. Order within the chain does not matter — the
-conditions are combined as a set. An unrecognized prefix is its own diagnostic, `unknown-variant`,
-whose message lists the supported twelve; the token is dropped.
+`active:`, `focus:` and `dark:` arrived in 0.7.0; the `max-` forms and `attr-[…]` in 0.13.0. There is
+still no `not-` form, no `disabled:`, and no group or peer variants. Order within the chain does not
+matter — the conditions are combined as a set. An unrecognized prefix is its own diagnostic,
+`unknown-variant`, whose message lists the supported set; the token is dropped.
 
-## Breakpoints are min-width only
+## Breakpoints, and their complements
 
-The three breakpoints are hard-coded pixel thresholds on the viewport's X dimension:
+Breakpoints are pixel thresholds on the viewport's X dimension, and **since 0.13.0 they are a theme
+axis** rather than a hard-coded three:
 
-| Variant | Threshold |
-| --- | --- |
-| `sm` | `width >= 640` |
-| `md` | `width >= 768` |
-| `lg` | `width >= 1024` |
+| Variant | Applies when | Complement |
+| --- | --- | --- |
+| `sm:` | `width >= 640` | `max-sm:` — `width < 640` |
+| `md:` | `width >= 768` | `max-md:` — `width < 768` |
+| `lg:` | `width >= 1024` | `max-lg:` — `width < 1024` |
+| `xl:` | `width >= 1280` | `max-xl:` — `width < 1280` |
+| `2xl:` | `width >= 1536` | `max-2xl:` — `width < 1536` |
 
-They are **min-width only**. There is no max-width form and no `max-sm:` style prefix, and the
-thresholds are not configurable through `vela.config.ts` — the theme schema has no breakpoint
-section. As in Tailwind, you write the small-viewport value unprefixed and layer larger viewports on
-top.
+A `max-` form is the **exact** complement of the bare one: the minimum is inclusive and the maximum
+is not, so at exactly 768px `md:` applies and `max-md:` does not, and between them the two cover
+every viewport once. They chain, which is how you address one bucket and nothing else:
+
+```tsx title="Only between 768 and 1024"
+<frame className="md:max-lg:w-1/2" />
+```
+
+A chain whose bounds leave no viewport — `lg:max-md:`, or `md:max-md:` — reports
+`invalid-breakpoint-range` rather than compiling to a rule that never fires. A `max-` in front of
+something that is not a breakpoint reports `unknown-breakpoint` and names the ones that are.
+
+Rename or add thresholds through [`theme.screens`](/vela-rbxts/reference/config/#screens); one entry
+defines both prefixes. As in Tailwind, write the small-viewport value unprefixed and layer larger
+viewports on top.
 
 The helper tracks the camera's `ViewportSize` signal, so a breakpoint re-evaluates when the viewport
 changes rather than being sampled once at mount. (It was sampled once in `0.4.0`, which broke every
@@ -133,9 +147,42 @@ Players.LocalPlayer.SetAttribute("VelaColorScheme", prefersDark ? "dark" : "ligh
 ```
 
 Anything other than `"dark"` — including the attribute being absent, which is the default — is
-treated as light. An instance attribute is the only mechanism that works here: the runtime helper is
-inlined **per module**, so there is no single shared Vela runtime to hold the flag, and the local
-player is the one instance every copy of the helper can reach.
+treated as light. The local player is the one instance every element can reach without a provider, so
+that is where the flag lives.
+
+## State your UI owns
+
+`hover:` is a state Roblox exposes. The states a UI has of its own — a panel that is open, a row that
+is selected, a tier a player reached — have no fixed list for Vela to guess at, so **since 0.13.0 you
+name them**. Both forms read a Roblox attribute off the styled instance:
+
+```tsx title="Inline, where a registration would be ceremony"
+<frame className="rounded-sm attr-[State=open]:rounded-lg" />
+```
+
+```ts title="vela.config.ts — or register a name for it"
+plugin(({ addVariant }) => {
+  addVariant("open", { attribute: "State", equals: "open" });
+});
+```
+
+```tsx title="…and then"
+<frame className="rounded-sm open:rounded-lg" />
+```
+
+The attribute is the one the rest of the game already reads: it replicates from the server, survives
+a rejoin, and shows up in Studio's property panel, so the styling layer holds no second copy of the
+state. Set it the way you set any other:
+
+```tsx
+<frame ref={(f) => f?.SetAttribute("State", isOpen ? "open" : "closed")} />
+```
+
+`equals` takes a string, number or boolean. Both forms compose with every other variant, both are
+checked, completed, hovered and sorted like a built-in one, and neither sends the utility behind them
+to the in-game parser — `open:rounded-lg` lowers `rounded-lg` exactly as a bare `rounded-lg` does, and
+only the condition travels. An `attr-[…]` that does not parse reports `malformed-attribute-variant`
+and names what is missing.
 
 ## The cost: any variant forces the runtime path
 
@@ -146,9 +193,9 @@ plain Roblox props plus a few helper instances — no per-element work, no extra
 
 A variant condition cannot be evaluated at compile time, because it depends on the player's screen,
 input device, or pointer. So any token carrying a variant prefix switches that element onto the
-**runtime path**: the JSX tag is replaced with a `VelaRuntimeHost` component, the element's variant
-tokens are serialized into a `__velaRules` JSON prop, the original tag is passed along as
-`__velaTag`, and the static props are emitted as casts.
+**runtime path**. The JSX tag is replaced with a `VelaRuntimeHost` component, the variant tokens are
+serialized into a `__velaRules` JSON prop, the original tag travels as `__velaTag`, and the static
+props are emitted as casts.
 
 <Callout title="A variant in a plain string literal is enough">
 You do not need a dynamic `className` to trigger this. `className="sm:w-full"` — a fully static
@@ -157,9 +204,9 @@ into that file's output.
 </Callout>
 
 Since **0.12.0** what that costs the file is an import. The host lives in `@rbxts/vela-runtime`, one
-ModuleScript the whole place shares, and a file that needs it carries a `createVelaRuntimeHost(...)`
-call and the config it hands over — a few hundred bytes, or a few thousand for a file whose host has
-to parse a class value and therefore keeps the full theme tables. Before that the host was inlined
+ModuleScript the whole place shares. A file that needs it carries a `createVelaRuntimeHost(...)`
+call and the config it hands over — a few hundred bytes, or a few thousand for a file whose host
+must parse a class value and therefore keeps the full theme tables. Before that the host was inlined
 whole into every such file: the same 5,500 lines twenty times over for twenty component files, each
 copy running its own camera subscription, its own rem binding and its own React context.
 
@@ -171,10 +218,7 @@ The practical consequences:
 
 - **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment
   changes, instead of being a fixed set of props.
-- **Theme values are re-parsed from text.** A host that has to parse a class value reads your theme
-  from serialized text through two narrow Luau parsers, so a value that is valid roblox-ts but not
-  shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades silently in game — see
-  [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
+- **Theme values are re-parsed from text.** A host that has to parse a class value reads your theme from serialized text through two narrow Luau parsers. A value that is valid roblox-ts but not shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades silently in game — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
   A variant alone does not put you here: its rules are resolved by the compiler, so a variant-only
   file ships its scales emptied.
 
@@ -182,17 +226,17 @@ Output size is no longer on that list, and neither are diagnostics — variant-p
 analyzed statically, so you keep your warnings for them. Coverage is not on it either, as of 0.12.0:
 the runtime path resolves every utility family the static path does.
 
-The recommendation is softer than it was, and now rests on runtime work rather than emit size: use
-variants where they earn their keep — a handful of top-level layout containers that genuinely need to
+The recommendation is softer than it was, and now rests on runtime work rather than emit size. Use
+variants where they earn their keep: a handful of top-level layout containers that genuinely need to
 reflow between phone and desktop, an input hint that only makes sense on gamepad, hover feedback on
-interactive controls — and keep leaf components on plain static classes.
+interactive controls. Keep leaf components on plain static classes.
 
 ## Driving reflow yourself
 
-Variants are not the only way to reflow, and sometimes not the best one: when you want thresholds
-the three breakpoints do not cover, or you would rather not pull the runtime host into a file at all,
-read the viewport yourself and branch between two static class strings. Branching the whole element
-keeps both looks on the static path, with no host and the full utility set:
+Variants are not the only way to reflow, and sometimes not the best one. When you would rather not
+pull the runtime host into a file at all, read the viewport yourself and branch between two static
+class strings. Branching the whole element keeps both looks on the static path, with no host and the
+full utility set:
 
 ```tsx title="src/client/ResponsiveShell.tsx"
 function useViewportWide(threshold: number) {
