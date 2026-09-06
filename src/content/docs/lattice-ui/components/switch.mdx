@@ -16,9 +16,11 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy, ForwardedProps, Loom
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-motion"]}
 />
 
-Switch is the primitive for an on/off toggle: settings flips, feature enables, and any binary control. The root is the toggleable track that owns checked state, and the thumb slides between the two ends as the state changes. Everything visual — the track's size and color, the thumb's shape — is yours.
-
-Reach for Switch when a control is **boolean**, should **toggle on activation**, and wants a **thumb that animates** between off and on positions. If you need a third `"indeterminate"` state or a reveal-style indicator instead of a sliding handle, [Checkbox](/lattice-ui/components/checkbox/) is usually the better fit.
+Switch is the primitive for an on/off toggle. The root is the toggleable track that owns checked
+state, and the thumb slides between its two ends; everything visual is yours. Reach for it when a
+control is **boolean**, should **toggle on activation**, and wants a **thumb that animates**. For a
+third `"indeterminate"` state or a reveal-style indicator,
+[Checkbox](/lattice-ui/components/checkbox/) fits better.
 
 ## Preview
 
@@ -53,7 +55,9 @@ import { Switch } from "@lattice-ui/react-switch";
 
 ### Basic usage
 
-The smallest switch that is actually visible: uncontrolled state seeded with `defaultChecked`, and just enough styling to see it. The root renders a `textbutton` and the thumb a `frame`, both unstyled, so the size and colors below are the minimum — without them the switch works but draws nothing.
+Uncontrolled state seeded with `defaultChecked`, plus just enough styling to see it. The root
+renders a `textbutton` and the thumb a `frame`, both unstyled, so without a size and colours the
+switch works but draws nothing.
 
 ```tsx title="BasicSwitch.tsx"
 import { Switch } from "@lattice-ui/react-switch";
@@ -80,7 +84,8 @@ export function BasicSwitch() {
 
 ### Controlled settings toggle
 
-Pass `checked` and `onCheckedChange` when something outside the switch needs to read or set the value — persisting a setting, syncing with a server, or resetting from elsewhere. Here a music toggle keeps local state for instant feedback and forwards every change to a save callback.
+Pass `checked` and `onCheckedChange` when something outside needs to read or set the value. Here a
+music toggle keeps local state for instant feedback and forwards every change to a save callback.
 
 ```tsx title="MusicToggle.tsx"
 import { useState } from "@rbxts/react";
@@ -129,7 +134,10 @@ export function MusicToggle(props: { onSave: (enabled: boolean) => void }) {
 
 ### Custom track and thumb with asChild
 
-Use `asChild` on the root when you need a `frame` track rather than the `textbutton` the root renders, and on the thumb to slide your own handle. Track color is always yours — branch on the controlled state directly. The thumb still animates: its travel resolves to the track width minus the thumb width, whatever size you make either one.
+Use `asChild` on the root for a `frame` track rather than a `textbutton`, and on the thumb to slide
+your own handle. Track colour is always yours, so branch on the controlled state directly. The thumb
+still animates — its travel resolves to the track width minus the thumb width, whatever size you
+make either.
 
 ```tsx title="StyledSwitch.tsx"
 import { useState } from "@rbxts/react";
@@ -164,12 +172,14 @@ export function StyledSwitch() {
 ```
 
 <Callout title="Track color is yours">
-Before 0.7.0 the root could animate its own `BackgroundColor3` through `trackColorMode`, `trackOnColor`, `trackOffColor` and `disabledTrackColor`. Those props are gone, along with the `SwitchTrackColorMode` type. Derive the color from the checked state you already control, as above; if you want it to ease rather than snap, animate it yourself.
+The root never animates its own `BackgroundColor3` — there are no track-colour props. Derive the colour from the checked state you already control, and animate it yourself if you want it to ease rather than snap.
 </Callout>
 
 ### Disabled state
 
-`disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are dropped — and removes the switch from gamepad selection. Nothing about the appearance changes on its own, so render the inert look yourself. Here a premium-only option stays visible but inactive.
+`disabled` blocks toggling entirely — activation is ignored, `setChecked` calls from context are
+dropped — and removes the switch from gamepad selection. Nothing about the appearance changes on its
+own, so render the inert look yourself.
 
 ```tsx title="PremiumToggle.tsx"
 import { Switch } from "@lattice-ui/react-switch";
@@ -198,7 +208,9 @@ export function PremiumToggle(props: { hasPremium: boolean }) {
 
 ### Custom thumb size
 
-The thumb's motion has no transition prop — the slide is a fixed short settle — but the geometry adapts to your handle on its own. Travel resolves to the track width minus the thumb width, and the thumb stays vertically centered at any height, so you do not have to compute insets or match sizes.
+The thumb's slide is a fixed short settle with no transition prop, but the geometry adapts to your
+handle: travel resolves to the track width minus the thumb width, and the thumb stays vertically
+centred at any height.
 
 ```tsx title="LargeThumbSwitch.tsx"
 import { useState } from "@rbxts/react";
@@ -231,13 +243,18 @@ export function LargeThumbSwitch() {
 
 ### Checked state
 
-`Switch.Root` is controllable on `checked`/`onCheckedChange`, with `defaultChecked` for uncontrolled usage (defaulting to `false`). The state is a plain boolean — activating the root flips it. When `disabled`, both the toggle and direct `setChecked` calls from context are ignored, so the state cannot change until the switch is re-enabled.
+Controllable on `checked`/`onCheckedChange`, with `defaultChecked` for uncontrolled usage. The state
+is a plain boolean that activation flips. While `disabled`, both the toggle and direct `setChecked`
+calls are ignored.
 
 ### Activation and selection
 
-`Switch.Root` renders an activatable `textbutton` that toggles on `Activated`, so click, tap, and gamepad activation all work. It carries no size, color or label of its own — pass those as props. It is `Active` and `Selectable` only while enabled, so a disabled switch drops out of gamepad selection.
+`Switch.Root` renders an activatable `textbutton` that toggles on `Activated`, so click, tap and
+gamepad activation all work. It carries no size, colour or label of its own, and is `Active` and
+`Selectable` only while enabled.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose (both the slot's `Activated` toggle and any handler you pass on the child run). Use an element that fires `Activated`, such as a `textbutton` or `imagebutton`.
+Under `asChild` the slot's `Active`, `Selectable` and ref win over the child's props, and event
+handlers compose. Use an element that fires `Activated`.
 
 ### Track color
 
@@ -249,24 +266,26 @@ The track's `BackgroundColor3` is entirely yours. Derive it from the same `check
 
 ### The thumb
 
-`Switch.Thumb` animates between the two ends of the track as `checked` changes. Checked parks the
-thumb's trailing edge on the track's trailing edge; unchecked parks its leading edge on the leading
-edge. Because `AnchorPoint` and `Position` interpolate together, the travel resolves to the track
-width minus the thumb width for **any** thumb width. The primitive never needs to know how wide you
-made it, so a thumb sized through a child element, a size constraint or a layout works as well as
-one with a declared `Size`. The same pairing on the Y axis keeps the thumb centered in the track at
-any height.
+`Switch.Thumb` animates between the ends of the track as `checked` changes: checked parks its
+trailing edge on the track's trailing edge, unchecked its leading edge on the leading edge. Because
+`AnchorPoint` and `Position` interpolate together, travel resolves to the track width minus the
+thumb width for **any** thumb width — so one sized through a child element, a constraint or a layout
+works as well as one with a declared `Size`. The same pairing on Y keeps it centred at any height.
 
 Motion owns `AnchorPoint` and `Position` under a `layout` target contract, so both are dropped from anything you pass rather than being written and clobbered on the next frame. Style the thumb with size, color, corners and children instead.
 
-Under `asChild`, the primitive wraps your element in a transparent frame that it animates, and pins your element to `Position` (0, 0) inside that wrapper — so put your styling on the child, but leave its `Position` alone. The thumb is always mounted regardless of checked state; unlike `Checkbox.Indicator` it is not presence-driven, so there is no `forceMount` prop.
+Under `asChild` the primitive wraps your element in a transparent frame it animates and pins your
+element to `Position` (0, 0) inside it — style the child, but leave its `Position` alone. The thumb
+is always mounted, so unlike `Checkbox.Indicator` there is no `forceMount`.
 
 ### Motion
 
-The thumb slide is a fixed short response settle — a 0.08s swift, responsive tween — so toggling feels immediate but smooth rather than snapping. Neither `Root` nor `Thumb` exposes a `transition` prop; you shape the feel through geometry instead. Nothing else on the switch animates: since 0.7.0 the track color is yours, so any color transition is yours to drive too.
+The slide is a fixed 0.08s settle, so toggling feels immediate but smooth. Neither `Root` nor
+`Thumb` exposes a `transition` — you shape the feel through geometry. Nothing else animates: the
+track colour is yours, so any colour transition is yours to drive.
 
 <Callout title="Roblox gotchas">
-The root is a Roblox button (`textbutton`, or your slotted element via `asChild`). It is made `Active` and `Selectable` only while enabled, so a disabled switch drops out of gamepad selection. Give the track a real size — the thumb's travel is measured against it.
+The root is a Roblox button, `Active` and `Selectable` only while enabled, so a disabled switch drops out of gamepad selection. Give the track a real size — the thumb's travel is measured against it.
 </Callout>
 
 ## API reference

@@ -16,9 +16,12 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-motion"]}
 />
 
-Toggle Group is the primitive for a related set of toggles that share selection state: view switches, filter chips, text-alignment pickers, and difficulty selectors. `Root` owns the selected value and tells each `Item` whether it is pressed, so your items only render their two visual states.
-
-Reach for Toggle Group when several toggles belong together and should behave as **one control** — either a **single-select** group where picking one clears the others, or a **multiple-select** group where each item toggles independently. For a lone on/off control, [Checkbox](/lattice-ui/components/checkbox/) or [Switch](/lattice-ui/components/switch/) is the better fit.
+Toggle Group is for a related set of toggles sharing selection state: view switches, filter chips,
+alignment pickers. `Root` owns the value and tells each `Item` whether it is pressed, so your items
+only render their two visual states. Reach for it when several toggles should behave as **one
+control** — **single-select**, where picking one clears the others, or **multiple-select**, where
+each toggles independently. For a lone on/off control, use
+[Checkbox](/lattice-ui/components/checkbox/) or [Switch](/lattice-ui/components/switch/).
 
 ## Preview
 
@@ -54,7 +57,9 @@ A `Root` wrapping one `Item` per option. `Root` requires a `type` that fixes the
 
 ### Single-select toolbar
 
-The smallest useful group: an uncontrolled single-select mode picker seeded with `defaultValue`. Each default item renders as a `textbutton` labeled with its `value`, which makes it easy to wire the group up before styling anything. In single mode, activating the already-pressed item clears the selection — `onValueChange` then fires with `undefined` — so a toolbar like this can also be fully deselected.
+An uncontrolled single-select picker seeded with `defaultValue`. In single mode, activating the
+already-pressed item clears the selection and `onValueChange` fires with `undefined`, so a toolbar
+like this can be fully deselected.
 
 ```tsx title="HotbarModePicker.tsx"
 import { ToggleGroup } from "@lattice-ui/react-toggle-group";
@@ -80,7 +85,9 @@ export function HotbarModePicker() {
 
 ### Multiple-select filters
 
-Switch `type` to `"multiple"` and the value becomes a `string[]`: each item toggles independently, and the array preserves the order in which items were selected. `defaultValue` seeds the initial set for uncontrolled usage (it defaults to an empty array), and `onValueChange` receives the full next array on every toggle.
+With `type="multiple"` the value becomes a `string[]`: each item toggles independently and the array
+preserves selection order. `defaultValue` seeds the initial set, and `onValueChange` receives the
+full next array on every toggle.
 
 ```tsx title="ItemFilters.tsx"
 import { ToggleGroup } from "@lattice-ui/react-toggle-group";
@@ -106,7 +113,8 @@ export function ItemFilters() {
 
 ### Controlled group
 
-Pass `value` and `onValueChange` when something outside the group reads or sets the selection. Here a start button reads the picked difficulty and stays inert while the selection is cleared — in single mode the controlled value is `string | undefined`, so design the surrounding UI around the `undefined` case.
+Pass `value` and `onValueChange` when something outside reads or sets the selection. In single mode
+the controlled value is `string | undefined`, so design the surrounding UI around the empty case.
 
 ```tsx title="DifficultyPicker.tsx"
 import { useState } from "@rbxts/react";
@@ -153,7 +161,9 @@ export function DifficultyPicker(props: { onStart: (difficulty: string) => void 
 
 ### Disabled group and disabled items
 
-`disabled` works at two levels. On `Root` it freezes the whole control: every item ignores activation, and `Root`'s toggle logic is short-circuited so nothing can change the value while it is set. On an `Item` it disables just that option while the rest of the group keeps working. Here the loadout is locked during a match, and one class is additionally locked behind premium.
+`disabled` works at two levels. On `Root` it freezes the whole control — every item ignores
+activation, and the toggle logic is short-circuited so nothing can change the value. On an `Item` it
+disables just that option.
 
 ```tsx title="LoadoutModes.tsx"
 import { ToggleGroup } from "@lattice-ui/react-toggle-group";
@@ -177,7 +187,9 @@ A disabled item is marked inactive (`Active={false}`) but still renders its pres
 
 ### Custom pressed visuals with asChild
 
-Use `asChild` on `Root` when you need a different container class, and on each `Item` to project the toggle behavior onto your own button. Since 0.7.0 the primitive never writes an item's colors, so read the pressed state from `Root` and set `BackgroundColor3` and `TextColor3` yourself (see [How it behaves](#item-colors)).
+Use `asChild` on `Root` for a different container class, and on each `Item` to project the toggle
+onto your own button. The primitive never writes an item's colours, so read the pressed state from
+`Root` and set `BackgroundColor3` and `TextColor3` yourself.
 
 ```tsx title="StyledViewSwitch.tsx"
 import { useState } from "@rbxts/react";
@@ -220,36 +232,48 @@ export function StyledViewSwitch() {
 }
 ```
 
-`ToggleGroup.Item` no longer accepts a `transition` as of 0.7.0 — the prop existed only to time the color animation that has been removed. Animate your own colors if you want the change to ease.
+`ToggleGroup.Item` accepts no `transition` — that prop only ever timed a colour animation the
+primitive no longer runs. Animate your own colours if you want the change to ease.
 
 ## How it behaves
 
 ### Value state
 
-`ToggleGroup.Root` is controllable. Pass `value` and `onValueChange` to control the selection, or omit them and pass `defaultValue` to let the group own it — `onValueChange` still fires on every change in uncontrolled usage. Each `Item` reads its own pressed state from the group through context, so controlled and uncontrolled usage behave identically. Activating an item routes through `Root`, which updates the shared value.
+Pass `value` and `onValueChange` to control the selection, or `defaultValue` to let the group own it
+— `onValueChange` fires on every change either way. Each `Item` reads its pressed state from context
+and routes activation through `Root`, so both modes behave identically.
 
 ### Single vs multiple
 
 The required `type` prop fixes the group's behavior and the shape of its value:
 
-- **`type="single"`** — `value`/`defaultValue` are `string`, and `onValueChange` receives `string | undefined`. Selecting an item replaces the current value; selecting the already-selected item clears it, so the value becomes `undefined`.
-- **`type="multiple"`** — `value`/`defaultValue` are `string[]`, and `onValueChange` receives `string[]`. Each item toggles independently: a newly selected value is appended to the end, so the array preserves selection order. Incoming values (controlled `value`, `defaultValue`, and the array handed to `onValueChange`) are normalized — duplicate and non-string entries are stripped.
+- **`type="single"`** — the value is a `string`, and `onValueChange` receives `string | undefined`. Selecting replaces the current value; selecting the already-selected item clears it.
+- **`type="multiple"`** — the value is a `string[]`. A newly selected value is appended, so the array preserves selection order, and incoming arrays are normalized with duplicate and non-string entries stripped.
 
 Because the value type and the `onValueChange` signature are a discriminated union over `type`, set `type` as a literal so TypeScript can narrow to the right props.
 
 ### Activation and selection
 
-`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space` via `InputBegan`, so mouse, touch, keyboard, and gamepad activation all work. It renders an unstyled `textbutton` with `AutoButtonColor` off, and does **not** render `value` as its text — pass a `Text` of your own. Items are rendered with `Selectable={false}` on the button itself — manage gamepad selection at the surrounding layout if you need it.
+`ToggleGroup.Item` toggles on `Activated` and on `Return`/`Space`, so mouse, touch, keyboard and
+gamepad activation all work. It renders an unstyled `textbutton` with `AutoButtonColor` off and does
+**not** render `value` as its text. Items render with `Selectable={false}`, so manage gamepad
+selection at the surrounding layout.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and motion ref win over the child's own props, and event handlers compose (both the primitive's `Activated`/`InputBegan` handlers and any you pass on the child run). Use a `textbutton` or `imagebutton` so `Activated` fires.
+Under `asChild` the slot's `Active`, `Selectable` and motion ref win over the child's props, and
+event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
 
 ### Group container
 
-`Root` renders a transparent, borderless frame with no size of its own — it is a context boundary, not a laid-out surface. Put a `uilistlayout` (or your own positioning) inside it to arrange the items, and pass a `Size` so it reserves space in a flow layout.
+`Root` renders a transparent frame with no size of its own — a context boundary, not a laid-out
+surface. Put a `uilistlayout` inside it to arrange the items, and pass a `Size` so it reserves space
+in a flow layout.
 
 ### Disabled state
 
-`disabled` on `Root` disables the entire group; `disabled` on an `Item` disables just that one. A disabled item ignores both activation and keyboard toggles and is marked inactive (`Active={false}`), but keeps rendering its pressed visuals. Group-level disabled additionally short-circuits `Root`'s toggle logic, so no value change can get through while it is set — including from an item that missed the flag.
+`disabled` on `Root` disables the group; on an `Item` just that one. A disabled item ignores
+activation and keyboard toggles and is marked `Active={false}`, but keeps rendering its pressed
+visuals. Group-level disabled also short-circuits `Root`'s toggle logic, so nothing gets through —
+including from an item that missed the flag.
 
 ### Item colors
 

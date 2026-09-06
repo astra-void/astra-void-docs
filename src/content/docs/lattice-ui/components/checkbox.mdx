@@ -16,9 +16,10 @@ import { PackageMeta, PropTable, Callout, LoomPreview } from "@/components/docs/
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
-Checkbox is the primitive for a toggleable on/off control with an optional third `"indeterminate"` state. It owns the checked state, the toggle logic, and the reveal/exit motion of its indicator, so your component only has to render the box and what goes inside it.
-
-Reach for Checkbox for settings toggles, opt-ins, multi-select lists, and "select all" headers — anywhere you need a tri-state value (checked, unchecked, or indeterminate) with controlled or uncontrolled state and a built-in animated indicator. For a plain boolean flip with a sliding handle, [Switch](/lattice-ui/components/switch/) is usually the better fit.
+Checkbox is a toggleable on/off control with an optional third `"indeterminate"` state. It owns the
+checked state, the toggle logic and its indicator's reveal and exit motion. Reach for it for
+settings toggles, opt-ins, multi-select lists and "select all" headers. For a plain boolean flip
+with a sliding handle, [Switch](/lattice-ui/components/switch/) fits better.
 
 ## Preview
 
@@ -51,7 +52,8 @@ Compose `Root` as the toggleable button and place an `Indicator` inside it to sh
 
 ### Basic usage
 
-Uncontrolled state seeded with `defaultChecked`. The root renders an unstyled `textbutton` with no label of its own, so give it a size and colors — the state below is wired up correctly either way, but nothing is drawn until you say what it should look like.
+Uncontrolled state seeded with `defaultChecked`. The root renders an unstyled `textbutton` with no
+label of its own, so nothing is drawn until you give it a size and colours.
 
 ```tsx title="BasicCheckbox.tsx"
 import { Checkbox } from "@lattice-ui/react-checkbox";
@@ -89,7 +91,9 @@ export function RememberMeCheckbox() {
 
 ### Custom box with asChild
 
-Use `asChild` to project the toggle behavior onto your own button, and give the indicator a glyph. The root no longer touches your box's color, so branch on the checked state yourself. If you want the indicator to animate in, pass a `transition` built with `createIndicatorRevealRecipe` at your indicator's actual size.
+Use `asChild` to project the toggle onto your own button and give the indicator a glyph. The root
+never touches your box's colour, so branch on the checked state yourself. To animate the indicator
+in, pass a `transition` built with `createIndicatorRevealRecipe` at its actual size.
 
 ```tsx title="StyledCheckbox.tsx"
 import { useState } from "@rbxts/react";
@@ -266,7 +270,9 @@ export function PremiumOption(props: { hasPremium: boolean }) {
 
 `Checkbox.Root` is controllable on `checked`/`onCheckedChange`, with `defaultChecked` for uncontrolled usage (defaulting to `false`). The state is a `CheckedState` — `true`, `false`, or `"indeterminate"` — so it supports the tri-state "select all" pattern as well as a plain boolean toggle.
 
-Activating the checkbox runs a toggle: from `"indeterminate"` it goes to `true`, otherwise it flips the boolean. To set the indeterminate state, drive it yourself through controlled `checked` (typically computed from child selections); the toggle never produces `"indeterminate"` on its own.
+Activation toggles: from `"indeterminate"` to `true`, otherwise flipping the boolean. Set the
+indeterminate state yourself through controlled `checked`, typically computed from child selections
+— the toggle never produces it.
 
 ### Activation and selection
 
