@@ -40,10 +40,7 @@ The config field is the right one for a team: everyone who clones the project ge
 registry without remembering a flag.
 
 <Callout title="The default URL is baked into every released CLI">
-`https://facet.astra-void.xyz/r` is a constant in the published package, which is why the Facet
-repo's own deploy generates a `CNAME` file as part of the site artifact — deploying from a GitHub
-Actions artifact replaces the whole site, and without it GitHub can revert the custom domain to the
-`github.io` default. That outage is not something a patch release fixes quickly.
+`https://facet.astra-void.xyz/r` is a constant in the published package. That is why the Facet repo's own deploy generates a `CNAME` file as part of the site artifact: deploying from a GitHub Actions artifact replaces the whole site, and without it GitHub can revert the custom domain to the `github.io` default. That outage is not something a patch release fixes quickly.
 </Callout>
 
 ## What a registry has to serve
@@ -75,10 +72,10 @@ pnpm registry:build     # registry/ → site/
 ```
 
 `site/` is generated and never committed, so the published registry cannot drift from `registry/`.
-The build emits the index, one JSON per item, an immutable `r/<sha>/` copy of both, a landing page
-listing what exists, a `CNAME`, a `.nojekyll` (Pages runs Jekyll otherwise, which eats
-underscore-prefixed paths), `schema.json` — the JSON Schema every `facet.json` names in its own
-`$schema` — and `revisions.json`, listing which frozen revisions exist.
+The build emits the index, one JSON per item, and an immutable `r/<sha>/` copy of both. Alongside
+those: a landing page listing what exists, a `CNAME`, a `.nojekyll` (Pages runs Jekyll otherwise,
+which eats underscore-prefixed paths), `schema.json` — the JSON Schema every `facet.json` names in
+its own `$schema` — and `revisions.json`, listing which frozen revisions exist.
 
 `schema.json` is generated from the `FacetConfig` type rather than checked in, so it cannot be a
 version behind the CLI that writes the files pointing at it. It is typed to cover every key of that

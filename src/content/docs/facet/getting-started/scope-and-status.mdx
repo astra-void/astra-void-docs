@@ -9,10 +9,10 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Facet is early. The whole chain works end to end — all three packages are on npm, the registry is
+Facet is early. The whole chain works end to end. All three packages are on npm, the registry is
 live, and `npm i -D facet-rbxts` → `facet init` → `facet add button` → `rbxtsc` compiles in a
-project set up from scratch — and the registry now holds twenty-one components. What has *not* been
-checked is how most of them look.
+project set up from scratch. The registry holds twenty-one components. What has *not* been checked
+is how most of them look.
 
 ## What ships at 0.4.0
 
@@ -191,10 +191,7 @@ Each of these is written down in the repo with the reasoning kept where it can b
   middle option, a runtime `ThemeProvider` alongside classes, is probably the trap: it buys runtime
   theming at the cost of the property that makes copy-in work, which is that a component's
   appearance is entirely described by its classes.
-- **Whether `facet diff` should fetch the text a component was copied from.** Revisions make it
-  *possible* — the base text is now addressable rather than something you would have to store — but
-  it needs a record of which revision each component came from, which reopens
-  [provenance](/facet/guides/updating-copied-components/#why-there-is-no-lock-file). Nothing is
+- **Whether `facet diff` should fetch the text a component was copied from.** Revisions make it *possible*, since the base text is now addressable rather than something you would have to store. But it needs a record of which revision each component came from, which reopens [provenance](/facet/guides/updating-copied-components/#why-there-is-no-lock-file). Nothing is
   built.
 - **`facet create`** — scaffolding a new roblox-ts project preconfigured for Facet, as Lattice's CLI
   does.

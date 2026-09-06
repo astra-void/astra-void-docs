@@ -393,9 +393,16 @@ While the list is open, Combobox reconciles the value against the item registry:
 
 ### Filtering
 
-Filtering is per-item, not per-list. `Combobox.Item` declares a `value` and an optional `textValue` (the text matched and displayed; defaults to `value`), and each item evaluates the root's `filterFn(textValue, query)` itself: a non-matching item sets its own `Visible` to false and becomes non-interactive, both for the button the part renders and for your element under `asChild`. The content never removes or reorders nodes, so your layout simply collapses around hidden items.
+Filtering is per-item, not per-list. `Combobox.Item` declares a `value` and an optional `textValue`
+— the text matched and displayed, defaulting to `value`. Each item evaluates the root's
+`filterFn(textValue, query)` itself: a non-matching item sets its own `Visible` to false and becomes
+non-interactive, both for the button the part renders and for your element under `asChild`. The
+content never removes or reorders nodes, so your layout simply collapses around hidden items.
 
-The active query is the text the user typed. Selecting an item syncs the field text without changing the open list's query, so the list does not collapse to the selected item at the moment of selection; when the list closes, the query is re-synced from the field text, so reopening from the trigger shows the list filtered by the selected item's text.
+The active query is the text the user typed. Selecting an item syncs the field text without changing
+the open list's query, so the list does not collapse to the selected item at the moment of
+selection. When the list closes, the query is re-synced from the field text, so reopening from the
+trigger shows the list filtered by the selected item's text.
 
 The default filter is a case-insensitive plain substring match. The package also exports the pieces as plain functions — `defaultComboboxFilter`, `filterComboboxOptions`, and `resolveComboboxInputValue` — so you can mirror the primitive's filtering in your own logic, such as an empty-state check or an external result count.
 

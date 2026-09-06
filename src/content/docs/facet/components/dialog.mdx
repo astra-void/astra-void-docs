@@ -99,9 +99,7 @@ One wrapper, at the client entry, for the whole app — not per dialog. Every la
 registry will declare the same one, so this edit happens once.
 
 <Callout title="Why the CLI edits a file for this and nothing else">
-`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json`
-rather than editing it: both files belong to you, and a pattern-matched edit that mangles one is
-worse than a printed snippet.
+`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json` rather than editing it. Both files belong to you, and a pattern-matched edit that mangles one is worse than a printed snippet.
 
 This is the exception, because every other thing the CLI reports is a **build-time** failure. A
 missing transformer means every class is inert on the next `rbxtsc`. A missing token is a Vela
@@ -198,10 +196,10 @@ both modes — that is what makes them roles.
 | `bg-foreground/80` | zinc-50 ✗ | zinc-950 ✓ |
 | `bg-muted/80` | zinc-800 ✓ | zinc-100 ✗ |
 
-A token was not added for it either. A token is a published surface — `facet doctor` checks a
+A token was not added for it either. A token is a published surface: `facet doctor` checks a
 project's theme against the tokens each installed component names, `@facet-ui/theme` ships the
-defaults, every upgrade inherits it — which is a large permanent commitment for one class in one
-component, encoding something ("a scrim is dark") nobody will want to retheme. If `sheet` and
+defaults, and every upgrade inherits it. That is a large permanent commitment for one class in one
+component, encoding something — "a scrim is dark" — nobody will want to retheme. If `sheet` and
 `drawer` turn out to want it too, that is when the argument restarts.
 
 ### `overlayClassName`, not `className`

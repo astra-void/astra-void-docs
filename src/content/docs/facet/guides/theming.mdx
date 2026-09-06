@@ -130,9 +130,7 @@ made by the compiler, not by the running game.
 There is no `useTheme()` and no way to flip a settings toggle to light mode with the components as
 they are.
 
-The previews on this site are built the same way, and show it: flipping the docs' own light/dark
-toggle **reloads the frame against a different build** rather than repainting the one that is
-running, because there is nothing in a running Facet tree that a theme signal could reach.
+The previews on this site are built the same way, and show it. Flipping the docs' own light/dark toggle **reloads the frame against a different build** rather than repainting the one that is running: there is nothing in a running Facet tree that a theme signal could reach.
 </Callout>
 
 This is a real gap and it is [an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open),

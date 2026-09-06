@@ -364,7 +364,12 @@ export function LootFilterMenu(props: { hasLoot: boolean }) {
 
 ### Positioning
 
-`Menu.Content` is positioned by the popper foundation, anchored to the trigger. It measures the trigger and the content, then evaluates candidate placements in order — the requested side, its opposite, then the two orthogonal sides (which carry a small penalty so they are only chosen when both primary sides overflow) — and picks the first perfect fit or the least-overflowing candidate, clamped inside the viewport with `collisionPadding` kept from every edge. Until the first measurement completes the content is parked off-screen, so it never flashes at the wrong position.
+`Menu.Content` is positioned by the popper foundation, anchored to the trigger. It measures the
+trigger and the content, then evaluates candidate placements in order: the requested side, its
+opposite, then the two orthogonal sides, which carry a small penalty so they are only chosen when
+both primary sides overflow. It picks the first perfect fit, or the least-overflowing candidate,
+clamped inside the viewport with `collisionPadding` kept from every edge. Until the first
+measurement completes the content is parked off-screen, so it never flashes at the wrong position.
 
 Tune the result with `placement` (default `"bottom"`), `sideOffset` (gap from the trigger, default `0`), `alignOffset` (shift along the cross axis, default `0`), and `collisionPadding` (default `8`).
 

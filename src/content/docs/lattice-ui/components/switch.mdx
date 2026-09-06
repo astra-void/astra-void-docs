@@ -251,7 +251,13 @@ The track's `BackgroundColor3` is entirely yours. Derive it from the same `check
 
 ### The thumb
 
-`Switch.Thumb` animates between the two ends of the track as `checked` changes. Checked parks the thumb's trailing edge on the track's trailing edge; unchecked parks its leading edge on the leading edge. Because `AnchorPoint` and `Position` interpolate together, the travel resolves to the track width minus the thumb width for **any** thumb width — the primitive never needs to know how wide you made it, and a thumb sized through a child element, a size constraint, or a layout works as well as one with a declared `Size`. The same pairing on the Y axis keeps the thumb centered in the track at any height.
+`Switch.Thumb` animates between the two ends of the track as `checked` changes. Checked parks the
+thumb's trailing edge on the track's trailing edge; unchecked parks its leading edge on the leading
+edge. Because `AnchorPoint` and `Position` interpolate together, the travel resolves to the track
+width minus the thumb width for **any** thumb width. The primitive never needs to know how wide you
+made it, so a thumb sized through a child element, a size constraint or a layout works as well as
+one with a declared `Size`. The same pairing on the Y axis keeps the thumb centered in the track at
+any height.
 
 Motion owns `AnchorPoint` and `Position` under a `layout` target contract, so both are dropped from anything you pass rather than being written and clobbered on the next frame. Style the thumb with size, color, corners and children instead.
 

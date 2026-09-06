@@ -144,9 +144,7 @@ reuses the expression that is there and stops when there is none.
 The prompt defaults to yes and is the last thing `add` does, so nothing scrolls past it. `--yes`
 writes without asking.
 
-A **non-interactive** run without `--yes` writes nothing and prints the snippet, reported as
-*"nothing here to ask, and this is not a file to edit unasked"*. stdin not being a terminal is not
-consent — and it is also not you having declined, which is why the two read differently.
+A **non-interactive** run without `--yes` writes nothing and prints the snippet, reported as *"nothing here to ask, and this is not a file to edit unasked"*. stdin not being a terminal is not consent. It is also not you having declined, which is why the two read differently.
 </Callout>
 
 `facet doctor` checks the same thing on every run, so a provider that gets refactored out later is

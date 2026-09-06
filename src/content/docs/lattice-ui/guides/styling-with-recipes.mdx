@@ -58,7 +58,11 @@ export function Card(props: { title: string }) {
 }
 ```
 
-Direct host props and the resolved `sx` are combined with `mergeGuiProps`, the merge used everywhere in this package: later layers win key-by-key, except that `Event` and `Change` handler tables are **chained** — when two layers bind the same signal, both handlers run in order instead of one clobbering the other. On `Box` and `Text` the resolved `sx` is the later layer, so a themed `sx` value overrides a direct prop with the same key.
+Direct host props and the resolved `sx` are combined with `mergeGuiProps`, the merge used everywhere
+in this package. Later layers win key-by-key, except that `Event` and `Change` handler tables are
+**chained**: when two layers bind the same signal, both handlers run in order instead of one
+clobbering the other. On `Box` and `Text` the resolved `sx` is the later layer, so a themed `sx`
+value overrides a direct prop with the same key.
 
 When you need to combine several sx values — a shared base plus a caller override — use `mergeSx`. It returns a single theme-resolving function that folds its arguments left to right, later entries winning:
 
@@ -197,7 +201,10 @@ export function StyledCheckbox(props: { label: string; size?: "sm" | "md" }) {
 Spread recipe output onto a real intrinsic (`textbutton`, `imagebutton`) when the part is interactive. A `Box` renders a `frame`, which has no `Activated` signal, and `Box` is a function component that does not forward a ref to its instance — so wrapping an interactive part's `asChild` child in `Box` would silently drop both the activation behavior and the primitive's ref.
 </Callout>
 
-For non-interactive parts the pairing runs the other way: `Box` and `Text` themselves support `asChild`, so you can push a resolved `sx` onto an element another component renders — `<Box asChild sx={...}>` around a single child merges the themed props onto it via `Slot` instead of adding a wrapper `frame`.
+For non-interactive parts the pairing runs the other way. `Box` and `Text` themselves support
+`asChild`, so you can push a resolved `sx` onto an element another component renders:
+`<Box asChild sx={...}>` around a single child merges the themed props onto it via `Slot` instead of
+adding a wrapper `frame`.
 
 ## Related
 

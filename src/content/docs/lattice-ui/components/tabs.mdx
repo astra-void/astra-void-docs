@@ -395,7 +395,10 @@ export function MapTabs() {
 
 `Tabs.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled. The active value is a plain string that each `Trigger` and `Content` matches against. `onValueChange` fires only with a defined value, so you never receive an `undefined` selection.
 
-When the active value points at no enabled trigger — on first mount with no default, or after the selected trigger is removed or disabled — `Root` resolves a replacement: it falls back to the first enabled trigger, or to the next enabled trigger after the one that was last selected. This keeps a valid panel visible as triggers mount, unmount, or toggle their `disabled` state.
+When the active value points at no enabled trigger — on first mount with no default, or after the
+selected trigger is removed or disabled — `Root` resolves a replacement. It falls back to the first
+enabled trigger, or to the next enabled one after whichever was last selected. This keeps a valid
+panel visible as triggers mount, unmount, or toggle their `disabled` state.
 
 ### Trigger registration and selection
 

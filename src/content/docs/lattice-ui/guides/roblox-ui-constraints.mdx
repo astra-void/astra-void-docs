@@ -9,7 +9,12 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-If you come from the web, most UI-library instincts transfer to Roblox — but a handful do not, and those are exactly the ones that make overlays, menus, and modals tricky. There is no DOM, no document-level z-index, no tab order, and no event that says "the user clicked outside this element." Instead there is a single selected `GuiObject`, a `PlayerGui` you portal into, `ScreenGui` layers ordered by a number, and a default gamepad selection engine that was never designed for layered surfaces.
+If you come from the web, most UI-library instincts transfer to Roblox — but a handful do not, and
+those are exactly the ones that make overlays, menus, and modals tricky. There is no DOM, no
+document-level z-index, no tab order, and no event that says "the user clicked outside this
+element." What there is: a single selected `GuiObject`, a `PlayerGui` you portal into, `ScreenGui`
+layers ordered by a number, and a default gamepad selection engine that was never designed for
+layered surfaces.
 
 lattice-ui exists largely to paper over these constraints so you do not re-solve them per screen. This guide collects the Roblox realities the primitives are built around, so that when you compose or extend them, the behavior makes sense.
 
@@ -17,7 +22,11 @@ lattice-ui exists largely to paper over these constraints so you do not re-solve
 
 Gamepad and keyboard navigation on Roblox is **selection**: `GuiService.SelectedObject` holds at most one `GuiObject`. There is no focus tree and no built-in "previously focused" concept. A `GuiObject` is only selectable when its `Selectable` property is `true`, it is `Visible`, and its whole ancestor chain is visible and (for the `LayerCollector`) enabled.
 
-This is why lattice-ui ships `@lattice-ui/react-focus`: a single mutable property cannot, on its own, express "trap selection inside this dialog" or "restore selection to the trigger that opened it." The focus manager keeps a model of scopes and nodes, decides what *should* be selected, and writes it to `GuiService.SelectedObject` — reading it back when the player moves selection so the two stay in agreement.
+This is why lattice-ui ships `@lattice-ui/react-focus`. A single mutable property cannot, on its
+own, express "trap selection inside this dialog" or "restore selection to the trigger that opened
+it." The focus manager keeps a model of scopes and nodes, decides what *should* be selected, and
+writes it to `GuiService.SelectedObject`, reading it back when the player moves selection so the two
+stay in agreement.
 
 ```tsx title="Keep Selectable in lockstep with disabled state"
 <textbutton

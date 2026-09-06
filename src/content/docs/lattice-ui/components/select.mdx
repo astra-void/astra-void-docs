@@ -441,7 +441,7 @@ Item registration is tied to component lifetime, and items live inside `Select.C
 Items animate their own hover state: `MouseEnter`/`MouseLeave` and gamepad `SelectionGained`/`SelectionLost` drive a background-color settle using the selection response recipe, skipped while the item is disabled. With `asChild` on an item, the slot merges `Active`, the activation and hover handlers, and its ref onto your child element.
 
 <Callout title="Roblox gotchas">
-`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state, but Select does **not** install Roblox native directional selection or keyboard navigation between items — the trigger and items render with `Selectable` set to `false` (the `asChild` slot pins it too), so build gamepad list traversal with your own selectable elements around the primitive if you need it.
+`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`, not the local component tree; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items respond to gamepad `SelectionGained`/`SelectionLost` for hover state. But Select does **not** install Roblox native directional selection or keyboard navigation between items: the trigger and items render with `Selectable` set to `false`, and the `asChild` slot pins it too. Build gamepad list traversal with your own selectable elements around the primitive if you need it.
 </Callout>
 
 ## API reference

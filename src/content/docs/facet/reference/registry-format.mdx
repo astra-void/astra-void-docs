@@ -148,9 +148,7 @@ New in 0.4.0, and the reason it exists is that one failure in the registry is no
 `facet doctor` reports when it is gone.
 
 <Callout title="The container value is a symbol, not a snippet">
-The expression for the local player's `PlayerGui` is knowledge about roblox-ts, and it belongs in the
-tool that reads the entry file — which can see what the entry already names — rather than in a string
-the registry hands over to be pasted somewhere it cannot see.
+The expression for the local player's `PlayerGui` is knowledge about roblox-ts. It belongs in the tool that reads the entry file, which can see what the entry already names — not in a string the registry hands over to be pasted somewhere it cannot see.
 </Callout>
 
 **The registry declares it, not the CLI.** The alternative was for the CLI to know that `dialog`

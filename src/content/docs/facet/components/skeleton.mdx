@@ -121,10 +121,11 @@ export const skeletonVariants = fv("w-full h-4 rounded-md bg-muted");
 No variants, no parts. The default size is **a line of text** — `h-4` — because the overwhelmingly
 common use is standing in for one.
 
-Both axes are declared, which is the [first convention](/facet/guides/component-conventions/#1-declare-both-axes-always).
-`w-full` defers the width to the parent and `h-4` states the height outright, so the component always
-has a resolved size and never collapses the layout above it — which matters more than usual for a
-placeholder, since a skeleton exists precisely when there is no content to measure.
+Both axes are declared, which is the
+[first convention](/facet/guides/component-conventions/#1-declare-both-axes-always). `w-full` defers
+the width to the parent and `h-4` states the height outright, so the component always has a resolved
+size and never collapses the layout above it. That matters more than usual for a placeholder: a
+skeleton exists precisely when there is no content to measure.
 
 The source comment argues that a consumer's override wins because it lands after the recipe in
 `className`. That is true of `fv()`'s composition and false in practice: the string never arrives.

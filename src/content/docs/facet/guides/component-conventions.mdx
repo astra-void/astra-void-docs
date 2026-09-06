@@ -83,9 +83,9 @@ CSS could not constrain a box's ratio for most of its life, so Radix packaged th
 `padding-bottom: 56.25%` workaround and shadcn re-exported it — the component exists to hide a
 trick. Roblox has `UIAspectRatioConstraint` and Vela lowers straight onto it (`aspect-square`,
 `aspect-video`, `aspect-[4/3]`, `aspect-[1.5]`). A wrapper would add a frame to the tree, a file to
-your project, and a level to the `AutomaticSize` chain, to deliver something you can already write
-on the element you have — and it would be strictly less capable, since the class works on any host
-instance while a component forces whatever it wraps to sit inside a `Frame`.
+your project, and a level to the `AutomaticSize` chain — to deliver something you can already write
+on the element you have. It would also be strictly less capable: the class works on any host
+instance, while a component forces whatever it wraps to sit inside a `Frame`.
 
 **Ratio is a class, not a component.**
 

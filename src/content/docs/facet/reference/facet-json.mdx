@@ -40,9 +40,9 @@ version behind the CLI that writes files pointing at it.
 `"default"`, and there is no second value.
 
 shadcn shipped two styles and has since deprecated `default`; the field outlived the second style.
-That is most of the argument, and it is worse here: nothing about a Roblox component is verifiable
+That is most of the argument, and it is worse here. Nothing about a Roblox component is verifiable
 by reading it, so a second style doubles the set of components that have to be opened in Studio and
-looked at — which is already the expensive, manual step.
+looked at — already the expensive, manual step.
 
 The field stays because `facet.json` is a file you commit, and removing a key from it is a breaking
 change for the benefit of deleting one line. It is also the natural place for a fork to say what it

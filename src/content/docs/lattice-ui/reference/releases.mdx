@@ -56,7 +56,7 @@ A `CanvasGroup` composites its whole subtree into one offscreen layer so `GroupT
 
 **Fixes**
 
-- `asChild` works in Roblox on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by the JSX tag, but `@rbxts/react` rewrites a host tag to its Roblox class name before building the element — `<uicorner />` reaches `Slot` as `"UICorner"` — so every modifier missed the lookup, counted as a second target candidate, and `asChild` failed with "expected exactly one child element besides any UI modifiers". Any component recipe that emits a `UIListLayout` or a `UICorner` hit this on every use. Re-keying it fixed Roblox and broke browser React, where the tag survives as written; 0.8.1 lists both spellings. See [styling with Vela](/lattice-ui/guides/styling-with-vela/) and [`asChild` composition](/lattice-ui/guides/as-child-composition/).
+- `asChild` works in Roblox on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by the JSX tag, but `@rbxts/react` rewrites a host tag to its Roblox class name before building the element — `<uicorner />` reaches `Slot` as `"UICorner"`. Every modifier missed the lookup and counted as a second target candidate, so `asChild` failed with "expected exactly one child element besides any UI modifiers". Any component recipe that emits a `UIListLayout` or a `UICorner` hit this on every use. Re-keying it fixed Roblox and broke browser React, where the tag survives as written; 0.8.1 lists both spellings. See [styling with Vela](/lattice-ui/guides/styling-with-vela/) and [`asChild` composition](/lattice-ui/guides/as-child-composition/).
 
 ## 0.7.0
 
