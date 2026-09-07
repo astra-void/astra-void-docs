@@ -49,21 +49,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../shared/ui/tabs";
 <ForwardedProps instance="Frame" />
 
 That is `Tabs`, `TabsList` and `TabsContent`. `TabsTrigger` has no passthrough bag — it renders a
-button and a label, and there is no single instance for an unknown prop to land on.
+button and a label, so there is no single instance for an unknown prop to land on.
 
 ## Pass `defaultValue`
 
 <Callout title="Without one, nothing styles as selected">
-Lattice's `Tabs.Root` has its own fallback: with no value it selects the first enabled trigger. The
-[mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) in this file
-cannot see that decision — it holds `undefined`, so `selected` is false for every trigger, and the
-list renders with nothing highlighted while the content panel below it switches correctly.
+Lattice's `Tabs.Root` selects the first enabled trigger when it has no value. The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) in this file cannot see that decision — it holds `undefined`, so `selected` is false for every trigger and the list renders with nothing highlighted while the content panel switches correctly.
 
 It compiles, it works, and it looks broken. Give `Tabs` a `defaultValue` (or a controlled `value`).
 </Callout>
 
-This is the sharp edge of mirroring a private context: the mirror is only as good as what it was
-told, and a fallback that lives inside the primitive is exactly what it was not told.
+That is the sharp edge of mirroring a private context: a fallback living inside the primitive is
+exactly what the mirror was not told.
 
 ## Props
 
@@ -107,16 +104,15 @@ told, and a fallback that lives inside the primitive is exactly what it was not 
   <TextSlot className={cn(tabsVariants.triggerLabel(), selected && "text-foreground")}>
 ```
 
-The surface takes `bg-background`; the label takes `text-foreground` over its resting
-`text-muted-foreground`. Two classes on two instances, because nothing inherits — the same shape as
-[`Toggle group`](/facet/components/toggle-group/#the-pressed-state-and-where-it-lands).
+The surface takes `bg-background`, the label `text-foreground` over its resting
+`text-muted-foreground` — two classes on two instances, because nothing inherits.
 
-The state classes sit **inside** the recipe's slot and ahead of `props.className`, which is
-[the one rule](/facet/guides/variants-and-classes/#the-one-rule): resolution is last-token-wins, so
-anything after the consumer's class is an override they cannot undo.
+The state classes sit **inside** the recipe's slot and ahead of `props.className` —
+[the one rule](/facet/guides/variants-and-classes/#the-one-rule), since resolution is
+last-token-wins.
 
 ## `w-fit` on the list, `h-9` on the list
 
-The list hugs its triggers horizontally and states a fixed height, which is what gives the pill its
-shape: `p-1` insets the `h-7` triggers by 4px on each edge inside the `h-9` track. Changing one
-number means changing the other — there is no variant, because the file is short enough to edit.
+The list hugs its triggers horizontally and states a fixed height, which gives the pill its shape:
+`p-1` insets the `h-7` triggers by 4px each side inside the `h-9` track. Changing one number means
+changing the other.

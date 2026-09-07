@@ -43,8 +43,8 @@ import { Label } from "../shared/ui/label";
 | `RadioGroup` | `Frame` | `flex-col gap-2 w-fit h-fit` |
 | `RadioGroupItem` | `TextButton` | `size-4 rounded-full border border-input transition duration-150` |
 
-Two parts, not four. The indicator and the dot inside it are drawn by `RadioGroupItem` — they take
-no props, so exporting them would cost two Luau registers and buy nothing. See
+Two parts, not four: the indicator and the dot inside it are drawn by `RadioGroupItem`, and take no
+props, so exporting them would cost two Luau registers and buy nothing. See
 [the register limit](/facet/guides/component-conventions/#6-flat-named-exports).
 
 ## Props
@@ -94,8 +94,8 @@ no props, so exporting them would cost two Luau registers and buy nothing. See
   ]}
 />
 
-There is no `Text` on either part. A radio button is a dial; the words next to it are a
-[`Label`](/facet/components/label/) you place yourself, exactly as shadcn does.
+There is no `Text` on either part — a radio button is a dial, and the words beside it are a
+[`Label`](/facet/components/label/) you place yourself.
 
 ## Half the state is mirrored, half is not
 
@@ -111,12 +111,11 @@ const checked = group.value === props.value;
   })}
 ```
 
-The dot inside needs no mirror at all. `RadioGroup.Indicator` mounts and unmounts its children from
-the primitive's own state, so the dot is either rendered or it is not — there is no class to flip
-and nothing for this file to know.
+The dot inside needs no mirror: `RadioGroup.Indicator` mounts and unmounts its children from the
+primitive's own state, so there is no class to flip.
 
-A Facet context carries the group's value down to each item, because Lattice's own context is
-private. That context exists for exactly one boolean per item.
+A Facet context carries the group's value down to each item, because Lattice's own is private. It
+exists for exactly one boolean per item.
 
 ## `orientation` does two different things
 
@@ -127,13 +126,10 @@ private. That context exists for exactly one boolean per item.
   })}
 ```
 
-It goes to the primitive, which uses it for arrow-key navigation, **and** it is read again here to
-swap the frame's layout. Those are two separate mechanisms that happen to share a prop: nothing in
-Lattice lays this frame out, and nothing in the frame tells Lattice which key moves where.
+It goes to the primitive for arrow-key navigation **and** is read again here to swap the frame's
+layout — two mechanisms sharing a prop. Nothing in Lattice lays this frame out, and nothing in the
+frame tells Lattice which key moves where.
 
 <Callout title="A horizontal group is not a row of labelled rows">
-The `flex-row` lands on the group's own frame, so its children are laid out in a row. If each child
-is a labelled row of its own — a `flex-row` frame holding a dial and a `Label` — you get a row of
-rows, which is usually what you want. Nesting is yours to arrange; the component only flips its own
-axis.
+The `flex-row` lands on the group's own frame, so its children are laid out in a row. If each child is itself a labelled row — a `flex-row` frame holding a dial and a `Label` — you get a row of rows, which is usually what you want. The component only flips its own axis.
 </Callout>

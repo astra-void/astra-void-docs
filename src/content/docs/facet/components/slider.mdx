@@ -81,9 +81,8 @@ import { Slider } from "../shared/ui/slider";
   ]}
 />
 
-This is the one component in the registry with **no passthrough bag**. There is no
-`PassthroughProps<Frame>` on `SliderProps` and no `getPassthroughProps` in the body: three separate
-instances render here and there is no single one an unknown prop should land on.
+The one component in the registry with **no passthrough bag**: three separate instances render here,
+so there is no single one an unknown prop should land on.
 
 ## The track has no `flex-*`, and that is the point
 
@@ -96,28 +95,24 @@ export const sliderVariants = {
 ```
 
 Every other container in the registry opens with `flex-row` or `flex-col`. This one does not, and
-removing that class is the component's whole design decision.
+that omission is the component's whole design decision.
 
-A `flex-*` class lowers to a `UIListLayout`, and a `UIListLayout` **positions every child it has**.
-The range's fill and the thumb's travel are both `Position`/`Size` on instances inside the track,
-written by Lattice as the value moves. Add a layout and the list overwrites them on the next frame.
+A `flex-*` class lowers to a `UIListLayout`, which **positions every child it has**. The range's
+fill and the thumb's travel are `Position`/`Size` written by Lattice as the value moves, so a layout
+overwrites them on the next frame.
 
 <Callout title="The thumb rides the track, not a slot inside it">
-`size-4` on an `h-2` bar means the thumb is twice the track's height and hangs over both edges —
-which is what a slider knob looks like, and only possible because nothing is laying it out. The
-primitive centres its anchor; the overhang follows.
+`size-4` on an `h-2` bar makes the thumb twice the track's height, hanging over both edges — what a slider knob looks like, and only possible because nothing is laying it out.
 
-What Studio still has to confirm is that the overhang lands symmetrically and the range fill stops
-exactly under the thumb. Loom renders it, but the
-[preview is not Studio](/facet/getting-started/scope-and-status/#what-is-not-covered).
+Studio still has to confirm that the overhang lands symmetrically and the range fill stops under the thumb — the [preview is not Studio](/facet/getting-started/scope-and-status/#what-is-not-covered).
 </Callout>
 
 ## `onValueChange` versus `onValueCommit`
 
 `onValueChange` fires on every frame of a drag. `onValueCommit` fires once, when the gesture ends.
 
-For a volume slider you want both: the first to hear the change live, the second to write it to a
-`DataStore`. Wiring a save to `onValueChange` means one request per frame of a drag.
+For a volume slider you want both — the first to hear the change live, the second to write it to a
+`DataStore`. A save wired to `onValueChange` is one request per frame of a drag.
 
 ## Disabled fades in two places
 
@@ -129,6 +124,5 @@ For a volume slider you want both: the first to hear the change live, the second
 ```
 
 The track and the thumb each state the fade, because
-[`opacity-*` does not cross a component boundary](/facet/guides/component-conventions/#3-nothing-inherits) —
-the thumb is a primitive child, not JSX the compiler can see under the track. The registry's rule is
-the same one it always is: nothing inherits, so every instance states its own appearance.
+[`opacity-*` does not cross a component boundary](/facet/guides/component-conventions/#3-nothing-inherits)
+— the thumb is a primitive child, not JSX the compiler can see under the track.

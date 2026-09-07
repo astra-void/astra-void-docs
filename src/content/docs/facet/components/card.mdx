@@ -49,8 +49,8 @@ import { Button } from "../shared/ui/button";
 | `CardContent` | `Frame` | `flex-col w-full h-fit gap-2 px-6 pb-6` |
 | `CardFooter` | `Frame` | `flex-row items-center w-full h-fit gap-2 px-6 pb-6` |
 
-Flat named exports, not `Card.Header`. Namespace objects are right for a library; this is source you
-paste and edit, so each part reads — and can be deleted — on its own.
+Flat named exports, not `Card.Header`: this is source you paste and edit, so each part reads — and
+deletes — on its own.
 
 <FacetPreview
   scene="CardScene"
@@ -87,12 +87,11 @@ The frame parts (`Card`, `CardHeader`, `CardContent`, `CardFooter`) forward onto
 
 ## `w-full h-fit`, all the way down
 
-Every part carries it, and that is the whole layout strategy: **width from the parent, height from
-the content**. Break the chain at any level and the card above it collapses.
+Every part carries it, and that is the layout strategy: **width from the parent, height from the
+content**. Break the chain at any level and the card above it collapses.
 
-That is the `AutomaticSize` chain at its most visible: a container hugging its content can only
-measure children that already know their own size, so it is not enough for `Card` to say `h-fit` —
-every level under it has to answer too.
+A container hugging its content can only measure children that already know their own size, so it is
+not enough for `Card` to say `h-fit` — every level under it has to answer too.
 
 ## Six parts, one recipe object
 
@@ -108,30 +107,28 @@ export const cardVariants = {
 ```
 
 <Callout title="This is not a style choice">
-Vela once inlined its whole runtime into every file with a computed `className`, leaving a component only a slice of Luau's 200-register limit. Six separate `export const`s put this file over it and the module stopped loading — `Out of local registers when trying to allocate CardHeader`. Each exported name costs a register; one object costs one.
+Vela once inlined its whole runtime into every file with a computed `className`, leaving a component only a slice of Luau's 200-register limit. Six separate `export const`s put this file over it and the module stopped loading. Each exported name costs a register; one object costs one.
 
-Emitted files now sit around 24 module-scope locals, which is why `^0.9.0` is the floor the CLI installs. The object shape stayed — it is cheap, and the headroom is worth keeping.
+Emitted files now sit around 24 module-scope locals, which is why `^0.9.0` is the floor the CLI installs. The object shape stayed because it is cheap.
 </Callout>
 
 ## Wrapping and alignment are classes
 
-Roblox centres text and leaves it on one line by default; `text-left` and `whitespace-normal`
-correct both on every text part. Without them a description is one centred line running off the
-edge.
+Roblox centres text and leaves it on one line, so `text-left` and `whitespace-normal` are on every
+text part. Without them a description is one centred line running off the edge.
 
-`leading-tight` on the description is the one place `card` leans on a Vela family that only landed
-in 0.8.0 on the computed-`className` path — below that floor it compiles and silently does nothing.
+`leading-tight` on the description is the one place `card` leans on a Vela family that reached the
+computed-`className` path in 0.8.0 — below that floor it compiles and silently does nothing.
 
-`font-normal` on the description looks redundant beside `font-semibold` on the title, and is not.
+`font-normal` on the description looks redundant beside `font-semibold` on the title, and is not:
 Vela leaves `FontFace` alone when no `font-*` appears, and Roblox's default is LegacyArial — so the
-description rendered in Arial next to a SourceSansPro title, in the same header, until someone
-opened it in Studio.
+description rendered in Arial beside a SourceSansPro title until someone opened it in Studio.
 
 ## One layout per instance
 
 `flex-col`, `items-*`, `justify-*` and `gap-*` all lower onto a single `UIListLayout` child, and one
-instance holds one layout. So a part that sets any of them owns its children's arrangement, and a
+instance holds one layout. A part that sets any of them owns its children's arrangement, so a
 consumer wanting a different one **replaces** those classes rather than adding to them.
 
-Wanting a second layout inside `CardContent` is a sign to restructure the parts rather than add a
-wrapper frame. They are yours to restructure.
+Wanting a second layout inside `CardContent` is a sign to restructure the parts, which are yours to
+restructure.

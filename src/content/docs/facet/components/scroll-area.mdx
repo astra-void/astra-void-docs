@@ -41,29 +41,24 @@ import { ScrollArea } from "../shared/ui/scroll-area";
 | `ScrollArea` | `Frame` | `w-full h-full overflow-hidden` |
 | `ScrollBar` | `Frame` | `rounded-full`, plus the edge insets for its orientation |
 
-`ScrollArea` renders a `ScrollBar` for you. The export exists for the case where you want a second
-one on the other axis.
+`ScrollArea` renders a `ScrollBar` for you; the export exists for a second one on the other axis.
 
 <ForwardedProps instance="Frame" />
 
 ## The height comes from the parent
 
 <Callout title="`h-full` is in the recipe, so a className here cannot set a height">
-The root is `w-full h-full`: the component fills whatever it is put inside. A `className` written at
-the call site is resolved *there* and arrives as instance properties, which the recipe then
-overwrites for every property it also names — and it names `Size` on both axes.
+The root is `w-full h-full`, so the component fills whatever it is put inside. A call-site `className` is resolved *there* and arrives as instance properties, which the recipe then overwrites for every property it also names — and it names `Size` on both axes.
 
-This is measured. A `<ScrollArea className="h-32">` inside a 200px-tall parent renders 200px tall.
-The mechanism is in
-[overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+This is measured: a `<ScrollArea className="h-32">` inside a 200px-tall parent renders 200px tall. See [overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 </Callout>
 
-So the size goes on a wrapper, and so does anything else the recipe states. What *does* cross from a
+So the size goes on a wrapper, along with anything else the recipe states. What *does* cross from a
 call-site class is whatever the recipe leaves alone — `rounded-md` and `border-border` reach the
-instance fine, because the root recipe names neither a corner nor a stroke.
+instance fine.
 
 A scroll area that hugs its content has nothing to scroll, so something above it has to resolve a
-height either way. Putting it on a wrapper frame is the one arrangement that always works.
+height either way.
 
 ## Props
 
@@ -120,15 +115,15 @@ height either way. Putting it on a wrapper frame is the one arrangement that alw
 viewport: fv("size-full scrollbar-none"),
 ```
 
-The viewport is a Roblox `ScrollingFrame`, which draws a scrollbar of its own.
-`scrollbar-none` hides it, because the visible one is the `ScrollBar` beside it — a frame Lattice
-sizes and positions from the scroll ratio, and fades after `scrollHideDelayMs`.
+The viewport is a Roblox `ScrollingFrame`, which draws a scrollbar of its own. `scrollbar-none`
+hides it, because the visible one is the `ScrollBar` beside it — a frame Lattice sizes from the
+scroll ratio and fades after `scrollHideDelayMs`.
 
 Losing that class gives you both bars at once, which is the failure mode to recognise.
 
 ## The root has no `flex-*`
 
-The scrollbar is pinned to an edge with inset classes — `right-0 top-0 h-full w-2` for a vertical
-one — and a `UIListLayout` would pull it into the flow and lay it out beside the viewport instead.
-[Slider](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point) omits its layout for
-the same reason.
+The scrollbar is pinned to an edge with inset classes, and a `UIListLayout` would pull it into the
+flow beside the viewport instead.
+[Slider](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point) omits its layout
+for the same reason.

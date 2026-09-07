@@ -90,33 +90,28 @@ const className = switchVariants.root({
 });
 ```
 
-That is the same [mirrored-state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for)
-shape `checkbox` establishes — `useControllableState` here, the primitive driven controlled from it —
-because Lattice keeps its context private and the track's colour changes with the value.
+That is the [mirrored-state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for)
+shape `checkbox` establishes, because Lattice keeps its context private and the track's colour
+changes with the value.
 
 ## The thumb has no position
 
 <Callout title="Nothing in this file says where the thumb goes">
-`Switch.Thumb` owns `AnchorPoint` and `Position`, and animates them between the track's edges for
-whatever size the thumb turns out to be. The recipe says `size-4 rounded-full bg-background` and
-stops.
+`Switch.Thumb` owns `AnchorPoint` and `Position` and animates them between the track's edges for whatever size the thumb turns out to be. The recipe says `size-4 rounded-full bg-background` and stops.
 
-Write a `left-*` or a `translate-x-*` here and you are fighting the primitive on a property it
-rewrites every frame. If you want a different travel, change the thumb's *size* or the track's — the
-geometry follows from those.
+A `left-*` or `translate-x-*` here fights the primitive on a property it rewrites every frame. For different travel, change the thumb's *size* or the track's.
 </Callout>
 
-This is [layout is an instance, not a property](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property)
-seen from the other side: a Lattice primitive that owns a property is as load-bearing as a
-`UIListLayout` that owns one, and the recipe stays out of both.
+[Layout is an instance, not a property](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property)
+seen from the other side: a primitive that owns a property is as load-bearing as a `UIListLayout`
+that owns one.
 
 ## Sizing it
 
 `h-5 w-9` on the track and `size-4` on the thumb are the only numbers in the component, and they are
-paired — a 16px thumb inside a 20px track leaves 2px of inset on each edge. Changing one means
-changing the other; there is no variant that does it for you, because the file is short enough to
-edit.
+paired: a 16px thumb inside a 20px track leaves 2px of inset each side. Changing one means changing
+the other — there is no variant, because the file is short enough to edit.
 
-A `className` at the call site cannot do it either. `h-5 w-9` is in the recipe, and the recipe
-resolves *after* the props a call-site class arrives as — see
+A call-site `className` cannot do it either: `h-5 w-9` is in the recipe, which resolves *after* the
+props a call-site class arrives as — see
 [overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
