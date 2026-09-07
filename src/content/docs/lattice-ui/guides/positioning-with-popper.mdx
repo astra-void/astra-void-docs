@@ -9,15 +9,22 @@ draft: false
 
 import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
 
-Anchored surfaces — popovers, menus, selects, tooltips, comboboxes — all face the same problem: given an anchor somewhere on screen, place a floating panel next to it so it stays on the requested side, lines up the way you asked, and never spills off the viewport. Hand-writing that math per surface means re-deriving `AnchorPoint`, screen-edge clamping, and flip logic every time.
+Anchored surfaces — popovers, menus, selects, tooltips, comboboxes — face the same problem: place a
+floating panel next to an anchor so it stays on the requested side, lines up as asked, and never
+spills off the viewport.
 
-`@lattice-ui/react-popper` solves it once. It is the positioning engine shared by every anchored primitive in Lattice. You give it an anchor ref, a content ref, and a desired placement; it measures both `GuiObject`s, picks the best side that fits, and hands back a `Position`, an `AnchorPoint`, and the resolved `placement` to apply to your floating frame.
+`@lattice-ui/react-popper` is the positioning engine shared by every anchored primitive. Give it an
+anchor ref, a content ref and a desired placement; it measures both `GuiObject`s, picks the best
+side that fits, and hands back a `Position`, an `AnchorPoint` and the resolved `placement`.
 
-Most of the time you do not touch this package directly — you set `placement`, `sideOffset`, `alignOffset`, and `collisionPadding` on a component like `Popover.Content` and the primitive forwards them. This guide explains what those props mean so you can position surfaces with intent.
+Most of the time you set `placement`, `sideOffset`, `alignOffset` and `collisionPadding` on a
+component like `Popover.Content` and the primitive forwards them. This guide explains what those
+props mean.
 
 ## Install
 
-You only install Popper directly if you are building a custom anchored primitive. The shipped components already depend on it.
+Install Popper directly only for a custom anchored primitive — the shipped components already depend
+on it.
 
 <PackageInstall packageName="@lattice-ui/react-popper" />
 
@@ -39,11 +46,16 @@ type PopperPositioningOptions = {
 };
 ```
 
-Popper centers the content against the anchor on the cross axis by default, then applies your offsets. The result is reported as a `UDim2` offset position plus the `Vector2` `AnchorPoint` that makes that position visually correct — for a `"bottom"` placement the anchor point is `(0.5, 0)`, for `"right"` it is `(0, 0.5)`, and so on.
+Popper centres the content against the anchor on the cross axis, then applies your offsets. The
+result is a `UDim2` offset position plus the `Vector2` `AnchorPoint` that makes it visually correct
+— `(0.5, 0)` for `"bottom"`, `(0, 0.5)` for `"right"`.
 
 ### Collision-aware flipping
 
-Popper does not blindly honor your requested side. It evaluates the requested placement first, then its opposite, then the two orthogonal sides, scoring each by how far it would overflow the viewport (`collisionPadding` included). The candidate with the least overflow wins; a perfect fit short-circuits the search. The side it actually chose comes back as `placement` in the result.
+The requested side is a preference. Popper evaluates it first, then its opposite, then the two
+orthogonal sides, scoring each by how far it would overflow the viewport including
+`collisionPadding`. The least-overflowing candidate wins, a perfect fit short-circuits the search,
+and the chosen side comes back as `placement`.
 
 Because the chosen side can differ from the side you asked for, drive your entrance motion and any visual arrow from the *resolved* placement, not the requested one:
 
