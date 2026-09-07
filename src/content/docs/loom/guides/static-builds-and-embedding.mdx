@@ -10,8 +10,8 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 `loom build` runs Vite's production build over the same gallery the dev server shows and emits a
-self-contained client-only SPA, with nothing needed server-side to host it. It exists for embedding:
-a docs site can iframe a single scene, and the reader gets a real interactive Roblox UI instead of a
+self-contained client-only SPA, with nothing needed server-side. It exists for embedding: a docs
+site can iframe a single scene and the reader gets a real interactive Roblox UI instead of a
 screenshot.
 
 ```bash title="Build a gallery"
@@ -37,7 +37,7 @@ loom build [dir] --targets [glob] [--out <dir>] [--base <path>]
 Unlike `preview`, `build` does **not** read `loom.config.ts`. Pass `--targets` explicitly every time.
 
 <Callout title="`--out` is emptied before writing">
-The build runs with `emptyOutDir: true`, since the output directory normally sits outside Vite's root. Point `--out` at a directory that belongs to loom and nothing else — aiming it at your site's whole `public/` would delete the rest of it.
+The build runs with `emptyOutDir: true`, so point `--out` at a directory that belongs to loom and nothing else — aiming it at your site's whole `public/` would delete the rest.
 </Callout>
 
 ## What comes out
@@ -52,19 +52,19 @@ assets/CounterScene.loom-<hash>.js
 assets/roboto-latin-400-normal-<hash>.woff2   # …and ~110 more, since 0.9.0
 ```
 
-Each target becomes its own lazily-imported chunk, so a fifty-scene gallery still loads one scene's
-code per view. The `.wasm` binary dominates transfer size — about 178 kB, 68 kB gzipped — and is
-fetched once and cached. The [engine's typefaces](/loom/guides/fonts/) are in there too, ~2.8 MB
-across ~110 files, but Fontsource declares per-script `unicode-range` subsets so a browser fetches
-only what a scene paints with. The build input is a generated `index.html` whose script imports the
-globals installer *first*, then a generated target map of relative `import()`s, then the shell.
-Globals-first is why a built gallery never throws `UDim2 is not defined`.
+Each target becomes its own lazily-imported chunk, so a fifty-scene gallery loads one scene's code
+per view. The `.wasm` binary dominates transfer size — about 178 kB, 68 kB gzipped — and is fetched
+once and cached. The [engine's typefaces](/loom/guides/fonts/) are in there too, ~2.8 MB across ~110
+files, but Fontsource declares per-script `unicode-range` subsets so a browser fetches only what a
+scene paints with. The build input is a generated `index.html` whose script imports the globals
+installer *first*, then a target map of relative `import()`s, then the shell — which is why a built
+gallery never throws `UDim2 is not defined`.
 
 ## `rbxassetid://` in a static build
 
-A page served from a bucket has no dev server to resolve asset ids, so the build does the work up
-front: it works out which ids the page will ask for, resolves each through Roblox's thumbnail API,
-downloads the image into the output, and writes a manifest the page reads on first use.
+A page served from a bucket has no dev server to resolve asset ids, so the build works out which ids
+the page will ask for, resolves each through Roblox's thumbnail API, downloads the image into the
+output, and writes a manifest the page reads on first use.
 
 ```text title="dist-preview/"
 __loom/assets.json              # { "6031075938": "__loom/asset/6031075938.png" }
@@ -76,25 +76,14 @@ request to Roblox.
 
 Working out *which* ids takes two passes.
 
-- **The scan** reads the emitted output for `rbxassetid://<digits>`, finding every id a source spells
-  out.
-- **The prerender** covers ids a source builds at runtime, like `` `rbxassetid://${iconId}` `` over a
-  table. After bundling those are bare numbers no scan can distinguish, so the build *runs* your
-  scenes: every target is mounted in node and its live tree read for the images it holds. A 700-icon
-  set contributes the dozen your scenes render.
+- **The scan** reads the emitted output for `rbxassetid://<digits>`, finding every id a source spells out.
+- **The prerender** covers ids a source builds at runtime, like `` `rbxassetid://${iconId}` ``. After bundling those are bare numbers no scan can distinguish, so the build *runs* your scenes: every target is mounted in node and its live tree read for the images it holds.
 
 Three things are worth knowing before you rely on it:
 
-- **The first render is what gets baked.** An image the initial mount never reaches — one behind a
-  hover state, or supplied by a later fetch — stays unresolved. Give those a real URL, or install
-  your own `setImageResolver`.
-- **The prerender needs targets.** It runs for gallery builds — `loom build`, a plugin configured
-  with `targets`, the Astro and Next embeds. A build configured with a single client `entry` keeps
-  the scan alone, since that entry mounts itself on import rather than exposing a scene to mount.
-- **A build never fails over an image.** An id that will not resolve — offline, deleted, moderated —
-  is warned about and left out of the manifest, and so is a target that will not render during the
-  prerender. Composition the prerender could not account for is warned about as well, rather than
-  leaving a blank image unexplained.
+- **The first render is what gets baked.** An image the initial mount never reaches — behind a hover state, or supplied by a later fetch — stays unresolved. Give those a real URL, or install your own `setImageResolver`.
+- **The prerender needs targets.** It runs for gallery builds only; a build configured with a single client `entry` keeps the scan alone, since that entry mounts itself on import.
+- **A build never fails over an image.** An id that will not resolve is warned about and left out of the manifest, and so is a target that will not render during the prerender.
 
 To keep a build off the network entirely, turn the bake off wherever the build is configured:
 `loomPreview({ assets: false })`, `loom build --no-assets`, or `assets: false` on `buildGallery` and
@@ -121,28 +110,22 @@ In chromeless mode there is no hash routing — the mount is fixed to `?target=`
 the shell uses `#/<relPath>` and `?target=` only seeds the initial selection.
 
 `?debug=1` is the only way a debug panel appears in a `chrome=none` embed: the toggle is remembered
-per tab so an HMR reload does not close it, and an embed deliberately opts out of that memory so a
-panel never turns up unasked on somebody's docs page.
+per tab so an HMR reload does not close it, and an embed opts out of that memory.
 
 ### `?background=` for a backdrop that is not either theme
 
-`theme` picks a whole palette — chrome, text, and one of loom's two backdrops. `background`
+`theme` picks a whole palette — chrome, text and one of loom's two backdrops — while `background`
 overrides just the backdrop, so a white stage under the light palette is
-`?theme=light&background=white`, and `transparent` lets the host page show through. It applies in
-both gallery modes and the static build.
+`?theme=light&background=white`. `transparent` lets the host page show through.
 
 <Callout title="Hex, without the `#`">
-A literal `?background=#ffffff` never reaches the gallery: `#` opens the URL fragment, which is also
-where the gallery keeps its route. Both spellings that survive the trip are accepted — percent-encoded
-(`%23ffffff`) and bare digits (`ffffff`). No CSS named colour is spelled with hex digits alone, so
-the bare form is unambiguous.
+A literal `?background=#ffffff` never reaches the gallery, because `#` opens the URL fragment. Both spellings that survive the trip are accepted: percent-encoded (`%23ffffff`) and bare digits (`ffffff`).
 </Callout>
 
 Only colours are accepted, through an allowlist: hex, a bare identifier, and the functional forms
-with arguments that cannot open a nested function. A gradient or a `url(...)` — anything that could
-turn a query parameter into a network fetch — is ignored and the theme's backdrop stands. The
-backdrop is decided in the page's `<head>` from `location.search` before the first paint, so an
-embed never flashes the dark default while the bundle, the WASM engine and the target chunk load.
+with arguments that cannot open a nested function. A gradient or a `url(...)` is ignored and the
+theme's backdrop stands. The backdrop is decided in the page's `<head>` from `location.search`
+before the first paint, so an embed never flashes the dark default while the bundle loads.
 
 ## Live theme switching
 
