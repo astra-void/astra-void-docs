@@ -65,17 +65,14 @@ The CLI installs `vela-rbxts@^0.9.0` as a build dependency, and that floor is no
 
 - **Below 0.7.0**, `w-fit` and `font-*` silently do nothing on the computed-`className` path every `fv()` recipe produces — which is how the first published `button` shipped zero pixels wide.
 - **Below 0.8.0**, `opacity-*`, `whitespace-*` and `leading-*` join them.
-- **Below 0.9.0**, `card` does not compile *at all*: the inlined runtime spent roughly 96 of Luau's 200 local registers before the file declared anything of its own, and `card` failed with `Out of local registers`.
+- **Below 0.9.0**, `card` does not compile *at all*: the inlined runtime spent roughly 96 of Luau's 200 local registers before the file declared anything of its own.
 
-The caret is npm's 0.x caret, so `^0.9.0` means `>=0.9.0 <0.10.0` — a floor on a fresh `init` and a
-ceiling on the next Vela minor. That is deliberate while Vela is pre-1.0 and every minor has moved
-class resolution. Raising it is a CLI release, which is when the registry has actually been built
-against the new minor.
+`^0.9.0` is npm's 0.x caret, so it is also a ceiling on the next Vela minor — deliberate while every
+Vela minor has moved class resolution. Raising it is a CLI release.
 
-Registry components separately declare `@lattice-ui/react-runtime@^0.8.0`. 0.8.0 is what made
-`asChild` work at all — see [Components](/facet/components/button/#aschild).
-
-A component wrapping a Lattice primitive declares that primitive's package at the same floor, and `facet add` installs it. Every entry carries the *same* spec for a given package, because `add` unions those strings across the install set and two spellings would both reach the package manager — `registry:check` enforces it.
+Registry components separately declare `@lattice-ui/react-runtime@^0.8.0`, and a component wrapping
+a Lattice primitive declares that primitive's package at the same floor. Every entry carries the
+*same* spec for a given package, because `add` unions those strings across the install set.
 </Details>
 
 ## `facet init`

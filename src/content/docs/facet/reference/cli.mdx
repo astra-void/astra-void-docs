@@ -108,13 +108,13 @@ and throws when a dialog opens without one
 ? Add it to src/client/main.client.tsx? (Y/n)
 ```
 
-Why this and nothing else: everything else the CLI reports is a **build-time** failure, loud and in
-front of the person who just ran the command. A missing `PortalProvider` compiles, type-checks,
-passes CI, ships — and throws the first time a player opens the dialog.
+Why this and nothing else: everything else the CLI reports fails at **build** time. A missing
+`PortalProvider` compiles, type-checks, passes CI, ships — and throws the first time a player opens
+the dialog.
 
 **The parser is used for positions, never for output.** `@babel/parser` answers where the last
-import ends and where the render call's argument starts; the edit itself is two string splices, so
-everything outside those offsets comes out byte for byte identical. A test asserts it.
+import ends and where the render call's argument starts; the edit is two string splices, so
+everything outside those offsets comes out byte for byte identical.
 
 **Anything ambiguous is reported, not guessed:**
 
@@ -127,19 +127,16 @@ everything outside those offsets comes out byte for byte identical. A test asser
 | The entry does not parse | Snippet |
 | Provider already imported | Nothing, and it says so |
 
-Writing `Players.LocalPlayer.WaitForChild("PlayerGui")` would also mean adding `Players` to an
-`@rbxts/services` import that may not exist — a second, riskier edit for a situation that barely
-occurs, since a client that mounts React already names its `PlayerGui`. So the CLI reuses the
-expression that is there and stops when there is none.
+Writing `Players.LocalPlayer.WaitForChild("PlayerGui")` would mean adding `Players` to an
+`@rbxts/services` import that may not exist, so the CLI reuses the expression that is there and
+stops when there is none.
 
 <Callout title="Not being asked is not the same as saying no">
-The prompt defaults to yes and is the last thing `add` does, so nothing scrolls past it; `--yes` writes without asking.
-
-A **non-interactive** run without `--yes` writes nothing and prints the snippet, reported as *"nothing here to ask, and this is not a file to edit unasked"*. stdin not being a terminal is not consent. It is also not you having declined, which is why the two read differently.
+The prompt defaults to yes and is the last thing `add` does; `--yes` writes without asking. A **non-interactive** run without `--yes` writes nothing and prints the snippet — stdin not being a terminal is not consent, and not the same as declining.
 </Callout>
 
-`facet doctor` checks the same thing on every run, so a provider that gets refactored out later is
-reported rather than rediscovered at runtime.
+`facet doctor` checks the same thing on every run, so a provider refactored out later is reported
+rather than rediscovered at runtime.
 
 Multiple providers are wired one at a time, and the entry is re-read between them — the second one
 wraps the file the first just rewrote.

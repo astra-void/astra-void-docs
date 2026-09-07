@@ -22,7 +22,7 @@ between is one shared pipeline, which is why both tracks emit the same Luau.
 `tsconfig.json` plugin entry and calls the exported factory with your `Program` and its own
 `typescript` instance — the factory throws without that instance, so it cannot be driven by plain
 `tsc`. Under the *CLI*, `vela build` walks `--src` itself and calls the same adapter per file, with
-no `Program` and no plugin options, so the filter toggles sit at their defaults.
+no `Program` and no plugin options.
 
 **The host adapter filters files.** Five conditions, in order; a file failing any is passed through
 untouched:
@@ -35,36 +35,24 @@ untouched:
 5. The source text matches a coarse JSX-open-tag regex.
 
 The last three are toggles (`skipNodeModules`, `requireClassName`, `requireJsxSyntax`), all on by
-default. There is no glob support — those three booleans are the whole filter surface.
+default, and there is no glob support.
 
 **The adapter finds your config.** Vela walks up from each file's directory looking for
 `vela.config.ts` or `vela.config.json`, the `.ts` form winning when a directory has both. A
 TypeScript config is stripped of its `vela-rbxts` imports, transpiled, and executed in a scope where
-`defineConfig` and `defaultConfig` are injected — which is why the stripped import still works. A
-TypeScript diagnostic throws, as does an export that is neither a resolved config nor an
-input-shaped object. Finding nothing is fine: you get the default theme.
-
-<Callout title="Discovery runs per file; loading runs once per build">
-The upward walk is **per file** — that is what lets two directories carry different configs. The
-load is resolved once per directory and re-read only when the file changes.
-
-A config that **throws** is cached alongside one that resolves, so a typo is reported once instead of
-once per file, and the next edit lifts it. `vela watch` clears the cache outright on a config change,
-which is why a theme edit rebuilds the whole tree.
-
-Keep the config small and side-effect-free regardless — it is executed as real code.
-</Callout>
+`defineConfig` and `defaultConfig` are injected. A TypeScript diagnostic throws, as does an export
+that is neither a resolved config nor an input-shaped object. Finding nothing gets you the default
+theme. See [config discovery](/vela-rbxts/reference/config/#discovery) for the caching.
 
 **The native compiler parses and lowers.** The Rust compiler parses the TSX, walks the JSX tree,
 resolves each class token against the merged theme, and produces new source text plus a diagnostic
 list.
 
-**The text goes back out**, as text rather than an AST — Vela never performs node surgery on
-TypeScript's tree. Under the transformer it is parsed into a fresh `SourceFile` and substituted in
-memory, with diagnostics handed back through roblox-ts's `addDiagnostic`; **on a roblox-ts that does
-not expose that hook they are dropped silently.** Under the CLI the text is written to the mirrored
-path, skipped when byte-identical so `rbxtsc -w` is not woken, and diagnostics are printed by the CLI
-itself — immune to that failure.
+**The text goes back out**, as text rather than an AST. Under the transformer it is parsed into a
+fresh `SourceFile` and substituted in memory, with diagnostics handed back through roblox-ts's
+`addDiagnostic`; **on a roblox-ts that does not expose that hook they are dropped silently.** Under
+the CLI the text is written to the mirrored path, skipped when byte-identical so `rbxtsc -w` is not
+woken, and diagnostics are printed by the CLI itself.
 
 ## What gets touched
 
