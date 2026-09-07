@@ -33,8 +33,8 @@ npx facet-rbxts <command> [options]
 | `--version`, `-v` | |
 | `--help`, `-h` | |
 
-Every command resolves the project root by walking up from `--cwd` (or the current directory) to the
-nearest `package.json`, and fails with `No package.json found above …` if there is none.
+Every command resolves the project root by walking up from `--cwd`, or the current directory, to the
+nearest `package.json`. It fails with `No package.json found above …` if there is none.
 
 ## `init`
 
@@ -48,9 +48,8 @@ npx facet-rbxts init [-y] [--force] [--no-deps]
 | `--force` | Overwrite an existing `facet.json` |
 | `--no-deps` | Skip every package install |
 
-Prompts for the theme base (`zinc` / `slate` / `stone` / `neutral`), the mode (`dark` / `light`),
-the three directories, and an optional import alias — leaving the alias blank means relative
-imports, which need no tsconfig `paths`.
+Prompts for the theme base, the mode, the three directories, and an optional import alias. Leaving
+the alias blank means relative imports, which need no tsconfig `paths`.
 
 Then, in order:
 
@@ -83,23 +82,25 @@ Files that already exist are **skipped**, not overwritten, and reported as `exis
 replaces them wholesale — there is no merge.
 
 The union of the install set's npm `dependencies` is then installed, through whichever package
-manager your lockfile implies (`pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lockb`/`bun.lock` →
-bun, `package-lock.json` → npm; then the `packageManager` field; then npm).
+manager your lockfile implies. `pnpm-lock.yaml` selects pnpm, `yarn.lock` yarn, `bun.lockb` or
+`bun.lock` bun, and `package-lock.json` npm. Failing that it reads the `packageManager` field, then
+falls back to npm.
 
 Finally, if `vela.config.ts` does not use `facetTheme` and the added components name tokens, it says
-so with the token list — rather than letting the next build report it as a Vela diagnostic on a file
-you never wrote.
+so with the token list. Otherwise the next build reports it as a Vela diagnostic on a file you never
+wrote.
 
 <Callout title="Lockfile over the packageManager field">
-The field states intent; the lockfile states what the project actually installed with. Installing
+The field states intent. The lockfile states what the project actually installed with. Installing
 with the wrong one leaves two lockfiles disagreeing.
 </Callout>
 
 ### Wiring a provider
 
-If an added component declares a [`providers`](/facet/reference/registry-format/#providers) entry —
-today only [`dialog`](/facet/components/dialog/) — `add` offers to wrap your client entry in it.
-This is the **one file the CLI edits that it did not write**, and the bar is deliberately high.
+If an added component declares a [`providers`](/facet/reference/registry-format/#providers) entry,
+`add` offers to wrap your client entry in it. Today that is only
+[`dialog`](/facet/components/dialog/). This is the **one file the CLI edits that it did not write**,
+and the bar is deliberately high.
 
 ```
 PortalProvider has to wrap your app — Lattice reads the portal target from it,
@@ -128,11 +129,11 @@ everything outside those offsets comes out byte for byte identical.
 | Provider already imported | Nothing, and it says so |
 
 Writing `Players.LocalPlayer.WaitForChild("PlayerGui")` would mean adding `Players` to an
-`@rbxts/services` import that may not exist, so the CLI reuses the expression that is there and
-stops when there is none.
+`@rbxts/services` import that may not exist. The CLI reuses the expression that is there and stops
+when there is none.
 
 <Callout title="Not being asked is not the same as saying no">
-The prompt defaults to yes and is the last thing `add` does; `--yes` writes without asking. A **non-interactive** run without `--yes` writes nothing and prints the snippet — stdin not being a terminal is not consent, and not the same as declining.
+The prompt defaults to yes and is the last thing `add` does. `--yes` writes without asking. A **non-interactive** run without `--yes` writes nothing and prints the snippet. Stdin not being a terminal is not consent, and it is not the same as declining.
 </Callout>
 
 `facet doctor` checks the same thing on every run, so a provider refactored out later is reported
@@ -198,7 +199,7 @@ says so in its own output. See
 npx facet-rbxts doctor
 ```
 
-Eight checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-zero.
+Eight checks, in order. Each is `ok`, `warn` or `fail`. Any `fail` exits non-zero.
 
 | Check | Fails when |
 | --- | --- |
@@ -211,28 +212,27 @@ Eight checks, in order. Each is `ok`, `warn`, or `fail`; any `fail` exits non-ze
 | **packages** | a package is missing, or older than the floor the copied files need |
 | **providers** | an installed component declares a provider and the client entry is not wrapped in it |
 
-The providers check is the only one whose failure is not a build failure: a `dialog` with no
-`PortalProvider` compiles, ships, and throws the first time a player opens it, and nothing in the
-copied file can prevent that. When it fails it prints the snippet; when it cannot find a single
-client entry it warns rather than failing.
+The providers check is the only one whose failure is not a build failure. A `dialog` with no
+`PortalProvider` compiles, ships, and throws the first time a player opens it. Nothing in the copied
+file can prevent that. When it fails it prints the snippet. When it cannot find a single client
+entry it warns rather than failing.
 
 The packages check catches a project set up by an older CLI, where the copied files are current and
 the versions under them are not. It reads the version actually in `node_modules`, walking up for a
-workspace, rather than the declared range — the two differ exactly when someone installed once and
+workspace, rather than the declared range. The two differ exactly when someone installed once and
 never again.
 
-A registry it cannot reach is a **gap in the report**, not the end of it: the first four checks
+A registry it cannot reach is a **gap in the report**, not the end of it. The first four checks
 stand alone, and the last three are skipped with a warning.
 
 <Callout title="Half an item is not a missing item">
-An item counts as present the moment one of its files does. Deleting a copied file is allowed, so a half-installed item is reported rather than treated as absent — its tokens and packages are still needed by whatever is left.
+An item counts as present the moment one of its files does. Deleting a copied file is allowed, so a half-installed item is reported rather than treated as absent. Its tokens and packages are still needed by whatever is left.
 </Callout>
 
 ### Version comparison is deliberately not semver
 
-The comparison answers one question — *is what is installed at least the version this needs?* — for
-the shapes Facet writes. Anything it cannot read is reported as **unverifiable** rather than guessed
-at.
+The comparison answers one question for the shapes Facet writes: *is what is installed at least the
+version this needs?* Anything it cannot read is reported as **unverifiable** rather than guessed at.
 
 ## Environment variables
 

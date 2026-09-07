@@ -38,7 +38,7 @@ evaluates.
 ## `table` counts from 1
 
 `table` is **not** a roblox-ts macro. The compiler passes its arguments straight through to Luau, so
-the number written in the source is already a Luau index — and loom reads it as one.
+the number written in the source is already a Luau index. Loom reads it as one.
 
 The array *methods* roblox-ts does compile as macros keep their 0-based TS indices. Both spellings
 appear in the same file all the time, and they drop the same element:
@@ -50,8 +50,8 @@ table.remove(list, 1);   // the library — 1-based, like the Luau it compiles t
 
 `string.find` has always behaved this way here for the same reason.
 
-The tables themselves are ordinary JavaScript values — an array, a `Map`, a `Set` or a plain object —
-so `#list` is `list.length` and a hole does not end it.
+The tables themselves are ordinary JavaScript values: an array, a `Map`, a `Set` or a plain object.
+So `#list` is `list.length`, and a hole does not end it.
 
 ### `sort` takes a predicate
 
@@ -68,7 +68,7 @@ orders correctly too.
 
 ### Where loom is forgiving
 
-The engine raises an error in each of these; loom leans the other way, so a preview renders rather
+The engine raises an error in each of these. Loom leans the other way, so a preview renders rather
 than dying over an off-by-one:
 
 | Case | Roblox | Loom |
@@ -95,8 +95,8 @@ const [name] = string.match(path, "([^/]+)$");
 for (const [word] of string.gmatch(sentence, "%a+")) { /* … */ }
 ```
 
-Since 0.12.0 `gsub` takes a **function or a table** as its replacement, not only a string, and
-`format` understands the Lua specifiers a UI reaches for — width, padding and precision:
+`gsub` takes a **function or a table** as its replacement, not only a string. `format` understands
+the Lua specifiers a UI reaches for: width, padding and precision.
 
 ```ts
 string.gsub("a b", "%a", (c) => c.upper());        // "A B", 2
@@ -104,55 +104,53 @@ string.gsub("a b", "%a", { a: "X", b: "Y" });      // "X Y", 2
 string.format("%02d:%05.1f | %-10s|", 7, 3.14159, "ab");
 ```
 
-roblox-ts also calls these off a string receiver, so `String.prototype` carries `.lower()`,
-`.upper()`, `.sub()`, `.rep()`, `.find()`, `.gsub()`, `.format()`, `.gmatch()`, `.byte()`, `.len()`,
-`.reverse()` and `.size()`, each delegating to the library above — same 1-based indices, same tuple
-returns. `.sub()` deliberately replaces the Annex B HTML wrapper JavaScript ships under that name.
+roblox-ts also calls these off a string receiver. `String.prototype` carries `.lower()`, `.upper()`,
+`.sub()`, `.rep()`, `.find()`, `.gsub()`, `.format()`, `.gmatch()`, `.byte()`, `.len()`,
+`.reverse()` and `.size()`, each delegating to the library above with the same 1-based indices and
+tuple returns. `.sub()` deliberately replaces the Annex B HTML wrapper JavaScript ships under that
+name.
 
 <Callout title="`.match()` is deliberately not patched">
 `String.prototype.match` already exists in JavaScript with different semantics, on a prototype the
 whole page shares — loom's own code, React's, your bundler's runtime. Overwriting it to mean Luau's
-`string.match` would change behaviour far outside the previewed tree. Call `string.match(s, …)`
-instead; `.split()` is left native for the same family of reasons (Luau's `string.split` is
-implemented *with* it).
+`string.match` would change behaviour far outside the previewed tree. Call `string.match(s, …)` instead. `.split()` is left native for the same family of reasons, since Luau's `string.split` is implemented *with* it.
 </Callout>
 
 Array macros are patched the same way: `.size()`, `.isEmpty()`, `.remove(i)`, `.unorderedRemove(i)`
 and `.clear()` on `Array.prototype`, 0-based as roblox-ts compiles them. `.size()` and `.isEmpty()`
-resolve on `Map` and `Set` through a symbol the preview rewrites previewed source to, so every other
+resolve on `Map` and `Set` through a symbol the preview rewrites previewed source to. Every other
 `Map` on the page keeps plain JS semantics.
 
 ## `math.randomseed` really seeds
 
 `Math.random` cannot be seeded, so `randomseed` does not pretend to: it switches `math.random` over
-to a deterministic generator. Code that seeds for reproducibility — a scene that wants the same
-"random" layout every reload — gets it, instead of being silently ignored.
+to a deterministic generator. Code that seeds for reproducibility gets it, rather than being
+silently ignored. A scene wanting the same "random" layout every reload works.
 
 `math.log` takes an optional base, and `frexp` / `modf` return their pair as a destructurable array.
 
 ## `os.date`
 
-A strftime subset — `%a %A %b %B %c %d %H %I %j %m %M %p %S %x %X %y %Y %%`, with an unrecognized
-specifier left as written — plus the `*t` and `!*t` table forms and the `!` UTC prefix on any format.
+A strftime subset: `%a %A %b %B %c %d %H %I %j %m %M %p %S %x %X %y %Y %%`, with an unrecognized
+specifier left as written. The `*t` and `!*t` table forms and the `!` UTC prefix work on any format.
 `os.time` accepts a date table as well as no argument, and `os.difftime` subtracts two of its
 results.
 
 ## `debug` profiling shows up in devtools
 
-`debug.profilebegin` / `profileend` are wired to `performance.mark` / `performance.measure`, so
+`debug.profilebegin` and `profileend` are wired to `performance.mark` and `performance.measure`.
 Roblox instrumentation a component already carries appears as real entries in the browser's
-Performance panel rather than going nowhere. `debug.traceback` returns the JavaScript stack, which is
-the real one here.
+Performance panel. `debug.traceback` returns the JavaScript stack, which is the real one here.
 
 ## `bit32` and `buffer` details worth knowing
 
-`bit32` implements **Luau's** shift semantics, not JavaScript's: a shift of 32 or more saturates to
+`bit32` implements **Luau's** shift semantics, not JavaScript's. A shift of 32 or more saturates to
 zero, where JS's `<<` masks the count to five bits and shifts by `count % 32`. Every result is an
 unsigned 32-bit number.
 
-`buffer` is little-endian and bounds-checked — an out-of-range access throws, as it does in the
-engine — and `typeOf` answers `"buffer"` for one, since Luau's buffer is a distinct primitive type
-rather than an `ArrayBuffer` with a different name.
+`buffer` is little-endian and bounds-checked, so an out-of-range access throws as it does in the
+engine. `typeOf` answers `"buffer"` for one, since Luau's buffer is a distinct primitive type rather
+than an `ArrayBuffer` with a different name.
 
 ## The stubs
 
@@ -169,13 +167,13 @@ Installed so the code path exists, and doing nothing meaningful:
 
 **`setmetatable`, `getmetatable`, `newproxy`.** Loom runs the author's TypeScript, whose classes are
 JavaScript classes. There is no faithful way to give a plain object a metatable's `__index`
-behaviour without proxying every table in the program, and a half-faithful one would be worse than
-the honest gap — a scene would render right up until the moment the metatable mattered.
+behaviour without proxying every table in the program. A half-faithful one would be worse than the
+honest gap: a scene would render right up until the moment the metatable mattered.
 
-**`print` is installed but not declared.** The runtime overwrites the value, so `print` works; the
-ambient globals declaration omits it because `lib.dom` already declares one and redeclaring is a
+**`print` is installed but not declared.** The runtime overwrites the value, so `print` works. The
+ambient globals declaration omits it because `lib.dom` already declares one, and redeclaring is a
 compile error. See [TypeScript setup](/loom/guides/typescript-setup/).
 
-**No filtering, no networking.** Anything that would need a Roblox server — `HttpService.GetAsync`,
-`TextService.FilterStringAsync` — throws by name rather than quietly doing nothing. See
+**No filtering, no networking.** Anything that would need a Roblox server throws by name rather than
+quietly doing nothing. That covers `HttpService.GetAsync` and `TextService.FilterStringAsync`. See
 [Services](/loom/reference/services/).
