@@ -9,70 +9,60 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela reports most mistakes as [diagnostics](/vela-rbxts/reference/diagnostics/); when you have a
-warning code, look it up there. This page is for the other situation: **something is wrong on screen
-and the build said nothing.** Each entry gives the likeliest cause and the quickest way to confirm it.
+Vela reports most mistakes as [diagnostics](/vela-rbxts/reference/diagnostics/). This page is for
+the other situation: **something is wrong on screen and the build said nothing.**
 
 <Callout title="Check your version first">
-Most of the silent failures documented below were fixed years of releases ago. Run
-`npm ls @vela-rbxts/compiler`, and if you are behind, read the
-[release notes](/vela-rbxts/reference/release-notes/) before anything else — coverage gaps on the
-runtime path (before 0.8.0), `opacity-*` not reaching a subtree (before 0.10.0), "out of local
-registers" (before 0.9.0), a motion driver taking the tree down at mount (before 0.10.0), and a
-slow or bloated build (before 0.12.0) all have upgrading as the whole fix.
+Most of the silent failures below were fixed releases ago. Run `npm ls @vela-rbxts/compiler` and read the [release notes](/vela-rbxts/reference/release-notes/) before anything else — runtime-path coverage gaps, `opacity-*` not reaching a subtree, "out of local registers", a motion driver taking the tree down at mount, and a slow build all have upgrading as the whole fix.
 </Callout>
 
 ## "A class did nothing"
 
-Work down this list in order — it is sorted by how often each turns out to be the answer.
+Sorted by how often each turns out to be the answer.
 
 **1. The utility does not belong on that host element.** `<frame className="text-red-500" />`
 compiles and emits `TextColor3` onto a Frame, which rejects it. The static path warns
-`unsupported-host-utility` but writes the property anyway; the runtime path drops it instead, so the
-same class list can behave differently depending on how the `className` was written.
+`unsupported-host-utility` and writes it anyway; the runtime path drops it, so the same class list
+can behave differently on the two paths.
 
 **2. The class is on a component that does not forward it.** `<Panel className="p-4" />` hands
 `Panel` resolved props and helper children. If `Panel` does not spread its unrecognized props onto a
 host element and render `children`, everything vanishes with no warning. See
 [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
 
-**3. The element is on the runtime path and the class value is unchecked.** A typo that would warn in
-a literal is silent in a computed string. A runtime-path element renders as `VelaRuntimeHost` instead
-of its original tag in the compiled output — see
-[dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
+**3. The element is on the runtime path and the class value is unchecked.** A typo that would warn
+in a literal is silent in a computed string. A runtime-path element renders as `VelaRuntimeHost` in
+the compiled output — see [dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
 
 **4. Your build drops Vela diagnostics entirely.** Diagnostics reach you through roblox-ts's
 `context.addDiagnostic`; on a version that does not expose it, every warning disappears. Confirm by
 compiling `className="bg-nope-500"` and checking a warning appears.
 
-**5. The editor stayed quiet, but the key is wrong.** The editor suppresses `unknown-theme-key` while
-your token is still a prefix of a real key, so `bg-slat` shows no squiggle and still warns in the
-build. The build is the source of truth.
+**5. The editor stayed quiet, but the key is wrong.** The editor suppresses `unknown-theme-key`
+while your token is still a prefix of a real key, so `bg-slat` shows no squiggle and still warns in
+the build.
 
-**6. `transition` on a static element.** Transitions animate *changes*, and a static element never
-changes, so it is dropped with `transition-without-runtime`. Add the `hover:` or breakpoint rule that
-gives it something to tween.
+**6. `transition` on a static element.** A static element never changes, so it is dropped with
+`transition-without-runtime`. Add the `hover:` or breakpoint rule that gives it something to tween.
 
 ## "The editor flags a class the build accepts"
 
-The build is the source of truth, so a squiggle the compiler does not agree with is an editor bug —
-and every known one was fixed by 0.12.3. Upgrade.
+The build is the source of truth, so a squiggle the compiler disagrees with is an editor bug.
+Upgrade.
 
-The two genuinely disagree in one direction by design: the per-host rules
-(`unsupported-host-utility`) are enforced in the editor and never by the build. That is the first
-entry on this page, not a bug.
+They genuinely disagree in one direction by design: the per-host rules (`unsupported-host-utility`)
+are enforced in the editor and never by the build — the first entry on this page.
 
 ## "A breakpoint or orientation variant never applies"
 
 Check the token's other conditions — a chained `md:touch:` needs both to match. Bare thresholds are
-min-width on the viewport's X dimension, so a phone-sized viewport matches none of them; the `max-`
-forms cover the other side. A square viewport counts as `landscape`, not `portrait`.
+min-width on the viewport's X dimension, so a phone-sized viewport matches none of them. A square
+viewport counts as `landscape`.
 
 ## "The layout is wrong"
 
 **`left-*` / `top-*` are ignored.** The parent has a `UIListLayout` — any `flex`, `gap-*` or
-`space-*` — and a list layout owns its children's positions. Position an element only under a plain
-frame.
+`space-*` — which owns its children's positions. Position an element only under a plain frame.
 
 **An element sits outside its parent after `right-*`/`bottom-*`.** Those set the coordinate from the
 far edge but do not anchor the element, so its top-left corner lands there. Add the matching
@@ -98,11 +88,10 @@ layouts set it for you.
 
 ## "The colors are wrong"
 
-**An element that used to be visible disappeared.** It was relying on Roblox's default gray
-background, and [preflight](/vela-rbxts/reference/config/#preflight) starts every classed host
-element at `BackgroundTransparency = 1`. Give it the `bg-*` it was implicitly using, or set
-`preflight: false`. Elements with no `className`, and components, are never preflighted — so a
-container that vanished definitely has classes on it.
+**An element that used to be visible disappeared.** It relied on Roblox's default grey background,
+and [preflight](/vela-rbxts/reference/config/#preflight) starts every classed host element at
+`BackgroundTransparency = 1`. Give it the `bg-*` it was implicitly using, or set `preflight: false`.
+Elements with no `className`, and components, are never preflighted.
 
 **A gradient renders as a flat fill.** One of its stops is `transparent`, which is silently dropped.
 This is the one transparency case that produces no diagnostic.
@@ -110,34 +99,30 @@ This is the one transparency case that produces no diagnostic.
 **`bg-*` seems ignored next to a gradient.** By design: a gradient forces `BackgroundColor3` to white
 so the stops read true, overriding any `bg-*` regardless of order.
 
-**A theme color you defined reports `unknown-theme-key`.** Two suspects, both in config. A top-level
-`theme.colors` **silently discards `theme.extend.colors`** along with every built-in palette — add
-colors through `extend` alone. And discovery walks up from each source file, so a stray
-`vela.config.ts` in a subdirectory shadows the root one. See
+**A theme colour you defined reports `unknown-theme-key`.** A top-level `theme.colors` **silently
+discards `theme.extend.colors`** along with every built-in palette, and discovery walks up from each
+source file, so a stray `vela.config.ts` in a subdirectory shadows the root one. See
 [merge semantics](/vela-rbxts/reference/config/#merge-semantics).
 
 **`opacity-*` fades a transparency you set yourself.** Expected when the fade comes from an ancestor
 *component*: the alpha arrives as React context, and a consumer cannot tell your
-`BackgroundTransparency` prop from one Vela lowered. Write the fade on the element itself, or push
-the value into a class.
+`BackgroundTransparency` prop from one Vela lowered.
 
 **Overlapping siblings darken where they overlap.** `opacity-*` fades each instance rather than
 compositing the group. Put them in a `canvasgroup` and fade that.
 
-**A themed color works statically but not on a dynamically-classed element.** The runtime path
+**A themed colour works statically but not on a dynamically-classed element.** The runtime path
 re-parses theme values from text and accepts exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`
-with numeric literals. Anything else silently degrades at runtime while the static path keeps
-working. See [theming](/vela-rbxts/guides/theming/).
+with numeric literals; anything else silently degrades. See [theming](/vela-rbxts/guides/theming/).
 
 ## "Everything got bigger or smaller after upgrading to 0.12.0"
 
-Expected. Every pixel offset is now a [rem unit](/vela-rbxts/guides/theming/#rem) that follows the
+Expected: every pixel offset is a [rem unit](/vela-rbxts/guides/theming/#rem) following the
 viewport, so a layout tuned by eye at one resolution keeps its proportions there and changes
 everywhere else.
 
-If a screen looks *uniformly* off, check what viewport you are testing at. If it looks off only at
-the extremes, the clamp is doing its job — `min` 8 and `max` 64, both configurable. To rule rem out
-while you look at something else:
+A screen *uniformly* off means the viewport you are testing at; off only at the extremes means the
+clamp is doing its job (`min` 8, `max` 64, both configurable). To rule rem out:
 
 ```ts title="vela.config.ts"
 export default defineConfig({ theme: { rem: { min: 16, max: 16 } } });
