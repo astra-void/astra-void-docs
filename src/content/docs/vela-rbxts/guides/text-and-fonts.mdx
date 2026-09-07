@@ -10,7 +10,10 @@ draft: false
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-Text utilities write to the text properties of Roblox's text instances — `TextSize`, `TextColor3`, `FontFace`, `TextXAlignment`, `TextYAlignment`, `TextWrapped`, `TextTruncate`, `LineHeight` — and two of them rewrite the `Text` string itself. Three host elements have those properties: `textlabel`, `textbutton`, and `textbox`.
+Text utilities write to the text properties of Roblox's text instances: `TextSize`, `TextColor3`,
+`FontFace`, `TextXAlignment`, `TextYAlignment`, `TextWrapped`, `TextTruncate` and `LineHeight`. Two
+of them rewrite the `Text` string itself. Three host elements have those properties: `textlabel`,
+`textbutton`, and `textbox`.
 
 ```tsx title="src/client/Title.tsx"
 <textlabel
@@ -26,17 +29,19 @@ Text utilities write to the text properties of Roblox's text instances — `Text
 />
 
 <Callout title="Weights are approximated in the preview">
-The **Lowered** tab shows what Vela really emits for `font-*`: a `FontFace` carrying a `Font` value built from the theme's family, the weight, and the style. The browser renderer behind these previews has no `Font` datatype, so the preview maps each weight onto the nearest legacy `Font` enum member instead. Relative weights read correctly; the exact face does not.
+The **Lowered** tab shows what Vela really emits for `font-*`: a `FontFace` carrying a `Font` value built from the theme's family, the weight, and the style. The browser renderer behind these previews has no `Font` datatype, so the preview maps each weight onto the nearest legacy `Font` enum member instead. Relative weights read correctly. The exact face does not.
 </Callout>
 
 ## The host restriction is editor-only
 
 Vela knows which utilities belong on which host element, and reports `unsupported-host-utility` when you get it wrong. That check lives in the LSP surface — diagnostics, hover, completions, and document colors.
 
-**The compiler never consults it.** The transform pipeline does not check host tags at all, so `<frame className="text-red-500" />` compiles cleanly and emits `TextColor3` onto a `Frame` with no build-time warning of any kind.
+**The compiler never consults it.** The transform pipeline does not check host tags at all.
+`<frame className="text-red-500" />` compiles cleanly and emits `TextColor3` onto a `Frame`, with no
+build-time warning.
 
 <Callout title="Editor warns, build does not">
-The utility-per-host rules — text utilities on `textlabel`/`textbutton`/`textbox`, `image-*` on `imagelabel`/`imagebutton`, `placeholder-*` on `textbox` — are enforced **only** by the editor and LSP. `rbxtsc` will happily emit `TextColor3` on a `Frame`.
+The utility-per-host rules are enforced **only** by the editor and LSP. Text utilities belong on `textlabel`, `textbutton` and `textbox`, `image-*` on `imagelabel` and `imagebutton`, and `placeholder-*` on `textbox`. `rbxtsc` will happily emit `TextColor3` on a `Frame`.
 
 Roblox ignores an unknown property assignment, so nothing crashes — the class does nothing and you get no signal outside the editor. Use [editor setup](/vela-rbxts/guides/editor-setup/) to get the warning.
 </Callout>
@@ -44,8 +49,8 @@ Roblox ignores an unknown property assignment, so nothing crashes — the class 
 ### The restriction does not apply to components
 
 Inside a component's `className` the rule does not exist. Vela has no idea which host element
-`<Title />` renders, so the editor completes and hovers the full set — `text-*`, `image-*` and
-`placeholder-*` included — and never reports `unsupported-host-utility`.
+`<Title />` renders, so the editor completes and hovers the full set, `text-*`, `image-*` and
+`placeholder-*` included. It never reports `unsupported-host-utility`.
 
 ```tsx title="No warning anywhere, in the editor or the build"
 <Title className="text-2xl font-semibold" Text="Match found" />
@@ -64,7 +69,7 @@ consume down to a text host. See
 3. If the payload is `wrap` or `nowrap`, it is `TextWrap`.
 4. **Everything else falls through to `TextColor`.**
 
-The fourth step is a catch-all, so there is no such thing as an unrecognised `text-*` class:
+The fourth step is a catch-all, so there is no such thing as an unrecognised `text-*` class.
 `text-foo` is read as a colour, `foo` is not in `theme.colors`, and you get **`unknown-theme-key`**
 rather than `unsupported-utility-family`.
 
@@ -132,9 +137,9 @@ new Font("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.SemiBol
 Two names do not match their class: `font-normal` produces `Regular` and `font-black` produces
 `Heavy`, following the Roblox enum member names.
 
-`italic` rides in the same `FontFace` value as a third argument — `font-bold italic` emits
-`new Font("…/SourceSansPro.json", Enum.FontWeight.Bold, Enum.FontStyle.Italic)` — and `not-italic`
-resets the style axis.
+`italic` rides in the same `FontFace` value as a third argument, so `font-bold italic` emits
+`new Font("…/SourceSansPro.json", Enum.FontWeight.Bold, Enum.FontStyle.Italic)`. `not-italic` resets
+the style axis.
 
 ### Family
 
@@ -190,7 +195,7 @@ Vertical alignment uses a different prefix: `align-top`, `align-middle` and `ali
 `TextYAlignment` to `Top`, `Center` and `Bottom`. Anything else after `align-` reports
 `unsupported-text-alignment`.
 
-`text-justify` parses but does not resolve — `TextXAlignment` has no justified mode — and reports
+`text-justify` parses but does not resolve, since `TextXAlignment` has no justified mode. It reports
 `unsupported-text-alignment`.
 
 ## Line height
@@ -201,9 +206,9 @@ Vertical alignment uses a different prefix: `align-top`, `align-middle` and `ali
 
 ## Wrapping and truncation
 
-`text-wrap` sets `TextWrapped = true` and `text-nowrap` sets it to `false`. The
-`whitespace-normal`/`whitespace-nowrap` pair is an accepted alias for the same property; any other
-`whitespace-*` value is `unsupported-whitespace-value`.
+`text-wrap` sets `TextWrapped = true`, and `text-nowrap` sets it to `false`. The `whitespace-normal`
+and `whitespace-nowrap` pair is an accepted alias for the same property. Any other `whitespace-*`
+value is `unsupported-whitespace-value`.
 
 `truncate` sets `TextTruncate = Enum.TextTruncate.AtEnd`. It takes no payload, and `AtEnd` is the
 only truncation mode Vela emits.
@@ -225,15 +230,15 @@ work on the `Text` string itself. When `Text` is a literal the rewrite happens *
 <textlabel Text="MATCH FOUND" />
 ```
 
-When `Text` is an expression, the transform has to run in-game, so the element moves onto the
-[runtime path](/vela-rbxts/guides/dynamic-class-names/) and the helper transforms the value as it
+When `Text` is an expression, the transform has to run in-game. The element moves onto the
+[runtime path](/vela-rbxts/guides/dynamic-class-names/), and the helper transforms the value as it
 changes.
 
 ## Decorations use RichText
 
-`underline` and `line-through` wrap the text in RichText markup — `Text="<u>hello</u>"` with
-`RichText={true}` — escaping the content as needed; `no-underline` removes them. If the element sets
-`RichText` itself, Vela backs off with `decoration-on-richtext`. `overline` has no RichText
+`underline` and `line-through` wrap the text in RichText markup, emitting `Text="<u>hello</u>"` with
+`RichText={true}` and escaping the content as needed. `no-underline` removes them. If the element
+sets `RichText` itself, Vela backs off with `decoration-on-richtext`. `overline` has no RichText
 equivalent and reports `no-roblox-equivalent`.
 
 ## Placeholders
