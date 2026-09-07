@@ -89,18 +89,15 @@ This is the one surprise in the component, and it is not an oversight:
 ```
 
 In shadcn the variant is set once on the root and a descendant selector colours the title. Roblox
-has no descendant selectors and **nothing inherits** — a `TextLabel`'s colour lives on that
-`TextLabel` — so `variant` has to reach every part that draws something.
+has no descendant selectors and **nothing inherits**, so `variant` has to reach every part that
+draws something.
 
-Verbose on purpose. The alternative is a React context, and a context is a thing you then own and
-have to keep wired up through your own edits, for a component whose entire body is three instances.
-If you find the repetition annoying in your project, the file is yours: add the context, or collapse
-the three parts into one component that takes two strings.
+Verbose on purpose. The alternative is a React context you then own and keep wired through your own
+edits, for a component whose whole body is three instances. If the repetition annoys you, the file
+is yours — add the context, or collapse the parts into one component taking two strings.
 
 <Callout title="Forgetting it on a part is silent">
-`<Alert variant="destructive">` with a plain `<AlertTitle />` compiles, renders, and gives you a
-destructive border around a default-coloured title. Nothing warns — there is no relationship between
-the parts for anything to check.
+`<Alert variant="destructive">` with a plain `<AlertTitle />` compiles and renders, giving you a destructive border around a default-coloured title. Nothing warns — there is no relationship between the parts for anything to check.
 </Callout>
 
 | `variant` | Root | Title | Description |
@@ -108,9 +105,9 @@ the parts for anything to check.
 | `default` | `bg-card border-border` | `text-card-foreground` | `text-muted-foreground` |
 | `destructive` | `bg-card border-destructive` | `text-destructive` | `text-destructive` |
 
-The destructive surface is the *same* `bg-card` as the default — only the border and the text
-change. A red fill behind body text is a contrast problem the theme cannot solve, and the border
-carries the signal on its own.
+The destructive surface is the *same* `bg-card` as the default; only the border and text change. A
+red fill behind body text is a contrast problem the theme cannot solve, and the border carries the
+signal alone.
 
 ## Three parts, one recipe object
 
@@ -124,9 +121,8 @@ export const alertVariants = {
 
 One object rather than three `export const`s, for the reason
 [Card](/facet/components/card/#six-parts-one-recipe-object) is written the same way: every exported
-name costs a Luau register, Vela inlines its runtime into any file with a computed `className`, and
-`card` went over the 200-register limit and stopped loading entirely. Three parts is nowhere near
-that ceiling — the shape is the convention, kept because it is free.
+name costs a Luau register, and `card` once went over the 200-register limit and stopped loading.
+Three parts is nowhere near that ceiling — the shape is the convention, kept because it is free.
 
 See [the register limit](/facet/guides/component-conventions/#6-flat-named-exports).
 
@@ -136,13 +132,11 @@ Every part carries it, exactly as `card` does: **width from the parent, height f
 A part that fails to resolve a height collapses the alert above it.
 
 `whitespace-normal` and `text-left` are on both text parts because Roblox centres text and keeps it
-on one line by default — an alert description is the case where that matters most, since it is the
-part most likely to wrap.
+on one line by default — which matters most for a description, the part most likely to wrap.
 
-`font-normal` on the description is not redundant next to `font-medium` on the title. Vela leaves
-`FontFace` alone when no `font-*` token appears, and Roblox's untouched default is LegacyArial —
-which is [the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes)
-before anyone opened it in Studio.
+`font-normal` on the description is not redundant beside `font-medium` on the title: Vela leaves
+`FontFace` alone when no `font-*` appears, and Roblox's default is LegacyArial —
+[the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes).
 
 ## The root keeps its background
 
@@ -155,9 +149,8 @@ before anyone opened it in Studio.
 ```
 
 No `BackgroundTransparency: 1` on the root, unlike most components — the surface *is* the alert.
-Only Roblox's 1px border is cleared, because `border` in the recipe is what draws the real one. The
-two text parts do clear their backgrounds, since a `TextLabel` with an opaque default would paint a
-box behind every line.
+Only Roblox's 1px border is cleared, since `border` in the recipe draws the real one. The text parts
+do clear their backgrounds, or a `TextLabel`'s opaque default would paint a box behind every line.
 
 That is the same rule [Separator](/facet/components/separator/#the-one-component-that-keeps-its-background)
 follows, reached from the other direction.

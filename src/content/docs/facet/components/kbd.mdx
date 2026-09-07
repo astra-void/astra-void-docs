@@ -66,17 +66,13 @@ export const kbdLabelVariants = fv("text-xs font-mono text-muted-foreground");
 ```
 
 <Callout title="The one deliberate typeface in the registry">
-Every other component carries a `font-*` token for a defensive reason: Vela leaves `FontFace` alone
-when no `font-*` appears, and Roblox's untouched default is LegacyArial. So `font-normal` and
-`font-medium` elsewhere are there to *avoid* a default, and they name a weight.
+Every other component carries a `font-*` defensively: Vela leaves `FontFace` alone when no `font-*` appears, and Roblox's default is LegacyArial. So `font-normal` and `font-medium` elsewhere exist to *avoid* a default, and they name a weight.
 
-`font-mono` is not that. Vela resolves it against `theme.fontFamily` — to RobotoMono — where the
-weights resolve against something else entirely. This is the one place in the registry where the
-mandatory `font-*` is choosing a typeface because the component wants that typeface.
+`font-mono` is not that: Vela resolves it against `theme.fontFamily`, to RobotoMono, where the weights resolve against something else. This is the one place where the mandatory `font-*` is choosing a typeface because the component wants it.
 </Callout>
 
-A key cap in a proportional face reads as a word in a box. In a monospace face it reads as a key.
-That is the whole justification, and it is worth the one exception.
+A key cap in a proportional face reads as a word in a box; in a monospace face it reads as a key.
+That is the whole justification.
 
 See [Text and labels](/facet/guides/text-and-labels/) for why `font-*` is mandatory at all.
 

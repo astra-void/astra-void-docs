@@ -49,10 +49,7 @@ import {
 ```
 
 <Callout title="This one needs a provider above your app">
-`Dialog.Portal` reads the `PlayerGui` it renders into from a **strict** context. Without a
-`PortalProvider` the dialog compiles, type-checks, ships — and throws the first time a player opens
-it. `facet add dialog` offers to write the wrapper into your client entry; the details are in
-[The provider](#the-provider) below.
+`Dialog.Portal` reads the `PlayerGui` it renders into from a **strict** context, so without a `PortalProvider` the dialog compiles, ships, and throws the first time a player opens it. `facet add dialog` offers to write the wrapper into your client entry — see [The provider](#the-provider).
 </Callout>
 
 <FacetPreview
@@ -74,10 +71,9 @@ it. `facet add dialog` offers to write the wrapper into your client entry; the d
 | `DialogTitle` | `TextLabel` | `w-full h-fit whitespace-normal text-left text-lg font-semibold text-foreground` |
 | `DialogDescription` | `TextLabel` | `w-full h-fit whitespace-normal leading-tight text-left text-sm font-normal text-muted-foreground` |
 
-The four re-exports are `DialogPrimitive.Root`, `.Trigger`, `.Portal` and `.Close`, passed through
-without a recipe — the trigger is whatever you put in it, exactly as shadcn does. Reached for bare,
-`DialogTrigger` is a `textbutton` with Roblox's defaults neutralized and no size of its own, so give
-it a `className` with both axes resolved, or use `asChild` around a
+The four re-exports pass `DialogPrimitive.Root`, `.Trigger`, `.Portal` and `.Close` through without
+a recipe, so the trigger is whatever you put in it. Bare, `DialogTrigger` is a `textbutton` with no
+size of its own — give it a `className` with both axes resolved, or use `asChild` around a
 [`Button`](/facet/components/button/).
 
 <ForwardedProps instance="Frame" />
@@ -99,16 +95,11 @@ One wrapper, at the client entry, for the whole app — not per dialog. Every la
 registry will declare the same one, so this edit happens once.
 
 <Callout title="Why the CLI edits a file for this and nothing else">
-`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json` rather than editing it. Both files belong to you, and a pattern-matched edit that mangles one is worse than a printed snippet.
+`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json`. Both files belong to you, and a pattern-matched edit that mangles one is worse than a printed snippet.
 
-This is the exception, because every other thing the CLI reports is a **build-time** failure. A
-missing transformer means every class is inert on the next `rbxtsc`. A missing token is a Vela
-diagnostic. Both are loud, and both land in front of the person who just ran the command.
+This is the exception, because everything else the CLI reports is a **build-time** failure, loud and in front of the person who just ran the command.
 
-A missing `PortalProvider` is none of those. It fails at runtime, in production, when a player
-presses the button — and by then the snippet scrolled past hundreds of lines of package-manager
-output. So `facet add` parses your entry, asks, and writes it. See the
-[CLI reference](/facet/reference/cli/#wiring-a-provider).
+A missing `PortalProvider` fails at runtime, in production, when a player presses the button — long after the snippet scrolled past. So `facet add` parses your entry, asks, and writes it. See the [CLI reference](/facet/reference/cli/#wiring-a-provider).
 </Callout>
 
 `facet doctor` notices when the provider goes missing again.
@@ -164,10 +155,9 @@ inherit:
   <frame className={cn(dialogVariants.content({ className: props.className }))} …>
 ```
 
-`Dialog.Content` forces `Size` on its own host so the layer spans the screen, **and** it takes the
-first host element under it as the boundary an outside press is measured against. A `className` on
-the primitive itself fights the first — and, through the `UICorner` Vela prepends for `rounded-lg`,
-quietly becomes the second.
+`Dialog.Content` forces `Size` on its own host so the layer spans the screen, **and** takes the
+first host element under it as the outside-press boundary. A `className` on the primitive fights the
+first — and, through the `UICorner` Vela prepends for `rounded-lg`, quietly becomes the second.
 
 So the styled panel is a child, and its own centring is two classes:
 
@@ -185,10 +175,10 @@ it.
 overlay: fv("bg-black/80"),
 ```
 
-The one class in the registry that names a colour instead of a role, against
-[rule 8](/facet/guides/component-conventions/#8-roles-never-ramp-steps). It is deliberate: a scrim
-has to darken whatever is under it *in every theme*, and not one of Facet's nineteen roles is dark in
-both modes — that is what makes them roles.
+The one class in the registry naming a colour instead of a role, against
+[rule 8](/facet/guides/component-conventions/#8-roles-never-ramp-steps). A scrim has to darken
+whatever is under it *in every theme*, and none of Facet's nineteen roles is dark in both modes —
+that is what makes them roles.
 
 | candidate | dark | light |
 | --- | --- | --- |
@@ -196,11 +186,10 @@ both modes — that is what makes them roles.
 | `bg-foreground/80` | zinc-50 ✗ | zinc-950 ✓ |
 | `bg-muted/80` | zinc-800 ✓ | zinc-100 ✗ |
 
-A token was not added for it either. A token is a published surface: `facet doctor` checks a
-project's theme against the tokens each installed component names, `@facet-ui/theme` ships the
-defaults, and every upgrade inherits it. That is a large permanent commitment for one class in one
-component, encoding something — "a scrim is dark" — nobody will want to retheme. If `sheet` and
-`drawer` turn out to want it too, that is when the argument restarts.
+No token was added for it either. A token is a published surface — `facet doctor` checks it,
+`@facet-ui/theme` ships the default, every upgrade inherits it — which is a large permanent
+commitment for one class in one component. If `sheet` and `drawer` turn out to want it too, the
+argument restarts.
 
 ### `overlayClassName`, not `className`
 
@@ -208,15 +197,13 @@ component, encoding something — "a scrim is dark" — nobody will want to reth
 <DialogContent overlayClassName="bg-background/60">
 ```
 
-The name is the point. Vela intercepts a prop *named* `className` at the call site and hands the
-component the resolved properties rather than the string, so a class routed through a second
-component's `className` is overwritten by that component's own recipe.
+The name is the point: Vela intercepts a prop *named* `className` at the call site and hands the
+component resolved properties rather than the string, so a class routed through a second component's
+`className` is overwritten by that component's own recipe.
 
-`overlayClassName` is not `className`, so it arrives intact and merges into the single expression
-where the overlay actually resolves. That is
-[the `TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one level up, and
-it is why `DialogContent` renders `DialogPrimitive.Overlay` directly instead of reaching for its own
-`DialogOverlay`.
+`overlayClassName` is not `className`, so it arrives intact and merges where the overlay actually
+resolves — [the `TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one
+level up, and why `DialogContent` renders `DialogPrimitive.Overlay` directly.
 
 The recipe is also exported as `dialogVariants.overlay`, and the file is yours once copied.
 
@@ -229,20 +216,15 @@ pushed right by `self-end`:
 close: fv("size-6 self-end rounded-md text-sm font-normal text-muted-foreground hover:bg-accent"),
 ```
 
-A `UIListLayout` positions **every** child it has, so a floating child inside a `flex-col` panel is
-not expressible without a second frame purely to escape the layout — which is the wrapper
+A `UIListLayout` positions **every** child it has, so a floating child inside a `flex-col` panel
+needs a second frame purely to escape the layout — the wrapper
 [rule 5](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property) says not to
-add. `self-end` is a `UIFlexItem`, which is the in-layout way to say the same thing.
+add. `self-end` is a `UIFlexItem`, the in-layout way to say the same thing.
 
 `showClose={false}` turns it off for a dialog whose only exit is a footer button.
 
 <Callout title="Where the ✕ lands is not something the preview can show">
-Loom's `Enum` table has no `ItemLineAlignment`, so it neither reads nor lays out what `self-end`
-lowers to — the glyph sits where the list put it, at the left. The docs' Facet gallery backfills the
-enum so the scene renders at all rather than crashing.
+Loom's `Enum` table has no `ItemLineAlignment`, so it neither reads nor lays out what `self-end` lowers to and the glyph sits where the list put it. The docs' gallery backfills the enum so the scene renders rather than crashing.
 
-Whether the ✕ actually reaches the panel's right edge, whether the panel lands centred, and whether
-the dim covers the screen beneath it are the three geometry questions
-[Studio has not answered yet](/facet/getting-started/scope-and-status/#what-is-not-covered) for this
-component.
+Whether the ✕ reaches the panel's right edge, whether the panel lands centred, and whether the dim covers the screen are the three geometry questions [Studio has not answered yet](/facet/getting-started/scope-and-status/#what-is-not-covered) here.
 </Callout>
