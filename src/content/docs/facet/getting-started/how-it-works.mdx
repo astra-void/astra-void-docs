@@ -17,13 +17,13 @@ import { Callout } from "@/components/docs/mdx";
 | **[Vela](/vela-rbxts/)** | Styling — `className` lowered to Roblox properties at compile time | `vela-rbxts` |
 | **Facet** | The opinionated composition of the two, as source you own | the registry |
 
-The rule that follows: **do not reimplement in a copied component what Lattice or Vela already
-owns.** If a Facet component grows focus management, the fix belongs upstream in the Lattice
-primitive. If it grows a literal `Color3` or `UDim2`, it has stopped being themeable.
+**Do not reimplement in a copied component what Lattice or Vela already owns.** A Facet component
+that grows focus management should be fixed upstream in the Lattice primitive; one that grows a
+literal `Color3` has stopped being themeable.
 
-That division is what makes the copy-in model viable at all. The file you own is composition —
-recipes, a host element, prop plumbing — and it is short because everything difficult sits in a
-package that *is* a dependency and *does* get updated.
+That division is what makes the copy-in model viable: the file you own is composition — recipes, a
+host element, prop plumbing — and it is short because everything difficult sits in a package that
+*is* a dependency.
 
 ## The registry is fetched, not bundled
 
@@ -40,12 +40,11 @@ https://facet.astra-void.xyz/
 Two consequences, both intentional:
 
 - Adding a component to Facet means publishing the registry, not releasing the CLI.
-- `facet add button` produces the same files for everyone, rather than whatever was frozen into the
-  CLI version they happen to have installed.
+- `facet add button` produces the same files for everyone, rather than whatever was frozen into their CLI version.
 
-The cost is that `add` needs a network. That is the same trade shadcn/ui makes, and the failure is
-loud rather than silently stale. You can point elsewhere — a fork, a private registry, a local build
-— see [Using another registry](/facet/guides/custom-registry/).
+The cost is that `add` needs a network — the same trade shadcn/ui makes, and the failure is loud
+rather than silently stale. You can point elsewhere: see
+[Using another registry](/facet/guides/custom-registry/).
 
 The index carries a `version` field, currently `1`. A CLI that meets a higher one refuses to guess
 and tells you to upgrade.
@@ -55,8 +54,8 @@ and tells you to upgrade.
 Between the registry payload and your project, exactly one transformation happens: **`~/` imports
 are rewritten.**
 
-Registry sources address each other with a `~/` prefix — never a relative path — because the CLI
-can rewrite `~/lib/utils` and cannot rewrite `../lib/utils`:
+Registry sources address each other with a `~/` prefix, because the CLI can rewrite `~/lib/utils`
+and cannot rewrite `../lib/utils`:
 
 ```tsx title="registry/src/ui/button.tsx — as authored"
 import { TextSlot } from "~/lib/text";
@@ -76,15 +75,13 @@ import { TextSlot } from "shared/lib/text";
 import { cn } from "shared/lib/utils";
 ```
 
-Relative is the default because it needs no tsconfig `paths` and therefore works in a roblox-ts
-project nobody configured for this. The relative path is computed from where the *importing* file
-lands, so moving your `ui` directory does not break the `lib` imports inside it.
+Relative is the default because it needs no tsconfig `paths`. It is computed from where the
+*importing* file lands, so moving your `ui` directory does not break the `lib` imports inside it.
 
-An unknown alias segment is left alone deliberately, so it fails loudly at typecheck rather than
-being silently rewritten to something wrong.
+An unknown alias segment is left alone, so it fails loudly at typecheck rather than being rewritten
+to something wrong.
 
-Nothing else is touched. No formatting, no codemod, no injected header. The file on disk is the
-registry's text with those specifiers swapped.
+Nothing else is touched — no formatting, no codemod, no injected header.
 
 ### Where files land
 
@@ -98,37 +95,35 @@ A registry file's path is `<alias>/<name>`, and the item's type decides the alia
 | `registry:block` | `ui` | `src/shared/ui` |
 
 `dir` is a real path from the project root rather than a module specifier, because roblox-ts
-projects are laid out by Rojo, not by module resolution.
+projects are laid out by Rojo.
 
 ### One transaction
 
-Every write goes through a file transaction that commits or rolls back as a unit. A failure halfway
-through `facet add card` does not leave you with a `card.tsx` whose helpers were never written.
+Every write goes through a transaction that commits or rolls back as a unit, so a failure halfway
+through `facet add card` cannot leave a `card.tsx` whose helpers were never written.
 
 ### And, for one kind of component, one edit to a file you wrote
 
 An item may declare [`providers`](/facet/reference/registry-format/#providers) — a React provider it
 needs above your whole app. Today that is [`dialog`](/facet/components/dialog/), which cannot find a
-`PlayerGui` to portal into without one.
+`PlayerGui` to portal into.
 
-This is the only place the CLI touches a file it did not write, and it asks first. The reason it is
-worth the exception: everything else the CLI reports fails at *build* time, loudly, in front of the
-person who just ran the command. A missing provider fails at runtime, in production. See
+This is the only place the CLI touches a file it did not write, and it asks first. Everything else
+it reports fails at *build* time; a missing provider fails at runtime, in production. See
 [wiring a provider](/facet/reference/cli/#wiring-a-provider).
 
 ## What the copied component then depends on
 
-A Facet component may only import from four places, and this is enforced by review in the Facet
-repo because anything else will not resolve once copied:
+A Facet component may import from four places only, enforced by review, because anything else will
+not resolve once copied:
 
 - `@rbxts/*`
 - `@lattice-ui/*`
 - `@facet-ui/react-variants`
 - `~/...` — other registry files
 
-Every one of those imports must be declared in the registry entry as a `dependency` (npm) or a
-`registryDependency` (another item). An undeclared import ships a file that cannot compile in a
-project that did not happen to have the package already.
+Each of those must be declared in the registry entry as a `dependency` (npm) or a
+`registryDependency` (another item). An undeclared import ships a file that cannot compile.
 
 ## Where the theme actually lives
 
@@ -148,26 +143,16 @@ export default defineConfig({
 });
 ```
 
-Components name **roles** (`bg-primary`, `text-muted-foreground`), never ramp steps (`bg-zinc-900`).
-`facetTheme()` maps those roles onto a neutral ramp, and Vela resolves them to literal `Color3`
-values at compile time. Switching `base` rethemes every copied component without touching one of
-them.
+Components name **roles** (`bg-primary`, `text-muted-foreground`), never ramp steps. `facetTheme()`
+maps those roles onto a neutral ramp, and Vela resolves them to literal `Color3` values at compile
+time, so switching `base` rethemes every copied component.
 
 <Callout title="A build carries exactly one mode">
-Because resolution happens at compile time, `mode: "dark"` is a build-time choice, not a runtime
-toggle. shadcn/ui gets runtime theming free because the browser re-reads CSS variables on every
-paint; Roblox has no equivalent indirection. See
-[Theming](/facet/guides/theming/#one-mode-per-build) for what the options actually are.
+Because resolution happens at compile time, `mode: "dark"` is a build-time choice, not a runtime toggle — Roblox has no equivalent of a browser re-reading CSS variables on every paint. See [Theming](/facet/guides/theming/#one-mode-per-build).
 </Callout>
 
 ## What Facet does not do
 
-- **It does not record anything at copy time.** No lock file, no content hashes, no note of which
-  registry version a file came from. `facet add` writes and forgets. That is why `facet diff` can
-  show that a file differs but cannot say whether *you* changed it or upstream did — see
-  [Updating copied components](/facet/guides/updating-copied-components/).
-- **It does not update.** There is no `facet upgrade`. The most the CLI can do is show you a diff
-  and let you decide.
-- **It does not have a second style.** `facet.json` keeps shadcn's `style` field, pinned to
-  `"default"`, and nothing in the CLI branches on it. It stays only because removing a key from a
-  file consumers commit is a breaking change for the benefit of deleting one line.
+- **It does not record anything at copy time.** No lock file, no hashes, no note of which registry version a file came from, which is why `facet diff` can show that a file differs but not whether *you* changed it — see [Updating copied components](/facet/guides/updating-copied-components/).
+- **It does not update.** There is no `facet upgrade`; the most the CLI can do is show a diff.
+- **It does not have a second style.** `facet.json` keeps shadcn's `style` field pinned to `"default"`, and nothing branches on it.

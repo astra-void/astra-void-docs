@@ -9,9 +9,8 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Roblox has no CSS variables. The indirection that makes shadcn/ui themeable — `:root { --primary }`,
-re-read by the browser on every paint — has no equivalent, so Facet puts it one layer down, in
-`vela.config.ts`, and resolves it at compile time.
+Roblox has no CSS variables, so the indirection that makes shadcn/ui themeable lives one layer down
+— in `vela.config.ts`, resolved at compile time.
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -27,12 +26,10 @@ export default defineConfig({
 ```
 
 `facet init` writes exactly this. `facetTheme()` returns a plain object — a `colors` map and a
-`radius` scale — that you spread into `theme.extend`.
+`radius` scale — spread into `theme.extend`.
 
 <Callout title="extend, not colors">
-Vela's `theme.colors` **replaces** the family set, which would strip the ramps (`zinc-500`,
-`red-400`, …) you reach for outside Facet components. `theme.extend` adds to them. That is why
-`facetTheme()` is documented as something you spread into `extend` and not as a `colors` value.
+Vela's `theme.colors` **replaces** the family set, stripping the ramps you reach for outside Facet components; `theme.extend` adds to them.
 </Callout>
 
 ## The tokens
@@ -51,12 +48,12 @@ Nineteen, and every Facet component names only these:
 | Danger | `destructive` · `destructive-foreground` |
 | Lines | `border` · `input` · `ring` |
 
-Nothing in the registry says `zinc-800`. That is the whole mechanism: because components name roles,
-`base: "slate"` rethemes every copied component without editing one of them.
+Nothing in the registry says `zinc-800`. That is the mechanism: because components name roles,
+`base: "slate"` rethemes every copied component.
 
-`facet doctor` checks this from the other side — it collects the tokens the installed components
-declare and verifies they resolve in your config, so a missing one is reported by name instead of
-surfacing later as a Vela diagnostic on a file you never wrote.
+`facet doctor` checks it from the other side: it collects the tokens the installed components
+declare and verifies they resolve in your config, so a missing one is reported by name rather than
+as a Vela diagnostic on a file you never wrote.
 
 ## Bases
 
@@ -74,9 +71,8 @@ muted        ramp[800]      muted-foreground     ramp[400]
 border       ramp[700]      input                ramp[700]      ring   ramp[300]
 ```
 
-`border` and `input` sit one step lighter than the dark surfaces they are drawn on. At `ramp[800]`
-an outline button was almost indistinguishable from a ghost one, which is a rendered-in-Studio
-finding rather than a taste call.
+`border` and `input` sit one step lighter than the dark surfaces they are drawn on — at `ramp[800]`
+an outline button was almost indistinguishable from a ghost one.
 
 Light mode inverts it: `background` and `card` are white, `foreground` is `ramp[950]`, `primary` is
 `ramp[900]`, `border` and `input` are `ramp[200]`.
@@ -87,8 +83,8 @@ Light mode inverts it: `background` and `card` are white, `foreground` is `ramp[
 facetTheme({ radius: "new UDim(0, 12)" })
 ```
 
-Sets what `rounded-*`'s `DEFAULT` resolves to. Defaults to `new UDim(0, 8)`. The value is a string
-because it is a Luau expression that Vela emits verbatim, not a number it interprets.
+Sets what `rounded-*`'s `DEFAULT` resolves to, defaulting to `new UDim(0, 8)`. It is a string
+because it is a Luau expression Vela emits verbatim.
 
 ## Overriding
 
@@ -114,8 +110,8 @@ export default defineConfig({
 });
 ```
 
-Spread `base.colors` before your overrides, not after — dropping it replaces the whole map and every
-token you did not restate stops resolving.
+Spread `base.colors` before your overrides — dropping it replaces the whole map, and every token you
+did not restate stops resolving.
 
 Colour values are Luau expressions as strings. `Color3.fromRGB(…)`, `Color3.fromHex("#5865F2")`,
 anything Vela will emit.
@@ -123,14 +119,12 @@ anything Vela will emit.
 ## One mode per build
 
 <Callout title="mode is a build-time choice, not a switch">
-Vela resolves `className` at compile time: `bg-primary` becomes a literal `Color3` in the emitted
-Luau. A build therefore carries exactly one theme, and `facetTheme({ mode: "dark" })` is a decision
-made by the compiler, not by the running game.
+Vela resolves `className` at compile time, so `bg-primary` becomes a literal `Color3` in the emitted Luau. A build carries exactly one theme, and `facetTheme({ mode: "dark" })` is a decision made by the compiler.
 
 There is no `useTheme()` and no way to flip a settings toggle to light mode with the components as
 they are.
 
-The previews on this site are built the same way, and show it. Flipping the docs' own light/dark toggle **reloads the frame against a different build** rather than repainting the one that is running: there is nothing in a running Facet tree that a theme signal could reach.
+The previews on this site show it: flipping the docs' light/dark toggle **reloads the frame against a different build** rather than repainting the running one.
 </Callout>
 
 This is a real gap and it is [an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open),

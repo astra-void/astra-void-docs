@@ -169,8 +169,8 @@ export default defineConfig({
 Because the family lookup is the fallback branch, a payload that is neither a weight nor a
 configured family key reports **`unknown-theme-key`**.
 
-<Callout title="Before 0.7.0 the family was hard-coded">
-Every `font-*` class emitted the Source Sans Pro asset and nothing changed it. The workaround was to set `FontFace` directly as a prop and leave `font-*` off that element:
+<Callout title="Setting `FontFace` directly still works">
+A font you do not want in the theme can be set as a prop, leaving `font-*` off that element:
 
 ```tsx
 <textlabel
@@ -179,7 +179,7 @@ Every `font-*` class emitted the Source Sans Pro asset and nothing changed it. T
 />
 ```
 
-That still works, and is still the answer for a font you do not want in the theme — but it does not compose with `font-bold` or `italic`, which emit a whole `FontFace` of their own.
+It does not compose with `font-bold` or `italic`, which emit a whole `FontFace` of their own.
 </Callout>
 
 ## Alignment

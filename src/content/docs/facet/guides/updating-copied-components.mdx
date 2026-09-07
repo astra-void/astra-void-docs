@@ -9,9 +9,8 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-The copy-in model means Facet can never push an update. A component in your project is a file in
-your repository; nothing reaches back into it. What the CLI offers instead is visibility — and it is
-careful about how much it claims.
+The copy-in model means Facet can never push an update: a component in your project is a file in
+your repository, and nothing reaches back into it. What the CLI offers instead is visibility.
 
 ## `facet diff`
 
@@ -23,21 +22,16 @@ npx facet-rbxts diff button     # one
 Compares each copied file against what the registry would write there **today**, replaying the `~/`
 rewrite first so your project's alias and directory choices are not reported as changes.
 
-The direction is registry → project: `-` is what the registry has, `+` is what your file says. That
-way applying the `+` side is what "keep mine" means, and a diff of your own edits reads the way
-`git diff` would have shown you making them.
+The direction is registry → project: `-` is what the registry has, `+` is what your file says, so
+applying the `+` side is what "keep mine" means.
 
 <Callout title="It cannot tell your edit from an upstream change">
-Facet records nothing at copy time — no lock file, no hashes, no note of which registry version a
-file came from. So a difference here is your edit, a change upstream, or both, and `diff` says so in
-its own output rather than implying the change came from upstream.
+Facet records nothing at copy time — no lock file, no hashes, no note of which registry version a file came from. A difference here is your edit, a change upstream, or both, and `diff` says so in its own output.
 
-Your version control already knows which lines you wrote. That is the tool for the other half of
-the question.
+Your version control already knows which lines you wrote.
 </Callout>
 
-A component in the registry that is not in your project is reported as such and skipped. A component
-you never added produces nothing — that is not news.
+A component in the registry that is not in your project is reported and skipped.
 
 ## Taking an upstream change
 
@@ -45,11 +39,10 @@ There is no command for this, and that is the model working as intended:
 
 1. `facet diff button` — see what moved.
 2. Decide. Most upstream changes to a component you have edited are not worth taking.
-3. If you want it: `facet add button --overwrite` replaces the file wholesale, and your edits are
-   gone. Commit first, then reapply what you want from the diff.
+3. If you want it, `facet add button --overwrite` replaces the file wholesale and your edits are gone. Commit first, then reapply what you want from the diff.
 
-`--overwrite` is deliberately blunt. There is no three-way merge because there is no base text to
-merge against — see below.
+`--overwrite` is deliberately blunt: there is no three-way merge, because there is no base text to
+merge against.
 
 ## `facet remove`
 
@@ -61,13 +54,11 @@ npx facet-rbxts remove badge --force
 Two refusals, and they are not the same kind of refusal.
 
 **A file that differs from the registry** is refused without `--force`. "Differs" is the closest
-available stand-in for "you changed this", and it also fires when only upstream moved — so in the
-worst case you are asked about a file you never touched. That is the safe direction to be wrong in:
-asking too often is recoverable, deleting someone's edited component is not.
+stand-in for "you changed this", and it also fires when only upstream moved, so in the worst case
+you are asked about a file you never touched — the safe direction to be wrong in.
 
 **A component another installed component still imports** is refused, and `--force` does not cover
-it. Deleting `utils` out from under an installed `button` leaves a project that does not compile,
-and you asked to remove one component, not to break another.
+it — deleting `utils` out from under an installed `button` leaves a project that does not compile.
 
 That second check runs to a fixed point, which matters more than it sounds:
 
@@ -75,36 +66,34 @@ That second check runs to a fixed point, which matters more than it sounds:
 npx facet-rbxts remove button utils
 ```
 
-If `button` turns out to be modified and so stays, `utils` is suddenly still imported — and a single
-pass would already have cleared it. The plan is recomputed until nothing changes.
+If `button` turns out to be modified and stays, `utils` is still imported — and a single pass would
+already have cleared it. The plan is recomputed until nothing changes.
 
 Directories are left alone, and so is anything you added next to the removed files.
 
 ## Why there is no lock file
 
-A `facet.lock` of per-file content hashes is the obvious fix for what `diff` cannot say, and it was
-the plan. Three reasons it was dropped:
+A `facet.lock` of per-file content hashes is the obvious fix for what `diff` cannot say. Three
+reasons it was dropped:
 
 **A hash answers *whether*, and a diff has to show *how*.** Showing what a merge would involve needs
-the text you started from — three-way, base included. So the record that would actually satisfy
-`facet diff` is not a hash but a second copy of every component, committed to your repository and
-kept in step with the first. That is vendoring the registry into the project the CLI just copied out
-of, to serve one command.
+the text you started from. So the record that would satisfy `facet diff` is not a hash but a second
+copy of every component, committed to your repository — vendoring the registry into the project the
+CLI just copied out of.
 
-**Even the yes/no is weaker than it looks.** The hash goes stale for reasons that are not edits: a
-project-wide formatter pass over `src/shared/ui`, a rename, a move to another directory. Facet would
-then report that you changed everything — true, useless, and indistinguishable from the report it
-would give if upstream had rewritten every component.
+**Even the yes/no is weaker than it looks.** The hash goes stale for reasons that are not edits — a
+project-wide formatter pass, a rename, a move. Facet would then report that you changed everything:
+true, useless, and indistinguishable from upstream having rewritten every component.
 
 **It is a file you commit, never edit, and cannot read.** The promise of the model is that a copied
-file is yours. A lock file is Facet keeping a ledger about files it gave away, and the first time it
-disagrees with reality — and it will — it is a puzzle in your repository that Facet put there.
+file is yours; a lock file is Facet keeping a ledger about files it gave away, and the first time it
+disagrees with reality it is a puzzle in your repository.
 
 ## Pinning a registry revision
 
 The default registry **moves**: `https://facet.astra-void.xyz/r` is republished on every push to
-Facet's `main`, so an edit to a component reaches everyone immediately — including a project that ran
-`facet add` months ago and will next run `facet diff`.
+Facet's `main`, so an edit reaches everyone immediately — including a project that ran `facet add`
+months ago and will next run `facet diff`.
 
 Every push also writes an immutable copy under the commit that produced it, and a project can point
 at one instead:
@@ -116,30 +105,23 @@ at one instead:
 [`revisions.json`](https://facet.astra-void.xyz/revisions.json) lists what exists, newest first.
 `add`, `diff`, `list` and `doctor` all read the field and all print which registry they used.
 
-**What pinning fixes:** `facet diff` stops reporting upstream movement you did not ask for. Against
-a frozen revision, a difference is your edit or nothing — which is most of what
-[the lock file](#why-there-is-no-lock-file) was supposed to buy, without a lock file.
+**What pinning fixes:** `facet diff` stops reporting upstream movement. Against a frozen revision a
+difference is your edit or nothing — most of what [the lock file](#why-there-is-no-lock-file) was
+supposed to buy.
 
-**What it does not fix:** it is per-project, not per-component. Pinning says "this project builds
-against that registry", not "`button` came from that revision and `card` from this one". And a
-pinned project stops receiving fixes until someone moves the pin, which is a decision somebody has
-to remember to make.
+**What it does not fix:** it is per-project, not per-component — "this project builds against that
+registry", not "`button` came from that revision". And a pinned project stops receiving fixes until
+someone moves the pin.
 
 <Callout title="It still cannot attribute a change">
-Pinning removes upstream movement as a *source* of drift; it does not record what your file started
-as. Unpin, or move the pin forward, and `diff` is back to reporting a difference it cannot explain.
-The record that would settle it is still a second copy of every component —
-[which is why there is no lock file](#why-there-is-no-lock-file).
+Pinning removes upstream movement as a *source* of drift; it does not record what your file started as. Move the pin forward and `diff` is back to reporting a difference it cannot explain.
 </Callout>
 
-The thing revisions genuinely unlock is that the base text becomes something the CLI could one day
-*fetch* rather than something you store. That is not implemented, and it is the reason the versioning
-scheme was worth building the way it was.
+What revisions genuinely unlock is that the base text becomes something the CLI could one day
+*fetch* rather than something you store. That is not implemented.
 
 ## What to actually do
 
 - **Commit the copied files.** They are source, not build output.
-- **Do not expect updates.** If a component is a starting point you rewrote, `diff` will be noisy
-  forever and that is fine — stop running it on that component.
-- **Run `facet doctor` after upgrading anything.** It is the check that catches a project set up by
-  an older CLI: the copied files are current and the versions under them are not.
+- **Do not expect updates.** If a component is a starting point you rewrote, `diff` will be noisy forever — stop running it on that component.
+- **Run `facet doctor` after upgrading anything.** It catches a project set up by an older CLI: copied files current, versions under them not.
