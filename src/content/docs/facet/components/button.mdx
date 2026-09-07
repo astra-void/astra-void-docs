@@ -141,8 +141,8 @@ automatic width this renders **zero pixels wide**. The `icon` size overrides it 
 
 ## Disabled
 
-Vela has no `disabled:` variant — disabled is Facet's state, not the host's — so the dimming is
-applied rather than selected:
+Vela has no `disabled:` variant, because disabled is Facet's state and not the host's. The dimming
+is applied rather than selected:
 
 ```tsx
 const className = buttonVariants({
@@ -157,18 +157,18 @@ last-token-wins, so anything appended after `props.className` is an override the
 undo — [Variants and classes](/facet/guides/variants-and-classes/#the-one-rule).
 
 <Callout title="The label states its own fade, as a prop">
-`opacity-*` composes into everything the compiler can see underneath an element, and a *component* child is exactly what it cannot — the instances it renders are created elsewhere. Left alone, a disabled button sat at `BackgroundTransparency` 0.5 with its label at `TextTransparency` 0: half a faded button.
+`opacity-*` composes into everything the compiler can see underneath an element. A *component* child is exactly what it cannot see, because the instances it renders are created elsewhere. Left alone, a disabled button sat at `BackgroundTransparency` 0.5 with its label at `TextTransparency` 0: half a faded button.
 
-`opacity-50` on the label's own recipe does not fix it either: the class resolves against
+`opacity-50` on the label's own recipe does not fix it either. The class resolves against
 `__velaTag = TextSlot`, and the runtime cannot know which instance a component renders, so it drops
-the text-only half. The emitted Luau carried the token; the label still measured 0.
+the text-only half. The emitted Luau carried the token. The label still measured 0.
 
 So this is the one place a class cannot express the intent in either direction, and `TextTransparency={disabled ? 0.5 : 0}` says it instead. Both halves were measured in Studio.
 </Callout>
 
 The label fades rather than recolouring to `text-muted-foreground`, because that is what `opacity`
 does on the web. Recolouring would be more legible, but it would make `disabled` mean two different
-things across components. Parity won; legibility is the price.
+things across components. Parity won, and legibility is the price.
 
 ## `asChild`
 
@@ -201,7 +201,7 @@ Whether the registry should make this easier is [still open](/facet/getting-star
 </Callout>
 
 `asChild` needs `@lattice-ui/react-runtime@^0.8.0`. Below that, Lattice keyed its UI modifier table
-by the lowercase JSX tag while roblox-ts labels a host element with its Roblox class name, so every
+by the lowercase JSX tag, while roblox-ts labels a host element with its Roblox class name. Every
 modifier missed the lookup and counted as a second slot target. Every Facet recipe emits at least a
 `UIListLayout` or a `UICorner`, so **no component could use `asChild` at all**.
 

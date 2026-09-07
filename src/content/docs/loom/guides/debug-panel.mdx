@@ -9,8 +9,8 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-A preview that renders the wrong thing rarely tells you why: the tree is a WASM layout result
-painted into a DOM that does not resemble it, so a browser inspector shows `div`s and CSS transforms
+A preview that renders the wrong thing rarely tells you why. The tree is a WASM layout result
+painted into a DOM that does not resemble it. A browser inspector shows `div`s and CSS transforms
 rather than a `Frame` with a `Size`. Every gallery carries a panel that reports the scene in its own
 terms.
 
@@ -24,7 +24,8 @@ Three ways, all equivalent:
 
 It is off by default, and while closed **nothing it does runs at all** — no observers, no timers, no tree walks. Everything it reads is outside the render path, so a scene behaves the same either way.
 
-A bare `?debug` is on; `0`, `false`, `off`, `no` and `none` are off; anything else present is on, so a host page can template a boolean straight through.
+A bare `?debug` is on. `0`, `false`, `off`, `no` and `none` are off, and anything else present is
+on. A host page can template a boolean straight through.
 
 <Callout title="The toggle survives an HMR reload, except in an embed">
 The gallery takes a full reload on every edit, so the state is remembered for the tab. An embed (`chrome=none`) deliberately does *not* remember it — a debug panel on somebody's docs page should only ever be one the URL asked for.
@@ -40,8 +41,8 @@ that was already up.
 
 **viewport** — the stage in real pixels, the **logical viewport the scene laid out against**,
 `Workspace.CurrentCamera.ViewportSize`, and the scale factor, plus device pixel ratio and theme. All
-four agree unless the page asked for `?base=`, and together they tell a scene that *laid out* small
-from one that was *painted* small — see [Previews on a phone](/loom/guides/mobile-previews/).
+four agree unless the page asked for `?base=`. Together they tell a scene that *laid out* small from
+one that was *painted* small. See [Previews on a phone](/loom/guides/mobile-previews/).
 
 **scene** — live instances, how many are GuiObjects, and how many of *those* are invisible, usually
 the answer when a scene looks empty. Then tree depth, the DOM nodes it became, a count per class,
@@ -63,17 +64,16 @@ Hover the stage and the panel names the `GuiObject` under the pointer, outlines 
 ancestry, absolute geometry, `UI*` modifiers, resolved typeface and properties.
 
 - **Alt+click pins** the selection so it stops following the pointer. Escape releases it.
-- The **ancestry trail** and the **under** rows — everything else the pointer is over — are clickable,
-  so the tree can be walked from the panel.
+- The **ancestry trail** and the **under** rows are clickable, so the tree can be walked from the panel. The **under** rows are everything else the pointer is over.
 - The hit test is the scene's own `PlayerGui:GetGuiObjectsAtPosition`, **not** the browser's. A
   click-through frame that no browser inspector can reach is still inspectable here.
 
 ## Taking a snapshot out
 
-`copy` puts the readout on the clipboard as text. `json` downloads every section as data plus the
-complete instance tree with each object's absolute position and size — what a bug report wants
-instead of a screenshot. The same object is available as `loomDebug.snapshot()` while the panel is
-open:
+`copy` puts the readout on the clipboard as text. `json` downloads every section as data, plus the
+complete instance tree with each object's absolute position and size. That is what a bug report
+wants instead of a screenshot. The same object is available as `loomDebug.snapshot()` while the
+panel is open:
 
 ```js title="In the devtools console, panel open"
 copy(loomDebug.snapshot());

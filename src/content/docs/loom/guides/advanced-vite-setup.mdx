@@ -10,14 +10,15 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 [Vite integration](/loom/guides/vite-integration/) covers the setup that works. This page covers the
-three ways it stops working: importing the plugin the wrong way, pointing it at an unbuilt checkout,
+three ways it stops working. Importing the plugin the wrong way, pointing it at an unbuilt checkout,
 and sharing a Vite config with an app that has its own React.
 
 ## Always import the plugin by its bare specifier
 
 `loomPreview()` locates the modules it aliases **relative to its own file**, as `../src` from the
-executing module. That is what lets it hand Vite absolute paths that work whether loom is installed
-in your project, linked from a checkout, or pointed at a different workspace by the CLI.
+executing module. That is what lets it hand Vite absolute paths that work in every setup. loom can
+be installed in your project, linked from a checkout, or pointed at a different workspace by the
+CLI.
 
 So the import specifier you write is load-bearing. Import `@loom-dev/preview/vite` and nothing else:
 
@@ -41,7 +42,7 @@ The package may have incorrect main/module/exports specified in its package.json
 ## Consuming an unbuilt source checkout
 
 In a `link:`ed loom checkout that has never run `pnpm build:packages`, the package's `exports` point
-at `dist/` files that do not exist, and Vite's default config loader cannot load the plugin at all:
+at `dist/` files that do not exist. Vite's default config loader cannot load the plugin at all:
 
 ```text
 Cannot find module '.../packages/preview/dist/vite.js'
@@ -63,8 +64,8 @@ checkout needs — it adds a Rust toolchain.
 ## Don't merge this into an app that also uses React
 
 `loomPreview()` aliases bare `react`, `react/jsx-runtime` and `react/jsx-dev-runtime` to loom's own
-React 18 copy and sets `esbuild.jsx: "automatic"` globally — for every module Vite processes in that
-config, not just Roblox files.
+React 18 copy. It also sets `esbuild.jsx: "automatic"` globally, for every module Vite processes in
+that config, not just Roblox files.
 
 So dropping `loomPreview()` into an existing React web app's Vite config replaces that app's React
 with loom's React 18. On React 19 it breaks, and alongside `@vitejs/plugin-react` you get two JSX
@@ -76,7 +77,7 @@ Keep the preview in its own Vite project. Three arrangements work well:
 - **No Vite project at all** — `loom preview` and `loom build` run with `configFile: false`, so they cannot collide with your project's own config.
 - **Mounted inside your app's dev server**, via [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api). The gallery still gets its own Vite instance, so the two module graphs never meet.
 
-The third is what these docs use: an Astro integration mounts the gallery in dev and emits the
+The third is what these docs use. An Astro integration mounts the gallery in dev and emits the
 static bundle at build, with each scene iframed per preview.
 
 <Callout title="The same rule applies to the docs you are reading">

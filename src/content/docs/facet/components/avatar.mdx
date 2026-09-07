@@ -48,7 +48,7 @@ That is `Avatar`. `AvatarImage` forwards onto an `ImageLabel` and `AvatarFallbac
 ## The circle is drawn here, not by the primitive
 
 `Avatar.Root` renders **no instance**. It tracks whether the image loaded and hands that answer to
-`Image` and `Fallback`; it draws nothing. So unlike every other component in this tier, the visible
+`Image` and `Fallback`. It draws nothing. So unlike every other component in this tier, the visible
 container is a plain `<frame>` in the copied file, and `Avatar.Root` wraps it.
 
 That inverts the usual nesting:
@@ -66,13 +66,12 @@ That inverts the usual nesting:
 ## Every part rounds itself
 
 <Callout title="Roblox clips to a rectangle">
-`rounded-full` appears three times — on the root, on the image and on the fallback — and it is not
-redundant. A `UICorner` rounds the instance it is on; it does not clip children to that shape.
+`rounded-full` appears three times, on the root, on the image and on the fallback. It is not redundant. A `UICorner` rounds the instance it is on. It does not clip children to that shape.
 Round only the parent and a child that paints its own background pokes square corners out of the
 circle.
 
 `overflow-hidden` on the root is `ClipsDescendants`, which clips to the root's *rectangle* — not to
-its corner radius. It keeps a too-large image inside the box; it does not round it.
+its corner radius. It keeps a too-large image inside the box. It does not round it.
 </Callout>
 
 ## Props
@@ -107,13 +106,13 @@ its corner radius. It keeps a too-large image inside the box; it does not round 
   ]}
 />
 
-`AvatarFallback` takes `Text` and `className`; `AvatarImage` takes `className`.
+`AvatarFallback` takes `Text` and `className`. `AvatarImage` takes `className`.
 
 ## `size-10` is the only size there is
 
 There is no `size` variant. `size-10` is stated on the root recipe, and a `className` at the call
-site cannot change it — a class written there resolves to `Size` at that call site and the recipe
-overwrites it, which is
+site cannot change it. A class written there resolves to `Size` at that call site, and the recipe
+overwrites it. That is
 [measured, not predicted](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 
 A bigger avatar is an edit to the copied file:
