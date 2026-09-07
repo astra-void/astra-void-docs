@@ -159,8 +159,8 @@ export function DifficultyPicker(props: { onStart: (difficulty: string) => void 
 
 ### Disabled group and disabled items
 
-`disabled` works at two levels: on `Root` it freezes the whole control, short-circuiting the toggle
-logic so nothing can change the value; on an `Item` it disables just that option.
+`disabled` works at two levels. On `Root` it freezes the whole control, short-circuiting the toggle
+logic so nothing can change the value. On an `Item` it disables just that option.
 
 ```tsx title="LoadoutModes.tsx"
 import { ToggleGroup } from "@lattice-ui/react-toggle-group";
@@ -237,14 +237,14 @@ export function StyledViewSwitch() {
 ### Value state
 
 Pass `value` and `onValueChange` to control the selection, or `defaultValue` to let the group own
-it; `onValueChange` fires either way. Each `Item` reads its pressed state from context and routes
+it. `onValueChange` fires either way. Each `Item` reads its pressed state from context and routes
 activation through `Root`.
 
 ### Single vs multiple
 
 The required `type` prop fixes the group's behavior and the shape of its value:
 
-- **`type="single"`** — the value is a `string`, and `onValueChange` receives `string | undefined`. Selecting replaces the current value; selecting the already-selected item clears it.
+- **`type="single"`** — the value is a `string`, and `onValueChange` receives `string | undefined`. Selecting replaces the current value. Selecting the already-selected item clears it.
 - **`type="multiple"`** — the value is a `string[]`, appended in selection order, with duplicate and non-string entries stripped from incoming arrays.
 
 The value type and `onValueChange` signature are a discriminated union over `type`, so set `type` as

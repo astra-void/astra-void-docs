@@ -71,9 +71,9 @@ The distinction has already cost something. Compiling is a static result, and re
 `r/<sha>/` beside it. Pin one through the `registry` field in `facet.json` — see
 [pinning a revision](/facet/reference/facet-json/#pinning-a-revision).
 
-**`facet add` edits your client entry, once.** `dialog` declares a `PortalProvider`, and a missing
-one is the only failure here that happens at *runtime* rather than build time. The CLI parses the
-entry, asks, and writes it. See [wiring a provider](/facet/reference/cli/#wiring-a-provider).
+**`facet add` edits your client entry, once.** `dialog` declares a `PortalProvider`. A missing one
+is the only failure here that happens at *runtime* rather than build time. The CLI parses the entry,
+asks, and writes it. See [wiring a provider](/facet/reference/cli/#wiring-a-provider).
 
 ## What the one-primitive tier established
 
@@ -81,7 +81,7 @@ Three rules came out of building twelve components on twelve primitives, and eve
 them inherits all three. They are written up in
 [Component conventions](/facet/guides/component-conventions/#wrapping-a-lattice-primitive).
 
-1. **State a component styles by is mirrored, not reached for.** Lattice keeps its contexts private, so a wrapper holds the value with `useControllableState` and drives the primitive controlled.
+1. **State a component styles by is mirrored, not reached for.** Lattice keeps its contexts private. A wrapper holds the value with `useControllableState` and drives the primitive controlled.
 2. **A `className` on a primitive call site has to be visible to the transformer.** Vela rewrites the call sites it can *see*. One tucked into a shared spread reaches the primitive as a raw prop and is dropped silently.
 3. **Where the primitive owns a property, the recipe stays off it.** The slider's track carries no `flex-*`, the switch's thumb no position, the textarea's input no height.
 

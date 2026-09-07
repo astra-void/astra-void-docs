@@ -9,14 +9,14 @@ sidebar:
 import { PackageInstall, Callout } from "@/components/docs/mdx";
 
 Lattice UI is a set of headless primitives for `rbxts/react`. Each ships as its own
-`@lattice-ui/react-<name>` package, owns the tricky interaction work — open state, focus, layering,
-motion — and leaves the visuals to you.
+`@lattice-ui/react-<name>` package. It owns the tricky interaction work, such as open state, focus,
+layering and motion, and leaves the visuals to you.
 
 The rest of getting started uses Dialog as the worked example, so `@lattice-ui/react-dialog` is a
 good place to start.
 
 <Callout title="The react- prefix">
-Every package is namespaced by framework layer: `@lattice-ui/<name>` became `@lattice-ui/react-<name>`, and `@lattice-ui/core` is now `@lattice-ui/react-runtime`. Upgrading from 0.6.0 or earlier, add the prefix to every import and run `npx lattice-ui init` to rewrite the old names in `package.json` — leaving both listed makes the two copies resolve side by side, which npm rejects.
+Every package is namespaced by framework layer: `@lattice-ui/<name>` became `@lattice-ui/react-<name>`, and `@lattice-ui/core` is now `@lattice-ui/react-runtime`. Upgrading from 0.6.0 or earlier, add the prefix to every import and run `npx lattice-ui init` to rewrite the old names in `package.json`. Leaving both listed makes the two copies resolve side by side, which npm rejects.
 </Callout>
 
 ## Prerequisites
@@ -63,8 +63,8 @@ npx lattice-ui add dialog toast --preset overlay
 `add` with no names and no `--preset` prompts interactively, and `--dry-run` prints the exact
 install command without touching anything.
 
-It also scaffolds and maintains projects: `lattice create` starts a new `rbxts` project,
-`lattice init` wires the toolchain into an existing one, `lattice remove` / `lattice upgrade` keep
+It also scaffolds and maintains projects. `lattice create` starts a new `rbxts` project and
+`lattice init` wires the toolchain into an existing one. `lattice remove` and `lattice upgrade` keep
 primitives in sync, and `lattice doctor` checks the setup.
 
 <Callout title="Pick a package manager">

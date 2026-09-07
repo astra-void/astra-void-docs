@@ -126,17 +126,16 @@ and the label onto a `TextButton`.
 The root's `invalid` is what reaches Lattice's context — the behavior half. The input's `invalid` is
 what turns the border `border-destructive` — the appearance half.
 
-They are separate because **nothing inherits**. A `TextBox`'s stroke colour lives on that `TextBox`;
-there is no descendant selector and no cascade to carry the root's state down to it. It is the same
-repetition [`Alert`](/facet/components/alert/#variant-goes-on-every-part) has with `variant`, reached
-from a different direction.
+They are separate because **nothing inherits**. A `TextBox`'s stroke colour lives on that `TextBox`.
+There is no descendant selector and no cascade to carry the root's state down to it. It is the same
+repetition [`Alert`](/facet/components/alert/#variant-goes-on-every-part) has with `variant`,
+reached from a different direction.
 
 <Callout title="Setting only one of them is silent">
 `<TextField invalid>` with a plain `<TextFieldInput />` compiles and renders a normally-bordered box
 that Lattice considers invalid. Nothing warns — the parts have no relationship for anything to check.
 
-If the repetition bothers you in your project, the file is yours: read the primitive's context in
-`TextFieldInput`, or collapse the five parts into one component that takes three strings.
+If the repetition bothers you in your project, the file is yours. Read the primitive's context in `TextFieldInput`, or collapse the five parts into one component that takes three strings.
 </Callout>
 
 ## `font-normal` on the input is load-bearing
@@ -148,5 +147,5 @@ untouched default is LegacyArial. That is
 [the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes), and
 every text-drawing instance in the registry states a `font-*` because of it.
 
-`placeholder-muted-foreground` colours `PlaceholderColor3`; `focus:border-ring` swaps the stroke
+`placeholder-muted-foreground` colours `PlaceholderColor3`. `focus:border-ring` swaps the stroke
 while the box has focus.
