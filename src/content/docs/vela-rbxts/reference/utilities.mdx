@@ -15,17 +15,17 @@ Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`. A few
 looks like `text-*` — get misread as a color key instead. See
 [Diagnostics](/vela-rbxts/reference/diagnostics/) for what each warning means.
 
-Every utility lowers to a **property**, a **helper instance** Vela prepends as a child, or — for the
-structural utilities — **extra frames** from the runtime helper. The helpers are `UIPadding`,
+Every utility lowers to a **property**, a **helper instance** Vela prepends as a child, or, for the
+structural utilities, **extra frames** from the runtime helper. The helpers are `UIPadding`,
 `UIListLayout`, `UIGridLayout`, `UICorner`, `UIStroke`, `UIGradient`, `UISizeConstraint`,
 `UIAspectRatioConstraint`, `UIScale`, `UIShadow` and `UIFlexItem`. One of each per element, shared
 by every utility targeting it: `p-4 px-8` produces a single `UIPadding`, and `border-*`, `ring-*`
 and `outline-*` all share one `UIStroke`.
 
-Most utilities resolve entirely at compile time. Three families are **runtime-structural** —
-margins, `divide-*` and `animate-*` build wrappers, separators or loops that cannot be static props,
-so any of them moves the element onto the
-[runtime path](/vela-rbxts/getting-started/how-it-works/#the-two-lowering-paths) even in a plain
+Most utilities resolve entirely at compile time. Three families are **runtime-structural**. Margins,
+`divide-*` and `animate-*` build wrappers, separators or loops that cannot be static props. Any of
+them moves the element onto the
+[runtime path](/vela-rbxts/getting-started/how-it-works/#the-two-lowering-paths), even in a plain
 string literal. Each is marked below.
 
 ## Supported elements
@@ -46,13 +46,14 @@ Vela lowers `className` on these eight intrinsic elements, and on components.
 
 Anything else is skipped with its `className` left untouched, reporting
 `classname-on-unsupported-host`. That covers lowercase intrinsics Vela does not implement, such as
-`screengui`, and namespaced tags such as `<svg:rect />`, which never count as components — the
+`screengui`, and namespaced tags such as `<svg:rect />`, which never count as components. The
 warning names only the local part, so that one is reported as `rect`.
 
-Text utilities (`text-*` color and size, `font-*`, `italic`, `leading-*`, alignment, wrapping,
-truncation, case transforms, and decorations) are only meaningful on `textlabel`, `textbutton`, and
-`textbox`; `image-*` and `object-*` only on `imagelabel` and `imagebutton`; `placeholder-*` only on
-`textbox`; `overscroll-*` and the [scrolling families](#scrolling) only on `scrollingframe`.
+Text utilities are only meaningful on `textlabel`, `textbutton` and `textbox`. That covers `text-*`
+colour and size, `font-*`, `italic`, `leading-*`, alignment, wrapping, truncation, the case
+transforms and the decorations. `image-*` and `object-*` belong on `imagelabel` and `imagebutton`,
+`placeholder-*` on `textbox`, and `overscroll-*` and the [scrolling families](#scrolling) on
+`scrollingframe`.
 
 **The two paths enforce that differently.** The runtime host **drops** a utility the host cannot
 carry. The static path warns `unsupported-host-utility` and writes it anyway, so
@@ -60,29 +61,27 @@ carry. The static path warns `unsupported-host-utility` and writes it anyway, so
 [still open](/vela-rbxts/reference/release-notes/#still-open).
 
 On a component none of this applies — the host it renders is unknown, so every utility is offered.
-Whether the props land is up to the component, which must forward what it does not consume down to a
-host element; nothing checks that it does. See
+Whether the props land is up to the component. It must forward what it does not consume down to a
+host element, and nothing checks that it does. See
 [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
 
 ## Color
 
 <UtilityTable family="color" />
 
-A color key is either a literal (`black`, `white`, or anything you define as a plain string) or a
-palette family plus a shade from `50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950`. The shade
-is split off with the last `-` in the token, and only if the suffix is exactly one of those eleven
-numbers — so `bg-my-color` is looked up as the single key `my-color`, not as family `my` shade
-`color`.
+A colour key is either a literal, such as `black` or `white`, or a palette family plus one of eleven
+shades from `50` to `950`. The shade is split off with the last `-` in the token, and only if the
+suffix is exactly one of those eleven numbers. So `bg-my-color` is looked up as the single key
+`my-color`, not as family `my` with shade `color`.
 
 A palette may carry a `DEFAULT`, which a bare family name resolves to. Every built-in palette ships
 one mirroring its `500`, so `bg-slate` and `text-blue` work with no config. A palette of your own
-resolves bare only if you give it a `DEFAULT`; without one the bare form is `color-missing-shade`.
-`DEFAULT` is not spellable in a class — `bg-slate-DEFAULT` is read as the single key
-`slate-DEFAULT`.
+resolves bare only if you give it a `DEFAULT`. Without one, the bare form is `color-missing-shade`.
+`DEFAULT` is not spellable in a class: `bg-slate-DEFAULT` is read as the single key `slate-DEFAULT`.
 
-**Arbitrary hex colors** work in every color family — `bg-[#3b82f6]`, `text-[#fff]` — taking three-
-and six-digit payloads straight to `Color3.fromRGB(...)`. A bracket payload that is not a hex color
-reports `unsupported-arbitrary-value`.
+**Arbitrary hex colours** work in every colour family, as in `bg-[#3b82f6]` or `text-[#fff]`. Three-
+and six-digit payloads go straight to `Color3.fromRGB(...)`. A bracket payload that is not a hex
+colour reports `unsupported-arbitrary-value`.
 
 **Opacity modifiers** append `/N` to a color, where `N` is an integer from 0 to 100:
 `bg-blue-600/50` emits the color plus `BackgroundTransparency = 0.5`. Every family Roblox gives a
@@ -102,11 +101,11 @@ A gradient's keypoints line up per stop, so fading one does not fade its neighbo
 is the one family left: Roblox has no placeholder transparency, so it reports
 `unsupported-opacity-modifier`.
 
-Two keywords behave specially. `transparent` sets the transparency to `1` and removes the color
-property; on `placeholder-*` and `divide-*` it is `unsupported-color-key`. `current` and `inherit`
-are rejected outright. Note the asymmetry that leaves on `divide-*`: `divide-white/10` resolves
-while `divide-transparent` is refused — the modifier and the keyword are separate parsers. Gradient
-stops report nothing at all: `from-transparent`, `via-transparent` and `to-transparent` are
+Two keywords behave specially. `transparent` sets the transparency to `1` and removes the colour
+property, and on `placeholder-*` and `divide-*` it is `unsupported-color-key`. `current` and
+`inherit` are rejected outright. Note the asymmetry that leaves on `divide-*`: `divide-white/10`
+resolves while `divide-transparent` is refused — the modifier and the keyword are separate parsers.
+Gradient stops report nothing at all: `from-transparent`, `via-transparent` and `to-transparent` are
 **silently dropped**, and the stop simply does not appear in the `ColorSequence`.
 
 Getting the shade wrong is its own diagnostic. A palette with neither a shade nor a `DEFAULT` gives
@@ -126,17 +125,17 @@ Everything here writes into a single shared `UIStroke` helper instance.
 
 <UtilityTable family="border-ring-and-outline" />
 
-`border-*`, `ring-*` and `outline-*` **all merge into the same helper**; on a collision the later
+`border-*`, `ring-*` and `outline-*` **all merge into the same helper**. On a collision the later
 token wins. They do not stack the way CSS rings stack on borders. The one real difference is that
 `ring` and `outline` set `ApplyStrokeMode = Border`, pinning the stroke to the element's bounds. A
-bracketed thickness resolves on all three — `border-[3px]`, `ring-[3px]`, `outline-[2px]` — with or
-without the unit. A bracket is parsed as an arbitrary *color* first, so `border-[#0f0]` is the color
+bracketed thickness resolves on all three, with or without the unit: `border-[3px]`, `ring-[3px]`,
+`outline-[2px]`. A bracket is parsed as an arbitrary *color* first, so `border-[#0f0]` is the color
 and `border-[3px]` the thickness. See [arbitrary values](#arbitrary-values).
 
-Explicitly rejected: for `border-*`, the CSS border styles `dashed`, `solid`, `dotted`, `double`;
-every side-specific form (`border-x`, `border-t`, `border-t-2`, …); `border-opacity-*`; anything
-containing a slash (`unsupported-border-value`). For `ring-*`/`outline-*`: `inset`, `solid`,
-`dashed`, `dotted`, `double`, `offset-*`, and any other unbracketed thickness
+For `border-*`, four things are explicitly rejected with `unsupported-border-value`: the CSS border
+styles `dashed`, `solid`, `dotted` and `double`, every side-specific form such as `border-x` or
+`border-t-2`, `border-opacity-*`, and anything containing a slash. For `ring-*`/`outline-*`:
+`inset`, `solid`, `dashed`, `dotted`, `double`, `offset-*`, and any other unbracketed thickness
 (`unsupported-stroke-value`).
 
 ## Radius
@@ -144,10 +143,10 @@ containing a slash (`unsupported-border-value`). For `ring-*`/`outline-*`: `inse
 <UtilityTable family="radius" />
 
 The default theme ships the `DEFAULT` plus ten named keys: `none`, `xs`, `sm`, `md`, `lg`, `xl`,
-`2xl`, `3xl`, `4xl`, `full`. There is no numeric fallback — `rounded-8` is `unknown-theme-key` — but
-a bracketed value is read directly: `rounded-[6px]` and `rounded-[6]` both give `new UDim(0, 6)`.
-**A directional form writes the individual corner properties, and squares off the corners it does
-not name** — so `rounded-r-lg` alone keeps the left side flat. That makes it beat the all-corner
+`2xl`, `3xl`, `4xl`, `full`. There is no numeric fallback, so `rounded-8` is `unknown-theme-key`. A
+bracketed value is read directly: `rounded-[6px]` and `rounded-[6]` both give `new UDim(0, 6)`. **A
+directional form writes the individual corner properties, and squares off the corners it does not
+name** — so `rounded-r-lg` alone keeps the left side flat. That makes it beat the all-corner
 shorthand on the corners it names, in either order:
 
 ```tsx title="Both round the left pair to lg and the right pair to md"
@@ -168,9 +167,9 @@ when it is non-zero, and `Transparency`.
 
 <UtilityTable family="gradient" />
 
-Stops flush into a `ColorSequence`. `Rotation` is emitted only when non-zero, and `BackgroundColor3`
-is forced to white so the gradient is not tinted by the element's own background — a `bg-*` on the
-same element is overridden regardless of token order. A bad direction is
+Stops flush into a `ColorSequence`. `Rotation` is emitted only when non-zero. `BackgroundColor3` is
+forced to white so the gradient is not tinted by the element's own background, which overrides a
+`bg-*` on the same element regardless of token order. A bad direction is
 `unsupported-gradient-direction`.
 
 ## Z-index
@@ -203,7 +202,7 @@ A bracketed payload names a value directly instead of going through a scale. Two
 which one a family reads depends on the family.
 
 **Colors** — `[#rgb]` and `[#rrggbb]`, in every color family. **Lengths** — `[16px]`, `[16]`,
-`[50%]`, `[1rem]` and their negatives. The unit is optional and a bare number means pixels; a
+`[50%]`, `[1rem]` and their negatives. The unit is optional, and a bare number means pixels. A
 percentage becomes the scale half of a `UDim`, so `w-[50%]` is `UDim2.fromScale(0.5, 0)` and
 `w-[120px]` is `UDim2.fromOffset(120, 0)`. A `rem` payload resolves against `theme.rem.base` and
 follows the viewport like any other offset, so `text-[1.5rem]` says what `text-[24px]` says.
@@ -223,7 +222,7 @@ follows the viewport like any other offset, so `text-[1.5rem]` says what `text-[
 | `aspect-*` | Ratio | `aspect-[16/9]` |
 
 Both paths resolve these identically. A payload the family cannot read reports
-`unsupported-arbitrary-value` and is dropped; `z-[1.5]` has its own `unsupported-arbitrary-z-index`,
+`unsupported-arbitrary-value` and is dropped. `z-[1.5]` has its own `unsupported-arbitrary-z-index`,
 since `ZIndex` is an integer. A space inside the brackets does not end the class, so
 `w-[calc(100% - 4px)]` is one token reporting one diagnostic. (`calc()` is still not a payload any
 family reads.) The runtime splits its class strings under the same rule. A bracket that never closes
@@ -245,9 +244,9 @@ Margins sum with the parent's `gap-*` — a `gap-2` list whose children carry `m
 gaps, not 8. For space between list children, prefer `gap-*` on the parent: one property on one
 instance, and it keeps the element on the static path. A negative top or left margin moves the
 element rather than padding the box around it. **Each side holds one signed value, and the last
-class written to it wins**: `ml-4 -ml-2` shifts by 8, `-ml-2 ml-4` pads by 16, `-ml-0` clears what
-came before it. `-mr-*` and `-mb-*` remain `unsupported-negative-margin` — those would have to pull
-the *next* sibling closer.
+class written to it wins.** `ml-4 -ml-2` shifts by 8, `-ml-2 ml-4` pads by 16, and `-ml-0` clears
+what came before it. `-mr-*` and `-mb-*` remain `unsupported-negative-margin` — those would have to
+pull the *next* sibling closer.
 
 ## Gap and space
 
@@ -256,7 +255,7 @@ the *next* sibling closer.
 Roblox's `UIListLayout` has one padding axis, so there is no axis-specific gap to expose.
 `space-x-*` and `space-y-*` are the Tailwind spellings of the same property with a direction
 attached — `space-y-2` is exactly `flex flex-col gap-2`. An unresolvable value is
-`unsupported-space-value`; `space-x-reverse` is not implemented.
+`unsupported-space-value`. `space-x-reverse` is not implemented.
 
 On a `grid` element, `gap-*` also feeds `UIGridLayout.CellPadding` — see the
 [grid caveat](#grid) below.
@@ -291,7 +290,7 @@ Accepted values on the sizing axes:
   it is rejected with `unsupported-size-spacing-value`.
 
 `w-` and `h-` on the same element merge into one `Size` property. The emitted form depends on the
-values: both scales zero gives `UDim2.fromOffset(x, y)`, both offsets zero gives
+values. Both scales zero gives `UDim2.fromOffset(x, y)`, both offsets zero gives
 `UDim2.fromScale(x, y)`, and a mix gives the full `UDim2.new(sx, ox, sy, oy)`.
 
 `basis-*` lowers onto the X axis of `Size` regardless of fill direction — it is `w-*` under another
@@ -313,8 +312,9 @@ edge but do not touch `AnchorPoint`, so the element's top-left corner still land
 anchor it. Pair them with `origin-*`: `right-2 bottom-2 origin-bottom-right` puts the bottom-right
 corner 8 pixels inside its parent's.
 
-A parent with a `UIListLayout` — any `flex`, `gap-*` or `space-*` utility — owns child positions,
-and none of these classes take effect. Remove the layout utilities from the parent instead.
+A parent with a `UIListLayout` owns its children's positions, so none of these classes take effect.
+Any `flex`, `gap-*` or `space-*` utility creates one. Remove the layout utilities from the parent
+instead.
 
 ## Anchor
 
@@ -347,8 +347,9 @@ There is no `grow-{n}`, no `shrink-{n}` — numeric variants are not recognized.
 
 <UtilityTable family="grid" />
 
-Anything else in the grid family — `col-span-*`, `row-span-*`, template values — is not implemented;
-`UIGridLayout` has no span concept. An unresolvable count is `unsupported-grid-value`.
+Anything else in the grid family is not implemented, because `UIGridLayout` has no span concept.
+That includes `col-span-*`, `row-span-*` and template values. An unresolvable count is
+`unsupported-grid-value`.
 
 **`grid-cols-*` sizes the cells.** `UIGridLayout` stamps `CellSize` onto every child and ignores the
 child's own `Size`, so the count decides the track width. `grid-cols-N` divides the axis into N
@@ -363,11 +364,11 @@ tracks and gives each cell its share of the gap:
 />
 ```
 
-The cross axis stays at the engine's 100px until `auto-rows-*` names it; `auto-cols-*` does the same
+The cross axis stays at the engine's 100px until `auto-rows-*` names it. `auto-cols-*` does the same
 for `grid-rows-*`. Both read the [spacing scale](#spacing-values), so `auto-rows-24` is 96px.
 
 <Callout title="Keep gap-* off grid elements for now">
-`gap-*` on a `grid` element writes `UIGridLayout.CellPadding`, the right target — but it **also** emits an ordinary `UIListLayout` carrying the same value, leaving two layouts fighting over the children. Set `CellPadding` as a prop and leave `gap-*` off.
+`gap-*` on a `grid` element writes `UIGridLayout.CellPadding`, the right target. But it **also** emits an ordinary `UIListLayout` carrying the same value, leaving two layouts fighting over the children. Set `CellPadding` as a prop and leave `gap-*` off.
 </Callout>
 
 ## Order
@@ -392,11 +393,11 @@ Arbitrary bracket values are accepted here on the compile-time path, unlike `rou
 
 <UtilityTable family="transform" />
 
-Degrees outside the list give `unsupported-rotation-value`; scales outside the list give
+Degrees outside the list give `unsupported-rotation-value`. Scales outside the list give
 `unsupported-scale-value`. Scaling is uniform — there is no `scale-x-*`/`scale-y-*`.
 
-`translate-*` splits by value kind: a **fraction** lowers to `AnchorPoint`, a shift measured in the
-element's own size; a **pixel** value adds to the `Position` offset. So the CSS centering idiom
+`translate-*` splits by value kind. A **fraction** lowers to `AnchorPoint`, a shift measured in the
+element's own size. A **pixel** value adds to the `Position` offset. So the CSS centering idiom
 works verbatim:
 
 ```tsx title="AnchorPoint (0.5, 0.5) + Position (0.5, 0.5) scale"
@@ -412,7 +413,7 @@ works verbatim:
 The value is converted to transparency as `100 - n`. Any non-integer or out-of-range value gives
 `unsupported-opacity-value`.
 
-**It fades everything the element draws:** `BackgroundTransparency` on every host,
+**It fades everything the element draws.** `BackgroundTransparency` on every host,
 `TextTransparency` on the text hosts, `ImageTransparency` on the image hosts, and the `Transparency`
 of a `UIStroke` or `UIShadow` the same class list drew.
 
@@ -423,12 +424,12 @@ context. A `canvasgroup` ends the descent — its `GroupTransparency` composites
 pass.
 
 **It is order-independent, and multiplies with `/N`.** The utility is held until the whole class
-list is read, then composed over whatever alpha the colors settled on — so
-`opacity-50 bg-blue-600/50` lands at 0.75 transparency rather than one winning. Use `/N` to fade
-*one* family, `opacity-*` for the element and its subtree.
+list is read, then composed over whatever alpha the colours settled on. `opacity-50 bg-blue-600/50`
+lands at 0.75 transparency rather than one winning. Use `/N` to fade *one* family, `opacity-*` for
+the element and its subtree.
 
-Two places it parts ways with a real CSS composite: overlapping siblings are faded individually, so
-the overlap darkens, and a fade arriving from an ancestor *component* composes over a
+It parts ways with a real CSS composite in two places. Overlapping siblings are faded individually,
+so the overlap darkens. And a fade arriving from an ancestor *component* composes over a
 `BackgroundTransparency` you declared as a prop. A `canvasgroup` gives the real composite in both
 cases.
 
@@ -439,11 +440,11 @@ helper.
 
 <UtilityTable family="motion" />
 
-Defaults are `0.15` seconds and `Quad`/`Out`; `duration-*`, `delay-*`, and `ease-*` each enable the
+Defaults are `0.15` seconds and `Quad`/`Out`. `duration-*`, `delay-*` and `ease-*` each enable the
 transition on their own, so `duration-200` alone is a complete transition spec.
 
-Two constraints. A transition needs a property that *changes* — a
-[variant](/vela-rbxts/guides/responsive-and-input-variants/) rule or a dynamic `className` — so on a
+Two constraints. A transition needs a property that *changes*, from a
+[variant](/vela-rbxts/guides/responsive-and-input-variants/) rule or a dynamic `className`. On a
 purely static element it is dropped with `transition-without-runtime`. And both families need a real
 instance to drive, so on a component they warn `motion-on-component`.
 
@@ -451,8 +452,8 @@ instance to drive, so on a component they warn `motion-on-component`.
 <textbutton className="bg-sky-500 hover:bg-sky-600 transition duration-150" Text="Play" />
 ```
 
-**The property filters are real.** Each holds the tween to its own group, so a rule changing a color
-and a position under `transition-colors` snaps the position and tweens the color. Transitions reach
+**The property filters are real.** Each holds the tween to its own group. A rule changing a colour
+and a position under `transition-colors` snaps the position and tweens the colour. Transitions reach
 the **helper instances** too, so `hover:rounded-xl` and `hover:border-blue-500` tween rather than
 snapping, and `transition-shadow` is a working filter.
 
@@ -465,7 +466,7 @@ whole section, one method at a time.
 
 <UtilityTable family="typography" />
 
-**`font-*` is one prefix over three axes**, and they merge into a single `Font` value:
+**`font-*` is one prefix over three axes**, and they merge into a single `Font` value. The emit is
 `new Font(family, Enum.FontWeight.X, Enum.FontStyle.Italic)`, with the style argument present only
 when `italic` is. The prefix resolves the fixed weight names first and reads anything else as a key
 in [`theme.fontFamily`](/vela-rbxts/reference/config/#fontfamily), so `font-bold font-mono italic`
@@ -533,15 +534,15 @@ Four families, all meaningful only on `scrollingframe`.
 />
 ```
 
-`canvas-*` is what makes a `scrollingframe` measure its own content — without it the canvas stays at
-whatever `CanvasSize` the element declares, and the scrollbar has nothing to travel over.
+`canvas-*` is what makes a `scrollingframe` measure its own content. Without it, the canvas stays at
+whatever `CanvasSize` the element declares and the scrollbar has nothing to travel over.
 
 **Tailwind's own `scroll-*` utilities are a different family** and are not implemented.
 `scroll-smooth`, `scroll-m-*` and friends report `unsupported-scroll-value`, naming the values that
 do work.
 
 <Callout title="The scrolling families are not host-checked at compile time">
-Like the text families, these are enforced by the editor and the runtime path, not by the static lowering — `<frame className="scroll-y" />` emits `ScrollingDirection` onto a `Frame`, and Roblox rejects it at runtime. See [supported elements](#supported-elements).
+Like the text families, these are enforced by the editor and the runtime path, not by the static lowering. `<frame className="scroll-y" />` emits `ScrollingDirection` onto a `Frame`, and Roblox rejects it at runtime. See [supported elements](#supported-elements).
 </Callout>
 
 ## Variants
@@ -553,27 +554,27 @@ supported set, and drops the token.
 <UtilityTable family="variants" />
 
 **Breakpoints are configurable.** `theme.screens` is a theme axis like `colors`, so `tablet:` and
-`max-tablet:` are two lines of config. A `max-` form is the exact complement of the bare one —
-minimum inclusive, maximum exclusive — so the two cover every viewport once, and they chain into a
+`max-tablet:` are two lines of config. A `max-` form is the exact complement of the bare one,
+minimum inclusive and maximum exclusive, so the two cover every viewport once. They chain into a
 single bucket as `md:max-lg:`. A `max-` in front of something that is not a breakpoint is
-`unknown-breakpoint`; a chain whose bounds leave no viewport is `invalid-breakpoint-range`.
+`unknown-breakpoint`. A chain whose bounds leave no viewport is `invalid-breakpoint-range`.
 
 **State variants are yours to define.** `attr-[State=open]:` reads a Roblox attribute off the styled
-instance; `addVariant("open", { attribute: "State", equals: "open" })` registers the same condition
+instance. `addVariant("open", { attribute: "State", equals: "open" })` registers the same condition
 under a name. An `attr-[…]` that does not parse is `malformed-attribute-variant`. See
 [Configuration](/vela-rbxts/reference/config/#addvariant).
 
-A square viewport counts as `landscape`. Input mode resolves by priority — gamepad over touch, touch
-over mouse — so exactly one of `touch`, `mouse` and `gamepad` is ever active. `hover` and `active`
-are tracked per element, composed with any handlers you attached yourself; `active` clears on
+A square viewport counts as `landscape`. Input mode resolves by priority: gamepad over touch, touch
+over mouse. Exactly one of `touch`, `mouse` and `gamepad` is ever active. `hover` and `active` are
+tracked per element, composed with any handlers you attached yourself. `active` clears on
 `MouseLeave`, since a release outside the element never reaches it. `focus` follows
 `Focused`/`FocusLost` on a `textbox` and `SelectionGained`/`SelectionLost` elsewhere. `dark` reads
 an attribute your app owns — Roblox exposes no color scheme to a running game.
 
 There are still no structural variants (`first:`, `last:`) and no `disabled:`. Any variant-prefixed
-token forces the runtime helper into the module, even inside a plain string literal — see
-[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) for the cost model
-and for how to drive `dark:`.
+token forces the runtime helper into the module, even inside a plain string literal. See
+[Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/) for the cost
+model and for how to drive `dark:`.
 
 ## Not implemented
 
@@ -603,18 +604,18 @@ sections above and [Diagnostics](/vela-rbxts/reference/diagnostics/).
 
 When `className` is a dynamic expression rather than something Vela can collapse at compile time,
 the class string is resolved by the injected runtime helper instead. **Every family on this page
-resolves there**, with the static path's semantics — opacity modifiers, arbitrary values, and the
-families that only meet at the end: the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a
-grid track and the gap it gives back.
+resolves there**, with the static path's semantics. That includes opacity modifiers, arbitrary
+values, and the families that only meet at the end: the two `Size` axes, `Position` and
+`AnchorPoint`, `FontFace`, a grid track and the gap it gives back.
 
-One thing differs, and it is the runtime path being stricter rather than thinner: **a utility the
+One thing differs, and it is the runtime path being stricter rather than thinner. **A utility the
 host element cannot carry is dropped** instead of written, since assigning `TextColor3` to a `Frame`
-is a hard Roblox error. The static path writes it anyway — see [supported
-elements](#supported-elements).
+is a hard Roblox error. The static path writes it anyway. See
+[supported elements](#supported-elements).
 
-`opacity-*` meets the two paths halfway: the compiler leaves the whole class list to the host, which
-resolves it and hands the children one alpha, so an `opacity-*` written inside a variant recipe
-reaches the subtree it is written over.
+`opacity-*` meets the two paths halfway. The compiler leaves the whole class list to the host, which
+resolves it and hands the children one alpha. An `opacity-*` written inside a variant recipe reaches
+the subtree it is written over.
 
 Read [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) for the cost model and for what
 promotes an element onto this path.
