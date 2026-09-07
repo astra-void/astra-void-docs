@@ -58,7 +58,7 @@ frame with a colour, like [Separator](/facet/components/separator/).
 <Callout title="`<Skeleton className=&quot;h-8 w-32&quot; />` does nothing">
 Measured in the preview above, not predicted. A `className` at a Vela-compiled call site is [consumed there and never reaches the component](/facet/guides/variants-and-classes/#overriding-from-the-call-site), so three skeletons with three different classes come out identical. No diagnostic on either side.
 
-It bites harder here than anywhere else, because `className` is the only prop `Skeleton` has. A component with `variant` and `size` still has an API when `className` is inert; this one does not.
+It bites harder here than anywhere else, because `className` is the only prop `Skeleton` has. A component with `variant` and `size` still has an API when `className` is inert. This one does not.
 </Callout>
 
 `Size` does not survive as a passthrough prop either — the recipe's `w-full h-4` resolves *after*
@@ -94,12 +94,12 @@ shadcn's skeleton is `animate-pulse rounded-md bg-muted`. This is the same thing
 and that absence is the component's only real design decision.
 
 <Callout title="Vela has no animate-* family">
-The families it has — `transition-*`, `duration-*`, `ease-*` — animate a *change*, a property moving between resolved values. A pulse is a loop with no triggering change, so nothing in the class vocabulary expresses it.
+The families it has are `transition-*`, `duration-*` and `ease-*`. Those animate a *change*, a property moving between resolved values. A pulse is a loop with no triggering change, so nothing in the class vocabulary expresses it.
 
-Driving it from the component means a `useEffect` and a tween in a file that is otherwise a recipe and a frame — runtime behaviour nobody can check by reading the source. It stays out until Facet has an animation primitive worth putting under it.
+Driving it from the component means a `useEffect` and a tween in a file that is otherwise a recipe and a frame. That is runtime behaviour nobody can check by reading the source. It stays out until Facet has an animation primitive worth putting under it.
 </Callout>
 
-If you want the pulse today, the file is yours: `TweenService` against `BackgroundTransparency` in a
+If you want the pulse today, the file is yours. `TweenService` against `BackgroundTransparency` in a
 `useEffect` is about eight lines, and you own them rather than inheriting them.
 
 ## The recipe
@@ -108,11 +108,11 @@ If you want the pulse today, the file is yours: `TweenService` against `Backgrou
 export const skeletonVariants = fv("w-full h-4 rounded-md bg-muted");
 ```
 
-No variants, no parts. The default size is **a line of text** — `h-4` — because the overwhelmingly
+No variants, no parts. The default size is **a line of text**, `h-4`, because the overwhelmingly
 common use is standing in for one.
 
 Both axes are declared, per the
-[first convention](/facet/guides/component-conventions/#1-declare-both-axes-always): `w-full` defers
+[first convention](/facet/guides/component-conventions/#1-declare-both-axes-always). `w-full` defers
 the width to the parent and `h-4` states the height, so the component never collapses the layout
 above it. That matters more than usual for a placeholder, which exists precisely when there is no
 content to measure.

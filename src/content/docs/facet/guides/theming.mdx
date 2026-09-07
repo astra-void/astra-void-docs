@@ -25,11 +25,11 @@ export default defineConfig({
 });
 ```
 
-`facet init` writes exactly this. `facetTheme()` returns a plain object — a `colors` map and a
-`radius` scale — spread into `theme.extend`.
+`facet init` writes exactly this. `facetTheme()` returns a plain object, a `colors` map and a
+`radius` scale, spread into `theme.extend`.
 
 <Callout title="extend, not colors">
-Vela's `theme.colors` **replaces** the family set, stripping the ramps you reach for outside Facet components; `theme.extend` adds to them.
+Vela's `theme.colors` **replaces** the family set, stripping the ramps you reach for outside Facet components. `theme.extend` adds to them.
 </Callout>
 
 ## The tokens
@@ -51,9 +51,9 @@ Nineteen, and every Facet component names only these:
 Nothing in the registry says `zinc-800`. That is the mechanism: because components name roles,
 `base: "slate"` rethemes every copied component.
 
-`facet doctor` checks it from the other side: it collects the tokens the installed components
-declare and verifies they resolve in your config, so a missing one is reported by name rather than
-as a Vela diagnostic on a file you never wrote.
+`facet doctor` checks it from the other side. It collects the tokens the installed components
+declare and verifies they resolve in your config. A missing one is reported by name, rather than as
+a Vela diagnostic on a file you never wrote.
 
 ## Bases
 
@@ -71,7 +71,7 @@ muted        ramp[800]      muted-foreground     ramp[400]
 border       ramp[700]      input                ramp[700]      ring   ramp[300]
 ```
 
-`border` and `input` sit one step lighter than the dark surfaces they are drawn on — at `ramp[800]`
+`border` and `input` sit one step lighter than the dark surfaces they are drawn on. At `ramp[800]`
 an outline button was almost indistinguishable from a ghost one.
 
 Light mode inverts it: `background` and `card` are white, `foreground` is `ramp[950]`, `primary` is
@@ -126,11 +126,12 @@ they are. The previews on this site show it: flipping the docs' light/dark toggl
 against a different build** rather than repainting the running one.
 </Callout>
 
-This is a real gap and [an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open).
-Facet does nothing about it today; the honest fix is for Vela to lower `bg-primary` to a read from a
-runtime token table rather than to a literal, which Facet cannot make unilaterally. The tempting
-middle option — a runtime `ThemeProvider` alongside classes — splits the styling story in two, and
-the failure mode is a component whose background is themeable and whose border is not.
+This is a real gap and
+[an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open). Facet does
+nothing about it today. The honest fix is for Vela to lower `bg-primary` to a read from a runtime
+token table rather than to a literal, and Facet cannot make that change unilaterally. The tempting
+middle option, a runtime `ThemeProvider` alongside classes, splits the styling story in two. The
+failure mode is a component whose background is themeable and whose border is not.
 
 **Until then**, a runtime toggle belongs in your copy of the components, applied as instance props
 rather than classes, the same way `Button` handles its disabled fade.

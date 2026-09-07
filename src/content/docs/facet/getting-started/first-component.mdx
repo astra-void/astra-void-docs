@@ -29,7 +29,7 @@ and `add` resolves those transitively. `utils` is listed as `exists` and left al
 already added it — `add` never overwrites without `--overwrite`.
 
 The npm packages the entry declares are installed at the same time, through whichever package
-manager your lockfile implies. `--no-deps` skips that; `--dry-run` resolves and reports without
+manager your lockfile implies. `--no-deps` skips that. `--dry-run` resolves and reports without
 writing.
 
 ## Render it
@@ -79,19 +79,19 @@ If you have written shadcn/ui, two of these will bite you within the hour.
 <Button Text="Save" />      // this
 ```
 
-roblox-ts React's `ReactNode` has no string member — host instances draw text from a `Text`
-property, not a text node — so a bare string child is a type error whatever the component declares.
-`children` keeps its shadcn meaning: composition.
+roblox-ts React's `ReactNode` has no string member, because host instances draw text from a `Text`
+property rather than a text node. A bare string child is a type error whatever the component
+declares. `children` keeps its shadcn meaning: composition.
 
 The prop is spelled uppercase to shadow the Roblox instance property. `Text` is already a member of
-`PassthroughProps<TextButton>`, so a lowercase `text` would leave the obvious
-`<Button Text="Save" />` landing on the host instance and drawing Roblox's 8px near-black default
-*underneath* the styled label. See [Text and labels](/facet/guides/text-and-labels/).
+`PassthroughProps<TextButton>`. A lowercase `text` would leave the obvious `<Button Text="Save" />`
+landing on the host instance, drawing Roblox's 8px near-black default *underneath* the styled label.
+See [Text and labels](/facet/guides/text-and-labels/).
 
 ### 2. Both axes, always
 
-`UIPadding` does not grow a frame on Roblox — it insets children — and Vela resolves a frame's size
-from `UDim2.new(0, 0, 0, 0)`, so nothing hugs its content unless you ask.
+`UIPadding` does not grow a frame on Roblox, it insets children. Vela resolves a frame's size from
+`UDim2.new(0, 0, 0, 0)`, so nothing hugs its content unless you ask.
 
 ```
 h-9 px-4        → 0 × 36 pixels. Invisible.
@@ -119,7 +119,7 @@ Both key off the same `variant` and `size` props — the biggest structural diff
 where one class list on the parent styles everything under it.
 
 <Callout title="Every text recipe declares a font-*">
-Vela leaves `FontFace` untouched when no `font-*` token appears, and Roblox's untouched default is **LegacyArial** — a different typeface, visibly larger at the same `TextSize`. `card`'s description had no `font-*` and rendered in Arial beside a SourceSansPro title until someone looked. Weight is not optional styling here; it is the only thing that says *which font*.
+Vela leaves `FontFace` untouched when no `font-*` token appears, and Roblox's untouched default is **LegacyArial** — a different typeface, visibly larger at the same `TextSize`. `card`'s description had no `font-*` and rendered in Arial beside a SourceSansPro title until someone looked. Weight is not optional styling here. It is the only thing that says *which font*.
 </Callout>
 
 ## Now edit it
@@ -128,8 +128,8 @@ That is the point of the model. `src/shared/ui/button.tsx` is a file in your rep
 variants, drop the ones you do not use, rename the component. Facet has no mechanism to push an
 update over it.
 
-Editing is also the *only* override that reliably works: a `className` passed in from outside is
-consumed by Vela at the call site and then overwritten by the component's own recipe — see
+Editing is also the *only* override that reliably works. A `className` passed in from outside is
+consumed by Vela at the call site, then overwritten by the component's own recipe. See
 [Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 
 Preserve **ordering discipline** while you edit: nothing may be appended after `props.className`
