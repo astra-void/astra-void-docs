@@ -18,9 +18,8 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 
 Toast is the primitive for transient, non-blocking notifications. A `Provider` owns the queue —
 enqueuing, the visible-count limit, per-toast duration and exit timing — so your component only
-renders each surface and reacts to actions. Reach for it when messages should **stack and expire on
-their own**, stay **capped to a few at a time**, and **animate out** without you tracking timers.
-You drive it imperatively with `useToast` from anywhere inside the provider.
+renders each surface and reacts to actions. You drive it imperatively with `useToast` from anywhere
+inside the provider.
 
 ## Preview
 
@@ -37,7 +36,7 @@ import { Toast, useToast } from "@lattice-ui/react-toast";
 `Provider` and `Viewport` form the minimum system: the provider owns the queue and the viewport is where you render it.
 
 <Callout title="You render the queue">
-`Toast.Viewport` renders its children and nothing else, so a bare viewport shows nothing. Map `useToast().visibleToasts` onto `Toast.Root` yourself; `Root`, `Title`, `Description`, `Action` and `Close` are how you build each surface.
+`Toast.Viewport` renders its children and nothing else, so a bare viewport shows nothing. Map `useToast().visibleToasts` onto `Toast.Root` yourself.
 </Callout>
 
 <PrimitiveAnatomy title="Toast anatomy">
@@ -71,10 +70,11 @@ import { Toast, useToast } from "@lattice-ui/react-toast";
 
 ### Basic setup
 
-A provider at the top of the UI, a button that enqueues toasts, and a viewport that renders the queue. `enqueue` returns the new toast's id in case you want to remove it early.
+A provider at the top of the UI, a button that enqueues, and a viewport that renders the queue.
+`enqueue` returns the new toast's id.
 
 The viewport is where the work is: map `visibleToasts`, give each record a `Toast.Root`, and wire
-`onExitComplete` to `finalize` so a toast is dropped only once its exit finishes.
+`onExitComplete` to `finalize` so a toast drops only once its exit finishes.
 `visible={!record.exiting}` starts that exit.
 
 ```tsx title="ToastStack.tsx"
@@ -168,14 +168,13 @@ export function SaveStatusToasts() {
 ```
 
 <Callout title="Imperative, not declarative">
-There is no `open`/`onOpenChange` on a toast — you `enqueue` and `remove`, and the provider decides what is visible and when each leaves. Treat the queue as the source of truth, not local component state.
+There is no `open`/`onOpenChange` on a toast — you `enqueue` and `remove`, and the provider decides what is visible. Treat the queue as the source of truth.
 </Callout>
 
 ### Undo action toast
 
 `ToastOptions` carries only data — `id`, `title`, `description`, `durationMs` — never callbacks. Key
-the pending undo by the id `enqueue` returns, then wire `Toast.Action` to the stored payload while
-mapping `visibleToasts`.
+the pending undo by the id `enqueue` returns, then wire `Toast.Action` to the stored payload.
 
 Both `onAction` and `onClose` are plain callbacks; neither removes the toast for you, so call `remove(record.id)` in each handler.
 
@@ -286,7 +285,7 @@ export function UndoDeleteToasts(props: { onUndo: (itemName: string) => void }) 
 
 Each toast lives for its own `durationMs`, falling back to the provider's `defaultDurationMs`. A
 `durationMs` of `0` or less makes it sticky until something calls `remove` or `clear` — pass your
-own `id` so a different code path can clear it later, like a "connection lost" warning on reconnect.
+own `id` so another code path can clear it later.
 
 ```tsx title="ConnectionToasts.tsx"
 import { Toast, useToast } from "@lattice-ui/react-toast";
@@ -363,12 +362,12 @@ export function ConnectionToasts() {
 
 ### Queue behavior under burst
 
-`maxVisible` caps how many toasts render at once; everything past the cap waits in order and surfaces as earlier toasts leave. Here six pickups arrive at once with `maxVisible={2}`: the first two show, the other four queue.
+`maxVisible` caps how many render at once; the rest wait in order. Here six pickups arrive at once
+with `maxVisible={2}`.
 
-One caveat: a toast's clock starts at `enqueue`, but expiry is only *evaluated* while it is inside
-the visible window, so one that waited longer than its `durationMs` exits almost immediately on
-surfacing. Under bursts, lengthen the duration, collapse the burst into one summary toast, or go
-sticky with manual removal.
+A toast's clock starts at `enqueue` but expiry is only *evaluated* inside the visible window, so one
+that waited longer than its `durationMs` exits almost immediately on surfacing. Under bursts,
+lengthen the duration, summarise, or go sticky.
 
 ```tsx title="LootBurstToasts.tsx"
 import { Toast, useToast } from "@lattice-ui/react-toast";
@@ -413,9 +412,9 @@ export function LootBurstToasts() {
 
 ### Placing the viewport
 
-The viewport takes no position props of its own, so put it inside an anchored wrapper frame to
-choose its corner. The stack direction and gap come from the layout you put inside it. Reach for
-`Viewport asChild` when you need a different instance class than the `frame` it renders.
+The viewport takes no position props of its own, so put it inside an anchored wrapper frame. The
+stack direction and gap come from the layout inside it, and `Viewport asChild` gives you a different
+instance class than the `frame` it renders.
 
 ```tsx title="TopCenterToasts.tsx"
 import { Toast } from "@lattice-ui/react-toast";
@@ -440,9 +439,11 @@ export function TopCenterToasts() {
 
 ### Custom toast motion
 
-`Toast.Root` runs no motion unless you pass a `transition`. `createToastResponseRecipe()` animates `BackgroundTransparency` between `0` and `1` over 0.14s; rebuild it with a new duration or write a `ResponseMotionConfig` by hand.
+`Toast.Root` runs no motion unless you pass a `transition`. `createToastResponseRecipe()` animates
+`BackgroundTransparency` between `0` and `1` over 0.14s.
 
-Keep the duration at or under about 0.16s — the provider drops exiting toasts after a fixed ~160ms window regardless of your transition, so a slower fade is cut off mid-motion.
+Keep the duration at or under about 0.16s — the provider drops exiting toasts after a fixed ~160ms
+window regardless of your transition.
 
 ```tsx title="SnappyToasts.tsx"
 import { Toast, useToast } from "@lattice-ui/react-toast";
@@ -500,45 +501,60 @@ export function SnappyToasts() {
 
 ### The queue
 
-`enqueue(options)` appends a toast and returns its `id`, auto-generated as `toast-N` unless you pass one. `remove(id)` starts its exit, or drops it instantly if it is still waiting beyond the visible cap, and is a no-op on one already exiting. `clear()` empties the queue immediately, skipping exit motion.
+`enqueue(options)` appends a toast and returns its `id`, auto-generated as `toast-N` unless you pass
+one. `remove(id)` starts its exit — or drops it instantly if it is still beyond the visible cap —
+and is a no-op on one already exiting. `clear()` empties the queue, skipping exit motion.
 
-While any toasts exist the provider runs a `Heartbeat` connection that prunes expired and finished toasts each frame, disconnecting once the queue drains — so an idle provider costs nothing.
+While any toasts exist the provider runs a `Heartbeat` connection pruning expired and finished
+toasts each frame, disconnecting once the queue drains.
 
 ### Visibility limit
 
-`maxVisible` (default `3`, clamped to at least `1`) caps how many toasts render at once; the rest wait in the queue in arrival order. `useToast().visibleToasts` is the capped slice the viewport renders, while `toasts` is the full queue. An exiting toast still occupies its visible slot for the length of the exit window, so the next queued toast surfaces only after the exit completes and the record is dropped.
+`maxVisible` (default `3`, clamped to at least `1`) caps how many render at once; the rest wait in
+arrival order. `visibleToasts` is the capped slice the viewport renders, `toasts` the full queue. An
+exiting toast still occupies its slot for the exit window, so the next one surfaces only after the
+record is dropped.
 
 ### Duration and expiry
 
-Each toast expires after its own `durationMs`, falling back to the provider's `defaultDurationMs` (default `4000`, clamped to `>= 0`). A duration of `0` or less makes a toast sticky — it never expires on its own and must be removed via `remove`, a wired-up `Toast.Close`, or `clear`.
+Each toast expires after its own `durationMs`, falling back to `defaultDurationMs` (default `4000`).
+A duration of `0` or less makes it sticky — removable only through `remove`, a wired-up
+`Toast.Close`, or `clear`.
 
-Expiry is measured from `createdAtMs` — the moment of `enqueue` — but only checked while the toast is inside the visible window. Toasts waiting beyond the cap never expire in the queue, yet one that waited longer than its duration exits on nearly the first frame it becomes visible. Plan burst-heavy flows around this (longer durations, summary toasts, or sticky toasts).
+Expiry is measured from `createdAtMs` but only checked inside the visible window. Toasts beyond the
+cap never expire in the queue, yet one that waited longer than its duration exits on nearly its
+first visible frame.
 
 ### Exit timing and motion
 
-When a visible toast's time elapses (or `remove` is called on it), the provider marks the record `exiting` and keeps it for a fixed ~160ms window so its exit motion can play before the record is dropped. Wire each root's `visible` prop to `!record.exiting` — that is what triggers the exit — and `onExitComplete` to `finalize(record.id)`.
+When a visible toast's time elapses, or `remove` is called on it, the provider marks the record
+`exiting` and keeps it for a fixed ~160ms window so its exit motion can play. Wire each root's
+`visible` to `!record.exiting` and `onExitComplete` to `finalize(record.id)`.
 
-`Toast.Root` runs no motion unless you pass a `transition`. `createToastResponseRecipe()` (0.14s, appearance target) is the recipe that used to be applied for you; it animates `BackgroundTransparency` between `0` while visible and `1` while hidden. The 160ms drop window is not derived from your transition, so exits meaningfully slower than that get truncated. With `asChild`, the motion ref and `Visible` binding move onto your single child element.
+`Toast.Root` runs no motion unless you pass a `transition`. `createToastResponseRecipe()` (0.14s,
+appearance target) animates `BackgroundTransparency` between `0` while visible and `1` while hidden.
+The 160ms drop window is not derived from your transition, so slower exits get truncated. With
+`asChild`, the motion ref and `Visible` binding move onto your child element.
 
 ### What each part renders
 
 Every part renders unstyled, so the whole surface is yours:
 
 - `Toast.Viewport` — a `Frame` holding your children. No layout, no queue markup.
-- `Toast.Root` — a `Frame`. Its `Visible` is presence-driven; everything else is yours.
-- `Toast.Title` and `Toast.Description` — `TextLabel`s with no copy of their own. Pass `Text` from the record; they also render children, so a `uipadding` works directly on them.
-- `Toast.Action` and `Toast.Close` — `TextButton`s that merge `Active`, `Selectable`, and the `Activated` handler. Neither touches the queue: call `remove(id)` yourself.
+- `Toast.Root` — a `Frame` whose `Visible` is presence-driven; everything else is yours.
+- `Toast.Title` and `Toast.Description` — `TextLabel`s with no copy of their own. They render children, so a `uipadding` works directly on them.
+- `Toast.Action` and `Toast.Close` — `TextButton`s merging `Active`, `Selectable` and the `Activated` handler. Neither touches the queue.
 
 <Callout title="Provider placement">
-Mount `Toast.Provider` high in your UI tree, above everything that calls `useToast`. `useToast` reads the provider through context and throws if used outside it. The `Viewport` does not have to be a direct child — it only needs to be somewhere inside the same provider.
+Mount `Toast.Provider` above everything that calls `useToast`, which reads it through context and throws outside it. The `Viewport` only needs to be somewhere inside the same provider.
 </Callout>
 
 <Callout title="Action and Close do not remove the toast">
-`onAction` and `onClose` are plain callbacks; activating the button does not touch the queue. Call `remove(id)` inside both handlers — otherwise the toast lingers until its duration expires, and a sticky toast never leaves.
+`onAction` and `onClose` are plain callbacks; activating the button does not touch the queue. Call `remove(id)` in both — otherwise the toast lingers until its duration expires, and a sticky one never leaves.
 </Callout>
 
 <Callout title="Toast payloads are data, not callbacks">
-`ToastOptions` has no action or handler field. To attach behavior to a toast, keep the payload in your own state keyed by the id `enqueue` returns, and look it up from the record's `id` when rendering a custom surface.
+`ToastOptions` has no action or handler field. Keep the payload in your own state keyed by the id `enqueue` returns, and look it up from the record's `id` when rendering.
 </Callout>
 
 ## API reference
