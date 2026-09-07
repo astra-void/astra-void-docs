@@ -14,9 +14,12 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={[]}
 />
 
-Runtime is the foundation layer underneath every other Lattice UI package. It pins a single React and React-Roblox runtime, and provides the small set of composition utilities that primitives reuse over and over: a strict context factory, ref-merging helpers, the `Slot` component that powers `asChild`, and a controllable-state hook for components that can run either controlled or uncontrolled.
+Runtime is the foundation under every other Lattice UI package. It pins a single React and
+React-Roblox runtime and provides the composition utilities primitives reuse: a strict context
+factory, ref-merging helpers, the `Slot` component behind `asChild`, and a controllable-state hook.
 
-You rarely import Runtime directly when consuming a primitive — but every primitive depends on it, and if you build your own primitive on top of Lattice UI, this is the package you reach for first.
+You rarely import it directly when consuming a primitive, but it is the first package you reach for
+when building one.
 
 ## Import
 
@@ -42,7 +45,9 @@ import {
 import { React } from "@lattice-ui/react-runtime";
 ```
 
-A re-export of `@rbxts/react`, exposed as a default-style named binding. Every Lattice UI package imports React through Runtime so the whole tree shares one React instance — sharing context, hooks, and reconciler state. When you build on top of Lattice UI, prefer importing `React` from here over `@rbxts/react` directly to avoid pulling in a second copy.
+A re-export of `@rbxts/react` as a default-style named binding. Every Lattice UI package imports
+React through Runtime so the whole tree shares one instance — one context, hooks and reconciler
+state. Import `React` from here rather than `@rbxts/react` to avoid a second copy.
 
 ### ReactRoblox
 
@@ -50,7 +55,8 @@ A re-export of `@rbxts/react`, exposed as a default-style named binding. Every L
 import { ReactRoblox } from "@lattice-ui/react-runtime";
 ```
 
-A re-export of `@rbxts/react-roblox`. This is the host renderer used to create roots and portals (`ReactRoblox.createRoot`, `ReactRoblox.createPortal`). The Layer package's `Portal` is built on `ReactRoblox.createPortal`.
+A re-export of `@rbxts/react-roblox`, the host renderer behind roots and portals. The Layer
+package's `Portal` is built on `ReactRoblox.createPortal`.
 
 ### createStrictContext
 
@@ -70,7 +76,9 @@ function Item() {
 }
 ```
 
-Creates a React context paired with a reader hook that **throws** when no provider is present, instead of silently returning `undefined`. The `name` is used in the error message (`[Accordion] context is undefined. Wrap components with <Accordion.Provider>.`), so pass the display name of the primitive. Returns a tuple of `[Provider, useContext]` — the provider accepts a `value` prop of type `T`, and the hook returns a non-nullable `T`.
+Creates a React context paired with a reader hook that **throws** when no provider is present rather
+than returning `undefined`. `name` goes into the error message, so pass the primitive's display
+name. Returns `[Provider, useContext]`, the hook returning a non-nullable `T`.
 
 ### useControllableState
 
@@ -90,7 +98,11 @@ const [open, setOpen] = useControllableState({
 });
 ```
 
-Powers the controlled/uncontrolled pattern used across Lattice UI primitives (the `open`/`defaultOpen`/`onOpenChange` triad on Dialog, Popover, and friends). When `value` is provided the state is **controlled** — internal state is ignored and `value` is returned verbatim. When `value` is `undefined` the hook manages state internally starting from `defaultValue`. The returned setter accepts either a value or an updater function, calls `onChange` whenever the resolved value actually changes, and only writes internal state when uncontrolled. Identical values are skipped, so `onChange` never fires for no-op updates.
+Powers the controlled/uncontrolled pattern across Lattice UI — the
+`open`/`defaultOpen`/`onOpenChange` triad. With `value` provided the state is **controlled** and
+returned verbatim; with `value` undefined the hook manages state from `defaultValue`. The setter
+takes a value or an updater, calls `onChange` whenever the resolved value changes, and writes
+internal state only when uncontrolled. Identical values are skipped.
 
 <PropTable
   rows={[
@@ -120,16 +132,18 @@ function Trigger(props: { asChild?: boolean; children: React.ReactElement }) {
 }
 ```
 
-`Slot` clones its single child element and merges the props it receives onto that child instead of rendering its own host instance. This is the engine behind the `asChild` prop you see throughout Lattice UI: it lets a primitive hand off rendering to a caller-supplied element while still attaching its own behavior.
+`Slot` clones its single child element and merges the props it receives onto it instead of rendering
+its own host instance. It is the engine behind `asChild`, letting a primitive hand off rendering
+while still attaching its own behaviour.
 
 Merging rules:
 
-- **Props** — the slot's own props override the child's props of the same key (`{ ...childProps, ...slotProps }`).
-- **`Event` and `Change` tables** — handler tables are merged rather than replaced. Both the child's handler and the slot's handler run, with the slot's handler invoked first, so a caller's `Activated` and the primitive's `Activated` both fire.
-- **Refs** — the child's ref, the forwarded ref, and any `ref` passed in props are composed with `composeRefs`, so every party observes the underlying Instance.
+- **Props** — the slot's own override the child's of the same key.
+- **`Event` and `Change` tables** — merged rather than replaced, the slot's handler first, so a caller's `Activated` and the primitive's both fire.
+- **Refs** — the child's ref, the forwarded ref and any `ref` in props are composed with `composeRefs`.
 
 <Callout title="Slot expects exactly one child element">
-`asChild` composition requires a single valid React element as the child. Passing text, `undefined`, fragments, or multiple children will not merge correctly — wrap your content in one host element first.
+`asChild` requires a single valid React element as the child. Text, `undefined`, fragments or multiple children will not merge — wrap your content in one host element first.
 </Callout>
 
 ### composeRefs
@@ -147,7 +161,9 @@ const mergedRef = composeRefs(localRef, props.forwardedRef);
 return <frame ref={mergedRef} />;
 ```
 
-Combines several refs into a single callback ref. When the resulting callback runs, every supplied ref is updated with the node — callback refs are invoked, and mutable ref objects have their `current` assigned. `undefined` entries are skipped. Use it whenever a component needs to keep its own ref to an Instance while also forwarding that Instance to the caller.
+Combines several refs into one callback ref: every supplied ref is updated with the node, callback
+refs invoked and mutable ref objects assigned, with `undefined` entries skipped. Use it when a
+component keeps its own ref while also forwarding the Instance to the caller.
 
 ### setRef
 
@@ -155,7 +171,8 @@ Combines several refs into a single callback ref. When the resulting callback ru
 function setRef<T>(ref: AnyRef<T> | undefined, value: T | undefined): void;
 ```
 
-Writes a value into a single ref, handling both forms: callback refs are called with the value, and mutable ref objects have `current` assigned. A no-op when `ref` is `undefined`. `composeRefs` is built on top of this.
+Writes a value into a single ref, handling both forms, and a no-op when `ref` is `undefined`.
+`composeRefs` is built on it.
 
 ### getElementRef
 
@@ -163,7 +180,9 @@ Writes a value into a single ref, handling both forms: callback refs are called 
 function getElementRef<T>(child: React.ReactElement): AnyRef<T> | undefined;
 ```
 
-Extracts the ref from a React element, checking both `element.props.ref` and the legacy `element.ref` location and normalizing the result with `toRef`. `Slot` uses this to recover a child's ref before composing it. Returns `undefined` when the element carries no usable ref.
+Extracts the ref from a React element, checking both `element.props.ref` and the legacy
+`element.ref`, normalized through `toRef`. `Slot` uses it to recover a child's ref before composing.
+Returns `undefined` when there is none.
 
 ### toRef
 
@@ -171,10 +190,11 @@ Extracts the ref from a React element, checking both `element.props.ref` and the
 function toRef<T>(value: unknown): AnyRef<T> | undefined;
 ```
 
-Narrows an unknown value to a usable ref, accepting either a function (callback ref) or a table (mutable ref object) and returning `undefined` for anything else. Useful when a ref arrives through an untyped prop bag and you need to validate it before composing or writing to it.
+Narrows an unknown value to a usable ref — a function or a table — returning `undefined` for
+anything else. Useful when a ref arrives through an untyped prop bag.
 
 <Callout title="Roblox refs hold Instances">
-Refs in `@rbxts/react` resolve to Roblox `Instance` objects (a `Frame`, `TextButton`, and so on), not DOM nodes. A freshly created `useRef()` may start with `current` absent rather than explicitly `nil`, which is why `toRef` treats any table as a valid mutable ref object.
+Refs in `@rbxts/react` resolve to Roblox `Instance` objects, not DOM nodes. A freshly created `useRef()` may start with `current` absent rather than explicitly `nil`, which is why `toRef` treats any table as a valid mutable ref object.
 </Callout>
 
 ## Related

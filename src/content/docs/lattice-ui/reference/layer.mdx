@@ -14,9 +14,13 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus"]}
 />
 
-Layer provides the three behaviors every overlay surface needs in Roblox: rendering **outside the local tree** into a `ScreenGui`, **dismissing on outside interaction** while optionally blocking input behind the surface, and **staying mounted through an exit animation**. Dialog, Popover, Menu, Select, Tooltip, and Toast are all built on these primitives.
+Layer provides the three behaviours every overlay surface needs: rendering **outside the local
+tree** into a `ScreenGui`, **dismissing on outside interaction** while optionally blocking input
+behind the surface, and **staying mounted through an exit animation**. Dialog, Popover, Menu,
+Select, Tooltip and Toast are all built on it.
 
-It composes with the other foundations directly — `DismissableLayer` renders through `Portal` and wraps its children in a `FocusLayerProvider` from the Focus package, so stacked layers trap and order correctly.
+`DismissableLayer` renders through `Portal` and wraps its children in a `FocusLayerProvider`, so
+stacked layers trap and order correctly.
 
 ## Import
 
@@ -48,7 +52,9 @@ function PortalProvider(props: {
 </PortalProvider>
 ```
 
-Establishes the portal context for everything below it: the `BasePlayerGui` that portalled surfaces render into, and the base `DisplayOrder` used to stack layers. `displayOrderBase` defaults to `1000`. Mount this once near your app root so every overlay resolves a consistent target and stacking baseline. It is a strict context provider — components that read the context throw if no provider is above them.
+Establishes the portal context: the `BasePlayerGui` that portalled surfaces render into, and the
+base `DisplayOrder` used to stack layers (`displayOrderBase`, default `1000`). Mount it once near
+your app root. It is a strict context provider — readers throw if no provider is above them.
 
 <PropTable
   rows={[
@@ -67,7 +73,8 @@ function usePortalContext(): {
 };
 ```
 
-Reads the current portal context — the resolved `container` and `displayOrderBase`. Throws if called outside a `PortalProvider`. `Portal` and `DismissableLayer` both use it to find their render target and stacking base.
+Reads the resolved `container` and `displayOrderBase`, throwing outside a `PortalProvider`. `Portal`
+and `DismissableLayer` both use it.
 
 ### Portal
 
@@ -86,7 +93,10 @@ function Portal(props: {
 </Portal>
 ```
 
-Renders its children into a different part of the Roblox instance tree using `ReactRoblox.createPortal`, while keeping them in the React tree (context and state still flow through). By default it targets the `container` from the nearest `PortalProvider`; pass an explicit `container` to override the target for a single portal. Render your own `screengui` inside if you need a `LayerCollector` — `Portal` itself only relocates the subtree.
+Renders its children elsewhere in the Roblox instance tree through `ReactRoblox.createPortal`, while
+keeping them in the React tree so context and state still flow. It targets the nearest
+`PortalProvider`'s `container` unless you pass one. Render your own `screengui` inside if you need a
+`LayerCollector` — `Portal` only relocates the subtree.
 
 <PropTable
   rows={[
@@ -123,9 +133,15 @@ const contentRef = React.useRef<Frame>();
 </DismissableLayer>;
 ```
 
-The core overlay primitive. It portals a `ScreenGui` whose `DisplayOrder` is the provider base plus this layer's mount order, registers itself on the shared layer stack, and watches for pointer interactions outside its content boundary. A press outside the boundary fires `onPointerDownOutside`, any other outside interaction fires `onInteractOutside`, and unless an event is vetoed with `preventDefault`, `onDismiss` is called.
+The core overlay primitive. It portals a `ScreenGui` whose `DisplayOrder` is the provider base plus
+this layer's mount order, registers on the shared layer stack, and watches for pointer interactions
+outside its content boundary. A press outside fires `onPointerDownOutside`, any other outside
+interaction fires `onInteractOutside`, and unless vetoed with `preventDefault`, `onDismiss` follows.
 
-The content boundary defaults to the layer's internal content wrapper; pass `contentBoundaryRef` to treat a specific `GuiObject` as the "inside" region, and `insideRefs` to mark additional instances (such as a separate trigger) as inside so pressing them does not dismiss. When `modal` or `disableOutsidePointerEvents` is set, the layer renders a full-screen modal blocker behind the content so input cannot reach anything underneath.
+The boundary defaults to the layer's internal content wrapper; `contentBoundaryRef` names a specific
+`GuiObject` as "inside", and `insideRefs` marks additional instances such as a separate trigger.
+With `modal` or `disableOutsidePointerEvents`, the layer renders a full-screen blocker behind the
+content.
 
 <PropTable
   rows={[
@@ -151,7 +167,9 @@ type LayerInteractEvent = {
 };
 ```
 
-The event handed to `onPointerDownOutside` and `onInteractOutside`. `originalEvent` is the Roblox `InputObject` that triggered the interaction. Call `preventDefault()` to keep the layer from dismissing for that interaction; `defaultPrevented` reflects whether it has been vetoed.
+The event handed to `onPointerDownOutside` and `onInteractOutside`. `originalEvent` is the Roblox
+`InputObject`; `preventDefault()` keeps the layer from dismissing, and `defaultPrevented` reflects
+whether it has been vetoed.
 
 ### Presence
 
@@ -178,7 +196,11 @@ type PresenceRender = (state: {
 </Presence>
 ```
 
-A mount controller for exit animations. `Presence` keeps its content mounted after `present` flips to `false` so an exit animation can play, then unmounts once the animation signals completion. It calls its render function (passed as `children` or `render`) with `isPresent` — drive your animation off this — and an `onExitComplete` callback to call when the exit finishes. As a safety net, if `onExitComplete` is never called, the content is force-unmounted after `exitFallbackMs` (default `140`). `onExitComplete` on the props fires whenever the exit completes through either path.
+A mount controller for exit animations: `Presence` keeps its content mounted after `present` flips
+to `false`, then unmounts once the animation signals completion. It calls its render function with
+`isPresent` — drive your animation off this — and an `onExitComplete` to call when the exit
+finishes. If that is never called, the content is force-unmounted after `exitFallbackMs` (default
+`140`).
 
 <PropTable
   rows={[
@@ -191,11 +213,11 @@ A mount controller for exit animations. `Presence` keeps its content mounted aft
 />
 
 <Callout title="Layers render into their own ScreenGuis">
-`DismissableLayer` portals into a generated `ScreenGui` parented to the provider's `BasePlayerGui`, not into your component tree. Its `DisplayOrder` is `displayOrderBase + mountOrder`, so later layers naturally stack on top. Set `displayOrderBase` on `PortalProvider` to order Lattice surfaces relative to your own `ScreenGui`s.
+`DismissableLayer` portals into a generated `ScreenGui` parented to the provider's `BasePlayerGui`, not into your component tree. Its `DisplayOrder` is `displayOrderBase + mountOrder`, so later layers stack on top; set `displayOrderBase` to order Lattice surfaces relative to your own `ScreenGui`s.
 </Callout>
 
 <Callout title="The modal blocker uses an invisible Modal textbutton">
-When `modal` or `disableOutsidePointerEvents` is set, the blocker is a full-screen transparent `textbutton` with `Modal = true` behind the content. This is what prevents clicks and gameplay input from reaching instances underneath the surface.
+With `modal` or `disableOutsidePointerEvents`, the blocker is a full-screen transparent `textbutton` with `Modal = true` behind the content, which is what stops clicks and gameplay input reaching instances underneath.
 </Callout>
 
 ## Related

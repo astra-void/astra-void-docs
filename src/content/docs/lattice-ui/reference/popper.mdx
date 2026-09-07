@@ -14,12 +14,17 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-motion"]}
 />
 
-Popper is the positioning foundation for anchored surfaces — the placement engine behind Popover, Tooltip, Menu, and Select listboxes. Given an anchor `GuiObject` and a content `GuiObject`, it computes where the content should sit, falls back to a better side when the requested one would overflow, and keeps the result in sync as the anchor, content, or viewport changes.
+Popper is the placement engine behind Popover, Tooltip, Menu and Select listboxes. Given an anchor
+`GuiObject` and a content `GuiObject`, it computes where the content should sit, falls back to a
+better side when the requested one would overflow, and keeps the result in sync as the anchor,
+content or viewport changes.
 
-It works entirely in screen space using `AbsolutePosition` and `AbsoluteSize`, so it does not care how the surface is composed. It only returns a `UDim2` position and an `AnchorPoint` for you to apply to the content node.
+It works in screen space through `AbsolutePosition` and `AbsoluteSize`, so it does not care how the
+surface is composed — it returns a `UDim2` position and an `AnchorPoint` to apply to the content
+node.
 
 <Callout title="Experimental">
-This package is experimental. The placement-relative offsets and viewport collision handling are in active development, and the API — option names, defaults, and the shape of the computed result — may change in a future release.
+This package is experimental. The placement-relative offsets and collision handling are in active development, and option names, defaults and the shape of the computed result may change.
 </Callout>
 
 ## Import
@@ -33,7 +38,8 @@ import { subscribeAnchor, subscribeContent, subscribeViewport } from "@lattice-u
 
 ### usePopper
 
-The primary entry point. Pass refs to the anchor and content `GuiObject`s and it tracks their layout, recomputes positioning on change, and returns a position and anchor point to apply to the content.
+The primary entry point: pass refs to the anchor and content `GuiObject`s and it tracks their
+layout, recomputes on change, and returns a position and anchor point.
 
 ```ts
 function usePopper(options: UsePopperOptions): UsePopperResult;
@@ -55,9 +61,15 @@ return (
 );
 ```
 
-`usePopper` reads both refs, measures the anchor's `AbsolutePosition`/`AbsoluteSize` and the content's `AbsoluteSize`, and runs `computePopper`. It subscribes to anchor layout changes, content size changes, and viewport resizes through the observers below, and reconciles the observed instances every `Heartbeat` so the correct nodes stay tracked even as refs swap. Updates run inside a layout effect, so positioning is applied before paint.
+It measures the anchor's `AbsolutePosition`/`AbsoluteSize` and the content's `AbsoluteSize` and runs
+`computePopper`, subscribing to anchor layout, content size and viewport resizes through the
+observers below and reconciling the observed instances every `Heartbeat` so the right nodes stay
+tracked as refs swap. Updates run in a layout effect, so positioning applies before paint.
 
-Viewport bounds come from the nearest `ScreenGui` ancestor of the content (honoring the topbar inset unless `IgnoreGuiInset` is set), falling back to the current camera's `ViewportSize`. Until the content has a measured size, `isPositioned` is `false` — gate the surface's `Visible` on it to avoid a one-frame flash at the origin.
+Viewport bounds come from the content's nearest `ScreenGui` ancestor, honouring the topbar inset
+unless `IgnoreGuiInset` is set, falling back to the camera's `ViewportSize`. Until the content has a
+measured size `isPositioned` is `false` — gate the surface's `Visible` on it to avoid a one-frame
+flash at the origin.
 
 <PropTable
   rows={[
@@ -86,7 +98,8 @@ The returned `UsePopperResult` extends `ComputePopperResult` with the live measu
 
 ### computePopper
 
-The pure placement function behind the hook. It takes fully measured geometry and returns a position, anchor point, and resolved placement. No Roblox instances, refs, or side effects, which makes it useful for testing or driving positioning yourself.
+The pure placement function behind the hook: measured geometry in, a position, anchor point and
+resolved placement out. No Roblox instances, refs or side effects.
 
 ```ts
 function computePopper(input: ComputePopperInput): ComputePopperResult;
@@ -101,7 +114,10 @@ const { position, anchorPoint, placement } = computePopper({
 });
 ```
 
-It evaluates the requested placement, then its opposite, then the two orthogonal sides, scoring each candidate by how far it overflows the viewport plus a small penalty for falling back to an orthogonal side. The first zero-overflow candidate wins immediately; otherwise the least-bad candidate is chosen and clamped inside the viewport with `collisionPadding`. The returned `position` is an offset `UDim2` already adjusted for the resolved `anchorPoint`.
+It evaluates the requested placement, then its opposite, then the two orthogonal sides, scoring each
+by viewport overflow plus a small penalty for an orthogonal fallback. The first zero-overflow
+candidate wins; otherwise the least-bad one is clamped inside the viewport with `collisionPadding`.
+The returned `position` is an offset `UDim2` already adjusted for the resolved `anchorPoint`.
 
 `ComputePopperInput` merges the positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) with the required geometry:
 
@@ -120,7 +136,8 @@ It evaluates the requested placement, then its opposite, then the two orthogonal
 function subscribeAnchor(anchor: GuiObject, onChange: () => void): ObserverUnsubscribe;
 ```
 
-Calls `onChange` whenever the anchor's `AbsolutePosition` or `AbsoluteSize` changes. Returns an unsubscribe function that disconnects both signals.
+Calls `onChange` when the anchor's `AbsolutePosition` or `AbsoluteSize` changes, returning an
+unsubscribe that disconnects both signals.
 
 ### subscribeContent
 
@@ -128,7 +145,9 @@ Calls `onChange` whenever the anchor's `AbsolutePosition` or `AbsoluteSize` chan
 function subscribeContent(content: GuiObject, onChange: () => void): ObserverUnsubscribe;
 ```
 
-Calls `onChange` when the content's `AbsoluteSize` changes. It deliberately ignores position changes: the positioned ancestor owns placement, and relative content movement may be motion-owned, so it should not invalidate the computed result.
+Calls `onChange` when the content's `AbsoluteSize` changes. Position changes are ignored
+deliberately — the positioned ancestor owns placement, and relative content movement may be
+motion-owned.
 
 ### subscribeViewport
 

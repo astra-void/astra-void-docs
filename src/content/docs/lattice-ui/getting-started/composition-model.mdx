@@ -8,13 +8,16 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Every Lattice UI primitive is built from the same three ideas: a compound component with a `Root` and named parts, an `asChild` escape hatch for merging behavior onto your own elements, and controllable state that works either controlled or uncontrolled. Learn them once with Dialog and they carry over to Popover, Menu, Tabs, Combobox, and the rest unchanged.
+Every Lattice UI primitive is built from the same three ideas: a compound component with a `Root`
+and named parts, an `asChild` escape hatch for merging behaviour onto your own elements, and
+controllable state. Learn them once with Dialog and they carry over unchanged.
 
-This page explains the model itself. The component pages assume you already know it.
+The component pages assume you know it.
 
 ## Compound components
 
-A primitive is a namespace object. `Root` owns the state and shares it through React context; the parts read from that context instead of holding their own copies. You compose them like nested elements.
+A primitive is a namespace object: `Root` owns the state and shares it through React context, and
+the parts read from that context rather than holding copies.
 
 ```tsx title="The compound shape"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -43,11 +46,13 @@ import { Tabs } from "@lattice-ui/react-tabs";
 </Tabs.Root>;
 ```
 
-Because the parts share one context, a `Tabs.Trigger` knows which panel is active and a `Dialog.Close` knows how to close its `Root` — without you threading any props between them.
+Because the parts share one context, a `Tabs.Trigger` knows which panel is active and a
+`Dialog.Close` knows how to close its `Root`, with no props threaded between them.
 
 ## Controllable state
 
-State-bearing roots are built on the `useControllableState` helper from `@lattice-ui/react-runtime`. The result is a consistent contract: pass a controlled value, or pass a default and let the primitive own it.
+State-bearing roots are built on `useControllableState` from `@lattice-ui/react-runtime`: pass a
+controlled value, or pass a default and let the primitive own it.
 
 Overlay primitives expose **open** state:
 
@@ -73,17 +78,21 @@ const [tab, setTab] = useState("general");
 <Tabs.Root value={tab} onValueChange={setTab}>{/* ... */}</Tabs.Root>
 ```
 
-The mechanics are the same in both cases: when you pass the controlled prop, the primitive defers to you and only reports changes through the `on*Change` callback; when you omit it, the primitive holds the state internally and still reports changes.
+Pass the controlled prop and the primitive defers to you, reporting changes through `on*Change`;
+omit it and the primitive holds the state internally and still reports changes.
 
 <Callout title="Keep one owner">
-Pass either the controlled prop or the default, not both for the same state. `onOpenChange` / `onValueChange` fire either way, so you never lose the change event by going uncontrolled.
+Pass either the controlled prop or the default, not both. `onOpenChange` / `onValueChange` fire either way, so you never lose the change event by going uncontrolled.
 </Callout>
 
 ## asChild
 
-Behavior-carrying parts render their own host element (a `textbutton`, for triggers). `asChild` tells the part to merge its behavior onto the single child you provide instead, using the `Slot` utility from `@lattice-ui/react-runtime`. Use it when you need a different instance class than the part renders, or when your app already owns the right element.
+Behaviour-carrying parts render their own host element. `asChild` tells the part to merge its
+behaviour onto the single child you provide instead, through `Slot`. Reach for it when you need a
+different instance class than the part renders, or when your app already owns the right element.
 
-Styling a part is *not* a reason to reach for `asChild`: unknown props forward onto the instance the part renders, so `<Dialog.Trigger Size={...} Text="Open" />` works on its own.
+Styling a part is *not* a reason to use it — unknown props forward onto the instance the part
+renders.
 
 ```tsx title="Render the part as your own element"
 <Dialog.Trigger asChild>
