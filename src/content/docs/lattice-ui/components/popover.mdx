@@ -17,10 +17,9 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 />
 
 Popover is the primitive for a non-blocking surface that floats next to whatever opened it: hover
-cards, inline editors, detail panels, small forms. Reach for it when a surface should **anchor** to
-a trigger or a separate anchor, **position itself** with the popper foundation, and **dismiss
-predictably**. Unlike Dialog it is **non-modal by default**, so the rest of the UI stays
-interactive.
+cards, inline editors, detail panels, small forms. It anchors to a trigger or a separate anchor,
+positions itself with the popper foundation, and dismisses predictably. Unlike Dialog it is
+**non-modal by default**, so the rest of the UI stays interactive.
 
 ## Preview
 
@@ -34,8 +33,8 @@ import { Popover } from "@lattice-ui/react-popover";
 
 ## Anatomy
 
-`Root`, `Portal` and `Content` are the minimum useful surface; `Trigger`, `Anchor` and `Close` are
-optional depending on how you drive and position it.
+`Root`, `Portal` and `Content` are the minimum useful surface; `Trigger`, `Anchor` and `Close`
+depend on how you drive and position it.
 
 <PrimitiveAnatomy title="Popover anatomy">
 
@@ -68,7 +67,7 @@ optional depending on how you drive and position it.
 
 An uncontrolled root, a trigger projected onto your own button, and a content surface in a portal.
 The trigger toggles on activation and doubles as the positioning anchor, an outside press dismisses,
-and the content wrapper is an auto-sized `frame` — so your frame inside it just needs a size.
+and the content wrapper is an auto-sized `frame` — so your frame inside needs only a size.
 
 ```tsx title="EmoteInfoPopover.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -101,8 +100,8 @@ export function EmoteInfoPopover() {
 ### Detached anchor
 
 Add a `Popover.Anchor` when the surface should point at something other than the button that opens
-it — here a help button opening a callout on the quest tracker. A mounted anchor always wins over
-the trigger, and with `asChild` it tracks your element directly.
+it. A mounted anchor always wins over the trigger, and with `asChild` it tracks your element
+directly.
 
 ```tsx title="QuestTrackerCallout.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -151,7 +150,7 @@ export function QuestTrackerCallout() {
 ### Controlled by game state
 
 Pass `open` and `onOpenChange` when something outside decides visibility. An outside press or
-`Popover.Close` still calls `onOpenChange(false)`, so your state stays the source of truth. No
+`Popover.Close` still calls `onOpenChange(false)`, so your state stays the source of truth, and no
 trigger is needed — the anchor alone positions the surface.
 
 ```tsx title="InventoryHint.tsx"
@@ -195,10 +194,10 @@ export function InventoryHint(props: { hasNewItem: boolean; onDismiss: () => voi
 
 ### Placement and offsets
 
-Positioning is tuned entirely on `Popover.Content`: `placement` requests a side, `sideOffset` adds a
-gap, `alignOffset` shifts along the cross axis, and `collisionPadding` keeps a minimum distance from
-the screen edge. When the requested side does not fit the content flips, and its entrance animates
-from whichever side resolved.
+Positioning is tuned on `Popover.Content`: `placement` requests a side, `sideOffset` adds a gap,
+`alignOffset` shifts along the cross axis, `collisionPadding` keeps a minimum distance from the
+screen edge. When the requested side does not fit the content flips, and its entrance animates from
+whichever side resolved.
 
 ```tsx title="StatTooltipPopover.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -231,8 +230,8 @@ export function StatTooltipPopover() {
 ### Closing from inside
 
 `Popover.Close` closes the popover from anywhere inside the content, and with `asChild` merges that
-onto your own button. The focus scope restores selection to whatever was selected before opening —
-the trigger focuses itself as it opens, so selection lands back on it with no wiring.
+onto your own button. The focus scope restores selection to whatever was selected before opening,
+and the trigger focuses itself as it opens, so selection lands back on it.
 
 ```tsx title="LoadoutSavePopover.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -277,7 +276,7 @@ export function LoadoutSavePopover(props: { onSave: () => void }) {
 ### Custom exit motion
 
 `Popover.Content` runs no motion of its own. Pass a `transition` to animate it, and `forceMount` to
-keep the node mounted after the exit. The wrapper is a `frame` with or without `asChild`, so
+keep the node mounted after the exit. The wrapper is a `frame` either way, so
 `createPopperEntranceRecipe` matches it.
 
 ```tsx title="SlowRevealPopover.tsx"
@@ -316,58 +315,55 @@ export function SlowRevealPopover() {
 
 Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled. `Trigger`
 toggles on activation, `Close` closes, and outside-press dismissal goes through the same `setOpen`
-path — so controlled and uncontrolled usage behave identically.
+path.
 
 ### Trigger and anchor resolution
 
-The trigger registers itself as the positioning anchor only while no `Popover.Anchor` has claimed
-the slot — a mounted anchor always takes precedence, whichever mounts first. Under `asChild` the
-trigger's `Active`, `Activated` handler, `Selectable={false}` and ref merge onto your child;
-`disabled` blocks toggling and removes it from focus tracking. `Popover.Anchor` renders a zero-size
-transparent frame, or tracks your element's geometry directly under `asChild`.
+The trigger registers as the positioning anchor only while no `Popover.Anchor` has claimed the slot
+— a mounted anchor always takes precedence. Under `asChild` the trigger's `Active`, `Activated`
+handler, `Selectable={false}` and ref merge onto your child, and `disabled` blocks toggling and
+removes it from focus tracking. `Popover.Anchor` renders a zero-size transparent frame, or tracks
+your element's geometry under `asChild`.
 
 ### Positioning
 
-The popper foundation measures the anchor and the content, then resolves a final placement, flipping
-when the requested side would collide with a screen edge. Tune it with `placement`, `sideOffset`,
-`alignOffset` and `collisionPadding`.
+The popper foundation measures the anchor and the content, then resolves a placement, flipping when
+the requested side would collide with a screen edge.
 
-Until the first measurement resolves the surface is parked offscreen and the reveal is held back, so
-the content never flashes at an unpositioned location and the entrance animates from the placement
-that actually resolved.
+Until the first measurement resolves, the surface is parked offscreen and the reveal held back, so
+the entrance animates from the placement that actually resolved.
 
 ### Focus and selection
 
-`Popover.Content` mounts a focus scope tied to the open state. Non-modal by default, that scope is
-**not trapped**, so selection moves freely between the popover and the rest of the screen. The
-trigger focuses itself just before opening and the scope restores focus on close. Setting `modal` on
-the `Root` traps the scope instead.
+`Popover.Content` mounts a focus scope tied to the open state. Non-modal by default it is **not
+trapped**, so selection moves freely between the popover and the rest of the screen. The trigger
+focuses itself just before opening and the scope restores focus on close; `modal` on the `Root`
+traps the scope instead.
 
 ### Dismissal
 
-An outside press dismisses the content, and with `modal` set, interaction behind the surface is
-blocked too. Use `onPointerDownOutside` and `onInteractOutside` to observe or veto first.
+An outside press dismisses the content, and `modal` also blocks interaction behind the surface.
+`onPointerDownOutside` and `onInteractOutside` observe or veto first.
 
 ### Motion and presence
 
-`createPopperEntranceRecipe(placement)` slides the surface 10 pixels in from the resolved placement
-side while fading `BackgroundTransparency`, on the default wrapper and under `asChild` alike. It
-takes its own distance and duration, and exits at 0.8x the reveal.
+`createPopperEntranceRecipe(placement)` slides the surface 10 pixels in from the resolved side while
+fading `BackgroundTransparency`, with or without `asChild`. It takes its own distance and duration,
+and exits at 0.8x the reveal.
 
-Without `forceMount` the content mounts on open and unmounts after the exit completes. With it, the
-node stays mounted while closed with `Visible` driven by the motion controller — useful when you
-drive motion yourself or need the instance to persist.
+Without `forceMount` the content mounts on open and unmounts after the exit. With it, the node stays
+mounted while closed with `Visible` driven by the motion controller.
 
 <Callout title="Modal is opt-in">
-Popover defaults to `modal={false}`, floating over the UI without blocking it or trapping selection. Set `modal` on `Popover.Root` only when it should behave like a focused, blocking surface, much like Dialog.
+Popover defaults to `modal={false}`, floating over the UI without blocking it or trapping selection. Set `modal` only when it should behave like Dialog.
 </Callout>
 
 <Callout title="The anchor wins over the trigger">
-With both mounted, the content always positions against the anchor. There is no prop to flip it — remove the anchor if the trigger should be the reference.
+With both mounted, the content positions against the anchor. There is no prop to flip it — remove the anchor if the trigger should be the reference.
 </Callout>
 
 <Callout title="A fade reaches the surface, not its children">
-`BackgroundTransparency` fades one instance's own background, so the surface fades while the labels and icons inside it stay opaque. Fade those with them (`TextTransparency`, `ImageTransparency`), or pass `asChild` with your own `canvasgroup` and `createCanvasGroupPopperEntranceRecipe`, which fades the whole subtree as one composited layer.
+`BackgroundTransparency` fades one instance's own background, so the surface fades while the labels and icons inside stay opaque. Fade those alongside it, or pass `asChild` with your own `canvasgroup` and `createCanvasGroupPopperEntranceRecipe`, which fades the whole subtree as one composited layer.
 </Callout>
 
 ## API reference
