@@ -9,17 +9,18 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 import { LATTICE_VERSION } from "@/lib/lattice-version";
 
-Lattice UI is pre-1.0, so `0.x` minors may break. This page carries the code changes each breaking release needs; [Releases](/lattice-ui/reference/releases/) carries the summaries and the reasoning.
+Lattice UI is pre-1.0, so `0.x` minors may break. This page carries the code changes each breaking
+release needs. [Releases](/lattice-ui/reference/releases/) carries the summaries and the reasoning.
 
 ## 0.8.0 → 0.8.1
 
-No work — a patch with no API change: `asChild` recognises UI modifier siblings under browser React
+No work. A patch with no API change: `asChild` recognises UI modifier siblings under browser React
 as well as in Roblox, `UIShadow` joins the modifier set, and re-parented modifiers no longer collide
 keys with the element's own children.
 
-If you ship to Roblox, 0.8.0 already worked. Under browser React — which leaves a host tag as
-written where `@rbxts/react` rewrites it to a class name — `asChild` failed on every styled subtree
-until this release.
+If you ship to Roblox, 0.8.0 already worked. Under browser React, `asChild` failed on every styled
+subtree until this release. That renderer leaves a host tag as written, where `@rbxts/react`
+rewrites it to a class name.
 
 ## 0.7.x → 0.8.0
 
@@ -64,9 +65,9 @@ of this release:
 
 ### 4. `asChild` starts working on Vela-styled subtrees
 
-Not work, a fix to stop working around: `Slot` matched UI modifiers by JSX tag, so every modifier a
-Tailwind-style transform emits counted as a second target candidate and any subtree with a
-`UICorner` sibling failed. Delete whatever you did to avoid it. Under a browser React renderer, see
+Not work, a fix to stop working around. `Slot` matched UI modifiers by JSX tag, so every modifier a
+Tailwind-style transform emits counted as a second target candidate. Any subtree with a `UICorner`
+sibling failed. Delete whatever you did to avoid it. Under a browser React renderer, see
 [0.8.0 → 0.8.1](#080--081).
 
 ### Upgrade checklist
@@ -78,9 +79,9 @@ Tailwind-style transform emits counted as a second target candidate and any subt
 
 ## 0.6.x → 0.7.0
 
-The largest breaking release so far. Every primitive is stripped down to behaviour — colours, fixed
-sizes, font sizes, literal text and decorative children are gone — and any prop the underlying
-instance accepts forwards straight through, so styling no longer requires `asChild`.
+The largest breaking release so far. Every primitive is stripped down to behaviour: colours, fixed
+sizes, font sizes, literal text and decorative children are gone. Any prop the underlying instance
+accepts forwards straight through, so styling no longer requires `asChild`.
 
 <Callout title="Expect a visual diff, not a broken build">
 Most of this release does not fail to compile — it renders differently. A dialog that looked finished on 0.6 comes up as an invisible overlay and an unstyled panel, so budget a pass over every surface.
@@ -88,11 +89,13 @@ Most of this release does not fail to compile — it renders differently. A dial
 
 ### 1. Every primitive renders unstyled
 
-Primitives set behaviour plus the minimum needed to neutralize Roblox's instance defaults — a bare
+Primitives set behaviour plus the minimum needed to neutralize Roblox's instance defaults. A bare
 `textbutton` renders an opaque grey box labelled "Button", so parts still set
 `BackgroundTransparency = 1` and `Text = ""`. Everything past that is yours.
 
-Geometry the primitive *computes from state* stays with the primitive: progress fill ratios, slider thumb travel, popper-driven position, scroll thumb size, and the full-screen sizing that makes an overlay cover the screen.
+Geometry the primitive *computes from state* stays with the primitive. Progress fill ratios, slider
+thumb travel, popper-driven position, scroll thumb size, and the full-screen sizing that makes an
+overlay cover the screen.
 
 Since props now forward, the fix is usually to move styling onto the part itself rather than reach for `asChild`:
 
@@ -112,13 +115,13 @@ Since props now forward, the fix is usually to move styling onto the part itself
 ### 2. Forwarded props are type-checked
 
 Each part checks forwarded props against the instance it renders, so a prop that instance does not
-accept is a compile error rather than silently dropped. `Dialog.Overlay` is a `textbutton`; the
+accept is a compile error rather than silently dropped. `Dialog.Overlay` is a `textbutton`. The
 content and surface parts are all `frame`s, so passing `TextColor3` to one will not compile.
 
 ### 3. Motion no longer has defaults
 
-No **presence** motion runs unless you ask for it. Timing is unchanged — content stays mounted until
-an exit transition finishes — but with no `transition` it is instant. Motion that follows a value
+No **presence** motion runs unless you ask for it. Timing is unchanged, and content stays mounted
+until an exit transition finishes. With no `transition`, it is instant. Motion that follows a value
 the primitive computes is unaffected: `Progress.Indicator` still settles its fill, and the slider
 and switch thumbs still follow their values.
 
@@ -146,7 +149,9 @@ The recipes that used to be applied for you are all still exported from `@lattic
 
 Those hosts render a `frame`, so the fade reaches the surface's background and not the labels inside it. Fade those with it, or pass `asChild` with your own `canvasgroup` and the canvas-group variant.
 
-The popper recipes took the **resolved** placement, so motion originated from the side the surface landed on after any flip. Read it from `usePopper` to get that back; passing no placement animates from a fixed side.
+The popper recipes took the **resolved** placement, so motion originated from the side the surface
+landed on after any flip. Read it from `usePopper` to get that back. Passing no placement animates
+from a fixed side.
 
 `Dialog.Content` is the one part whose old default needs a change — see [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog) for the two patterns.
 
@@ -239,8 +244,8 @@ const toast = useToast();
 
 Not everything here is work. Three fixes remove workarounds you may currently be carrying:
 
-- **16 leaf parts now render `children`.** Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay` previously dropped children unless `asChild` was set, so attaching a `UICorner` or `UIPadding` silently did nothing. Delete any `asChild` you added only to work around that.
-- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child — the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits — is re-parented under the element the props land on, instead of raising "asChild requires a child element". Fragments are looked through; two real candidates are still an error. Note that the 0.7.0 implementation matched modifiers by their JSX tag and therefore never fired in Roblox — that works from 0.8.0, and from 0.8.1 under a browser React renderer too. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
+- **16 leaf parts now render `children`.** Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay`. They previously dropped children unless `asChild` was set, so attaching a `UICorner` or `UIPadding` silently did nothing. Delete any `asChild` you added only to work around that.
+- **`asChild` accepts UI modifiers as siblings.** A `UICorner`, `UIPadding` or `UIListLayout` written next to the child is re-parented under the element the props land on, instead of raising "asChild requires a child element". That is the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits. Fragments are looked through, and two real candidates are still an error. Note that the 0.7.0 implementation matched modifiers by their JSX tag and therefore never fired in Roblox. It works from 0.8.0, and from 0.8.1 under a browser React renderer too. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 - **Highlight state is readable.** `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext` return `{ highlighted, disabled }`. `highlighted` reports hover *or* managed focus, which is what you need to render the highlight the primitive used to draw.
 
 ### 7. Focus additions

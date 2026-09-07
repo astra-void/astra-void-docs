@@ -33,7 +33,7 @@ The config key exists for saying it out loud rather than having it read — see
 
 ## The static path is the same output
 
-A statically lowered element is *identical* source under both targets: Vide's JSX intrinsics are the
+A statically lowered element is *identical* source under both targets. Vide's JSX intrinsics are the
 same lowercase Roblox class names React's are, and its props are Roblox instance properties
 directly:
 
@@ -43,10 +43,10 @@ directly:
 </frame>
 ```
 
-The whole token → utility pipeline is shared: the same parser, theme, diagnostics, helper children
-and [rem](/vela-rbxts/guides/theming/#rem) scaling. What differs is the module specifier at the top
-of the file — `@rbxts/vela-runtime-vide` rather than `@rbxts/vela-runtime` — and what happens on the
-runtime path.
+The whole token-to-utility pipeline is shared: the same parser, theme, diagnostics, helper children
+and [rem](/vela-rbxts/guides/theming/#rem) scaling. Two things differ. The module specifier at the
+top of the file is `@rbxts/vela-runtime-vide` rather than `@rbxts/vela-runtime`, and the runtime
+path behaves differently.
 
 ## A dynamic class value has to be a thunk
 
@@ -63,17 +63,17 @@ const active = source(false);
 <textbutton className={active() ? "bg-blue-600" : "bg-slate-700"} />
 ```
 
-`className` is typed to allow both (`ClassValue | (() => ClassValue)`), so the second line is not an
-error — it is a class list that was correct once, and nothing warns about it.
+`className` is typed to allow both, as `ClassValue | (() => ClassValue)`, so the second line is not
+an error. It is a class list that was correct once, and nothing warns about it.
 
-The editor reads inside the thunk: completions, hover, swatches, diagnostics and the class sort all
+The editor reads inside the thunk. Completions, hover, swatches, diagnostics and the class sort all
 work on a deferred class value the way they do on a literal one.
 
 <Callout title="A branch still resolves at compile time either way">
-A thunk is about *tracking*, not lowering. `() => (active() ? "bg-blue-600" : "bg-slate-700")` names both tokens in the source, so both are resolved by the compiler and the element is handed the resolved props alongside the test, exactly as the React form is. Only the test itself is thunked.
+A thunk is about *tracking*, not lowering. `() => (active() ? "bg-blue-600" : "bg-slate-700")` names both tokens in the source. Both are resolved by the compiler, and the element is handed the resolved props alongside the test, exactly as the React form is. Only the test itself is thunked.
 </Callout>
 
-Both targets resolve the branch into the same two `__velaRules`; what differs is the one line inside
+Both targets resolve the branch into the same two `__velaRules`. What differs is the one line inside
 `__velaTests`, and the runtime the host is imported from.
 
 <VelaEmit
@@ -85,7 +85,7 @@ Both targets resolve the branch into the same two `__velaRules`; what differs is
 ## What the runtime host does differently
 
 Nothing you have to think about, on a host element. The Vide host binds an effect that writes
-whatever the current resolution names; a property that disappears goes back to what the element
+whatever the current resolution names. A property that disappears goes back to what the element
 declared, or to the class default. Interaction variants, `transition-*` and `animate-*`, the text
 transforms, `divide-*` and the `opacity-*` model all behave as the React host's do, on the same
 target-neutral core.
@@ -94,7 +94,7 @@ The reactive seams underneath are different, and two of their consequences reach
 
 ### A component element's props are fixed at the call
 
-Vide hands a component its props once rather than writing to an instance it owns, so which props the
+Vide hands a component its props once, rather than writing to an instance it owns. Which props the
 host can pass down is decided when the component is called:
 
 ```tsx title="A prop that only a later reading names cannot appear"
@@ -128,7 +128,7 @@ rendering the element unspaced.
 The inference is a walk, and it is worth knowing how far it reaches before overriding it. From each
 source file's directory upward to the nearest `tsconfig.json`, following a **relative** `extends` up
 to eight levels, reading `compilerOptions.jsxFactory`. A factory beginning with `Vide.` selects
-Vide; anything else, or none found, leaves the default of React.
+Vide. Anything else, or none found, leaves the default of React.
 
 Naming the key in `vela.config.ts` always wins, and it wins by being **present** rather than by its
 value:
@@ -139,20 +139,20 @@ import { defineConfig } from "vela-rbxts";
 export default defineConfig({ framework: "vide" });
 ```
 
-So `framework: "react"` pins React even under a Vide `jsxFactory`, and `framework: "vide"` pins Vide
-where the walk would not have found the factory — a tsconfig reached through a non-relative `extends`,
-or one nested deeper than the walk goes. Both are escape hatches; a project whose tsconfig says `Vide.`
-in the ordinary way has no reason to write either.
+So `framework: "react"` pins React even under a Vide `jsxFactory`. And `framework: "vide"` pins Vide
+where the walk would not have found the factory: a tsconfig reached through a non-relative
+`extends`, or one nested deeper than the walk goes. Both are escape hatches. A project whose
+tsconfig says `Vide.` in the ordinary way has no reason to write either.
 
 <Callout title="One target per project, not per file">
 `jsxFactory` is a program-wide TypeScript setting, so a project pointing it at Vide cannot compile React
-JSX at all. The choice is per project by construction. It is also why an unset `framework` is read as *the default* rather than as a positive request for React: a project that never mentioned Vela's config but compiles Vide JSX is asking for Vide.
+JSX at all. The choice is per project by construction. It is also why an unset `framework` is read as *the default* rather than as a positive request for React. A project that never mentioned Vela's config but compiles Vide JSX is asking for Vide.
 </Callout>
 
 ## Writing the declaration file
 
-Unchanged. The same side-effect import augments both namespaces — `React.Attributes` and
-`Vide.Attributes` — so one file covers whichever you compile for:
+Unchanged. The same side-effect import augments both namespaces, `React.Attributes` and
+`Vide.Attributes`, so one file covers whichever you compile for:
 
 ```ts title="src/vela-env.d.ts"
 import "vela-rbxts";
