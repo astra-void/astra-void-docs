@@ -16,8 +16,8 @@ npx facet-rbxts doctor
 ```
 
 It checks the config, the import aliases, the transformer, the theme, which components are
-installed, whether their tokens resolve, and whether the packages underneath meet the floors those
-files need. Most of what follows is something `doctor` would have told you.
+installed, whether their tokens resolve, and whether the packages underneath meet their floors. Most
+of what follows is something `doctor` would have told you.
 
 ## Nothing is styled at all
 
@@ -33,9 +33,7 @@ Everything renders as grey Roblox defaults. No error, no warning, and the build 
 }
 ```
 
-`facet init` and `facet doctor` both check for this textually and neither edits the file — roblox-ts
-tsconfigs are routinely JSONC, and a pattern-matched edit that mangles one is worse than a printed
-snippet.
+`facet init` and `facet doctor` both check for this textually and neither edits the file.
 
 ## A component renders zero pixels wide
 
@@ -47,15 +45,15 @@ h-9 px-4        → 0 × 36. Invisible.
 h-9 w-fit px-4  → correct.
 ```
 
-For a container, check the whole chain rather than the outermost level: one that hugs its content
-can only measure children that already know their own size, so a single label with an unresolved
-axis collapses everything above it.
+For a container, check the whole chain: one that hugs its content can only measure children that
+already know their own size, so a single label with an unresolved axis collapses everything above
+it.
 
 ## A class compiles but does nothing
 
 **Suspect the code path before the class.** Every Facet class string comes out of `fv()`, so it is a
-computed expression that Vela resolves at runtime rather than at compile time. That runtime path was
-a strict subset of the static lowering for a long time:
+computed expression Vela resolves at runtime rather than at compile time — and that path was a
+strict subset of the static lowering for a long time:
 
 | Below Vela | These silently do nothing |
 | --- | --- |
@@ -68,8 +66,8 @@ Check what the emitted runtime actually resolves:
 grep -o 'startsWith(token, "[a-z0-9-]*")' out/shared/ui/button.luau | sort -u
 ```
 
-Whatever is missing there is missing at runtime, whatever the static path says. The CLI's
-`vela-rbxts@^0.9.0` floor clears the whole list, and `facet doctor` verifies you are on it.
+Whatever is missing there is missing at runtime. The CLI's `vela-rbxts@^0.9.0` floor clears the
+whole list, and `facet doctor` verifies you are on it.
 
 ## `Out of local registers`
 
@@ -78,23 +76,21 @@ Out of local registers when trying to allocate CardHeader
 ```
 
 Pointing at generated code nobody wrote. **You are on Vela 0.8.x**, which inlined the runtime into
-every transformed file and spent roughly 96 of Luau's 200 local registers before the file's own
-first line. `card` does not fit in what is left.
+every transformed file, spending roughly 96 of Luau's 200 local registers before the file's own
+first line.
 
 Upgrade to `vela-rbxts@^0.9.0`, which scopes the runtime into one initializer; emitted files drop
 from ~106 module-scope locals to ~24.
 
-On a component you wrote, the same limit applies: each exported name costs a register, which is why
-`card` exports one `cardVariants` object rather than six recipes.
+The same limit applies to a component you wrote: each exported name costs a register, which is why
+`card` exports one `cardVariants` object.
 
 ## One label is in a different font
 
 Larger, and visibly not the typeface everything else uses. **That text recipe has no `font-*`
-token.** Vela leaves `FontFace` untouched when none appears, and Roblox's untouched default is
-LegacyArial.
+token**, and Roblox's untouched default is LegacyArial.
 
-Add a weight — `font-normal` counts. This is not optional styling; it is the only thing that says
-which font. `card`'s description shipped this way until someone opened Studio.
+Add a weight — `font-normal` counts. It is the only thing that says which font.
 
 ## A button's label is 8px and near-black
 
@@ -105,9 +101,8 @@ applied and the child draws its own text at Roblox's default. Style the child yo
 `buttonLabelVariants` is exported for it.
 
 **Or a wrapper re-applied `className` internally.** Vela lowers `className` at the *call site*, so
-the resolved `TextColor3` / `TextSize` / `FontFace` arrive as ordinary props — and a component that
-accepts a `className` and re-applies it inside drops them. That is why `TextSlot` takes no
-`className`.
+the resolved `TextColor3` / `TextSize` / `FontFace` arrive as ordinary props, and a component that
+accepts a `className` and re-applies it inside drops them.
 
 ## The dialog throws the first time it opens
 
@@ -116,8 +111,8 @@ accepts a `className` and re-applies it inside drops them. That is why `TextSlot
 ```
 
 **There is no `PortalProvider` above your app.** `Dialog.Portal` reads the `PlayerGui` it renders
-into from a strict context, so everything before this succeeds — it compiles, type-checks and ships
-— and the failure lands on a player pressing the button.
+into from a strict context, so everything before this succeeds and the failure lands on a player
+pressing the button.
 
 The `.Provider` in the message is Lattice's generic strict-context wording; the component to reach
 for is `PortalProvider` itself.
@@ -132,25 +127,21 @@ root.render(
 );
 ```
 
-One wrapper for the whole app, not one per dialog. `facet add dialog` offers to write it —
-[what it does and when it refuses](/facet/reference/cli/#wiring-a-provider) — and `facet doctor`
-reports it missing.
+One wrapper for the whole app, not one per dialog. `facet add dialog`
+[offers to write it](/facet/reference/cli/#wiring-a-provider), and `facet doctor` reports it
+missing.
 
 ## `border-b` boxes my element instead of underlining it
 
 **Roblox cannot draw a one-sided border.** `border-*` lowers to a `UIStroke`, which outlines the
 whole instance, so every side-specific key is
-[dropped silently](/vela-rbxts/guides/colors-and-surfaces/#borders). What is left is
-`border-border`, colouring a stroke that draws on all four sides.
+[dropped silently](/vela-rbxts/guides/colors-and-surfaces/#borders).
 
 Reach for `divide-x` / `divide-y` on the parent instead: Vela lowers those to real one-pixel frames
-interleaved between its children, so a stack gets a rule between each pair and none after the last.
-Where you need a single rule in a specific place, put a
-[`Separator`](/facet/components/separator/) in the flow by hand.
+interleaved between its children, a rule between each pair and none after the last. For a single
+rule in a specific place, put a [`Separator`](/facet/components/separator/) in the flow by hand.
 
-The registry's `accordion` is the worked example — it carries `divide-y divide-border` on its root
-for exactly this reason. See
-[Accordion](/facet/components/accordion/#the-rule-between-items-lives-on-the-root).
+The registry's `accordion` carries `divide-y divide-border` on its root for exactly this reason.
 
 ## A component ignores the size I gave it
 
@@ -222,13 +213,12 @@ gone.
 
 ## `facet remove` refuses
 
-**"differs from the registry"** — the file is not what the registry would write there today. That
-means you edited it, *or* upstream moved; Facet records nothing at copy time and cannot tell them
-apart. `--force` deletes it anyway.
+**"differs from the registry"** — the file is not what the registry would write there today. You
+edited it, *or* upstream moved; Facet records nothing at copy time and cannot tell them apart.
+`--force` deletes it anyway.
 
-**"is still imported by …"** — another installed component depends on it. `--force` does not cover
-this one, because deleting `utils` out from under `button` leaves a project that does not compile.
-Remove the dependents first.
+**"is still imported by …"** — another installed component depends on it, and `--force` does not
+cover this one. Remove the dependents first.
 
 ## Registry errors
 
@@ -250,27 +240,20 @@ project root. Run it inside your roblox-ts project, or pass `--cwd`.
 tokens  4 token(s) installed components name are not defined: card, card-foreground, …
 ```
 
-Your `vela.config.ts` does not spread `facetTheme`. `doctor` reads the config as text when it does
-not — naming a token as a colour key counts — because a Vela config is arbitrary TypeScript and the
-alternative to reading it is evaluating it.
+Your `vela.config.ts` does not spread `facetTheme`. `doctor` reads the config as text — naming a
+token as a colour key counts — because a Vela config is arbitrary TypeScript.
 
-The fix is in [Theming](/facet/guides/theming/). If a token is reported as not being in
-`@facet-ui/theme` either, that is a Facet bug rather than a project one — upgrade the theme package
-or report it.
+The fix is in [Theming](/facet/guides/theming/). A token reported as missing from `@facet-ui/theme`
+too is a Facet bug — upgrade the theme package or report it.
 
 ## Imports do not resolve after copying
 
 If `facet.json` sets an `import` specifier on an alias, your tsconfig needs a matching `paths`
-entry; `doctor` fails on this rather than warning, because every copied component imports through
-it. Either add the entry, or clear `"import"` in `facet.json` and let the CLI write relative imports
-— which need no `paths` and work anywhere.
+entry, and `doctor` fails rather than warns because every copied component imports through it.
+Either add the entry, or clear `"import"` and let the CLI write relative imports.
 
-Changing that setting does not rewrite files already copied. `facet add <name> --overwrite` rewrites
-them with the new resolution.
+Changing that setting does not rewrite files already copied — `facet add <name> --overwrite` does.
 
 <Callout title="Studio is still the only place some of this shows up">
-Compiling is a static result. A component can compile clean, emit exactly the properties you expect,
-and still look wrong — that is how `card`'s description shipped in Arial and how the first `button`
-shipped zero pixels wide. If a component is behaving strangely and nothing above explains it, open
-Studio and look at the instance tree.
+A component can compile clean, emit exactly the properties you expect, and still look wrong — that is how `card`'s description shipped in Arial and the first `button` zero pixels wide. If nothing above explains what you are seeing, open Studio and look at the instance tree.
 </Callout>

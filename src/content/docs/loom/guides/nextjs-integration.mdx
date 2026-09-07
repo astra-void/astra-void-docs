@@ -9,7 +9,11 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Next.js owns its bundler and its dev server, so neither of loom's other entry points fits: the [Vite plugin](/loom/guides/vite-integration/) would hijack the app's own React, and [`loom-dev/embed`](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline) hands you a Connect middleware `next dev` has no hook to mount. `loom-dev/next` closes the gap — the gallery keeps a Vite instance of its own and Next only forwards HTTP to it.
+Next.js owns its bundler and its dev server, so neither of loom's other entry points fits: the
+[Vite plugin](/loom/guides/vite-integration/) would hijack the app's own React, and
+[`loom-dev/embed`](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline) hands you a
+Connect middleware `next dev` has no hook to mount. With `loom-dev/next` the gallery keeps a Vite
+instance of its own and Next only forwards HTTP to it.
 
 Verified end to end against Next 15.5 (pages router, webpack, React 18) and Next 16.2 (App Router, Turbopack, React 19, Fumadocs 16).
 
@@ -32,9 +36,8 @@ In dev, two servers run — but you only ever start one:
     └────────────── HMR WebSocket (direct, bypasses Next) ◄──┘
 ```
 
-Your app's React never meets the gallery's. The loom aliases live entirely inside the gallery's Vite
-instance and Next's bundler config is untouched, which is why webpack and Turbopack behave
-identically: the integration sits at Next's routing layer, not its bundler.
+Your app's React never meets the gallery's: the loom aliases live inside the gallery's Vite instance
+and Next's bundler config is untouched, which is why webpack and Turbopack behave identically.
 
 ## 1. Dependencies
 
@@ -42,7 +45,7 @@ identically: the integration sits at Next's routing layer, not its bundler.
 npm i -D loom-dev
 ```
 
-Nothing else to install: your app keeps whatever React and Next versions it has, and no
+Nothing else to install — your app keeps whatever React and Next versions it has, and no
 `@loom-dev/*` packages enter its dependency tree.
 
 <Callout title="If you prune devDependencies in production">
@@ -73,29 +76,25 @@ The wrapper returns Next's function form, which object-shaped wrappers cannot wr
 
 ### `next dev`
 
-The first time Next resolves its rewrites, the wrapper boots the gallery behind a loopback HTTP server on a free port. Booting *inside* `rewrites()` is deliberate: Next evaluates `next.config` in several processes, but only the serving one resolves rewrites, so exactly one Vite instance starts.
+The first time Next resolves its rewrites, the wrapper boots the gallery behind a loopback HTTP
+server on a free port. Booting *inside* `rewrites()` is what keeps it to one Vite instance: Next
+evaluates `next.config` in several processes, but only the serving one resolves rewrites.
 
 From there:
 
-- **Target discovery, per-scene HMR, and the error panel** all work exactly as under
-  `loom preview`. The HMR WebSocket connects straight to Vite's own port and never passes through
-  Next.
-- **The proxy rules are `beforeFiles` rewrites**, which Next consults ahead of `public/` — so a
-  stale static gallery committed to `public/loom-preview` can never shadow the live one during
-  development.
-- **A gallery that fails to boot does not take `next dev` down.** The error is logged (`loom: gallery dev server failed to start`), your own rewrites are kept, and the proxy rules are skipped, so `/loom-preview` 404s. The boot is retried the next time Next asks for the rewrites — a config reload — rather than the failure being cached forever.
+- **Target discovery, per-scene HMR and the error panel** work exactly as under `loom preview`. The HMR WebSocket connects straight to Vite's own port.
+- **The proxy rules are `beforeFiles` rewrites**, which Next consults ahead of `public/`, so a stale static gallery in `public/loom-preview` cannot shadow the live one.
+- **A gallery that fails to boot does not take `next dev` down.** The error is logged, your own rewrites are kept, and `/loom-preview` 404s. The boot is retried on the next config reload.
 
 ### `next build`
 
 The wrapper emits the static gallery into `public/loom-preview` — the identical bundle
 [`loom build`](/loom/guides/static-builds-and-embedding/) produces — then lets the app build
-proceed. An environment marker keeps the worker processes Next spawns from rebuilding it, so it is
-emitted exactly once. Two edge cases are handled asymmetrically, on purpose:
+proceed. An environment marker keeps the workers Next spawns from rebuilding it. Two edge cases are
+handled asymmetrically:
 
-- **Zero targets** warns and skips — adding the wrapper before writing your first `*.loom.tsx`
-  must not brick `next build`.
-- **A real gallery build error fails the app build**, the same contract an Astro integration's
-  build hook has. A broken `/loom-preview` should not ship silently.
+- **Zero targets** warns and skips, so adding the wrapper before writing your first `*.loom.tsx` cannot brick `next build`.
+- **A real gallery build error fails the app build**, so a broken `/loom-preview` does not ship silently.
 
 Add the output to `.gitignore` — it is a build artifact:
 
@@ -103,8 +102,8 @@ Add the output to `.gitignore` — it is a build artifact:
 public/loom-preview/
 ```
 
-For a CI that runs `loom build` itself (or a repo that commits the static gallery), pass
-`staticBuild: false` and the build phase touches nothing.
+For a CI that runs `loom build` itself, pass `staticBuild: false` and the build phase touches
+nothing.
 
 ### `next start`
 
