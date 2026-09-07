@@ -10,9 +10,9 @@ draft: false
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-A Vela theme has six axes: `colors`, `radius`, `spacing`, `fontFamily`, `screens` and `rem`. There
-is nothing else in `theme` — no `content`, `darkMode`, `prefix`, `safelist` or `variants`; those
-Tailwind keys do not exist here and are ignored. Two do exist, beside `theme` rather than inside it:
+A Vela theme has six axes: `colors`, `radius`, `spacing`, `fontFamily`, `screens` and `rem`. Nothing
+else exists in `theme`. Tailwind's `content`, `darkMode`, `prefix`, `safelist` and `variants` are
+not keys here and are ignored. Two keys do exist beside `theme` rather than inside it:
 [`plugins`](/vela-rbxts/reference/config/#plugins) and
 [`presets`](/vela-rbxts/reference/config/#presets).
 
@@ -43,18 +43,15 @@ export default defineConfig({
 />
 
 That preview is compiled against that config plus a
-[pinned `rem`](#pinning-offsets-back-to-literal-pixels), so a frame renders one pixel per pixel.
-Because it extends rather than replaces, the built-in `text-slate-100` still resolves beside the new
-keys, and the **Lowered** tab shows each spliced in as the expression the config declared.
+[pinned `rem`](#pinning-offsets-back-to-literal-pixels), so a frame renders one pixel per pixel. It
+extends rather than replaces, so the built-in `text-slate-100` still resolves beside the new keys.
+The **Lowered** tab shows each spliced in as the expression the config declared.
 
 ## Values are source code, not values
 
-**Every theme value is an expression string written in the roblox-ts dialect** — not a colour
-object, not a hex string, not a number. Vela parses the string and splices the expression into the
-TSX it emits. So colours are `"Color3.fromRGB(59, 130, 246)"` and radius and spacing values are
-`"new UDim(0, 6)"` — roblox-ts syntax, not Luau's `UDim.new(0, 6)`. `"#3b82f6"` and `6` both fail,
-differently: a number is rejected at load, while a string is never rejected — Vela splices in **the
-first expression that parses**, discards the rest, and emits no diagnostic.
+**Every theme value is an expression string written in the roblox-ts dialect.** Not a colour object, not a hex string, not a number. Vela parses the string and splices the expression into the TSX it emits. Colours are `"Color3.fromRGB(59, 130, 246)"`, and radius and spacing values are `"new UDim(0, 6)"`. That is roblox-ts syntax, not Luau's `UDim.new(0, 6)`.
+
+`"#3b82f6"` and `6` both fail, differently. A number is rejected at load. A string is never rejected: Vela splices in **the first expression that parses**, discards the rest, and emits no diagnostic.
 
 <Callout title="A bad theme string fails in one of three ways, none of them loud">
 Which one you get depends on how the text parses:
@@ -67,7 +64,7 @@ Which one you get depends on how the text parses:
 | `"Color3.fromRGB(1, 2, 3) // blue"` | `Color3.fromRGB(1, 2, 3)` | The call parses; the trailing text is dropped without a word |
 | `"foo bar"` | `foo` | First expression wins, `bar` is discarded |
 
-A hex colour is a type error or a mystery identifier depending on whether the character after `#` is a digit or a letter, and trailing junk disappears silently.
+A hex colour is a type error or a mystery identifier, depending on whether the character after `#` is a digit or a letter. Trailing junk disappears silently.
 </Callout>
 
 ```ts title="vela.config.ts"
@@ -87,7 +84,7 @@ export default defineConfig({
 ```
 
 <Callout title="The runtime path understands only two exact shapes">
-Everything above is the **static** path. A class resolved at runtime carries your theme as string *data*, re-parsed in Luau by two parsers accepting exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with numeric arguments. Anything else compiles fine and then **silently degrades at runtime**, so keep every theme value in those two literal forms.
+Everything above is the **static** path. A class resolved at runtime carries your theme as string *data*. Two Luau parsers re-read it, accepting exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with numeric arguments. Anything else compiles fine and then **silently degrades at runtime**, so keep every theme value in those two literal forms.
 </Callout>
 
 ### Only what you changed travels
@@ -99,21 +96,19 @@ itself, and a transformed module sends only the entries that differ:
 theme = { colors = {}, radius = {}, spacing = {}, fontFamily = {}, rem = { … } }
 ```
 
-An untouched family sends nothing; overriding one shade sends that whole colour family, so the
+An untouched family sends nothing. Overriding one shade sends that whole colour family, so the
 shades around it survive the merge. A top-level `theme.colors` **replaces** the scale, so it travels
 whole and names itself in `theme.replaced`, telling the runtime not to merge its defaults back
 underneath. None of this changes what a class resolves to.
 
 ## Extend merges, top-level replaces
 
-`theme.extend.X` merges over the built-in defaults: your keys win on collision, everything else
-survives. `theme.X` at the top level **replaces the entire scale** — write `theme.colors` and all 28
-built-in families are gone. For colours the merge is deeper than a key swap: `extend` merges family
-by family, and shade by shade when both sides are palettes, so extending `blue` with only a `400`
-keeps the other ten shades. A literal replaces a palette wholesale and vice versa.
+`theme.extend.X` merges over the built-in defaults. Your keys win on collision, everything else survives. `theme.X` at the top level **replaces the entire scale**, so writing `theme.colors` drops all 28 built-in families.
+
+For colours the merge is deeper than a key swap. `extend` merges family by family, and shade by shade when both sides are palettes, so extending `blue` with only a `400` keeps the other ten shades. A literal replaces a palette wholesale, and vice versa.
 
 <Callout title="theme.colors silently discards theme.extend.colors">
-When a top-level `theme.colors` is present, `theme.extend.colors` is **thrown away without a warning**, and the same trap applies to every other axis. **Use `theme.extend.colors` alone to add colours.** Set both and every built-in palette disappears *and* the colours you thought you were adding never resolve, so `bg-brand-500` fails with `unknown-theme-key`.
+When a top-level `theme.colors` is present, `theme.extend.colors` is **thrown away without a warning**. The same trap applies to every other axis. **Use `theme.extend.colors` alone to add colours.** Set both and every built-in palette disappears, *and* the colours you thought you were adding never resolve, so `bg-brand-500` fails with `unknown-theme-key`.
 </Callout>
 
 ```ts title="vela.config.ts"
@@ -128,7 +123,8 @@ export default defineConfig({
 });
 ```
 
-Reach for a top-level family only when you genuinely want to start from an empty scale — a locked-down design system where referencing `bg-slate-700` should be an error.
+Reach for a top-level family only when you want to start from an empty scale. A locked-down design
+system, where referencing `bg-slate-700` should be an error.
 
 ## Rem
 
@@ -150,13 +146,13 @@ export default defineConfig({
 ```
 
 The curve follows
-[Littensy's rem provider](https://github.com/littensy/slither/blob/main/src/client/providers/rem-provider.tsx):
-it measures the viewport diagonal against `baseResolution`, caps the width at 19:9 so an ultrawide
-does not inflate the scale, falls off more gently in portrait, then rounds and clamps into
-`[min, max]`.
+[Littensy's rem provider](https://github.com/littensy/slither/blob/main/src/client/providers/rem-provider.tsx).
+It measures the viewport diagonal against `baseResolution` and caps the width at 19:9, so an
+ultrawide does not inflate the scale. It falls off more gently in portrait, then rounds and clamps
+into `[min, max]`.
 
-`rem` is the one axis where extend and replace are the same thing — a record of settings rather than
-a scale of keys, so both merge field by field.
+`rem` is the one axis where extend and replace are the same thing. It is a record of settings rather
+than a scale of keys, so both merge field by field.
 
 ### What rem does not touch
 
@@ -187,16 +183,16 @@ scaler, exactly as before rem existed:
 Pinning somewhere *other* than `base` is still a scale, so it keeps the binding. An inverted clamp
 collapses onto `min` during config resolution rather than erroring in-game.
 
-**A `SurfaceGui` is pinned already**, taking its pixel space from the part it is drawn on; a
-`BillboardGui` sizes itself the same way. `rem.pinnedUnder` names those containers —
-`["surfacegui", "billboardgui"]` by default — and what is written under one lowers to literal
-offsets. Emptying the list puts both back on the curve; a container the compiler never sees needs
+**A `SurfaceGui` is pinned already.** It takes its pixel space from the part it is drawn on, and a
+`BillboardGui` sizes itself the same way. `rem.pinnedUnder` names those containers,
+`["surfacegui", "billboardgui"]` by default, and what is written under one lowers to literal
+offsets. Emptying the list puts both back on the curve. A container the compiler never sees needs
 the closed clamp above.
 
 ### What the emit looks like
 
-A statically lowered element has no render to re-run when the viewport changes, so it carries its
-offsets as bindings and the file builds a scaler above it:
+A statically lowered element has no render to re-run when the viewport changes. It carries its
+offsets as bindings, and the file builds a scaler above it:
 
 ```tsx title='className="p-4 w-40" with rem active'
 import { createVelaRemScaler } from "@rbxts/vela-runtime";
@@ -208,7 +204,7 @@ const __VelaRem = createVelaRemScaler({ base: 16, min: 8, max: 64, baseResolutio
 ```
 
 The number beside each value is a slot, so the file allocates one binding per scaled offset rather
-than one per read; `TextSize` goes through `scaleText`, where the 100 ceiling applies. An element
+than one per read. `TextSize` goes through `scaleText`, where the 100 ceiling applies. An element
 that already needs the runtime host keeps plain values and is handed the *names* of the props to
 scale.
 
@@ -218,7 +214,9 @@ A place tuned by eye at 1920×1080 keeps its proportions there and gains them ev
 
 ## Semantic colors and shade palettes
 
-A color entry is either a **literal** — one roblox-ts expression string, used as-is — or a **palette**, an object keyed by shade. The eleven valid shade tokens are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, and `950`. A palette does not have to define all of them, but any shade you reference must be present.
+A colour entry is either a **literal**, one roblox-ts expression string used as-is, or a
+**palette**, an object keyed by shade. The eleven valid shade tokens run from `50` to `950`. A
+palette does not have to define all of them, but any shade you reference must be present.
 
 A palette may also carry a twelfth key, `DEFAULT`, which is what a bare family name resolves to, so
 `bg-brand` works with no shade. Every built-in palette ships one mirroring its `500`, so `bg-slate`,
@@ -244,12 +242,12 @@ theme: {
 }
 ```
 
-`split_color_key` decides which one a class name means: it splits the payload at the **last** hyphen
+`split_color_key` decides which one a class name means. It splits the payload at the **last** hyphen
 and treats the trailing part as a shade only if it is exactly one of the eleven tokens. Otherwise
 the whole payload is one semantic key.
 
 So `bg-my-color` looks up the semantic key `my-color`, not the family `my` with the shade `color`.
-Multi-word names are safe; the only ones you cannot use end in a hyphen plus a shade number.
+Multi-word names are safe. The only ones you cannot use end in a hyphen plus a shade number.
 
 The failure modes are distinct diagnostics. Referencing a palette that defines no `DEFAULT` without
 a shade is `color-missing-shade`. Giving a literal a shade, or asking a palette for a shade it does
@@ -257,9 +255,9 @@ not define, is `color-invalid-shade`. A name that is not in the theme at all is 
 
 ## What ships by default
 
-Twenty-six colour palettes at eleven shades each, each carrying a `DEFAULT` mirroring its `500`,
-plus the literals `black` and `white`; ten radius keys and a `DEFAULT`; **one** spacing key, `"4"`;
-three font families, five breakpoints and the rem curve.
+Twenty-six colour palettes at eleven shades each, every one carrying a `DEFAULT` that mirrors its
+`500`, plus the literals `black` and `white`. Ten radius keys and a `DEFAULT`. **One** spacing key,
+`"4"`. Three font families, five breakpoints and the rem curve.
 
 The [configuration reference](/vela-rbxts/reference/config/#the-default-theme) lists every key and
 value. Two things about those defaults are worth knowing here.
@@ -274,7 +272,7 @@ numbers and asset paths, not expression strings. `font-*` looks up family keys a
 weight names, so avoid naming one after a weight — a `fontFamily.bold` would never resolve.
 
 <Callout title="The editor's spacing suggestions are not the theme">
-Completions offer a familiar-looking scale — `0`, `0.5`, `1`, `1.5`, `2`, `3`, `4`, `6`, `8`, `12`, `16`, `20`, `24`, `32`, `40`, `64`, `80` — but that is hardcoded editor sugar, and any other multiple of `0.5` works just as well.
+Completions offer a familiar-looking scale: `0`, `0.5`, `1`, `1.5`, `2`, `3`, `4`, `6`, `8`, `12`, `16`, `20`, `24`, `32`, `40`, `64`, `80`. That is hardcoded editor sugar. Any other multiple of `0.5` works just as well.
 </Callout>
 
 ## See also
