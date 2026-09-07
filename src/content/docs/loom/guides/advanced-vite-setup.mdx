@@ -10,19 +10,16 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 [Vite integration](/loom/guides/vite-integration/) covers the setup that works. This page covers the
-three ways a working setup stops working: importing the plugin the wrong way, pointing it at an
-unbuilt checkout, and sharing a Vite config with an app that has its own React.
+three ways it stops working: importing the plugin the wrong way, pointing it at an unbuilt checkout,
+and sharing a Vite config with an app that has its own React.
 
 ## Always import the plugin by its bare specifier
 
-`loomPreview()` locates the modules it aliases — the `@rbxts/react-roblox` client shim, the
-`@rbxts/services` shim, the globals installer, the React shim, the gallery shell — **relative to its
-own file**, as `../src` from the module that is executing. That is what lets it hand Vite absolute
-paths that work whether loom is installed in your project, linked from a checkout, or pointed at a
-completely different workspace by the CLI.
+`loomPreview()` locates the modules it aliases **relative to its own file**, as `../src` from the
+executing module. That is what lets it hand Vite absolute paths that work whether loom is installed
+in your project, linked from a checkout, or pointed at a different workspace by the CLI.
 
-It also means the import specifier you write is load-bearing. Import
-`@loom-dev/preview/vite` and nothing else:
+So the import specifier you write is load-bearing. Import `@loom-dev/preview/vite` and nothing else:
 
 ```ts
 // correct
@@ -33,8 +30,8 @@ import { loomPreview } from "../loom/packages/preview/src/vite.ts";
 ```
 
 A path import lets Vite's config bundler inline the plugin into a temporary file inside *your*
-project, which moves the anchor. The config then loads fine and the failure surfaces much later,
-during the build, as something that looks unrelated:
+project, moving the anchor. The config loads fine and the failure surfaces later, during the build,
+looking unrelated:
 
 ```text
 [commonjs--resolver] Failed to resolve entry for package "@loom-dev/layout".
@@ -43,9 +40,8 @@ The package may have incorrect main/module/exports specified in its package.json
 
 ## Consuming an unbuilt source checkout
 
-If you `link:` a loom checkout and have not run `pnpm build:packages` there, the package's `exports`
-point at `dist/` files that do not exist yet, and Vite's default config loader — which externalizes
-the package and hands it to Node — cannot load the plugin at all:
+In a `link:`ed loom checkout that has never run `pnpm build:packages`, the package's `exports` point
+at `dist/` files that do not exist, and Vite's default config loader cannot load the plugin at all:
 
 ```text
 Cannot find module '.../packages/preview/dist/vite.js'
@@ -57,46 +53,37 @@ Building the checkout is the real fix:
 pnpm build:packages
 ```
 
-Failing that, `vite --configLoader runner` (and `vite build --configLoader runner`) processes the
-config through Vite's module runner instead of pre-bundling it, which can resolve TypeScript sources
-directly. It is marked experimental in Vite's CLI help but has been reliable across dev and build.
+Failing that, `vite --configLoader runner` processes the config through Vite's module runner instead
+of pre-bundling it, resolving TypeScript sources directly. It is marked experimental but has been
+reliable across dev and build.
 
 See [Installation](/loom/getting-started/installation/#working-from-a-source-checkout) for what a
-checkout needs in the first place — it adds a Rust toolchain to the requirements.
+checkout needs — it adds a Rust toolchain.
 
 ## Don't merge this into an app that also uses React
 
 `loomPreview()` aliases bare `react`, `react/jsx-runtime` and `react/jsx-dev-runtime` to loom's own
-React 18 copy, and sets `esbuild.jsx: "automatic"` globally. Those are not scoped to Roblox files —
-they apply to every module Vite processes in that config.
+React 18 copy and sets `esbuild.jsx: "automatic"` globally — for every module Vite processes in that
+config, not just Roblox files.
 
-So if you drop `loomPreview()` into the Vite config of an existing React web app, that app's React
-gets replaced with loom's React 18 too. If the app is on React 19, it breaks. If it also runs
-`@vitejs/plugin-react`, you now have two JSX transforms fighting.
+So dropping `loomPreview()` into an existing React web app's Vite config replaces that app's React
+with loom's React 18. On React 19 it breaks, and alongside `@vitejs/plugin-react` you get two JSX
+transforms fighting.
 
 Keep the preview in its own Vite project. Three arrangements work well:
 
-- **A dedicated preview app** in your workspace (`apps/preview/`) with its own `vite.config.ts` and
-  its own dependencies — a `vite.config.ts` holding nothing but `loomPreview()` is enough. This is
-  what loom's `apps/interactive` and `apps/gallery-demo` are.
-- **No Vite project at all** — use `loom preview` and `loom build`, pointed at your source directory.
-  The CLI runs with `configFile: false`, so it cannot collide with your project's own Vite config
-  even if one exists.
-- **Mounted inside your app's dev server**, via
-  [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api). The gallery still gets
-  its own Vite instance — your app just forwards requests under a base path to it, so the two module
-  graphs never meet.
+- **A dedicated preview app** in your workspace with its own `vite.config.ts` and dependencies — a config holding nothing but `loomPreview()` is enough.
+- **No Vite project at all** — `loom preview` and `loom build` run with `configFile: false`, so they cannot collide with your project's own config.
+- **Mounted inside your app's dev server**, via [`loom-dev/embed`](/loom/reference/cli/#loom-devembed--the-programmatic-api). The gallery still gets its own Vite instance, so the two module graphs never meet.
 
-The third is what these docs themselves use: an Astro integration mounts the gallery in dev and emits
-the static bundle at build, and each scene is iframed per preview. See
-[Static builds and embedding](/loom/guides/static-builds-and-embedding/#a-working-embed-pipeline).
+The third is what these docs use: an Astro integration mounts the gallery in dev and emits the
+static bundle at build, with each scene iframed per preview.
 
 <Callout title="The same rule applies to the docs you are reading">
-`loomPreview()` in this site's `astro.config.mjs` would hijack the docs' own React 19. The gallery
-runs in a separate Vite instance for exactly that reason.
+`loomPreview()` in this site's `astro.config.mjs` would hijack the docs' own React 19, which is why the gallery runs in a separate Vite instance.
 </Callout>
 
 ## Where to go when something breaks
 
-Every error string above, plus the ones that come from the runtime rather than the config, is in
-[Troubleshooting](/loom/guides/troubleshooting/) with the reasoning behind it.
+Every error string above, plus the runtime ones, is in
+[Troubleshooting](/loom/guides/troubleshooting/).
