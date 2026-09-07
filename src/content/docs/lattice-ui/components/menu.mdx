@@ -29,7 +29,7 @@ import { Menu } from "@lattice-ui/react-menu";
 
 ## Anatomy
 
-`Root`, `Trigger`, `Portal` and `Content` form the working menu; `Item` makes it useful, and
+`Root`, `Trigger`, `Portal` and `Content` form the working menu. `Item` makes it useful, and
 `Group`, `Label` and `Separator` structure longer lists.
 
 <PrimitiveAnatomy title="Menu anatomy">
@@ -228,7 +228,7 @@ The trigger still has to exist — it is the positioning anchor and the focus-re
 under `asChild` its toggle behaviour composes with your handlers.
 
 <Callout title="Anchored to the slot, not the pointer">
-This opens the menu **against the trigger**. For one at the cursor, use [Context Menu](/lattice-ui/components/context-menu/), which anchors to the click position and needs no controlled state — but is pointer-only, with no ordered gamepad or keyboard movement.
+This opens the menu **against the trigger**. For one at the cursor, use [Context Menu](/lattice-ui/components/context-menu/), which anchors to the click position and needs no controlled state. It is pointer-only, with no ordered gamepad or keyboard movement.
 </Callout>
 
 ```tsx title="SlotContextMenu.tsx"
@@ -278,9 +278,9 @@ export function SlotContextMenu(props: { slotIcon: string; onAction: (id: string
 
 ### Placement tuning
 
-`Menu.Content` accepts the popper options: `placement` requests a side, `sideOffset` a gap from the
-trigger, `alignOffset` a shift along the cross axis, `collisionPadding` a minimum distance from the
-screen edge. The requested side is a preference — on overflow the popper tries the opposite side,
+`Menu.Content` accepts the popper options. `placement` requests a side, `sideOffset` a gap from the
+trigger, `alignOffset` a shift along the cross axis, and `collisionPadding` a minimum distance from
+the screen edge. The requested side is a preference: on overflow the popper tries the opposite side,
 then the orthogonal ones, then clamps.
 
 ```tsx title="SidebarOverflowMenu.tsx"
@@ -400,27 +400,28 @@ than wrapping. On close, focus is restored to the trigger.
 
 ### Items and activation
 
-`Menu.Item` activates on `Activated` and on `Return`/`Space`, building a `MenuSelectEvent`
-(`{ defaultPrevented, preventDefault() }`) for `onSelect`; unless the event is default-prevented,
+`Menu.Item` activates on `Activated` and on `Return`/`Space`, building a `MenuSelectEvent` for
+`onSelect` with `defaultPrevented` and `preventDefault()`. Unless the event is default-prevented,
 the item closes the menu. A disabled item ignores activation and movement keys.
 
-`Menu.Item` renders an unstyled `textbutton`. It tracks whether the item is highlighted — by hover
-**or** by managed keyboard/gamepad focus — and exposes that as `useMenuItemContext().highlighted`
-while drawing nothing itself. Reporting focus as well as hover is what keeps an item highlighted
-when it never becomes the engine's `SelectedObject`, and stops a pointer moving away from clearing a
+`Menu.Item` renders an unstyled `textbutton`. It tracks whether the item is highlighted, by hover
+**or** by managed keyboard and gamepad focus, and exposes that as `useMenuItemContext().highlighted`
+while drawing nothing itself. Reporting focus as well as hover keeps an item highlighted when it
+never becomes the engine's `SelectedObject`, and stops a pointer moving away from clearing a
 keyboard-focused item.
 
 ### Dismissal
 
-`Menu.Content` participates in dismissable-layer behaviour: only the top-most enabled layer receives
+`Menu.Content` participates in dismissable-layer behaviour. Only the top-most enabled layer receives
 outside interactions, so nested overlays dismiss one at a time. Being modal, a full-screen blocker
-stops interaction behind it, and an outside press dismisses. Before dismissal `onPointerDownOutside`
-fires for outside pointer presses and `onInteractOutside` for the interaction in general; both
-receive a `LayerInteractEvent`, and `preventDefault()` in either vetoes the dismissal.
+stops interaction behind it, and an outside press dismisses. Before dismissal,
+`onPointerDownOutside` fires for outside pointer presses and `onInteractOutside` for the interaction
+in general. Both receive a `LayerInteractEvent`, and `preventDefault()` in either vetoes the
+dismissal.
 
 ### Motion and presence
 
-`Menu.Content` runs no motion of its own. Pass a `transition` —
+`Menu.Content` runs no motion of its own. Pass a `transition`.
 `createPopperEntranceRecipe(placement)` matches the `frame` the content renders, and building it
 from the **resolved** placement makes a menu the popper flipped above the trigger animate from
 above. `forceMount` keeps the content mounted through its exit. The wrapper is an

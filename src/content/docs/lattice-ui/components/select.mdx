@@ -34,7 +34,7 @@ import { Select } from "@lattice-ui/react-select";
 
 ## Anatomy
 
-`Root`, `Trigger`, `Portal`, `Content` and at least one `Item` form the minimum useful select;
+`Root`, `Trigger`, `Portal`, `Content` and at least one `Item` form the minimum useful select.
 `Value`, `Group`, `Label` and `Separator` structure the trigger label and the list.
 
 <PrimitiveAnatomy title="Select anatomy">
@@ -267,8 +267,8 @@ export function SortSelect() {
 
 ### Disabled options
 
-A disabled item stays visible but inert, and is excluded from value resolution — so a value pointing
-at one is re-selected to the first enabled item the next time the items mount, reported through
+A disabled item stays visible but inert, and is excluded from value resolution. A value pointing at
+one is re-selected to the first enabled item the next time the items mount, reported through
 `onValueChange`.
 
 ```tsx title="ServerTierSelect.tsx"
@@ -311,9 +311,9 @@ export function ServerTierSelect(props: { hasPremium: boolean }) {
 
 ### Custom trigger and value with asChild
 
-Use `asChild` to project the trigger behaviour onto your own button and the resolved text onto your
+Use `asChild` to project the trigger behaviour onto your own button, and the resolved text onto your
 own label. The trigger slot merges `Active`, its handlers and its ref, so pass an activatable button
-class. The `Value` slot drives the child's `Text`, so its child must be text-bearing; colour,
+class. The `Value` slot drives the child's `Text`, so its child must be text-bearing. Colour,
 alignment and size stay yours.
 
 ```tsx title="LoadoutSelect.tsx"
@@ -429,10 +429,10 @@ The selected value is a single `string`, controlled via `value`/`onValueChange` 
 `defaultValue`. Each item registers its `value`, `textValue`, disabled state and document order on
 mount, so while the content is open the root knows the full ordered set.
 
-Selection is guarded twice: a disabled item ignores activation, and `setValue` refuses a value
-resolving to one. The root also reconciles the value against the registry — with no matching
+Selection is guarded twice. A disabled item ignores activation, and `setValue` refuses a value
+resolving to one. The root also reconciles the value against the registry. With no matching
 *enabled* item it re-selects the first enabled one, or clears the value when none is registered. The
-re-selection is reported through `onValueChange`; the clear is not.
+re-selection is reported through `onValueChange`. The clear is not.
 
 ### Items register only while mounted
 
@@ -450,10 +450,10 @@ property and only that one — it does not dim while showing the placeholder.
 
 ### Positioning
 
-`Select.Content` is positioned with popper against the trigger: `placement` picks the side,
-`sideOffset` pushes it away, `alignOffset` slides it along the cross axis, `collisionPadding` keeps
-it inside the viewport. Until the first measurement it is parked offscreen, so you never see an
-unpositioned frame.
+`Select.Content` is positioned with popper against the trigger. `placement` picks the side,
+`sideOffset` pushes it away, `alignOffset` slides it along the cross axis, and `collisionPadding`
+keeps it inside the viewport. Until the first measurement it is parked offscreen, so you never see
+an unpositioned frame.
 
 ### Dismissal
 
@@ -473,7 +473,7 @@ Items animate their own hover state from `MouseEnter`/`MouseLeave` and gamepad
 the activation and hover handlers, and its ref onto your child.
 
 <Callout title="Roblox gotchas">
-`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`; use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items track gamepad hover state, but Select does **not** install native directional selection or keyboard navigation between items — the trigger and items render with `Selectable` set to `false`. Build gamepad list traversal with your own selectable elements if you need it.
+`Select.Portal` renders into a `ScreenGui` on the player's `PlayerGui`. Use `container` and `displayOrderBase` to target a specific GUI and order it against other layers. Items track gamepad hover state, but Select does **not** install native directional selection or keyboard navigation between items. The trigger and items render with `Selectable` set to `false`. Build gamepad list traversal with your own selectable elements if you need it.
 </Callout>
 
 ## API reference
