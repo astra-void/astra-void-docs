@@ -9,7 +9,10 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-A preview lays the scene out against the stage it is given: whatever the mount measures **is** the Roblox viewport, mirrored onto `Workspace.CurrentCamera.ViewportSize` and fed to the layout engine. So a phone gets a phone-sized viewport and the scene reflows exactly as the engine reflows there.
+A preview lays the scene out against the stage it is given. Whatever the mount measures **is** the
+Roblox viewport. It is mirrored onto `Workspace.CurrentCamera.ViewportSize` and fed to the layout
+engine. So a phone gets a phone-sized viewport and the scene reflows exactly as the engine reflows
+there.
 
 Nothing here needs configuration. The generated pages size with `dvh`, so a full-height stage does not hang under a mobile browser's toolbars.
 
@@ -17,8 +20,8 @@ Nothing here needs configuration. The generated pages size with `dvh`, so a full
 
 Text re-wraps, a `UIListLayout` with `Wraps` re-flows, `AutomaticSize` re-measures, and a scene
 branching on `ViewportSize` takes its narrow path. A layout of offsets wider than the screen runs
-off the edge and is clipped — what it does on a real device, and usually what you opened the preview
-on a phone to find out.
+off the edge and is clipped. That is what it does on a real device, and usually what you opened the
+preview on a phone to find out.
 
 <Callout title="Loom does not make your UI responsive">
 Roblox does not, so neither does loom. A scene that should adapt to a small screen adapts in the scene — a `UIScale`, a breakpoint on `ViewportSize`, an `AbsoluteSize` binding. The preview's job is to show what the engine would show, including a layout hanging off the edge.
@@ -48,7 +51,10 @@ the composition rather than the reflow. It just has to be asked for:
 /loom-preview/index.html?target=src%2Fscenes%2FCounter.loom.tsx&chrome=none&base=1280
 ```
 
-960 is the bare-`?base` fallback rather than a constant with one right answer: the wider the base, the more desktop layout survives and the smaller everything is drawn. It is wide enough for a two-column layout and small enough that a phone renders at roughly 40% rather than the ~30% a 1280 base gives, where body text stops being readable.
+960 is the bare-`?base` fallback rather than a constant with one right answer. The wider the base,
+the more desktop layout survives and the smaller everything is drawn. It is wide enough for a
+two-column layout, and small enough that a phone renders at roughly 40%. A 1280 base gives ~30%,
+where body text stops being readable.
 
 With a base in effect the world reads the mount's **untransformed** layout size, so you are previewing the wide layout drawn smaller. The [debug panel](/loom/guides/debug-panel/) shows both boxes and the factor between them.
 
@@ -65,7 +71,7 @@ converts back by reading the mount's rendered-to-layout ratio, so hit testing la
 - `GetMouseLocation`
 - Wheel deltas
 
-Unscaled — the default — the ratio is 1 and the conversion is a no-op.
+Unscaled, which is the default, the ratio is 1 and the conversion is a no-op.
 
 ## ScrollingFrames scroll from a touch drag
 
@@ -75,13 +81,12 @@ dragging past a button does not activate it.
 
 Two deliberate limits:
 
-- **Only `ScrollingFrame`s opt out of native touch panning.** A preview embedded in a docs page never
-  traps the reader's scroll; the page keeps scrolling normally everywhere else.
+- **Only `ScrollingFrame`s opt out of native touch panning.** A preview embedded in a docs page never traps the reader's scroll. The page keeps scrolling normally everywhere else.
 - **Taps do not wait for the double-tap-zoom timeout.** A tap registers immediately rather than after
   the browser's ~300ms delay.
 
 ## The gallery chrome stacks
 
-In full-chrome gallery mode the 248px sidebar becomes a top bar with a `targets` button; picking a
+In full-chrome gallery mode the 248px sidebar becomes a top bar with a `targets` button. Picking a
 target closes it again. `?chrome=none` is unaffected — there is no chrome to stack, so embedded
 previews get the touch handling and nothing else.

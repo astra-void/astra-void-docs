@@ -10,17 +10,19 @@ draft: false
 import { Callout } from "@/components/docs/mdx";
 
 Every animatable Lattice part takes a typed `transition` prop. You almost never hand-author the
-config that goes into it: `@lattice-ui/react-motion` ships **recipes**, factory functions returning
-a tuned config with the correct timing and target contract baked in. This page is the catalog —
+config that goes into it. `@lattice-ui/react-motion` ships **recipes**: factory functions returning
+a tuned config, with the correct timing and target contract baked in. This page is the catalog —
 which recipes exist, which parts they suit, and how to tune one.
 
 <Callout title="Presence motion is opt-in">
 Since 0.7.0 no primitive ships default **presence** motion. A `Content` or `Indicator` part with no `transition` still mounts, unmounts and holds its content until an exit finishes — it just does so instantly.
 
-**Response** motion following a computed value is the exception, because there the motion *is* the behavior: `Progress.Indicator` settles its fill by default, and the slider and switch thumbs follow their values with recipes you cannot replace. For those `transition` overrides a default; everywhere else it supplies one.
+**Response** motion following a computed value is the exception, because there the motion *is* the behavior. `Progress.Indicator` settles its fill by default, and the slider and switch thumbs follow their values with recipes you cannot replace. For those, `transition` overrides a default. Everywhere else it supplies one.
 </Callout>
 
-For the concepts behind all of this — presence vs response vs feedback, target contracts, the hooks themselves — read [Presence and motion](/lattice-ui/guides/presence-and-motion/) first. Full signatures live in the [Motion reference](/lattice-ui/reference/motion/).
+Read [Presence and motion](/lattice-ui/guides/presence-and-motion/) first for the concepts behind
+all of this: presence vs response vs feedback, target contracts, and the hooks themselves. Full
+signatures live in the [Motion reference](/lattice-ui/reference/motion/).
 
 ## Which config does a part take?
 
@@ -29,8 +31,8 @@ The `transition` prop's type tells you what kind of motion the part runs:
 - **`PresenceMotionConfig`** — reveal and exit motion for parts that mount and unmount, with `initial`, `reveal` and `exit` steps. Every content and indicator part takes one.
 - **`ResponseMotionConfig`** — settling motion for parts that stay mounted and ease between states, with a single `settle` intent. `Progress.Indicator` and `Toast.Root` take one.
 
-If the part appears and disappears it wants a presence config; if it slides or recolours while
-staying on screen, a response config. Passing the wrong kind is a type error.
+A part that appears and disappears wants a presence config. One that slides or recolours while
+staying on screen wants a response config. Passing the wrong kind is a type error.
 
 <Callout title="Not every part takes a transition">
 Some parts own presence timing without exposing a `transition`. `Dialog.Overlay` is the one you are most likely to hit — an unstyled overlay has nothing to fade. Animate a dim by putting an element inside it.
@@ -38,7 +40,9 @@ Some parts own presence timing without exposing a `transition`. `Dialog.Overlay`
 
 ## Recipe catalog
 
-Presence recipes return a `PresenceMotionConfig`; response recipes return a `ResponseMotionConfig`; feedback recipes return a `FeedbackEffectConfig` for [`useFeedbackEffect`](/lattice-ui/reference/motion/) in custom components.
+Presence recipes return a `PresenceMotionConfig` and response recipes return a
+`ResponseMotionConfig`. Feedback recipes return a `FeedbackEffectConfig` for
+[`useFeedbackEffect`](/lattice-ui/reference/motion/) in custom components.
 
 | Recipe | Animates | Pair it with |
 | --- | --- | --- |
@@ -63,7 +67,7 @@ Every recipe also sets the right **target contract**: `appearance` for the overl
 of why a recipe beats a hand-written config — the ownership boundary comes for free.
 
 `Dialog.Content` is the one part with no default recipe. It renders a full-screen `Frame`, so a
-transition can slide it but has no property that fades its descendants — write a `Position`-only
+transition can slide it but has no property that fades its descendants. Write a `Position`-only
 config and fade the overlay or your own elements, or pass `asChild` with a `canvasgroup`. See
 [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
@@ -98,9 +102,9 @@ export function ShopTabs() {
 }
 ```
 
-Every part uses the config **as-is**, with nothing merged underneath, so a partial config animates
-only the steps it defines — and where a part has a default, yours replaces it wholesale. To vary one
-step, spread the recipe and replace that step.
+Every part uses the config **as-is**, with nothing merged underneath. A partial config animates only
+the steps it defines, and where a part has a default, yours replaces it wholesale. To vary one step,
+spread the recipe and replace that step.
 
 The same pattern works for indicators. `createIndicatorRevealRecipe` takes the size the indicator should settle at, so it has to match the box you are rendering:
 

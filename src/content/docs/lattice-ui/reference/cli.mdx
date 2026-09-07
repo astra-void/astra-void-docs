@@ -42,7 +42,7 @@ Both binaries run the same program. `lattice help` prints the usage summary, `la
 installed version.
 
 <Callout title="With npx, use the package name">
-`npx lattice` does not work — `npx` resolves the published **package** name, not the binary alias. Always write `npx lattice-ui`; the short `lattice` form is for an installed CLI.
+`npx lattice` does not work — `npx` resolves the published **package** name, not the binary alias. Always write `npx lattice-ui`. The short `lattice` form is for an installed CLI.
 </Callout>
 
 ## Help
@@ -95,7 +95,7 @@ surface an unrelated package-manager error first.
 | `NO_HYPERLINK` | Disables OSC 8 hyperlinks. |
 | `FORCE_HYPERLINK` | Forces hyperlinks on. Any value except `0` enables it. |
 
-Colour honours the `NO_COLOR`/`FORCE_COLOR` contract first, then falls back to TTY detection;
+Colour honours the `NO_COLOR`/`FORCE_COLOR` contract first, then falls back to TTY detection.
 `TERM=dumb` always disables it.
 
 Project paths and package names print as **OSC 8 hyperlinks**, shortened against the working
@@ -108,8 +108,8 @@ When output is not a terminal the CLI drops to a flat ASCII layout, so everythin
 
 ## Output
 
-Each run prints as one connected flow: a vertical gutter threads the header, each titled block and
-the closing verdict, with tree branches for the rows inside a block and the elapsed time on the last
+Each run prints as one connected flow. A vertical gutter threads the header, each titled block and
+the closing verdict. Rows inside a block get tree branches, and the elapsed time lands on the last
 line. Counts live in the heading of the block they describe.
 
 Commands also report which package manager they resolved and why.
@@ -134,7 +134,7 @@ Selection prompts are keyboard-driven.
 | `Enter` | Confirm |
 | `Ctrl-C` or `Esc` | Cancel |
 
-The list scrolls when it is taller than the terminal, keeping the cursor in view, and cancelling
+The list scrolls when it is taller than the terminal, keeping the cursor in view. Cancelling
 restores the cursor and takes the terminal out of raw mode.
 
 ## Commands
@@ -177,10 +177,10 @@ Initializes Lattice inside an existing project. Unlike `create`, it accepts no p
 npx lattice-ui init --dry-run
 ```
 
-`init` is also the migration path off the 0.6.1 rename: before merging the template it rewrites any
-pre-0.6.1 package names to their `react-` replacements (`@lattice-ui/dialog` →
-`@lattice-ui/react-dialog`, `@lattice-ui/core` → `@lattice-ui/react-runtime`). Dropping the old name
-matters — leaving both makes the two copies resolve side by side, which npm rejects on peer
+`init` is also the migration path off the 0.6.1 rename. Before merging the template it rewrites any
+pre-0.6.1 package names to their `react-` replacements, such as `@lattice-ui/dialog` to
+`@lattice-ui/react-dialog` and `@lattice-ui/core` to `@lattice-ui/react-runtime`. Dropping the old
+name matters — leaving both makes the two copies resolve side by side, which npm rejects on peer
 resolution.
 
 If the install fails, `init` and `create` roll their file changes back rather than leaving a
@@ -198,8 +198,8 @@ half-written scaffold.
 
 ### add
 
-Installs one or more component packages with everything they need. Pass component names (comma- or
-space-separated) and/or `--preset` groups; with neither, and without `--yes`, `add` prompts
+Installs one or more component packages with everything they need. Pass component names, comma- or
+space-separated, and `--preset` groups. With neither, and without `--yes`, `add` prompts
 interactively. `lattice add --help` lists every available component and preset.
 
 ```bash
@@ -272,7 +272,7 @@ Audits the project and reports issues without changing anything, then finishes w
 | A missing peer, or a missing optional provider | warn |
 | A missing **required** provider | **error** |
 
-Errors exit non-zero; warnings do not.
+Errors exit non-zero. Warnings do not.
 
 ```bash
 npx lattice-ui doctor
@@ -299,8 +299,8 @@ With `--pm` omitted, the CLI resolves a package manager from the project lockfil
 managers. `doctor` surfaces resolution problems: a missing lockfile, multiple lockfiles, or a
 `packageManager` field that does not match.
 
-The resolved manager is also **pinned** into the project as a `devEngines.packageManager` entry,
-reapplied by `add`, `remove` and `upgrade` before they touch dependencies; a pin naming a different
+The resolved manager is also **pinned** into the project as a `devEngines.packageManager` entry.
+`add`, `remove` and `upgrade` reapply it before they touch dependencies. A pin naming a different
 manager warns and repins. Both managers refuse to install when the pin names the other one.
 
 <Callout title="Peers and providers">

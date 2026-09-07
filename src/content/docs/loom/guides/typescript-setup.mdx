@@ -10,9 +10,9 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 Nothing on this page changes what loom renders. esbuild strips types and never reads a
-`tsconfig.json` for anything but a couple of transform flags, so TypeScript is purely an editor and
-CI concern — you are making a *second* typecheck configuration for previewing, not modifying the one
-that produces Luau.
+`tsconfig.json` for anything but a couple of transform flags. TypeScript is purely an editor and CI
+concern here. You are making a *second* typecheck configuration for previewing, not modifying the
+one that produces Luau.
 
 <Callout title="Never point your roblox-ts tsconfig at loom">
 A roblox-ts project's `tsconfig.json` is consumed by `rbxtsc` and must keep describing the Roblox environment. Rewriting it to make the preview typecheck breaks the build that ships. Add a separate config for the preview surface.
@@ -29,9 +29,9 @@ import "@loom-dev/preview/globals";
 ```
 
 Keep the file inside the directory your preview tsconfig includes. That one import declares the
-datatypes — `UDim2`, `Color3`, `Rect`, `CFrame`, `TweenInfo`, `Enum`, `Instance`, `game` and the
-rest — and the Luau environment: `task`, `math`, `string`, `os`, `coroutine`, `typeIs`, `pcall`,
-`pairs`, `tostring`, `error`, `warn`.
+datatypes: `UDim2`, `Color3`, `Rect`, `CFrame`, `TweenInfo`, `Enum`, `Instance`, `game` and the
+rest. It also declares the Luau environment: `task`, `math`, `string`, `os`, `coroutine`, `typeIs`,
+`pcall`, `pairs`, `tostring`, `error`, `warn`.
 
 Two omissions are deliberate:
 
@@ -87,8 +87,8 @@ declare module "@rbxts/react-roblox" {
 ```
 
 Keep this in its own file with **no top-level `import` or `export`**. A `.d.ts` that has one is a
-module, and `declare module` inside a module is an *augmentation*, which errors on a module that
-does not already exist — which is why the globals import lives in a separate file.
+module, and `declare module` inside a module is an *augmentation*. That errors on a module that does
+not already exist, which is why the globals import lives in a separate file.
 
 The matching compiler options:
 
@@ -106,8 +106,8 @@ The matching compiler options:
 
 `jsx: "react-jsx"` matches the `esbuild.jsx: "automatic"` the plugin sets, so editor and bundler
 agree no `React` import is needed. `@rbxts/react` re-exports React itself, so the roblox-only extras
-(`React.Event`, `React.Change`) are not in its types and a keyed-prop namespace types as an error
-even though it works — the `Event={{ Activated: fn }}` prop form avoids that.
+`React.Event` and `React.Change` are not in its types. A keyed-prop namespace types as an error even
+though it works. The `Event={{ Activated: fn }}` prop form avoids that.
 
 <Callout title="If you prefer `paths`">
 Path mappings work too, and were what these docs recommended before:
@@ -123,17 +123,17 @@ Path mappings work too, and were what these docs recommended before:
 They are more fragile: they hard-code a `node_modules` layout, and reaching into `src/client.ts` bypasses the package's `exports` map. Prefer the `declare module` form unless you need something the exports map cannot express.
 </Callout>
 
-If your preview app is a separate package that imports your UI library by workspace name, no
-`paths` entry is needed for the library itself — loom resolves roblox-ts packages to their
-TypeScript source at *runtime*, and TypeScript resolves them through the workspace link at *check*
-time. The two paths agree.
+If your preview app is a separate package that imports your UI library by workspace name, the
+library itself needs no `paths` entry. loom resolves roblox-ts packages to their TypeScript source
+at *runtime*, and TypeScript resolves them through the workspace link at *check* time. The two paths
+agree.
 
 **Your own aliases resolve at runtime too.** The preview plugin reads `baseUrl` and `paths` out of
-the project's `tsconfig.json`, so a project whose source imports non-relatively —
-`import { Button } from "@/ui/Button"` — runs.
+the project's `tsconfig.json`. A project whose source imports non-relatively, such as
+`import { Button } from "@/ui/Button"`, runs.
 
 ## Typechecking is optional
 
 Since esbuild ignores types, a preview app that never runs `tsc` still renders. Wiring
-`tsc --noEmit` into CI catches broken scenes early at the cost of a second tsconfig to maintain —
+`tsc --noEmit` into CI catches broken scenes early, at the cost of a second tsconfig to maintain.
 loom's own repo typechecks every app, a reasonable default when previews double as documentation.
