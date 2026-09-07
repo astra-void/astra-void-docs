@@ -10,7 +10,9 @@ draft: false
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-Every color utility in Vela resolves a key from `theme.colors` and writes it onto a specific Roblox property — either on the host instance itself or on a helper instance that Vela adds as a child. Nothing is inherited and nothing cascades: a class writes one property on one instance, and that is the whole model.
+Every colour utility resolves a key from `theme.colors` and writes it onto a specific Roblox
+property, on the host instance or on a helper Vela adds as a child. Nothing is inherited and nothing
+cascades: a class writes one property on one instance.
 
 ```tsx title="src/client/Card.tsx"
 <frame className="bg-slate-800 rounded-lg border border-slate-700 shadow-lg">
@@ -39,15 +41,16 @@ Open the **Lowered** tab on that preview to see the split the table below descri
 | `divide-{color}` | `BackgroundColor3` | the separator frames |
 | `from-*`, `via-*`, `to-*` | color keypoints | a `UIGradient` child |
 
-Each of these except `placeholder-*`, `divide-*` and the gradient stops also has a paired transparency property — `BackgroundTransparency`, `TextTransparency`, `ImageTransparency`, `UIStroke.Transparency`, `UIShadow.Transparency`. Setting `border-{color}` writes `Color` and also sets `Transparency` to `0`, so a colored stroke is visible without a second class. `shadow-{color}` does not do the same — it writes `Color` alone.
+Each of these except `placeholder-*`, `divide-*` and the gradient stops has a paired transparency
+property. Setting `border-{color}` writes `Color` *and* sets `Transparency` to `0`, so a coloured
+stroke is visible without a second class; `shadow-{color}` writes `Color` alone.
 
 `text-*` is not only a color family. It also carries sizes, alignment, and wrapping — see [Text and fonts](/vela-rbxts/guides/text-and-fonts/) for how the compiler decides which one you meant.
 
 ### Arbitrary hex colors
 
-Every color family also accepts a bracketed hex payload, bypassing the theme: `bg-[#3b82f6]`,
-`text-[#fff]`, `border-[#101828]`, `from-[#0ea5e9]`. Three- and six-digit forms lower straight to
-`Color3.fromRGB(...)`. A bracket payload that is not a hex color reports
+Every colour family also accepts a bracketed hex payload, bypassing the theme: three- and six-digit
+forms lower straight to `Color3.fromRGB(...)`, and anything else reports
 `unsupported-arbitrary-value`. Reach for these sparingly — a hex that appears twice is a theme key
 waiting to be named in [theming](/vela-rbxts/guides/theming/).
 
@@ -57,15 +60,10 @@ A color can carry a level in one token: `/N` with an integer 0–100 sets the fa
 alongside its color, Tailwind-style. `bg-blue-600/50` emits `BackgroundColor3` plus
 `BackgroundTransparency = 0.5`; `text-slate-100/80` fades text to 80% opacity.
 
-Since **0.12.0** it works on every family Roblox gives a transparency channel, which is all of them but
-one. `border-slate-500/25` and `ring-red-500/40` set the `UIStroke`'s `Transparency`, `divide-white/10`
-fades the separator frames, and `from-blue-600/50` becomes a `UIGradient.Transparency` keypoint aligned
-with its color stop — so fading one stop leaves the others alone.
-
-Before 0.12.0 only `bg`, `text`, `image`, `shadow`, `ring` and `outline` carried it: `border-{color}/N`
-was rejected by the border parser as a slash payload, and `divide-*` and the gradient stops reported
-`unsupported-opacity-modifier`. A class list carried over from Tailwind lost exactly the alpha it was
-written for.
+It works on every family Roblox gives a transparency channel, which is all of them but one.
+`border-slate-500/25` sets the `UIStroke`'s `Transparency`, `divide-white/10` fades the separator
+frames, and `from-blue-600/50` becomes a `UIGradient.Transparency` keypoint aligned with its colour
+stop — so fading one stop leaves the others alone.
 
 `placeholder-*` is the one family left. Roblox has no placeholder transparency, and fading the text
 itself would take the typed value with it, so it still reports `unsupported-opacity-modifier`.
@@ -75,25 +73,28 @@ itself would take the typed value with it, so it still reports `unsupported-opac
 `transparent` is not a theme color. It is handled specially: it sets the family's **transparency** property to `1` and **removes** the color property entirely. `bg-transparent` emits `BackgroundTransparency = 1` and no `BackgroundColor3`.
 
 <Callout title="You rarely need bg-transparent any more">
-Since 0.5.0, [preflight](/vela-rbxts/reference/config/#preflight) already starts every classed host
-element at `BackgroundTransparency = 1`, so `bg-transparent` on a label or a layout frame is a no-op
-that emits the property Vela was going to emit anyway. It still earns its place in two spots: on an
-element whose background is painted by a variant or a dynamic class and should be clear by default,
-and anywhere you have set `preflight: false`. The other families — `text-transparent`,
-`image-transparent`, `border-transparent` — are unaffected and mean exactly what they always did.
+[Preflight](/vela-rbxts/reference/config/#preflight) already starts every classed host element at `BackgroundTransparency = 1`, so `bg-transparent` on a label or layout frame is a no-op. It still earns its place on an element whose background is painted by a variant and should be clear by default, and anywhere you set `preflight: false`. `text-transparent`, `image-transparent` and `border-transparent` are unaffected.
 </Callout>
 
 That is why `placeholder-transparent` is an error. `PlaceholderColor3` has no paired transparency property, so there is nothing for the utility to set, and the compiler reports `unsupported-color-key` rather than emitting something that would not work.
 
-Gradient stops are the other family with no transparency property, but they do not behave the same way. `from-transparent`, `via-transparent`, and `to-transparent` produce **no diagnostic at all**: the stop is dropped and the gradient is built from whatever stops remain, exactly as if you had not written it. It is a silent no-op rather than an error, and it is worth knowing about because a two-stop gradient that quietly becomes a one-stop gradient renders as a flat fill.
+Gradient stops are the other family with no transparency property, and they produce **no diagnostic
+at all**: the stop is dropped and the gradient is built from what remains. Worth knowing, because a
+two-stop gradient that quietly becomes one renders as a flat fill.
 
-`current` and `inherit` are rejected outright with `unsupported-color-key`. Both are CSS cascade concepts, and there is no cascade on Roblox — a `TextLabel` does not learn its color from an ancestor `Frame`. There is no equivalent to fall back to, so Vela refuses rather than guessing.
+`current` and `inherit` are rejected outright with `unsupported-color-key`. Both are cascade
+concepts, and there is no cascade on Roblox — a `TextLabel` does not learn its colour from an
+ancestor `Frame`.
 
 ## Shades and diagnostics
 
-A color payload is either a literal key or a palette key plus a shade. The suffix after the last hyphen counts as a shade only if it is one of `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`. Anything else means the whole payload is one semantic key, so `bg-my-color` looks up `my-color`.
+A colour payload is either a literal key or a palette key plus a shade. The suffix after the last
+hyphen counts as a shade only if it is one of the eleven numbers; anything else makes the whole
+payload one semantic key, so `bg-my-color` looks up `my-color`.
 
-A bare palette name is not a mistake either. It resolves through the palette's `DEFAULT` key, and every built-in palette ships one mirroring its `500`, so `bg-blue`, `text-slate`, and `from-sky` all work. Note that `DEFAULT` is a config key and never a class — `bg-blue-DEFAULT` is read as the semantic key `blue-DEFAULT` and reported as `unknown-theme-key`. See [Theming](/vela-rbxts/guides/theming/) for setting it on your own palettes.
+A bare palette name resolves through the palette's `DEFAULT`, and every built-in palette ships one
+mirroring its `500`. `DEFAULT` is a config key and never a class — `bg-blue-DEFAULT` is read as the
+semantic key `blue-DEFAULT` and reported as `unknown-theme-key`.
 
 Three diagnostics cover the failure modes:
 
@@ -131,11 +132,9 @@ all reach `UIStroke.Thickness`, and like every other offset they scale with the 
 ### Rings and outlines
 
 `ring` and `outline` exist for Tailwind muscle memory: `ring` is thickness 3, `outline` thickness 2,
-`ring-{0,1,2,4,8}` picks a size, `outline-none`/`outline-hidden` zero it, and each takes a
-`-{color}`. Both also set `ApplyStrokeMode = Border`, pinning the stroke to the element's bounds.
-But Roblox gives one reliable `UIStroke` per instance, so all three families — `border-*`, `ring-*`,
-`outline-*` — **write into the same helper** and the later token wins on a collision. There is no
-CSS-style ring-stacked-on-border. Off-list values are `unsupported-stroke-value`.
+and both set `ApplyStrokeMode = Border`. But Roblox gives one reliable `UIStroke` per instance, so
+all three families **write into the same helper** and the later token wins — there is no CSS-style
+ring stacked on a border. Off-list values are `unsupported-stroke-value`.
 
 ## Radius
 
@@ -164,7 +163,8 @@ theme: { extend: { radius: { card: "new UDim(0, 10)" } } }
 | `shadow-xl` | 25 | 20 | −5 | 0.9 |
 | `shadow-2xl` | 50 | 25 | −12 | 0.75 |
 
-Blur is emitted as `BlurRadius = new UDim(0, blur)`, offset as `Offset = UDim2.fromOffset(0, offsetY)`, and spread as `Spread = UDim2.fromOffset(s, s)` — the spread property is only written when it is non-zero, which is why `shadow` and `shadow-sm` do not set it.
+Blur becomes `BlurRadius`, offset becomes `Offset`, and spread becomes `Spread` — written only when
+non-zero, which is why `shadow` and `shadow-sm` do not set it.
 
 `shadow-none` sets `Enabled = false` on the `UIShadow`, disabling it rather than removing the instance.
 
@@ -212,7 +212,7 @@ Color stops come from `from-*`, `via-*`, and `to-*`, and how many you write chan
 />
 
 <Callout title="A gradient forces the background to white">
-When a gradient is present, Vela sets `BackgroundColor3` to `Color3.fromRGB(255, 255, 255)`. `UIGradient` multiplies against the instance's background color, so anything other than white would tint every stop. This means a `bg-*` class on the same element is overwritten — pick the gradient or the fill, not both.
+With a gradient present, Vela sets `BackgroundColor3` to white, because `UIGradient` multiplies against the instance's background and anything else would tint every stop. So a `bg-*` on the same element is overwritten — pick the gradient or the fill, not both.
 </Callout>
 
 ## Element opacity
@@ -221,18 +221,17 @@ When a gradient is present, Vela sets `BackgroundColor3` to `Color3.fromRGB(255,
 
 A non-integer or out-of-range value reports `unsupported-opacity-value`. The editor's completion list shows a shorter set of round numbers, but that list is suggestion sugar — `opacity-37` compiles fine.
 
-**It fades everything the element draws, and everything under it.** Since 0.9.0 the value reaches
-every transparency channel the host paints: `BackgroundTransparency` on any element,
-`TextTransparency` on the text hosts, `ImageTransparency` on the image hosts, and the `Transparency`
-of a `UIStroke` or `UIShadow` the same class list drew. It is then handed down the subtree as a
-running product, `1 - (1 - own) * alpha`. Since 0.10.0 that descent crosses component boundaries as
-well, travelling as a React context through `{props.children}` and component children. Before 0.9.0
-`opacity-*` was `BackgroundTransparency` and nothing else.
+**It fades everything the element draws, and everything under it.** The value reaches every
+transparency channel the host paints, then is handed down the subtree as a running product,
+`1 - (1 - own) * alpha`. That descent crosses component boundaries too, travelling as a React
+context through `{props.children}` and component children.
 
-Reach for the `/N` modifier instead when you want a *single* family faded — `text-slate-100/80` fades the text and leaves the surface alone. The two multiply rather than fight: `opacity-50 bg-blue-600/50` lands at 0.75 transparency, and since 0.9.0 the order of the two tokens does not matter.
+Reach for the `/N` modifier when you want a *single* family faded — `text-slate-100/80` fades the
+text and leaves the surface alone. The two multiply rather than fight: `opacity-50 bg-blue-600/50`
+lands at 0.75 transparency, in either order.
 
 <Callout title="A `canvasgroup` is the real composite">
-`opacity-*` on a `canvasgroup` lowers to `GroupTransparency`, which composites the subtree in one pass and ends the descent there. Everywhere else Vela fades each instance individually, which is close enough for most surfaces but visibly different when siblings overlap — the overlap darkens, because each layer is faded on its own. Wrap them in a `canvasgroup` when that shows.
+`opacity-*` on a `canvasgroup` lowers to `GroupTransparency`, compositing the subtree in one pass and ending the descent there. Everywhere else Vela fades each instance individually, which is visibly different when siblings overlap — the overlap darkens. Wrap them in a `canvasgroup` when that shows.
 </Callout>
 
 ## See also

@@ -20,8 +20,8 @@ Two filenames are recognized, exactly: `vela.config.ts` and `vela.config.json`. 
 `.ts` file wins.
 
 Vela walks upward from each source file's directory and uses the first match, falling back to
-`defaultConfig`. Because the walk starts at the source file, a config in a subdirectory shadows the
-repo root's for the files beneath it — usually accidental rather than intended.
+`defaultConfig`. A config in a subdirectory therefore shadows the repo root's for the files beneath
+it — usually accidental rather than intended.
 
 The JSON form holds the same input shape as `defineConfig`'s argument, plus an optional `$schema`
 key that is stripped before parsing — the package ships a `schema.json` you can point it at for
@@ -39,7 +39,7 @@ editor validation:
 ```
 
 <Callout title="Resolution runs per file; the load runs once per build">
-Config *resolution* — the walk up from each source file — runs per file, which is what lets two directories carry different configs. The *load* is resolved once per directory per build and re-read only when the file changes, so `vela.config.ts` is not transpiled and executed once per `.tsx`. A config that throws is cached too, so a typo is reported once and the next edit lifts it. Keep the file cheap regardless: no filesystem access, no network, no heavy computation at module scope. It is executed as real code.
+The walk up from each source file runs per file, which is what lets two directories carry different configs. The load is resolved once per directory per build and re-read only when the file changes; a config that throws is cached too, so a typo is reported once and the next edit lifts it. Keep the file cheap regardless — it is executed as real code.
 </Callout>
 
 ## How the TypeScript form is loaded
@@ -52,15 +52,12 @@ Vela does not hand the file to roblox-ts. It loads it itself, in three steps:
    `__dirname`, and — this is the part that matters — `defineConfig` and `defaultConfig` injected as
    arguments.
 
-The injection is why step 1 is safe: the import is removed, but the bindings it declared are still in
-scope when the code runs.
+The injection is why step 1 is safe: the import goes, its bindings stay in scope.
 
-Three consequences. **The file is transpiled, not type-checked** — `transpileModule` reports syntax
-and emit diagnostics only, so a type error passes silently. **Module specifiers resolve relative to
-the config file**, not through your `tsconfig.json` `paths` aliases, which are never consulted. And
-**the export must be usable**: Vela takes `module.exports.default` or `module.exports` and requires
-a resolved `TailwindConfig` or an input-shaped object. Anything else throws, naming the key that
-failed — `theme.extend.colors.surface.55`, say.
+Three consequences. **The file is transpiled, not type-checked**, so a type error passes silently.
+**Module specifiers resolve relative to the config file**, never through `tsconfig.json` `paths`.
+And **the export must be usable** — a resolved `TailwindConfig` or an input-shaped object; anything
+else throws, naming the key that failed.
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -183,40 +180,34 @@ if you write them anyway.
   ]}
 />
 
-The valid shades are `50`, `100`, `200`, `300`, `400`, `500`, `600`, `700`, `800`, `900`, `950`, plus
-one non-numeric key: `DEFAULT`. A palette that defines `DEFAULT` is what a bare family name resolves
-to, so `bg-brand` needs no shade. It is a config key only — `bg-brand-DEFAULT` is not a valid class,
-because only the eleven numeric tokens are treated as shades, so that payload is read as the semantic
-key `brand-DEFAULT` and reported as `unknown-theme-key`. Every built-in palette ships a `DEFAULT`
-mirroring its `500`.
+The valid shades are `50` through `950`, plus one non-numeric key: `DEFAULT`, which a bare family
+name resolves to — so `bg-brand` needs no shade. It is a config key only: `bg-brand-DEFAULT` is read
+as the semantic key `brand-DEFAULT` and reported as `unknown-theme-key`. Every built-in palette
+ships a `DEFAULT` mirroring its `500`.
 
-An empty palette object throws
-`Color palette normalization requires at least one shade value.` — but only where the palette is
-actually normalized: a family that is not already in the registry, or any family under a top-level
-`theme.colors`. Extending a family that already exists as a palette takes the merge path instead,
-which spreads your object over the base and returns the base unchanged. So
-`theme.extend.colors: { blue: {} }` throws nothing, warns nothing, and does nothing.
+An empty palette object throws `Color palette normalization requires at least one shade value.` —
+but only where the palette is normalized: a family not already in the registry, or any family under
+a top-level `theme.colors`. Extending an existing palette takes the merge path instead, so
+`theme.extend.colors: { blue: {} }` throws nothing and does nothing.
 
 ### framework
 
 Which UI library the project's JSX compiles for. `"react"` is the default; `"vide"` emits for
 [Vide](https://centau.github.io/vide/). Most projects never write it — left unset the target is
-inferred from `tsconfig.json`, and a Vide project's tsconfig already says so.
+inferred from `tsconfig.json`.
 
 ```ts title="vela.config.ts"
 export default defineConfig({ framework: "vide" });
 ```
 
-It decides two things and nothing else: the module specifier the emit imports for its runtime host
-(`@rbxts/vela-runtime-vide` rather than `@rbxts/vela-runtime`), and the reactive shape of what is
-handed to that host. Every utility, variant, diagnostic and theme value is target-neutral, and a
-statically lowered element is byte-identical under both.
+It decides two things: the module specifier the emit imports for its runtime host, and the reactive
+shape of what is handed to that host. Everything else is target-neutral, and a statically lowered
+element is byte-identical under both.
 
-Left unset, it is inferred: the host walks up to the nearest `tsconfig.json`, follows a **relative**
-`extends` up to eight levels, and reads `compilerOptions.jsxFactory`. A factory beginning with
-`Vide.` selects Vide. The inference is keyed on whether the config *names* the key, not on its
-value, so `framework: "react"` pins React even under a Vide `jsxFactory` — an escape hatch, not a
-habit. `jsxFactory` is program-wide, so the two targets cannot be mixed anyway.
+Inference walks up to the nearest `tsconfig.json`, follows a **relative** `extends` up to eight
+levels, and reads `compilerOptions.jsxFactory`; a factory beginning with `Vide.` selects Vide. It is
+keyed on whether the config *names* the key, so `framework: "react"` pins React even under a Vide
+`jsxFactory`.
 
 The [Vide guide](/vela-rbxts/guides/vide/) covers what changes when you write the code.
 
@@ -234,11 +225,10 @@ so a class list says everything about how the element looks.
 // → <frame BackgroundColor3={Color3.fromRGB(29, 41, 61)} Size={UDim2.fromOffset(80, 40)} BorderSizePixel={0} />
 ```
 
-The transparency is only added when nothing else paints the element: a `bg-*` utility, `opacity-*`,
-a gradient stop or a transparency prop of your own all opt back out, and `BorderSizePixel` is
-skipped when you declared it. A background painted by a variant or a dynamic class value reopens the
-element at runtime. Never touched: an element with **no `className`**, and a **component**, whose
-host element Vela cannot know.
+The transparency is only added when nothing else paints the element — a `bg-*`, `opacity-*`, a
+gradient stop or a transparency prop of your own all opt back out — and `BorderSizePixel` is skipped
+when you declared it. A background painted by a variant reopens the element at runtime. Never
+touched: an element with **no `className`**, and a **component**.
 
 ```ts title="vela.config.ts"
 export default defineConfig({ preflight: false });
@@ -250,9 +240,8 @@ shows through wherever you do not paint over it.
 ### Values are roblox-ts expression strings
 
 Every value in the theme is a string containing a roblox-ts expression. On the static path Vela
-parses that string and splices the resulting expression into the TSX it emits, where roblox-ts
-compiles it like any other expression in your source. It is not a color object, not a hex string, and
-not a number.
+parses it and splices the expression into the TSX it emits. It is not a colour object, not a hex
+string, and not a number.
 
 ```ts title="vela.config.ts"
 export default defineConfig({
@@ -266,16 +255,14 @@ export default defineConfig({
 });
 ```
 
-`"#111111"` and `4` both fail, at different times. `4` is not a string, so it is rejected at load.
-`"#111111"` is a string and nothing validates it as an expression: Vela splices in the first
-expression that parses and drops the rest, falling back to a *string literal* — a roblox-ts type
-error on the next build rather than a config error. Narrower still, `"#a1b2c3"` emits bare, because
-`#` followed by a letter is a valid TypeScript private name. The
+`"#111111"` and `4` both fail, at different times. `4` is rejected at load. `"#111111"` is a string
+nothing validates, so it falls back to a *string literal* — a roblox-ts type error on the next build
+rather than a config error. The
 [theming guide](/vela-rbxts/guides/theming/#values-are-source-code-not-values) has the three shapes
 side by side.
 
 <Callout title="The runtime path re-parses theme values from text">
-The splice above is the **static** path only. A class resolved at runtime carries your theme as serialized text, re-parsed in Luau by two parsers that accept exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`, both with numeric arguments. A value that is valid roblox-ts but not in one of those shapes — `"Color3.new(0.1, 0.2, 0.3)"`, `"new UDim(0, PADDING)"` — compiles fine and then **silently degrades at runtime**: colors drop out of the scale, radius and spacing fall back to `new UDim(0, 0)`. No diagnostic, and the static path keeps working, so it only shows up on dynamically classed elements.
+The splice above is the **static** path only. A class resolved at runtime carries your theme as serialized text, re-parsed in Luau by two parsers that accept exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with numeric arguments. Anything else — `"Color3.new(0.1, 0.2, 0.3)"`, `"new UDim(0, PADDING)"` — compiles fine and then **silently degrades at runtime**, with no diagnostic, on dynamically classed elements only.
 </Callout>
 
 ## Merge semantics
@@ -289,13 +276,10 @@ If `theme.colors` is present, `theme.extend.colors` is **not applied at all** �
 without warning, and every built-in palette is dropped with it. This diverges from real Tailwind,
 where `extend` is layered on top of a replaced `colors`.
 
-So a config with `theme.colors.surface` and `theme.extend.colors.brand` resolves to a theme
-containing only `surface`. `brand-500` will not resolve, and neither will `slate-700`.
+A config with `theme.colors.surface` and `theme.extend.colors.brand` resolves to a theme containing
+only `surface` — neither `brand-500` nor `slate-700` resolves.
 
-Add colors with `theme.extend.colors` alone. Only use top-level `theme.colors` when you genuinely
-want to throw the default palette away. **Every axis behaves this way** — a top-level `theme.radius`,
-`theme.spacing` or `theme.fontFamily` discards both the defaults and its own `extend` counterpart in
-exactly the same silence.
+Add colours with `theme.extend.colors` alone. **Every axis behaves this way** — a top-level `theme.radius`, `theme.spacing` or `theme.fontFamily` discards both the defaults and its own `extend` counterpart in the same silence.
 </Callout>
 
 ## The default theme
@@ -313,8 +297,8 @@ all eleven shades (`50` through `950`), each also carrying a `DEFAULT` that mirr
 `emerald`, `teal`, `cyan`, `sky`, `blue`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `rose`,
 `mauve`, `olive`, `mist`, `taupe`.
 
-The first twenty-two track the Tailwind palette. `mauve`, `olive`, `mist` and `taupe` are Vela
-additions — muted neutrals for surfaces, behaving like any other palette.
+The first twenty-two track the Tailwind palette; `mauve`, `olive`, `mist` and `taupe` are Vela
+additions.
 
 ### Radius
 
@@ -341,11 +325,10 @@ it.
 
 One key: `"4"`, mapped to `new UDim(0, 16)`.
 
-There is no built-in spacing scale. Every other value — `p-2`, `gap-6`, `w-40` — comes from the
-compiler's arithmetic fallback: any unsigned finite multiple of `0.5`, giving
-`new UDim(0, key * 4)`. A lookup only fails when that rule breaks — a negative number, a finer
-fraction, a non-numeric word — reporting `unknown-theme-key`. Use `theme.extend.spacing` for named
-`p-gutter`-style tokens.
+There is no built-in spacing scale. `p-2`, `gap-6` and `w-40` come from the compiler's arithmetic
+fallback: any unsigned finite multiple of `0.5`, giving `new UDim(0, key * 4)`. A negative number, a
+finer fraction or a non-numeric word reports `unknown-theme-key`. Use `theme.extend.spacing` for
+named `p-gutter`-style tokens.
 
 ### fontFamily
 
@@ -374,9 +357,8 @@ export default defineConfig({
 ```
 
 That gives `font-display` and `font-body`. `font-*` resolves the fixed weight names first and reads
-anything else as a key here, so a payload that is neither reports `unknown-theme-key`. Unlike the
-other axes these are **not** roblox-ts expressions — they go into `Font`'s first argument as
-written, so the [re-parsing caveat](#values-are-roblox-ts-expression-strings) does not apply.
+anything else as a key here; a payload that is neither reports `unknown-theme-key`. Unlike the other
+axes these are **not** roblox-ts expressions — they go into `Font`'s first argument as written.
 
 ### screens
 
@@ -400,14 +382,13 @@ export default defineConfig({
 ```
 
 That defines both `tablet:` (≥ 900) and `max-tablet:` (< 900). `theme.screens` replaces the scale
-outright and `theme.extend.screens` merges by key, so replacing it removes `sm` through `2xl` and
-any class still naming one reports `unknown-breakpoint`.
+outright — removing `sm` through `2xl`, so any class still naming one reports `unknown-breakpoint` —
+and `theme.extend.screens` merges by key.
 
 ### rem
 
-Added in 0.12.0. These decide what one rem is worth, and every pixel offset a utility lowers is
-measured in rem — see [the theming guide](/vela-rbxts/guides/theming/#rem) for what that changes
-about rendering.
+These decide what one rem is worth, and every pixel offset a utility lowers is measured in rem — see
+[the theming guide](/vela-rbxts/guides/theming/#rem).
 
 | Key | Default | What it is |
 |---|---|---|
@@ -425,19 +406,16 @@ export default defineConfig({
 });
 ```
 
-`rem` is a record of related settings rather than a scale of keys, so the replace-versus-extend rule
-the other families follow does not apply: **`theme.rem` and `theme.extend.rem` do the same thing**,
-merging field by field. Naming only `min` leaves the rest at their defaults, and `baseResolution`
-merges per axis in turn. `pinnedUnder` is the exception — a list that merged could never say "none",
-so it replaces, and emptying it puts both containers back on the curve.
+`rem` is a record of settings rather than a scale of keys, so the replace-versus-extend rule does
+not apply: **`theme.rem` and `theme.extend.rem` do the same thing**, merging field by field.
+`pinnedUnder` is the exception — it replaces, and emptying it puts both containers back on the
+curve.
 
-A `SurfaceGui` takes its pixel space from the part it is drawn on rather than the viewport, and a
-`BillboardGui` sizes itself the same way, so following the curve there is wrong. The container
-element in the JSX opens a pin: what is written under it lowers to literal offsets, and a component
-rendered there reads the pin at its root. A container the compiler never sees — built in Luau, or in
-a file a React root is mounted into — is outside this; pin such a project with
-`rem: { min: 16, max: 16 }`. An inverted clamp collapses onto `min` during resolution, since Luau's
-`math.clamp` errors when the bounds cross and this config travels to the runtime verbatim.
+A `SurfaceGui` or `BillboardGui` takes its pixel space from the part it is drawn on rather than the
+viewport, so following the curve there is wrong. The container element in the JSX opens a pin: what
+is written under it lowers to literal offsets. A container the compiler never sees — built in Luau,
+or in a file a React root is mounted into — is outside this; pin such a project with
+`rem: { min: 16, max: 16 }`. An inverted clamp collapses onto `min` during resolution.
 
 ## Plugins
 
@@ -460,8 +438,7 @@ export default defineConfig({
 ```
 
 Plugin functions run **while the config resolves**, not while a file compiles, so the compiler, the
-runtime host and the LSP all receive the same plain table — which is why the JSON form can state it
-directly.
+runtime host and the LSP all receive the same plain table.
 
 ### addUtilities
 
@@ -484,14 +461,13 @@ Four things are true of a registered utility:
   `className="btn bg-rose-600"` is rose, regardless of token order.
 
 <Callout title="A cycle expands to nothing, silently">
-The depth cap that stops `{ a: "b", b: "a" }` recursing terminates the expansion rather than reporting it — no diagnostic, and the element comes out carrying none of the utilities the cycle named. If a plugin utility does nothing at all, check whether it reaches back into itself.
+The depth cap that stops `{ a: "b", b: "a" }` recursing terminates the expansion rather than reporting it, and the element comes out carrying none of the utilities the cycle named. If a plugin utility does nothing at all, check whether it reaches back into itself.
 </Callout>
 
 ### addVariant
 
-`hover:` is a state Roblox exposes; the states a UI has of its own — a panel that is open, a row
-that is selected — have no fixed list for Vela to guess at. A plugin registers one against a Roblox
-attribute on the styled instance:
+The states a UI has of its own — a panel that is open, a row that is selected — have no fixed list
+for Vela to guess at. A plugin registers one against a Roblox attribute on the styled instance:
 
 ```ts title="vela.config.ts"
 plugin(({ addVariant }) => {
@@ -500,18 +476,16 @@ plugin(({ addVariant }) => {
 });
 ```
 
-That gives an `open:` prefix reading `instance:GetAttribute("State")`. `equals` takes a string,
-number or boolean. The attribute is the one the rest of the game already reads — it replicates,
-survives a rejoin, and shows in Studio's property panel. `attr-[State=open]:` reads one inline. Both
-forms compose with every other variant and are checked, completed and sorted like a built-in one,
-and only the condition travels to the runtime — `open:rounded-lg` lowers `rounded-lg` exactly as a
-bare `rounded-lg` does. An `attr-[…]` that does not parse reports `malformed-attribute-variant`.
+That gives an `open:` prefix reading `instance:GetAttribute("State")`; `equals` takes a string,
+number or boolean. `attr-[State=open]:` reads one inline. Both forms compose with every other
+variant and are checked, completed and sorted like a built-in one, and only the condition travels to
+the runtime. An `attr-[…]` that does not parse reports `malformed-attribute-variant`.
 
 ### theme()
 
 `theme("colors.blue.600")` reads the **resolved** theme — defaults merged, `extend` applied — and
-returns the roblox-ts expression string for that key, so a plugin builds on the same palette the
-utilities do. It takes an optional second argument used when the path is missing.
+returns the roblox-ts expression string for that key. A second argument is used when the path is
+missing.
 
 ### Motion driver
 
@@ -537,17 +511,15 @@ export const driver = {
 };
 ```
 
-roblox-ts compiles a method with an implicit `self`, and an arrow without one, so the two shapes are
-not interchangeable across the call. Before 0.10.0 the runtime read the method off the table and
-called it detached, which shifted every argument one place to the left and killed the driver on
-`spec.time` — React caught it at mount and took the whole tree down. 0.10.0 calls them as methods and
-types them as methods, so the arrow form is now a compile error rather than a tree that disappears.
+roblox-ts compiles a method with an implicit `self` and an arrow without one, so the two shapes are
+not interchangeable across the call. The runtime calls them as methods and types them as methods, so
+the arrow form is a compile error.
 
 **A driver is also handed the helper instances.** Tweens on `UICorner`, `UIStroke` and `UIShadow`
-arrive with a fourth argument naming which helper is moving. It is additive, so a three-argument
+arrive with a fourth argument naming which helper is moving; it is additive, so a three-argument
 driver keeps working. The driver is imported by *every* transformed module that needs one, so the
-specifier has to resolve from all of them: a package name, or a path relative to your `baseUrl`. A
-relative `./` specifier would resolve differently per file and is rejected at load:
+specifier must be a package name or a path relative to your `baseUrl`. A relative `./` specifier is
+rejected at load:
 
 ```
 plugins.motion set the motion driver module to "./driver". A relative path cannot resolve
@@ -572,7 +544,7 @@ Omit `export` to import the module's default export.
 }
 ```
 
-This is the same object the TypeScript form produces once its plugin functions have run, so you give
+It is the same object the TypeScript form produces once its plugin functions have run, so you give
 up `theme()` and any logic, not any capability.
 
 ## Presets
@@ -591,10 +563,9 @@ export default defineConfig({
 ```
 
 Presets resolve **after the built-in defaults and before the config naming them**, in written order
-— a fold over configuration *inputs* rather than a merge of finished configs. That is what keeps a
-preset replacing `theme.radius` extendable by the project's `theme.extend.radius`. A project always
-outranks what it pulled in. `definePreset()` types a preset without resolving it, so it still merges
-as an input does:
+— a fold over configuration *inputs* rather than a merge of finished configs, so a preset replacing
+`theme.radius` stays extendable by the project's `theme.extend.radius`. `definePreset()` types a
+preset without resolving it:
 
 ```ts title="@acme/game-ui/vela.ts"
 import { definePreset } from "@vela-rbxts/config";
@@ -678,10 +649,8 @@ A file is transformed only if it passes all five checks, applied in this order:
    off.
 5. Its source text matches an opening-JSX-tag pattern, unless `filter.requireJsxSyntax` is off.
 
-There is no glob support — the three booleans above are the only controls, so keeping Vela out of a
-directory means keeping `className` out of its `.tsx` files. Checks 4 and 5 are text scans, so a
-file mentioning `className` only in a comment still passes; that costs a round trip and changes
-nothing in the output.
+There is no glob support — the three booleans above are the only controls. Checks 4 and 5 are text
+scans, so a file mentioning `className` only in a comment still passes.
 
 ## See also
 

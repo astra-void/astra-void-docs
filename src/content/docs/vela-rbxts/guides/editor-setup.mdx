@@ -13,13 +13,16 @@ Vela ships a language server, `vela-rbxts-lsp`, and a VS Code extension that dri
 
 ## VS Code
 
-Install **Vela LSP** from the marketplace, id `astra-void.vela-rbxts-lsp`, published by `astra-void`. It requires VS Code `^1.91.0` — raised from `1.90` in 0.4.2, when the client moved to `vscode-languageclient` 10.
+Install **Vela LSP** from the marketplace, id `astra-void.vela-rbxts-lsp`. It requires VS Code
+`^1.91.0`.
 
-The extension activates on TypeScript and TypeScript React documents and attaches to `file:`-scheme documents in those two languages. There is nothing to enable per project — open a `.tsx` file and the server starts.
+It activates on TypeScript and TypeScript React documents with a `file:` scheme. There is nothing to
+enable per project — open a `.tsx` file and the server starts.
 
 ### Settings
 
-The extension contributes three settings and **no commands**. There is no "restart server" command in the palette; changing any of these three settings restarts the client for you.
+The extension contributes three settings and **no commands** — changing any of them restarts the
+client for you.
 
 <PropTable
   rows={[
@@ -32,37 +35,45 @@ The extension contributes three settings and **no commands**. There is no "resta
 
 ### How the server binary is resolved
 
-If `velaRbxts.lsp.serverPath` is set, that path is used directly (resolved against the workspace root when relative). Otherwise the extension launches the server through `process.execPath` with `require.resolve("@vela-rbxts/lsp")`, gated on the matching platform package being present.
+`velaRbxts.lsp.serverPath`, if set, is used directly (resolved against the workspace root when
+relative). Otherwise the extension launches the server through `process.execPath` with
+`require.resolve("@vela-rbxts/lsp")`, gated on the matching platform package being present.
 
 <Callout title="Two platforms have no prebuilt binary">
-The VSIX bundles exactly the same set of platforms that npm publishes: **darwin** arm64 and x64, **linux x64** gnu and musl, **linux arm64 gnu**, and **win32 x64**. Linux arm64 musl and Windows on ARM have no binary on either channel, so there is no workaround through npm — on those two you have to build the server from source and point `velaRbxts.lsp.serverPath` at the result.
+The VSIX bundles the same platforms npm publishes: **darwin** arm64 and x64, **linux x64** gnu and musl, **linux arm64 gnu**, and **win32 x64**. Linux arm64 musl and Windows on ARM have no binary on either channel — build the server from source and point `velaRbxts.lsp.serverPath` at the result.
 </Callout>
 
-There is no `cargo run` fallback. If you are developing the server itself, build it and set `serverPath` explicitly, or run `cargo run --manifest-path packages/lsp/Cargo.toml` and point the client at the result.
+There is no `cargo run` fallback. Developing the server itself, build it and set `serverPath`
+explicitly.
 
 ## What the language server provides
 
 The declared capability set is small and deliberate.
 
-**Completions.** Suggested only when the compiler reports that the cursor is inside a `className` context — you will not get utility completions in ordinary strings. Trigger characters are `-`, `:`, `"`, `'`, and space. There is no resolve step, so every item arrives complete. A completion rewrites the segment under the cursor and nothing else — since **0.12.3**, which is when accepting an item over the `hover:` in `hover:bg-slate-700` stopped taking `bg-slate-700` with it. **0.12.4** stopped offering `placeholder-transparent` on a `textbox`, which the compiler turned down the moment it was accepted; every other family that takes the `transparent` keyword still offers it.
+**Completions.** Offered only when the compiler reports the cursor inside a `className` context, on
+the trigger characters `-`, `:`, `"`, `'` and space. There is no resolve step, so every item arrives
+complete, and a completion rewrites the segment under the cursor and nothing else.
+`placeholder-transparent` is not offered on a `textbox`, which the compiler turns down; every other
+family taking the `transparent` keyword still offers it.
 
 <Callout title="A class value the compiler has to walk into counts as that context">
-Since **0.12.2** every capability on this page reads the class strings out of the shapes a `className` is really written in. Chief among them a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a dynamic class value — plus a template's interpolations, `as const`, `satisfies`, string concatenation, and an object's computed keys and spreads. Before that a function had no arm in the walk at all, so
-`className={() => "bg-blue-600"}` got completions and hover only while the file was failing to parse
-and a lexical fallback was standing in for the real one.
+Every capability on this page reads the class strings out of the shapes a `className` is really written in: a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a dynamic class value, plus a template's interpolations, `as const`, `satisfies`, string concatenation, and an object's computed keys and spreads.
 </Callout>
 
-**Hover.** Shows what a class token resolves to. Since 0.12.0 a viewport-scaled offset reads as its
-rem value first — `` Sets `UIPadding` to `1rem` (16px at the base viewport). `` — across padding, gap,
-margin, sizes, positions, radius, text size, stroke and separator thickness, and scrollbar width. That
-is true in completion docs as well. A config that [pins rem](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels)
-gets the old pixel wording back, matching the emit it produces.
+**Hover.** Shows what a class token resolves to. A viewport-scaled offset reads as its rem value
+first — `` Sets `UIPadding` to `1rem` (16px at the base viewport). `` — in hovers and completion
+docs alike. A config that
+[pins rem](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels) gets plain pixel
+wording, matching the emit it produces.
 
-**Diagnostics.** Push-based via `publish_diagnostics`, debounced 200 ms and gated on the document version. There is no pull-diagnostics provider, so a client that only implements pull diagnostics will see nothing.
+**Diagnostics.** Push-based via `publish_diagnostics`, debounced 200 ms and gated on the document
+version. There is no pull-diagnostics provider.
 
 **Document colors and color presentations.** Color utilities get a swatch in the gutter and can be edited through the editor's color picker.
 
-**Code actions.** Two kinds. Quickfixes are driven by diagnostics whose source is `vela-rbxts` — each offers up to three ranked replacement suggestions plus a "remove token" action. Since 0.7.0 there is also a **source action**, `source.sortVelaClasses`, described below.
+**Code actions.** Quickfixes driven by diagnostics whose source is `vela-rbxts`, each offering up to
+three ranked replacements plus a "remove token" action, and the **source action**
+`source.sortVelaClasses` below.
 
 **Document highlight.** Highlights other occurrences of the token under the cursor.
 
@@ -74,17 +85,18 @@ gets the old pixel wording back, matching the emit it produces.
 //                      ↑ UICorner.TopLeftRadius, BottomLeftRadius
 ```
 
-They are **off by default**, behind `velaRbxts.inlayHints.enabled`. The labels are built from the
-compiler's own lowering, read back through an editor API — not from a second semantic model that could
-drift from what the build emits.
+They are **off by default**, behind `velaRbxts.inlayHints.enabled`. The labels come from the
+compiler's own lowering, read back through an editor API.
 
-That is the complete list. The server does **not** provide go-to-definition, references, rename, formatting, semantic tokens, or signature help. Those requests are not advertised, so your editor falls back to its TypeScript language service for them, which is the correct behavior — Vela only understands the inside of `className`.
+That is the complete list. The server does **not** provide go-to-definition, references, rename,
+formatting, semantic tokens or signature help; your editor falls back to its TypeScript language
+service for them.
 
 ### Sorting class names
 
-The compiler exposes a canonical class order, and the server offers it as the source action
-`source.sortVelaClasses`. It rewrites every `className` in the document at once — layout first, then
-sizing, spacing, colors, radius, typography, with variant-prefixed tokens last:
+The compiler exposes a canonical class order, offered as the source action `source.sortVelaClasses`.
+It rewrites every `className` in the document at once — layout, sizing, spacing, colours, radius,
+typography, with variant-prefixed tokens last:
 
 ```tsx title="before"
 <frame className="text-lg bg-blue-600 flex p-4 hover:bg-blue-700 rounded-lg w-full" />
@@ -95,18 +107,13 @@ sizing, spacing, colors, radius, typography, with variant-prefixed tokens last:
 ```
 
 **The sort never changes what your classes do.** Utilities that can write the same Roblox property
-are treated as one group and keep their relative order within it, so a `px-4` written after `p-2` — a
-collision the later token wins — stays after it. A template keeps the whitespace around each
-interpolation, too: until **0.12.2** `` `bg-slate-700 p-4 ${flag}` `` came back as
-`` `p-4 bg-slate-700${flag}` ``, running the last token into whatever `flag` resolves to.
+are treated as one group and keep their relative order within it, so a `px-4` written after `p-2`
+stays after it. A template keeps the whitespace around each interpolation.
 
-**And since 0.12.4 it does not change how they are laid out.** The tokens are the only thing that
-moves. The whitespace between them is carried over as written, so a class list broken across several
-lines stays that way instead of being flattened on every save. Two more sorting edges closed in
-**0.12.3**. A value containing an arbitrary payload with a space in it — `w-[calc(100% - 4px)]` —
-moves as the single class it is. And a value whose bracket never closes is left alone entirely: the
-pieces either side of an unclosed `[` are not independent classes, so moving them apart would
-rewrite the source into something else.
+**It does not change how they are laid out either.** Whitespace between tokens is carried over as
+written, so a class list broken across several lines stays that way. An arbitrary payload containing
+a space — `w-[calc(100% - 4px)]` — moves as the single class it is, and a value whose bracket never
+closes is left alone entirely.
 
 Run it from the editor's source-action menu, or on save:
 
@@ -118,25 +125,25 @@ Run it from the editor's source-action menu, or on save:
 }
 ```
 
-Any LSP client that supports source actions can invoke it by that kind. The underlying API is
-`sortClassNames` on `@vela-rbxts/compiler`, which takes `{ source, fileName }` and returns
+Any LSP client supporting source actions can invoke it by that kind. The underlying API is
+`sortClassNames` on `@vela-rbxts/compiler`, taking `{ source, fileName }` and returning
 `{ edits: [{ range: { start, end }, text }] }` — the same offsets the server turns into workspace
-edits, if you would rather run the sort in your own tooling.
+edits.
 
 Text synchronization is incremental and the position encoding is UTF-16.
 
 <Callout title="unsupported-host-utility is editor-only">
-The rule that `text-*` belongs on `textlabel`/`textbutton`/`textbox`, `image-*` on `imagelabel`/`imagebutton`, and `placeholder-*` on `textbox` is enforced **only** in the editor. The transform pipeline never consults it. `<frame className="text-red-500" />` shows a squiggle in VS Code and compiles without complaint, emitting `TextColor3` onto a Frame. Treat that diagnostic as a lint, and do not expect a build to catch it.
+The rule that `text-*` belongs on `textlabel`/`textbutton`/`textbox`, `image-*` on `imagelabel`/`imagebutton` and `placeholder-*` on `textbox` is enforced **only** in the editor. `<frame className="text-red-500" />` shows a squiggle in VS Code and compiles without complaint, emitting `TextColor3` onto a Frame. Treat it as a lint.
 
 Inside a component's `className` the rule is dropped rather than merely unenforced. The editor cannot know which host element `<Panel />` renders, so it completes and hovers the full utility set there and never raises `unsupported-host-utility`.
 </Callout>
 
-The editor also suppresses `unknown-theme-key` while the payload you have typed so far is still a prefix of a real theme key, so `bg-sla` on the way to `bg-slate-800` never flashes a warning — while `bg-nope`, which no key starts with, warns immediately.
+The editor also suppresses `unknown-theme-key` while the payload typed so far is still a prefix of a
+real key, so `bg-sla` never flashes a warning on the way to `bg-slate-800` while `bg-nope` warns
+immediately.
 
 <Callout title="A config the extension cannot read now says so">
-Until **0.12.7** a `vela.config.ts` the extension failed to load was written to its output channel and nowhere else. The session stayed silently on the default theme, reporting every key the project defined as unknown while the same file compiled without complaint. It is a notification now, naming
-the file and the reason, and a config that loads on a later save clears it. **0.12.8** fixed the
-reason most people hit it: the published extension shipped with no config loader at all.
+A `vela.config.ts` the extension fails to load raises a notification naming the file and the reason, and a config that loads on a later save clears it. Without that the session stays silently on the default theme, reporting every key the project defines as unknown.
 </Callout>
 
 ## Other editors
@@ -147,9 +154,13 @@ The server speaks LSP over stdio and has no VS Code dependency. Spawn it with:
 npx --package @vela-rbxts/lsp vela-rbxts-lsp
 ```
 
-The binary is named `vela-rbxts-lsp` but it is owned by the `@vela-rbxts/lsp` package — `vela-rbxts-lsp` on its own is the VS Code extension id, published as a VSIX, not an npm package, so a bare `npx vela-rbxts-lsp` resolves nothing.
+The binary is named `vela-rbxts-lsp` but owned by the `@vela-rbxts/lsp` package. `vela-rbxts-lsp` on
+its own is the VS Code extension id, published as a VSIX, so a bare `npx vela-rbxts-lsp` resolves
+nothing.
 
-The one thing you must get right is configuration. **The server does not read `vela.config.ts` from disk.** It has no file loader and no config discovery of its own — the client is responsible for evaluating each config and handing over the result. Without it the server falls back to the built-in default theme, and every custom color or spacing key you defined will report `unknown-theme-key`.
+**The server does not read `vela.config.ts` from disk.** It has no file loader and no config
+discovery — the client evaluates each config and hands over the result. Without that the server
+falls back to the built-in default theme and every custom key reports `unknown-theme-key`.
 
 Pass the configs in `initializationOptions`:
 
@@ -162,13 +173,19 @@ Pass the configs in `initializationOptions`:
 }
 ```
 
-`workspaceRoot` and `configs` are top-level siblings. Get the shape wrong and you will not see an error: the server deserializes the options with `from_value(...).ok().unwrap_or_default()`, so anything it cannot parse silently becomes zero configs and you are back on the default theme.
+`workspaceRoot` and `configs` are top-level siblings. Get the shape wrong and there is no error: the
+server deserializes with `from_value(...).ok().unwrap_or_default()`, so anything unparseable becomes
+zero configs and you are back on the default theme.
 
 Each entry is a directory plus the resolved config serialized as JSON. The server matches a file to the nearest containing `dir`, which is how per-package configs in a monorepo work.
 
-To update configs after startup — for example when the user edits `vela.config.ts` — send the custom method `vela-rbxts/setConfigs`. Its payload carries only `configs`, with no `workspaceRoot`. That is exactly what the VS Code extension does: it watches `**/vela.config.{ts,json}`, evaluates each match through `@vela-rbxts/rbxtsc-host/project-config`, pushes `{ dir, json }` pairs at startup, and pushes again on every change.
+To update configs after startup, send the custom method `vela-rbxts/setConfigs`; its payload carries
+only `configs`. That is what the VS Code extension does — it watches `**/vela.config.{ts,json}`,
+evaluates each match through `@vela-rbxts/rbxtsc-host/project-config`, and pushes `{ dir, json }`
+pairs at startup and on every change.
 
-If your client cannot evaluate TypeScript, you can build the same JSON however you like — the server only cares that the shape matches the resolved `TailwindConfig`. See [Configuration](/vela-rbxts/reference/config/) for that shape.
+A client that cannot evaluate TypeScript can build the same JSON any way it likes — the server only
+cares that the shape matches the resolved `TailwindConfig`.
 
 ### Platform packages
 
@@ -181,7 +198,9 @@ The `vela-rbxts-lsp` launcher resolves one of six platform-specific packages:
 - `@vela-rbxts/lsp-linux-x64-musl`
 - `@vela-rbxts/lsp-win32-x64-msvc`
 
-Those six are what the release workflow builds and publishes, and they are the same six the VSIX bundles. The launcher's lookup table also names `@vela-rbxts/lsp-linux-arm64-musl` and `@vela-rbxts/lsp-win32-arm64-msvc`, but nothing builds them and they do not exist on npm — on linux arm64 musl and Windows on ARM you have to build the server from source.
+Those six are what the release workflow publishes and what the VSIX bundles. The launcher's lookup
+table also names `@vela-rbxts/lsp-linux-arm64-musl` and `@vela-rbxts/lsp-win32-arm64-msvc`, but
+nothing builds them — on those two, build from source.
 
 ## See also
 

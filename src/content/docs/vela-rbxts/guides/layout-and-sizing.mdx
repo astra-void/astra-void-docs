@@ -11,11 +11,11 @@ import { Callout, VelaPreview } from "@/components/docs/mdx";
 
 Roblox has no box model: an element is positioned by `Position` and `AnchorPoint`, sized by `Size`
 and `AutomaticSize`, and laid out by child instances like `UIListLayout` and `UIPadding`. Vela maps
-onto those instances directly where it can, emulates where it can build one honestly (margins become
-a wrapper frame), and warns where neither is possible. Two rules explain most of the surprises here.
-A utility sets a property either on the element or on a *helper instance* Vela prepends to its
-children. And several Tailwind names that look like siblings land on entirely different Roblox
-properties, because Roblox splits alignment and flex distribution into separate enums.
+onto those instances where it can, emulates where it can build one honestly, and warns where neither
+is possible. Two rules explain most of the surprises here: a utility sets a property on the element
+or on a *helper instance* Vela prepends to its children, and several Tailwind names that look like
+siblings land on different Roblox properties, because Roblox splits alignment and flex distribution
+into separate enums.
 
 ## Flex and `UIListLayout`
 
@@ -36,10 +36,9 @@ no reversed fill direction. Reorder the children, or invert their `order-*` valu
 
 ### `justify-*` splits across two properties
 
-This is the mapping most likely to bite you. `justify-start`, `justify-center`, and `justify-end`
-set `HorizontalAlignment`. The distribution values — `justify-between`, `justify-around`,
-`justify-evenly` — set **`HorizontalFlex`**, which is a different property with a different enum
-type.
+`justify-start`, `justify-center` and `justify-end` set `HorizontalAlignment`. The distribution
+values — `justify-between`, `justify-around`, `justify-evenly` — set **`HorizontalFlex`**, a
+different property with a different enum type.
 
 | Class | Property | Value |
 | --- | --- | --- |
@@ -51,9 +50,7 @@ type.
 | `justify-evenly` | `HorizontalFlex` | `Enum.UIFlexAlignment.SpaceEvenly` |
 
 <Callout title="They do not override each other">
-Because `HorizontalAlignment` and `HorizontalFlex` are separate properties, `justify-center
-justify-between` sets both, and the two interact inside Roblox's layout solver rather than the later
-class winning. Pick one.
+They are separate properties, so `justify-center justify-between` sets both and the two interact inside Roblox's layout solver rather than the later class winning. Pick one.
 </Callout>
 
 `items-*` splits the same way on the cross axis. `items-start`, `items-center`, and `items-end` set
@@ -63,17 +60,16 @@ properties: `content-start`/`content-center`/`content-end` set `VerticalAlignmen
 `content-between`/`content-around`/`content-evenly`/`content-stretch` set `VerticalFlex`.
 
 These names are axis-fixed, not direction-relative: `justify-*` always drives the horizontal
-properties and `items-*` the vertical, even under `flex-col`. That mirrors the Roblox property
-names, not CSS main/cross-axis semantics.
+properties and `items-*` the vertical, even under `flex-col`.
 
 ### Wrapping and gap
 
 `flex-wrap` and `flex-nowrap` set `UIListLayout.Wraps` to `true` and `false`.
 
 `gap-{key}` sets `UIListLayout.Padding`. There is no `gap-x-` or `gap-y-` — `UIListLayout` has a
-single `Padding` value that applies along the fill direction, so an axis-split gap has nothing to
-lower to. `space-x-{key}` and `space-y-{key}` are alternate spellings that set the same `Padding`
-and the matching `FillDirection` in one token — `space-y-2` is exactly `flex flex-col gap-2`.
+single `Padding` applying along the fill direction. `space-x-{key}` and `space-y-{key}` set the same
+`Padding` and the matching `FillDirection` in one token, so `space-y-2` is exactly
+`flex flex-col gap-2`.
 
 ```tsx title="src/client/Toolbar.tsx"
 <frame className="flex justify-between items-center gap-2">
@@ -88,14 +84,13 @@ and the matching `FillDirection` in one token — `space-y-2` is exactly `flex f
   scene="LayoutScene"
 />
 
-The example keeps to the alignment half of `justify-*`. The distribution values lower to
-`UIFlexAlignment`, which the browser renderer behind these previews does not implement, so a
-`justify-between` preview would render as a plain left-aligned row.
+The example keeps to the alignment half of `justify-*` — the distribution values lower to
+`UIFlexAlignment`, which the renderer behind these previews does not implement.
 
 ### Flex items and `UIFlexItem`
 
-These class names lower to a `UIFlexItem` child on the element itself. The mapping is not one-to-one
-with CSS — several names collapse onto the same `FlexMode`.
+These lower to a `UIFlexItem` child on the element itself. The mapping is not one-to-one with CSS —
+several names collapse onto the same `FlexMode`.
 
 | Class | `UIFlexItem` property |
 | --- | --- |
@@ -116,8 +111,8 @@ currently a synonym for `w-{value}` — see the
 ### Child order
 
 `order-{n}` sets `LayoutOrder`, which is what `UIListLayout` sorts by. Negative forms (`-order-2`)
-and the keywords `order-first` (−9999), `order-last` (9999), and `order-none` (0) are all accepted.
-This is the tool to reach for where CSS would use `flex-row-reverse`.
+and the keywords `order-first` (−9999), `order-last` (9999) and `order-none` (0) are accepted. Reach
+for it where CSS would use `flex-row-reverse`.
 
 ## Grid and `UIGridLayout`
 
@@ -127,19 +122,17 @@ vertically. There are no spans — `col-span-*` and `row-span-*` have no `UIGrid
 and report `no-roblox-equivalent`.
 
 **The grid is the one layout that sizes its own children.** `UIGridLayout` stamps `CellSize` onto
-every child and ignores its own `Size`, so a `w-*` on a cell does nothing — the track count decides
-the width. `grid-cols-N` divides the axis into N tracks and gives each cell its share of the gap:
+every child, so a `w-*` on a cell does nothing — the track count decides the width:
 
 ```tsx title="grid grid-cols-2 gap-2.5"
 <uigridlayout FillDirectionMaxCells={2} CellSize={new UDim2(0.5, -5, 0, 100)} CellPadding={UDim2.fromOffset(10, 10)} />
 ```
 
-The cross axis is not implied by a column count, so it stays at Roblox's 100px default until you name
-it with `auto-rows-*` (or `auto-cols-*` under `grid-rows-*`). Both read the spacing scale, so
-`auto-rows-24` is a 96px row.
+The cross axis stays at Roblox's 100px default until you name it with `auto-rows-*` (or
+`auto-cols-*` under `grid-rows-*`). Both read the spacing scale, so `auto-rows-24` is a 96px row.
 
 <Callout title="Keep gap-* off grid elements for now">
-`gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, the right target — but it also emits an ordinary `UIListLayout` carrying the same value, leaving two layouts fighting over the children. Set `CellPadding` as a prop and leave `gap-*` off.
+`gap-*` on a `grid` element feeds `UIGridLayout.CellPadding`, but it also emits an ordinary `UIListLayout` carrying the same value, leaving two layouts fighting over the children. Set `CellPadding` as a prop and leave `gap-*` off.
 </Callout>
 
 ## Padding and `UIPadding`
@@ -159,10 +152,10 @@ Padding utilities collect into one `UIPadding` child. The axis mapping is direct
 ## Margins are built, not native
 
 Roblox has no margin box, so Vela constructs one: a positive margin wraps the element in a
-transparent frame padded by the margin values, and the element's layout-facing props are routed onto
-the wrapper. That wrapper cannot be expressed as a static prop, so **any margin utility moves the
-element onto the [runtime path](/vela-rbxts/guides/dynamic-class-names/)** — even in a plain string
-literal. The variants:
+transparent frame padded by the margin values, with the element's layout-facing props routed onto
+the wrapper. That wrapper cannot be a static prop, so **any margin utility moves the element onto
+the [runtime path](/vela-rbxts/guides/dynamic-class-names/)** — even in a plain string literal. The
+variants:
 
 | Class | Effect |
 | --- | --- |
@@ -171,15 +164,14 @@ literal. The variants:
 | `-mr-*`, `-mb-*` | `unsupported-negative-margin` |
 | `mx-auto`, `my-auto` | **static** centering: `AnchorPoint` 0.5 + `Position` scale 0.5, no wrapper |
 
-Because the wrapper participates in the parent's list layout, margins **sum with the parent's
-`gap-*`** — a `gap-2` column whose children carry `my-2` shows 16-pixel gaps. For plain spacing
-between list children, `gap-*` does the same job as one static property; save margins for what gap
-cannot express, like asymmetric spacing around a single child.
+The wrapper participates in the parent's list layout, so margins **sum with the parent's `gap-*`** —
+a `gap-2` column whose children carry `my-2` shows 16-pixel gaps. Save margins for what gap cannot
+express, like asymmetric spacing around a single child.
 
 ## The spacing value grammar
 
-`p-*`, `m-*`, `gap-*`, the min/max constraints, and the offset branch of the sizing utilities all
-share one value resolver, and it runs in two steps.
+`p-*`, `m-*`, `gap-*`, the min/max constraints and the offset branch of the sizing utilities share
+one value resolver, in two steps.
 
 1. **Theme lookup.** The key is looked up in `theme.spacing`. If it is there, that roblox-ts
    expression string is used verbatim.
@@ -190,13 +182,11 @@ So `p-1.5` is `new UDim(0, 6)` and `p-40` is `new UDim(0, 160)`. `p-0.25` fails 
 `unknown-theme-key`; a leading sign is rejected outright.
 
 <Callout title="The built-in spacing scale has one key">
-`theme.spacing` ships with exactly `"4"`. Every other numeric spacing key you write works through
-the arithmetic fallback, not through the theme. Adding your own named keys is covered in
-[Theming](/vela-rbxts/guides/theming/).
+`theme.spacing` ships with exactly `"4"`; every other numeric key works through the arithmetic fallback. Adding named keys is covered in [Theming](/vela-rbxts/guides/theming/).
 </Callout>
 
 <Callout title="Since 0.12.0 those offsets are rem, not pixels">
-`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**. Every offset on this page is a rem unit carried as `__VelaRem.scale(…)`, following the player's viewport and clamped into `[min, max]` — so these numbers are the ones you get at 1920×1020, and everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels). Scale-valued utilities are untouched.
+`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**. Every offset on this page is a rem unit carried as `__VelaRem.scale(…)`, following the player's viewport and clamped into `[min, max]` — so these numbers hold at 1920×1020, and everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels). Scale-valued utilities are untouched.
 </Callout>
 
 ## Sizing and `Size`
@@ -222,10 +212,9 @@ resolves through one of four branches.
 Anything outside that table is rejected, including the reducible forms. `w-2/4` and `w-3/6` are
 **not** accepted even though they equal `w-1/2`; write `w-1/2`.
 
-**Anything else** goes through the spacing grammar above and becomes an offset. If the resolved
-spacing value has a non-zero scale component — which can happen with a custom theme entry like
-`new UDim(0.5, 0)` — you get `unsupported-size-spacing-value`, because a size axis takes an offset
-here, not a scale.
+**Anything else** goes through the spacing grammar above and becomes an offset. A resolved spacing
+value with a non-zero scale component — a custom theme entry like `new UDim(0.5, 0)` — gives
+`unsupported-size-spacing-value`.
 
 ### Automatic sizing
 
@@ -258,9 +247,8 @@ are zero:
 // Size = UDim2.fromOffset(160, 32)
 ```
 
-`w-` and `h-` on the same element always merge into one `Size`, on both lowering paths. The runtime
-path used to state a whole `UDim2` per token and zero the axis it did not name — fixed for dynamic
-class values in 0.5.2 and for variant rules in 0.6.0, so `md:w-32 md:h-32` keeps both axes now. See
+`w-` and `h-` on the same element always merge into one `Size`, on both lowering paths —
+`md:w-32 md:h-32` keeps both axes. See
 [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
 
 ## Min and max size
@@ -268,12 +256,11 @@ class values in 0.5.2 and for variant rules in 0.6.0, so `md:w-32 md:h-32` keeps
 `min-w-`, `max-w-`, `min-h-`, and `max-h-` build a `UISizeConstraint` child with `MinSize` and
 `MaxSize` as `Vector2` values.
 
-These values are **offset-only**. They go through the spacing offset resolver, so fractions and
-`full` are not accepted here — `max-w-1/2` does not work.
+These values are **offset-only** — they go through the spacing offset resolver, so `max-w-1/2` does
+not work.
 
-An axis you do not specify gets a default: unspecified min axes default to `0`, and unspecified max
-axes default to `math.huge`. So `max-w-80` alone emits `MaxSize = new Vector2(320, math.huge)`,
-leaving the vertical axis unconstrained.
+An unspecified min axis defaults to `0` and an unspecified max axis to `math.huge`, so `max-w-80`
+alone emits `MaxSize = new Vector2(320, math.huge)`.
 
 ## Position and anchor
 
@@ -291,18 +278,16 @@ Position utilities write into the element's `Position`:
 They accept `px`, `full`, the same exact fraction set as sizing, and spacing offsets.
 
 `right-*` and `bottom-*` express the coordinate from the far edge — `right-2` emits
-`new UDim(1, -8)` on the X axis — but they do **not** change `AnchorPoint`, so the point they place
-is still the element's top-left corner. Pair them with `origin-*` to anchor the matching edge:
+`new UDim(1, -8)` on X — but do **not** change `AnchorPoint`, so the point they place is still the
+element's top-left corner. Pair them with `origin-*`:
 
 ```tsx title="8px inside the parent's bottom-right corner"
 <frame className="right-2 bottom-2 origin-bottom-right w-24 h-8" />
 ```
 
-Vela has no `absolute` / `relative` / `fixed` / `static` family — every Roblox GUI object is
-positioned relative to its parent already, so there is nothing for those keywords to switch between,
-and they report `no-roblox-equivalent`. If a parent has a `UIListLayout`, that layout owns child
-positions and `left-*`/`top-*` will not take effect — remove the layout utilities from the parent
-instead.
+Vela has no `absolute` / `relative` / `fixed` / `static` family — every Roblox GUI object is already
+positioned relative to its parent, so those keywords report `no-roblox-equivalent`. A parent with a
+`UIListLayout` owns its children's positions, so `left-*`/`top-*` will not take effect there.
 
 `origin-{key}` sets `AnchorPoint`. Exactly nine keys are valid:
 
@@ -322,18 +307,18 @@ Anything else is `unsupported-anchor-value`.
 
 ### Translation
 
-`translate-x-*` and `translate-y-*` shift an element the way CSS transforms do, and the lowering
-splits by value kind: a **fraction** is a shift measured in the element's own size, which is exactly
-what `AnchorPoint` expresses, while a **pixel** value adds to the `Position` offset. The payoff is
-that the CSS centering idiom works verbatim:
+`translate-x-*` and `translate-y-*` shift an element the way CSS transforms do, splitting by value
+kind: a **fraction** is a shift measured in the element's own size, which is what `AnchorPoint`
+expresses, and a **pixel** value adds to the `Position` offset. So the CSS centring idiom works
+verbatim:
 
 ```tsx title="Dead center — AnchorPoint (0.5, 0.5), Position (0.5, 0.5) scale"
 <frame className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-40" />
 ```
 
-`mx-auto` and `my-auto` compile to the same centering, one axis at a time — pick whichever reads
-better. Because fractional translation *is* `AnchorPoint`, do not combine it with `origin-*` on the
-same element; the later token wins.
+`mx-auto` and `my-auto` compile to the same centring, one axis at a time. Because fractional
+translation *is* `AnchorPoint`, do not combine it with `origin-*` on the same element — the later
+token wins.
 
 ## Aspect ratio
 
@@ -392,8 +377,8 @@ Any other value is `unsupported-scale-value`, and scaling is uniform — there i
 `hidden` sets `Visible = false` and `visible` sets `Visible = true`.
 
 `overflow-hidden` and `overflow-clip` both set `ClipsDescendants = true`; `overflow-visible` sets it
-to `false`. Any other `overflow-*` value emits `unsupported-overflow-value` — there is no scroll
-variant, because scrolling is a property of the `scrollingframe` host element rather than a style.
+to `false`. Any other value emits `unsupported-overflow-value` — there is no scroll variant, since
+scrolling belongs to the `scrollingframe` host element.
 
 ## What layout still cannot express
 

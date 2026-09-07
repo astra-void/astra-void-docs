@@ -9,13 +9,11 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Vela borrows Tailwind's syntax, not its scope. Roblox UI has a different layout model, a different
-set of primitives, and no CSS box model, so a faithful port would produce a large surface of classes
-that cannot mean anything. What Vela ships instead is a Roblox-oriented mapping. Utilities that
-correspond to real Roblox properties and helper instances, plus a few structural emulations where
-the correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes
-separator frames. Everything that cannot be expressed at all is rejected loudly. This page maps
-where those edges are at **0.13.0**.
+Vela borrows Tailwind's syntax, not its scope. What it ships is a Roblox-oriented mapping: utilities
+that correspond to real Roblox properties and helper instances, plus a few structural emulations
+where the correspondence can be built honestly — margins become a wrapper frame, `divide-*` becomes
+separator frames. Everything that cannot be expressed is rejected loudly. This page maps where those
+edges are at **0.13.0**.
 
 ## What is in scope
 
@@ -24,153 +22,117 @@ Utilities apply to exactly eight host elements:
 `frame`, `scrollingframe`, `canvasgroup`, `textlabel`, `textbutton`, `textbox`, `imagelabel`, `imagebutton`
 
 They also apply to **components** — any tag starting with an uppercase letter, or any member
-expression such as `<Switch.Root />`. A `className` there is lowered into props and helper children
-on the component itself, which only reaches the screen if the component forwards the props and
-children it does not consume down to a host element. See
-[How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
+expression such as `<Switch.Root />`. A `className` there lowers into props and helper children on
+the component itself, which reaches the screen only if the component forwards what it does not
+consume. See [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
 
 Anything that is neither is skipped, keeps its `className` verbatim, and reports
 `classname-on-unsupported-host` — lowercase intrinsics Vela does not implement, such as `screengui`,
 and namespaced tags such as `<svg:rect />`, which never count as components.
 
-Within those eight, the covered ground at 0.13.0 is wide. Paint: colors (arbitrary hex and `/N`
-opacity modifiers included), gradients, borders, rings and outlines, corner radius — per corner
-since 0.13.0 — shadows and opacity. Space: padding, margins, gap and `space-*`, `divide-*`
-separators, sizing with min/max constraints, position on all four edges, anchor point, translation,
-rotation, scale, aspect ratio, z-index and layout order. Layout: flex layout and flex items, grid
-with real cell sizing, visibility, overflow and the ScrollingFrame families. Then typography from
-family, size and weight through line height, case transforms and decorations; image scaling;
-interactivity and overscroll; and arbitrary length values across most of it. Finally a
-`TweenService`-backed motion layer, with the runtime variants: `hover:`, `active:`, `focus:`,
-`dark:`, the breakpoints and their `max-` complements, and the attribute-backed states you define
-yourself. `opacity-*` is the one utility that reaches past the element it is written on: it fades
-every channel that element paints and every instance under it, across component boundaries included
+Within those eight the covered ground is wide. Paint: colours (arbitrary hex and `/N` opacity
+modifiers included), gradients, borders, rings and outlines, per-corner radius, shadows and opacity.
+Space: padding, margins, gap and `space-*`, `divide-*` separators, sizing with min/max constraints,
+position on all four edges, anchor point, translation, rotation, scale, aspect ratio, z-index and
+layout order. Layout: flex layout and flex items, grid with real cell sizing, visibility, overflow
+and the ScrollingFrame families. Then typography, image scaling, interactivity and overscroll, and
+arbitrary length values across most of it. Finally a `TweenService`-backed motion layer with the
+runtime variants — `hover:`, `active:`, `focus:`, `dark:`, the breakpoints and their `max-`
+complements, and the attribute-backed states you define yourself. `opacity-*` is the one utility
+that reaches past the element it is written on
 ([how far, and where it stops](/vela-rbxts/reference/utilities/#effects)). A config can add
-utilities of its own through [plugins](/vela-rbxts/reference/config/#plugins). The
-[utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it with the exact accepted
-values.
+utilities through [plugins](/vela-rbxts/reference/config/#plugins), and the
+[utilities reference](/vela-rbxts/reference/utilities/) enumerates all of it.
 
-Two things cut across all of it since 0.12.0. Every pixel offset a utility lowers is a
-[rem unit](/vela-rbxts/guides/theming/#rem) that follows the viewport, rather than a literal pixel. And
-the whole set emits for [Vide](/vela-rbxts/guides/vide/) as well as React — nothing to configure, the
-same utilities, the same diagnostics, and a byte-identical static emit.
+Two things cut across all of it. Every pixel offset a utility lowers is a
+[rem unit](/vela-rbxts/guides/theming/#rem) following the viewport, and the whole set emits for
+[Vide](/vela-rbxts/guides/vide/) as well as React — same utilities, same diagnostics, byte-identical
+static emit.
 
 ## What is permanently out
 
 Vela distinguishes a class it has never heard of (`unsupported-utility-family` — the typo bucket)
-from a real Tailwind family that Roblox UI cannot express (`no-roblox-equivalent`). The second list
-is a design decision, not a roadmap: letter spacing (`tracking-*`), per-element filters (`blur-*`,
-`backdrop-*`, `grayscale`), 3D transforms (`skew-*`, `perspective-*`), the CSS positioning model
-(`absolute`, `fixed`, `sticky`), grid spans (`col-span-*`), cursors, text indentation, and the rest
-of the [not-implemented table](/vela-rbxts/reference/utilities/#not-implemented). Each entry names
-what Roblox is missing, so a warning there is an answer rather than a dead end.
+from a real Tailwind family Roblox UI cannot express (`no-roblox-equivalent`). The second list is a
+design decision, not a roadmap: letter spacing, per-element filters, 3D transforms, the CSS
+positioning model, grid spans, cursors, text indentation and the rest of the
+[not-implemented table](/vela-rbxts/reference/utilities/#not-implemented). Each entry names what
+Roblox is missing.
 
 ## The gaps that do not announce themselves
 
 Most of Vela's edges produce a diagnostic. The ones below do not, and they are worth reading twice.
 
 <Callout title="Four silent gaps">
-**Host-element restrictions are editor-only on the static path.** Vela knows which utilities make
-sense on which tag — text utilities on `textlabel`/`textbutton`/`textbox`, `image-*` and `object-*`
-on image elements, `placeholder-*` on `textbox`, `overscroll-*` and the scrolling families on
-`scrollingframe`. That table drives completions, hover, and the `unsupported-host-utility` diagnostic
-in the language server. **The static transform never consults it.** So
-`<frame className="text-red-500" />` compiles clean, emits `TextColor3` on a Frame, and produces no
-compile-time warning at all. Install the [editor tooling](/vela-rbxts/guides/editor-setup/) if you
-want this caught. Since 0.8.0 the runtime path *does* apply the rule, but by dropping the utility
-without saying so, which means the same class list behaves differently on the two paths.
+**Host-element restrictions are editor-only on the static path.** Vela knows which utilities make sense on which tag, and that table drives completions, hover and the `unsupported-host-utility` diagnostic in the language server. **The static transform never consults it**, so `<frame className="text-red-500" />` compiles clean and emits `TextColor3` on a Frame. Install the [editor tooling](/vela-rbxts/guides/editor-setup/) to catch it. The runtime path *does* apply the rule, but by dropping the utility without saying so.
 
-**Components that drop what they are handed.** Vela emits the resolved props on the component and
-prepends helper instances as its children; if the component does not forward its unrecognized props
-to a host element and render `children`, all of it vanishes. Nothing warns you, in the editor or in
+**Components that drop what they are handed.** If the component does not forward its unrecognized
+props to a host element and render `children`, all of it vanishes, with no warning in the editor or
 the build.
 
-**A class value the compiler cannot read is unchecked.** Where the final string is only known in game,
-nothing warns about anything in it: a typo like `bg-blu-600` is a diagnostic in a literal and total
-silence in `` `flex ${tone}` ``. Coverage is not the problem: since 0.8.0 the in-game resolver handles every family the static path
-does. The gap narrowed again in 0.12.0, when branches whose tokens are written out — `a ? "x" :
-"y"`, `["w-40", tall && "h-10"]` — started resolving at compile time with their diagnostics intact. What is left is genuinely opaque text. The theme is also re-parsed from serialized
-text there, so a value that is not shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades
-silently in game. [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the whole divergence.
+**A class value the compiler cannot read is unchecked.** Where the final string is only known in
+game, nothing warns about anything in it: `bg-blu-600` is a diagnostic in a literal and total
+silence in `` `flex
+${tone}` ``. Coverage is not the problem — the in-game resolver handles every family the static path does, and branches whose tokens are written out resolve at compile time with their diagnostics intact. What is left is genuinely opaque text, where the theme is also re-parsed from serialized text, so a value not shaped like `Color3.fromRGB(r,
+g, b)` or `new UDim(a, b)` degrades silently.
+[Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) covers the divergence.
 
-**Gradient stops set to `transparent`.** `from-transparent`, `via-transparent`, and `to-transparent`
-produce no diagnostic — the stop is silently dropped, and a two-stop gradient quietly renders as a
-flat fill. Every other family without a transparency channel (`placeholder-*`, `divide-*`) does
-warn.
+**Gradient stops set to `transparent`.** They produce no diagnostic — the stop is dropped, and a two-stop gradient renders as a flat fill. Every other family without a transparency channel does warn.
 </Callout>
 
 ## One behavior worth knowing before you write anything
 
 <Callout title="Preflight neutralizes the Roblox host defaults">
-Roblox paints every `GuiObject` as an opaque gray box with a 1px border, and a framework that only
-ever *adds* properties can never take that back. So a supported host element **that carries a
-`className`** starts from `BackgroundTransparency = 1` and `BorderSizePixel = 0` instead: a class
-list says everything about how the element looks, and an element you did not paint does not paint.
+Roblox paints every `GuiObject` as an opaque grey box with a 1px border, and a framework that only *adds* properties can never take that back. So a supported host element **carrying a `className`** starts from `BackgroundTransparency = 1` and `BorderSizePixel = 0` instead.
 
-Anything that actually paints opts back out: a `bg-*` utility, `opacity-*`, a gradient stop, or a
-`BackgroundColor3` / `BackgroundTransparency` you declared as a prop. A background painted by a
-variant or a dynamic class value reopens it at runtime too, so `hover:bg-sky-500` still works on an
-otherwise transparent element. An element with no `className` is untouched, and so is a
-**component**, because Vela cannot know which host element its props will land on.
+Anything that paints opts back out: a `bg-*`, `opacity-*`, a gradient stop, or a `BackgroundColor3`
+/ `BackgroundTransparency` prop of your own. A background painted by a variant reopens it at
+runtime, so `hover:bg-sky-500` still works on an otherwise transparent element. An element with no
+`className` is untouched, and so is a **component**.
 
-This arrived in 0.5.0 and **is a breaking change if you are upgrading** — anywhere the gray default
-was load-bearing, the element now renders invisible. [`preflight: false`](/vela-rbxts/reference/config/#preflight)
-restores the old behavior wholesale; the [release notes](/vela-rbxts/reference/release-notes/) have
-the rest of the upgrade path.
+Anywhere the grey default was load-bearing, the element renders invisible. [`preflight: false`](/vela-rbxts/reference/config/#preflight) restores the old behaviour wholesale.
 </Callout>
 
 ## Sharp edges still open
 
 `gap-*` on a `grid` element emits a conflicting `UIListLayout` alongside the `UIGridLayout` it feeds
-([utilities reference](/vela-rbxts/reference/utilities/#grid)) — 0.6.0 gave the grid real cell sizing
-without touching this. And `divide-*` separators remain sensitive to explicit `LayoutOrder` and still
-double-count the parent's `gap-*`, which is a consequence of separators being list items rather than
-a defect ([utilities reference](/vela-rbxts/reference/utilities/#divide)).
+([utilities reference](/vela-rbxts/reference/utilities/#grid)). And `divide-*` separators remain
+sensitive to explicit `LayoutOrder` and still double-count the parent's `gap-*`, a consequence of
+separators being list items ([utilities reference](/vela-rbxts/reference/utilities/#divide)).
 
-Neither is a regression. Three newer edges sit beside them. The static path emits `<uishadow>` in
-lowercase, which `Instance.new` rejects. A plugin utility that reaches back into itself expands to
-nothing, without a diagnostic. And an `opacity-*` arriving from an ancestor component composes over a
-`BackgroundTransparency` you set as a prop — which the static path would have left alone. All five are
-tracked in the
-[release notes](/vela-rbxts/reference/release-notes/#still-open) alongside what changed in each
-version.
+Three newer edges sit beside them. The static path emits `<uishadow>` in lowercase, which
+`Instance.new` rejects. A plugin utility that reaches back into itself expands to nothing, without a
+diagnostic. And an `opacity-*` arriving from an ancestor component composes over a
+`BackgroundTransparency` you set as a prop. All five are tracked in the
+[release notes](/vela-rbxts/reference/release-notes/#still-open).
 
 ## Release state
 
-Every package in the repo is at **0.13.0**, versioned in lockstep. That is `vela-rbxts` itself; the
-`@vela-rbxts/*` scope, covering the compiler, config, core, IR, types, host adapter and language
-server; the three `@rbxts/vela-runtime*` packages that ship the runtime into your place; and the
-`vela-rbxts-lsp` VS Code extension. There is no independent versioning, so a fix anywhere moves
-everything. Releases are tagged from `v0.3.0` onward.
+Every package in the repo is at **0.13.0**, versioned in lockstep: `vela-rbxts` itself, the
+`@vela-rbxts/*` scope, the three `@rbxts/vela-runtime*` packages, and the `vela-rbxts-lsp` VS Code
+extension. A fix anywhere moves everything.
 
-The runtime is three packages rather than one, and the split is deliberate.
-`@rbxts/vela-runtime-core` holds the target-neutral half: the resolution engine, theme
-normalization, rem math, rich text, margin and divide computation. `@rbxts/vela-runtime` and
-`@rbxts/vela-runtime-vide` are the React and Vide hosts over it. Rojo maps the whole `node_modules/@rbxts` directory into a place, so keeping the
-hosts apart is what stops a Vide game from shipping React.
+`@rbxts/vela-runtime-core` holds the target-neutral half — the resolution engine, theme
+normalization, rem math, rich text, margin and divide computation — and `@rbxts/vela-runtime` and
+`@rbxts/vela-runtime-vide` are the React and Vide hosts over it. Rojo maps the whole
+`node_modules/@rbxts` directory into a place, so keeping the hosts apart is what stops a Vide game
+from shipping React.
 
-Two consequences follow from the version being what it is. First, almost nothing is enforced at install time. The only `peerDependencies` are each host's own
-UI library, declared **optional** so the host you do not emit for stays inert, and the only
-`engines` field anywhere is the VS Code extension's `vscode: ^1.91.0`. A mismatched roblox-ts or
-TypeScript therefore fails at build rather than at install.
-Second, prebuilt native binaries do not cover every platform — notably there is no
-`aarch64-pc-windows-msvc` target, so Windows on ARM is not supported, and no linux arm64 musl build.
+Almost nothing is enforced at install time: the only `peerDependencies` are each host's own UI
+library, declared **optional**, and the only `engines` field is the VS Code extension's
+`vscode: ^1.91.0`. A mismatched roblox-ts or TypeScript fails at build rather than at install.
+Prebuilt native binaries also miss two platforms — Windows on ARM and linux arm64 musl.
 
 ## A performance note
 
-Config discovery runs for **every eligible source file** — the walk up the directory tree, and a read
-of whatever config it lands on. That part is per file by design, since it is what lets two directories
-carry different configs.
+Config discovery runs for **every eligible source file** — the walk up the tree, and a read of
+whatever config it lands on. That is what lets two directories carry different configs.
 
-The expensive part is no longer per file. Below 0.11.0 there was no cache at all, so a project with
-hundreds of `.tsx` files meant hundreds of `transpileModule` calls and executions per build. 0.11.0
-keyed the loaded config on the file's own text, and since 0.13.0 it resolves once per directory per
-build.
+The expensive part is not per file: the loaded config is keyed on the file's own text and resolved
+once per directory per build.
 
-Keeping `vela.config.ts` to a plain `defineConfig` call with literal values — no imports beyond
-`vela-rbxts`, no computed theme generation, no side effects — is still the right shape. It is
-executed as real code, and any edit invalidates the cache. A JSON config skips the transpile step on
-a miss and is cached the same way.
+Keep `vela.config.ts` to a plain `defineConfig` call with literal values — no imports beyond
+`vela-rbxts`, no computed theme generation, no side effects. It is executed as real code, and any
+edit invalidates the cache. A JSON config skips the transpile step and is cached the same way.
 
 ## See also
 
