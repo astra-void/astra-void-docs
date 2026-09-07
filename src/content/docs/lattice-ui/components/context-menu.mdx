@@ -16,14 +16,13 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy, ForwardedProps, Loom
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion", "@lattice-ui/react-popper"]}
 />
 
-Context Menu is for actions that belong to a specific object rather than a button: right-click a
-slot, a plot, a player name. It differs from [Menu](/lattice-ui/components/menu/) in one decisive
-way — the menu anchors to **where you clicked**, not to the element you clicked, so the trigger is a
-region rather than a button. Use Menu instead when a visible button opens the list, or when gamepad
-and keyboard users must move through the items.
+Context Menu is for actions belonging to a specific object rather than a button: right-click a slot,
+a plot, a player name. It differs from [Menu](/lattice-ui/components/menu/) in one way — it anchors
+to **where you clicked**, not to the element you clicked, so the trigger is a region. Use Menu when
+a visible button opens the list, or when gamepad and keyboard users must move through the items.
 
 <Callout title="Pointer-driven only">
-Context Menu opens on `MouseButton2` and tracks item hover through `useContextMenuItemContext`. Unlike Menu, its items do **not** register with the focus manager — no automatic focus, no `Up`/`Down` movement, no focus restore. On a gamepad- or keyboard-first surface, use [Menu](/lattice-ui/components/menu/).
+Context Menu opens on `MouseButton2` and tracks item hover through `useContextMenuItemContext`. Its items do **not** register with the focus manager — no automatic focus, no `Up`/`Down` movement, no focus restore. On a gamepad- or keyboard-first surface, use [Menu](/lattice-ui/components/menu/).
 </Callout>
 
 Right-click inside the card to open the menu at the pointer.
@@ -38,7 +37,9 @@ import { ContextMenu } from "@lattice-ui/react-context-menu";
 
 ## Anatomy
 
-`Root`, `Trigger`, `Portal`, and `Content` form the working menu; `Item` makes it useful, and `Group`, `Label`, and `Separator` structure longer lists. The part names match Menu's, so moving between the two is mostly a matter of swapping the namespace.
+`Root`, `Trigger`, `Portal` and `Content` form the working menu; `Item` makes it useful, and
+`Group`, `Label` and `Separator` structure longer lists. The part names match Menu's, so moving
+between the two is mostly a namespace swap.
 
 <PrimitiveAnatomy title="Context Menu anatomy">
 
@@ -75,9 +76,12 @@ import { ContextMenu } from "@lattice-ui/react-context-menu";
 
 ### Basic context menu
 
-An uncontrolled root, a trigger region, and a few items. Right-clicking anywhere inside the trigger opens the menu at the pointer; selecting an item runs its `onSelect` and closes it.
+An uncontrolled root, a trigger region and a few items. Right-clicking inside the trigger opens the
+menu at the pointer; selecting an item runs its `onSelect` and closes it.
 
-Every part renders unstyled, so this example supplies all of it: a size and color for the trigger, a layout and surface for the content, and a size plus label for each item. Nothing here is optional decoration — without it the menu opens and works, but draws nothing.
+Every part renders unstyled, so this example supplies all of it: a size and colour for the trigger,
+a layout and surface for the content, a size and label for each item. Without it the menu opens and
+works but draws nothing.
 
 ```tsx title="BasicContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -127,18 +131,18 @@ export function BasicContextMenu() {
 ```
 
 <Callout title="Hover is tracked, not drawn">
-`ContextMenu.Item` still follows the pointer, but since 0.7.0 it no longer paints a highlight. Read the state with `useContextMenuItemContext()` and render it yourself — see [Highlighting items](#highlighting-items) below.
+`ContextMenu.Item` follows the pointer but paints no highlight. Read the state with `useContextMenuItemContext()` and render it yourself — see [Highlighting items](#highlighting-items).
 </Callout>
 
 <Callout title="Uncontrolled by default">
-Omit `open`/`onOpenChange` and the root owns its state, starting from `defaultOpen` (closed by default). The pointer position is always owned by the root — even when you control `open` yourself, the anchor comes from the last secondary click on the trigger.
+Omit `open`/`onOpenChange` and the root owns its state from `defaultOpen`. The pointer position is always owned by the root — even controlling `open` yourself, the anchor comes from the last secondary click on the trigger.
 </Callout>
 
 ### A real trigger region
 
 `asChild` merges the secondary-click listener onto your own element, which is the normal way to use
 this primitive. The child keeps its own props and handlers — the slot only adds `InputBegan` and
-`Active` — so a left-click `Activated` still does whatever it did before.
+`Active` — so a left-click `Activated` still works.
 
 ```tsx title="PlotContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -180,7 +184,8 @@ export function PlotContextMenu(props: { plotName: string; onSelect: () => void 
 
 ### Groups, labels, and separators
 
-`Group` wraps related items in a 220-wide vertical-layout frame, `Label` puts a muted, non-interactive heading above them, and `Separator` draws a 1px divider. None of them are interactive — they exist to give a long list structure.
+`Group` wraps related items in a 220-wide vertical-layout frame, `Label` puts a non-interactive
+heading above them, `Separator` draws a 1px divider. None are interactive.
 
 ```tsx title="InventorySlotContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -235,9 +240,9 @@ export function InventorySlotContextMenu(props: { icon: string }) {
 ### Placement tuning
 
 `ContextMenu.Content` takes the same popper options as the other anchored primitives, but the anchor
-is a zero-height virtual frame at the pointer, as wide as the measured content — which is what drops
-the menu's top-left corner at the cursor. Change `placement` to grow the other way; near the bottom
-of the screen the popper flips it regardless.
+is a zero-height virtual frame at the pointer, as wide as the measured content — which drops the
+menu's top-left corner at the cursor. `placement` grows it the other way, and near the bottom of the
+screen the popper flips it regardless.
 
 ```tsx title="MinimapContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -274,7 +279,9 @@ export function MinimapContextMenu() {
 
 ### Highlighting items
 
-The item tracks hover for you but does not paint it. `useContextMenuItemContext()` returns `{ highlighted, disabled }` — `highlighted` is already false while disabled, so one branch covers both.
+The item tracks hover but does not paint it. `useContextMenuItemContext()` returns
+`{ highlighted, disabled }`, and `highlighted` is already false while disabled, so one branch covers
+both.
 
 Read it from a component rendered *inside* the item, since that is where the context lives:
 
@@ -312,11 +319,13 @@ export function ContextMenuRow(props: { label: string; disabled?: boolean }) {
 }
 ```
 
-Because the highlight is now yours, you also choose whether it animates. Wrap the transparency in a response motion if you want the old eased feel.
+Because the highlight is yours, you also choose whether it animates.
 
 ### Disabled items and staying open
 
-`disabled` on an item blocks activation and clears its highlight state. `onSelect` receives a `ContextMenuSelectEvent`; calling `event.preventDefault()` marks it default-prevented and the item skips the automatic close — the one thing the default behavior does — so the menu stays open. That makes toggle-style items possible.
+`disabled` on an item blocks activation and clears its highlight state. `onSelect` receives a
+`ContextMenuSelectEvent`, and `event.preventDefault()` skips the automatic close so the menu stays
+open — which is what makes toggle-style items possible.
 
 ```tsx title="MarkerContextMenu.tsx"
 import { useState } from "@rbxts/react";
@@ -365,7 +374,9 @@ export function MarkerContextMenu(props: { canDelete: boolean }) {
 
 ### Controlled open state
 
-Pass `open` and `onOpenChange` when something outside the menu needs to close it — a round ending, a selection being cleared, a different panel taking over. The trigger still owns *where* the menu appears, so controlling `open` does not mean you have to supply a position.
+Pass `open` and `onOpenChange` when something outside needs to close the menu — a round ending, a
+panel taking over. The trigger still owns *where* it appears, so controlling `open` does not mean
+supplying a position.
 
 ```tsx title="ControlledContextMenu.tsx"
 import { useEffect, useState } from "@rbxts/react";
@@ -403,36 +414,35 @@ export function ControlledContextMenu(props: { editable: boolean }) {
 ### Open state and the anchor
 
 Controllable on `open`/`onOpenChange`, with `defaultOpen` for uncontrolled usage. `Trigger` watches
-`InputBegan` for `MouseButton2` only: it converts the pointer position into the inset-adjusted space
-`AbsolutePosition` uses, stores it on the root, and opens the menu. That position survives until the
-next secondary click, so a controlled root can reopen at the same spot.
+`InputBegan` for `MouseButton2` only, converts the pointer position into the inset-adjusted space
+`AbsolutePosition` uses, stores it on the root and opens the menu. That position survives until the
+next secondary click.
 
 A `disabled` trigger ignores the secondary click entirely and never updates the stored position.
 
 ### Positioning
 
 The content mounts an invisible virtual anchor at the stored pointer position, with **zero height
-and the measured content's width** — which is what lands the menu's top-left corner at the cursor
-rather than centring it under the pointer.
+and the measured content's width**, which lands the menu's top-left corner at the cursor rather than
+centring it.
 
 From there it behaves like every other anchored surface: `placement` is a preference, and on
 collision the popper tries the opposite side, then the orthogonal ones, then clamps inside the
-viewport with `collisionPadding` from every edge. Until the first measurement the content is parked
-off-screen, so it never flashes at the wrong position.
+viewport. Until the first measurement the content is parked off-screen.
 
 ### Items and activation
 
 `ContextMenu.Item` activates on `Activated` and builds a `ContextMenuSelectEvent` (`{ defaultPrevented, preventDefault() }`) for `onSelect`; if the event is not default-prevented, the item closes the menu. A disabled item ignores activation.
 
-The item renders an unstyled `textbutton`. It tracks hover through `MouseEnter`/`MouseLeave` and exposes the result as `useContextMenuItemContext().highlighted`, but draws nothing itself — rendering the highlight is yours, under `asChild` or not.
+The item renders an unstyled `textbutton`, tracking hover through `MouseEnter`/`MouseLeave` and
+exposing it as `useContextMenuItemContext().highlighted` while drawing nothing itself.
 
 ### Dismissal
 
 Only the top-most enabled layer receives outside interactions, so nested overlays dismiss one at a
 time. Context Menu is **modal by default**: a full-screen blocker stops interaction behind it, and
-an outside press dismisses it. `onPointerDownOutside` and `onInteractOutside` fire first with a
-`LayerInteractEvent`, and `preventDefault()` in either vetoes the dismissal while still letting you
-observe it.
+an outside press dismisses. `onPointerDownOutside` and `onInteractOutside` fire first with a
+`LayerInteractEvent`, and `preventDefault()` in either vetoes the dismissal.
 
 ### Motion and presence
 
