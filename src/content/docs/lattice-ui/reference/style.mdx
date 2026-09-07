@@ -14,9 +14,12 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime"]}
 />
 
-Style is the visual foundation: a theme of design tokens, helpers for merging Roblox host props, a recipe system for variant-driven styling, and the `Box`/`Text` primitives that render those props onto host instances. Higher-level packages like `@lattice-ui/react-system` and the styled components build directly on it.
+Style is the visual foundation: a theme of design tokens, helpers for merging Roblox host props, a
+recipe system for variant-driven styling, and the `Box`/`Text` primitives that render those props
+onto host instances.
 
-The core idea is the **sx** value — a partial set of host props, or a function from the current `Theme` to host props. Everything in this package either produces, resolves, or merges sx values, then hands the result to a host instance.
+The core idea is the **sx** value: a partial set of host props, or a function from the current
+`Theme` to host props. Everything here produces, resolves or merges sx values.
 
 ## Import
 
@@ -31,7 +34,8 @@ import { createRecipe, mergeSx, resolveSx, mergeGuiProps } from "@lattice-ui/rea
 
 ### Box
 
-A styled host primitive that renders a `frame` and applies an sx value resolved against the current theme. Supports `asChild` to merge its props onto a single child element instead.
+A styled host primitive rendering a `frame` with an sx value resolved against the current theme.
+`asChild` merges its props onto a single child element instead.
 
 ```tsx
 function Box(props: BoxProps): React.Element;
@@ -41,7 +45,9 @@ function Box(props: BoxProps): React.Element;
 </Box>
 ```
 
-Direct host props and the resolved `sx` are merged with `mergeGuiProps(rest, sx)`, so when both set the same property the `sx` value wins; `Event`/`Change` handler tables are composed instead of replaced. When `asChild` is set, `Box` requires exactly one valid child element and clones its props onto it (via `Slot`) instead of rendering a `frame`.
+Direct host props and the resolved `sx` merge with `mergeGuiProps(rest, sx)`, so `sx` wins on a
+collision and `Event`/`Change` handler tables compose rather than replace. With `asChild`, `Box`
+requires exactly one valid child element and clones its props onto it via `Slot`.
 
 <PropTable
   rows={[
@@ -54,7 +60,7 @@ Direct host props and the resolved `sx` are merged with `mergeGuiProps(rest, sx)
 
 ### Text
 
-Identical to `Box`, but renders a `textlabel` instead of a `frame`. Same `sx`, `asChild`, and host-prop merging behavior.
+Identical to `Box`, but renders a `textlabel`.
 
 ```tsx
 function Text(props: TextProps): React.Element;
@@ -76,7 +82,8 @@ function Text(props: TextProps): React.Element;
 
 ### ThemeProvider
 
-Provides the active theme to the tree and exposes a setter. Supports controlled (`theme`) and uncontrolled (`defaultTheme`) usage, with `onThemeChange` notified on every change.
+Provides the active theme to the tree and exposes a setter, controlled (`theme`) or uncontrolled
+(`defaultTheme`), with `onThemeChange` notified on every change.
 
 ```tsx
 function ThemeProvider(props: ThemeProviderProps): React.Element;
@@ -86,7 +93,8 @@ function ThemeProvider(props: ThemeProviderProps): React.Element;
 </ThemeProvider>
 ```
 
-When `theme` is supplied the provider is controlled and `setTheme` only calls `onThemeChange`; otherwise it owns the theme internally. Defaults to `defaultLightTheme` when neither prop is given.
+With `theme` supplied the provider is controlled and `setTheme` only calls `onThemeChange`. It
+defaults to `defaultLightTheme`.
 
 <PropTable
   rows={[
@@ -105,7 +113,8 @@ function useTheme(): ThemeContextValue;
 const { theme, setTheme } = useTheme();
 ```
 
-Returns the current `ThemeContextValue` — the active `theme` and a `setTheme` function. Must be called under a `ThemeProvider` (it uses a strict context and throws otherwise).
+Returns the current `ThemeContextValue` — the active `theme` and a `setTheme`. It uses a strict
+context and throws outside a `ThemeProvider`.
 
 ### useThemeValue
 
@@ -115,7 +124,8 @@ function useThemeValue<T>(selector: (theme: Theme) => T): T;
 const accent = useThemeValue((theme) => theme.colors.accent);
 ```
 
-Selects and memoizes a derived value from the current theme, recomputing only when the theme or selector changes. Useful for reading a single token without re-running on unrelated context updates.
+Selects and memoizes a derived value from the theme, recomputing only when the theme or selector
+changes.
 
 ### createTheme
 
@@ -125,7 +135,8 @@ function createTheme(partialTheme?: PartialTheme): Theme;
 const brand = createTheme({ colors: { accent: Color3.fromRGB(120, 80, 255) } });
 ```
 
-Builds a complete `Theme` by deep-merging a `PartialTheme` over `defaultLightTheme`, group by group (`colors`, `space`, `radius`, `typography`). Omitted fields fall back to the light defaults.
+Builds a complete `Theme` by deep-merging a `PartialTheme` over `defaultLightTheme`, group by group.
+Omitted fields fall back to the light defaults.
 
 ### defaultLightTheme / defaultDarkTheme
 
@@ -134,11 +145,14 @@ const defaultLightTheme: Theme;
 const defaultDarkTheme: Theme;
 ```
 
-The two built-in themes. Both share the same `space`, `radius`, and `typography` scales and differ only in `colors`. Use them directly or as the base for `createTheme` overrides.
+The two built-in themes. They share the same `space`, `radius` and `typography` scales and differ
+only in `colors`.
 
 ### createRecipe
 
-A variant-driven styling helper. Given a config of base styles, named variants, default selections, and compound variants, it returns a resolver that turns a variant selection plus a theme into a single merged props object.
+A variant-driven styling helper: given base styles, named variants, default selections and compound
+variants, it returns a resolver turning a variant selection plus a theme into one merged props
+object.
 
 ```ts
 function createRecipe<Props, Variants>(
@@ -159,7 +173,8 @@ const button = createRecipe({
 const props = button({ tone: "danger" }, theme);
 ```
 
-Resolution order is `base`, then each selected variant's sx (selection merged over `defaultVariants`), then any matching `compoundVariants`. Each layer is merged with `mergeGuiProps`, so later layers win and `Event`/`Change` handler tables are composed rather than replaced.
+Resolution order is `base`, then each selected variant's sx, then any matching `compoundVariants`,
+each merged with `mergeGuiProps` — so later layers win and handler tables compose.
 
 `RecipeConfig` fields:
 
@@ -180,7 +195,8 @@ function mergeSx<Props>(...sxList: Array<Sx<Props>>): Sx<Props>;
 const combined = mergeSx(baseSx, (theme) => ({ TextColor3: theme.colors.textPrimary }), overrideSx);
 ```
 
-Combines several sx values into a single theme-resolving function. At resolve time each entry is resolved against the theme and folded together with `mergeGuiProps`, left to right, so later entries override earlier ones.
+Combines several sx values into one theme-resolving function, folding them with `mergeGuiProps` left
+to right so later entries win.
 
 ### resolveSx
 
@@ -188,7 +204,8 @@ Combines several sx values into a single theme-resolving function. At resolve ti
 function resolveSx<Props>(sx: Sx<Props>, theme: Theme): Partial<Props>;
 ```
 
-Resolves a single sx value against a theme: returns it directly if it is a props object, calls it if it is a function, and returns an empty object if it is `undefined`.
+Resolves a single sx value: returned directly if it is a props object, called if it is a function,
+empty if `undefined`.
 
 ### mergeGuiProps
 
@@ -200,10 +217,12 @@ function mergeGuiProps<Props>(
 ): Partial<Props>;
 ```
 
-The low-level merge used everywhere in this package. It shallow-merges up to three prop objects (`base`, then `variant`, then `user`, last wins) and, crucially, **composes** the `Event` and `Change` handler tables rather than overwriting them — when two layers bind the same event, both handlers run in order.
+The low-level merge used throughout. It shallow-merges up to three prop objects (`base`, `variant`,
+`user`, last wins) and **composes** the `Event` and `Change` handler tables rather than overwriting
+them, so two layers binding the same event both run.
 
 <Callout title="Roblox event tables">
-`mergeGuiProps` treats `Event` and `Change` specially because react-lua passes Roblox event connections through those tables. Plain shallow-spreading would drop a base layer's handlers when a later layer also binds the same signal; this helper chains them so every connection fires.
+react-lua passes Roblox event connections through `Event` and `Change`, so plain shallow-spreading would drop a base layer's handlers when a later layer binds the same signal. This helper chains them.
 </Callout>
 
 ### Types

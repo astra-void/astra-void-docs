@@ -14,9 +14,14 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime"]}
 />
 
-Focus is the selection engine that sits behind every layered Lattice UI primitive. Roblox only exposes a single `GuiService.SelectedObject`, with no concept of focus scopes, traps, or restore targets. Focus builds those concepts on top: it tracks a registry of focusable **nodes** and **scopes**, decides which node should hold selection at any moment, and bridges that decision to and from `GuiService.SelectedObject`.
+Focus is the selection engine behind every layered Lattice UI primitive. Roblox exposes a single
+`GuiService.SelectedObject` with no scopes, traps or restore targets, so Focus tracks a registry of
+focusable **nodes** and **scopes**, decides which node should hold selection, and bridges that
+decision to and from `GuiService.SelectedObject`.
 
-Dialog, Popover, Menu, Select, and the other overlay primitives all rely on Focus to trap gamepad/keyboard selection inside the active surface and restore it when the surface closes. You can use the same primitives directly when building a custom surface that needs predictable selection.
+Dialog, Popover, Menu, Select and the other overlay primitives rely on it to trap gamepad and
+keyboard selection inside the active surface and restore it on close. Use the same primitives
+directly for a custom surface.
 
 ## Import
 
@@ -59,9 +64,15 @@ function FocusScope(props: {
 </FocusScope>
 ```
 
-`FocusScope` declares a region of the UI that participates in focus management. It registers a scope rooted at the rendered `GuiObject`, provides a scope id to descendants through context, and reads the ambient focus layer order so nested scopes resolve in the right order. When `trapped` is set and the scope is active, selection is kept inside the scope's root — if selection escapes, it is pulled back to the best fallback node inside the scope. When `restoreFocus` is enabled, the scope captures whatever was selected before it activated and returns selection there when it deactivates.
+`FocusScope` declares a region that participates in focus management. It registers a scope rooted at
+the rendered `GuiObject`, provides a scope id to descendants through context, and reads the ambient
+layer order so nested scopes resolve in the right order. With `trapped` set on an active scope,
+selection that escapes is pulled back to the best fallback node inside it; with `restoreFocus`, the
+scope captures whatever was selected before it activated and returns selection there on
+deactivation.
 
-By default `FocusScope` renders a transparent full-size `frame` as its root. With `asChild`, it merges the scope root onto your single child element instead.
+It renders a transparent full-size `frame` as its root, or with `asChild` merges the scope root onto
+your single child element.
 
 <PropTable
   rows={[
@@ -97,7 +108,11 @@ const nodeId = useFocusNode({ ref, disabled: props.disabled });
 return <textbutton ref={ref} Selectable Text={props.label} />;
 ```
 
-Registers a single `GuiObject` as a focus node for the lifetime of the component and returns a ref holding the assigned node id. The node inherits the nearest scope id from context unless you pass an explicit `scopeId`. Disabled or invisible nodes are skipped by focus resolution and trapping. When `syncToRoblox` is left enabled, the node mirrors to `GuiService.SelectedObject` while it holds focus; set it to `false` for a logically-focused node that should not drive Roblox's native selection.
+Registers a single `GuiObject` as a focus node for the component's lifetime and returns a ref
+holding the node id. It inherits the nearest scope id unless you pass `scopeId`, and disabled or
+invisible nodes are skipped by resolution and trapping. With `syncToRoblox` enabled the node mirrors
+to `GuiService.SelectedObject` while focused; set it `false` for a logically-focused node that
+should not drive native selection.
 
 <PropTable
   rows={[
@@ -138,7 +153,9 @@ function FocusLayerProvider(props: {
 }): React.Element;
 ```
 
-Provides the ambient focus layer order to descendants. Higher layer orders win when resolving which scope owns a node or which trapped scope is on top — the Layer package renders this around each dismissable layer so stacked surfaces trap correctly.
+Provides the ambient focus layer order to descendants. Higher orders win when resolving which scope
+owns a node or which trapped scope is on top; the Layer package renders it around each dismissable
+layer.
 
 ### useFocusLayerOrder
 
@@ -150,7 +167,9 @@ Reads the ambient layer order from context. `FocusScope` reads this and reports 
 
 ### Focus manager functions
 
-The imperative manager API operates on the global focus registry. Functions that move focus return the resolved `GuiObject` on success, or `undefined` when the target cannot take focus (missing, disabled, invisible, or outside the active trapped scope).
+The imperative manager API operates on the global registry. Functions that move focus return the
+resolved `GuiObject`, or `undefined` when the target cannot take focus — missing, disabled,
+invisible, or outside the active trapped scope.
 
 ```ts
 function focusNode(nodeId: number): GuiObject | undefined;
@@ -172,7 +191,7 @@ function restoreSnapshot(snapshot: FocusRestoreSnapshot | undefined): GuiObject 
 
 ### Focus registration functions
 
-These lower-level functions back `FocusScope` and `useFocusNode`. Reach for them only when building focus integration outside React's lifecycle.
+These back `FocusScope` and `useFocusNode`. Reach for them only outside React's lifecycle.
 
 ```ts
 function registerFocusNode(params: RegisterFocusNodeParams): number;
@@ -185,7 +204,11 @@ function retainExternalFocusBridge(): void;
 function releaseExternalFocusBridge(): void;
 ```
 
-`registerFocusNode` / `unregisterFocusNode` add and remove nodes from the registry. `createFocusScopeId` allocates a unique scope id; `registerFocusScope` records a scope (its root getter, active/trapped/restore/layer getters), `syncFocusScope` re-evaluates a scope after its inputs change, and `unregisterFocusScope` tears it down with restore handling. `retainExternalFocusBridge` / `releaseExternalFocusBridge` are reference-counted — while at least one consumer is retained, the manager listens to external `GuiService.SelectedObject` changes (for example, a gamepad moving selection) and reconciles them back into its model.
+`registerFocusNode` / `unregisterFocusNode` add and remove nodes. `createFocusScopeId` allocates a
+scope id; `registerFocusScope` records a scope, `syncFocusScope` re-evaluates it after its inputs
+change, and `unregisterFocusScope` tears it down with restore handling. `retainExternalFocusBridge`
+/ `releaseExternalFocusBridge` are reference-counted: while one consumer is retained, the manager
+listens to external `GuiService.SelectedObject` changes and reconciles them back.
 
 ### Exported manager types
 
@@ -223,7 +246,9 @@ type RegisterFocusScopeParams = {
 
 ### Ordered selection helpers
 
-A small toolkit for moving selection through an ordered list of entries — used by roving-selection primitives like Menu, Tabs, and Radio Group. An entry pairs a stable id and sort `order` with a ref to its `GuiObject` and optional disabled/visible getters.
+A toolkit for moving selection through an ordered list, used by roving-selection primitives like
+Menu, Tabs and Radio Group. An entry pairs a stable id and sort `order` with a ref to its
+`GuiObject` and optional disabled/visible getters.
 
 ```ts
 type OrderedSelectionDirection = -1 | 1;
@@ -263,11 +288,11 @@ focusOrderedSelectionEntry(next);
 - **`focusOrderedSelectionEntry`** moves focus to an entry's `GuiObject` through the focus manager.
 
 <Callout title="Roblox selection is global and singular">
-Roblox tracks selection through a single `GuiService.SelectedObject`. Focus layers a multi-scope model on top of it and writes back the one node that should currently hold selection. Because gamepad and controller input can change `SelectedObject` outside React, an active `FocusScope` retains the external bridge so those changes are reconciled instead of fighting the manager.
+Roblox tracks selection through a single `GuiService.SelectedObject`. Focus layers a multi-scope model over it and writes back the one node that should hold selection. Gamepad input can change `SelectedObject` outside React, so an active `FocusScope` retains the external bridge and those changes are reconciled rather than fought.
 </Callout>
 
 <Callout title="Nodes must be Selectable to receive native selection">
-Only `GuiObject`s with `Selectable = true` that are effectively visible can be mirrored to `GuiService.SelectedObject`. A node can still be tracked logically with `syncToRoblox: false`, but it will not drive gamepad/keyboard selection until it is selectable and visible.
+Only `GuiObject`s with `Selectable = true` that are effectively visible can be mirrored to `GuiService.SelectedObject`. A node tracked with `syncToRoblox: false` will not drive gamepad selection until it is selectable and visible.
 </Callout>
 
 ## Related
