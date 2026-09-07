@@ -13,20 +13,20 @@ import { Callout } from "@/components/docs/mdx";
 values from props or state.
 
 What changes is *how* the string is lowered. Collapsible to a fixed set of tokens, it takes the
-**static path** and lowers straight to props; otherwise the element falls onto the **runtime path**,
+**static path** and lowers straight to props. Otherwise the element falls onto the **runtime path**,
 where the host does the same work in-game.
 
 ## The two paths resolve the same utilities
 
 Every utility family the [reference](/vela-rbxts/reference/utilities/) documents resolves on both
-paths with the same semantics — opacity modifiers, arbitrary values, and the families that only meet
-at the end.
+paths with the same semantics. That covers opacity modifiers, arbitrary values, and the families
+that only meet at the end.
 
-One asymmetry favours the runtime path: **a utility the host element cannot carry is dropped rather
+One asymmetry favours the runtime path. **A utility the host element cannot carry is dropped rather
 than written**, because writing `TextColor3` onto a `Frame` is a hard Roblox error. The static path
 warns and writes it anyway.
 
-`opacity-*` is the one family where the paths hand off: the compiler leaves the whole class list to
+`opacity-*` is the one family where the paths hand off. The compiler leaves the whole class list to
 the host, which resolves it and hands the children one alpha. See
 [`opacity-*`](/vela-rbxts/reference/utilities/#effects).
 
@@ -49,7 +49,7 @@ Four consequences, all of them the point:
 - **Each test is evaluated exactly once**, however many branches hang on it.
 
 It reads ternaries, `&&`, the literal behind `||`, arrays and object maps, and resolves a branch
-among the tokens around it — so `["w-40", tall && "h-10"]` composes into one `Size`.
+among the tokens around it. So `["w-40", tall && "h-10"]` composes into one `Size`.
 
 The element still renders through the runtime host, because something has to read the tests, but
 nothing is *parsed* in-game.
@@ -85,22 +85,22 @@ the later wins.
 This is about a class value the compiler cannot read at all — `cn(...)`, a template string, a prop
 passed through.
 
-**No diagnostics.** The compiler never sees the final string, so a typo like `bg-blu-600` is an
-`unknown-theme-key` warning in a literal or a branch and complete silence here — the token resolves
-to nothing and the element renders without a background.
+**No diagnostics.** The compiler never sees the final string. A typo like `bg-blu-600` is an
+`unknown-theme-key` warning in a literal or a branch, and complete silence here. The token resolves
+to nothing, and the element renders without a background.
 
 **No editor support for the part nothing names.** Completions, hover and swatches work from the
 literal text, including the literal text *inside* an expression the compiler cannot fold. A token an
-interpolation *cuts into*, as in `` `w-[${width}]` ``, is left alone; one that merely sits beside an
+interpolation *cuts into*, as in `` `w-[${width}]` ``, is left alone. One that merely sits beside an
 interpolation is checked normally.
 
 **Theme values are re-parsed from text.** The static path splices your theme's roblox-ts expression
-into the output; a class value the host has to parse carries the theme as string data instead,
-re-parsed in Luau by two parsers accepting exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`
-with numeric arguments. Anything else compiles fine and then **silently degrades in game**. See
+into the output. A class value the host has to parse carries the theme as string data instead. Two
+Luau parsers re-read it, accepting exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with
+numeric arguments. Anything else compiles fine and then **silently degrades in game**. See
 [configuration](/vela-rbxts/reference/config/#values-are-roblox-ts-expression-strings).
 
-Code size is *not* on this list: `@rbxts/vela-runtime` is one ModuleScript the whole place shares,
+Code size is *not* on this list. `@rbxts/vela-runtime` is one ModuleScript the whole place shares,
 so a runtime-path module carries an import and its config rather than a copy:
 
 ```ts title="What a runtime-path module carries"
@@ -148,14 +148,14 @@ A template string is not a branch the compiler can read. Write it as one:
 <frame className={["flex flex-col items-center gap-2 p-4 rounded-lg", emphasized ? "bg-slate-700" : "bg-slate-800"]} />
 ```
 
-Duplicating the whole element still produces the leanest emit — each branch a complete literal on
-the static path with no host at all — but buys only that, not checking. Spend it where an element is
-hot enough that the difference shows.
+Duplicating the whole element still produces the leanest emit, with each branch a complete literal
+on the static path and no host at all. But it buys only that, not checking. Spend it where an
+element is hot enough that the difference shows.
 
 ### Or use a variant instead of computing
 
-If the thing driving the class is something Vela can observe — pointer, press, focus, viewport, input
-device, colour scheme — a variant expresses it without any computation:
+If the thing driving the class is something Vela can observe, a variant expresses it without any
+computation. That covers pointer, press, focus, viewport, input device and colour scheme:
 
 ```tsx title="No computed string needed"
 <textbutton className="bg-slate-800 hover:bg-slate-700 active:bg-slate-600 transition" Text="Play" />
@@ -187,19 +187,18 @@ return (
 
 ## Components take the same rows
 
-Everything here applies to `className` on your own components — `<Panel className={classes} />` is
+Everything here applies to `className` on your own components. `<Panel className={classes} />` is
 lowered exactly like `<frame className={classes} />`, branch resolution included. The one visible
-difference is the tag: `__velaTag` carries a live reference rather than a string
-(`__velaTag={Panel}`), and the host renders your component with the resolved props and helper
+difference is the tag. `__velaTag` carries a live reference rather than a string, as
+`__velaTag={Panel}`, and the host renders your component with the resolved props and helper
 children.
 
 So the component has to forward what it does not consume, or none of it lands — with no diagnostic
 for getting it wrong. See
 [How it works](/vela-rbxts/getting-started/how-it-works/#classname-on-components).
 
-A component only emits the modifier-sibling shape —
-`<Switch.Root …><uicorner /><textbutton /></Switch.Root>` — on the **static** path. Go dynamic and
-the `UICorner` is built at runtime instead.
+A component only emits the modifier-sibling shape on the **static** path. Go dynamic and the
+`UICorner` is built at runtime instead.
 
 ## See also
 

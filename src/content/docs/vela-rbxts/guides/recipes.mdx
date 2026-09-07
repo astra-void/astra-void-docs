@@ -9,21 +9,17 @@ sidebar:
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-The other guides explain Vela one utility family at a time; this page builds the small pieces most
-Roblox interfaces are made of. Every preview is compiled by the same compiler `rbxtsc` loads —
-**Classes** for the source, **Lowered** for what comes out — and every example stays on the
+The other guides explain Vela one utility family at a time. This page builds the small pieces most
+Roblox interfaces are made of. Every preview is compiled by the same compiler `rbxtsc` loads:
+**Classes** for the source, **Lowered** for what comes out. Every example stays on the
 [static path](/vela-rbxts/getting-started/how-it-works/#the-two-lowering-paths).
 
 Two conventions repeat throughout, both worth internalizing before you copy anything:
 
-- **Everything has an explicit size.** Roblox instances default to zero-height `Size` values, which
-  is why the examples write `w-*`/`h-*` on almost everything — the noise is Roblox's defaults, not
-  Vela's requirements. Backgrounds are not in that bucket any more: since 0.5.0
+- **Everything has an explicit size.** Roblox instances default to zero-height `Size` values, which is why the examples write `w-*` and `h-*` on almost everything. The noise is Roblox's defaults, not Vela's requirements. Backgrounds are not in that bucket any more: since 0.5.0
   [preflight](/vela-rbxts/reference/config/#preflight) starts every classed element transparent, so
   a label that should not paint needs no `bg-transparent`.
-- **Rows and columns are `UIListLayout`.** Any element with `flex`, `gap-*`, `justify-*` or
-  `items-*` on it gets exactly one `UIListLayout` child, and that layout owns the positions of every
-  child under it. See [layout and sizing](/vela-rbxts/guides/layout-and-sizing/) for the full model.
+- **Rows and columns are `UIListLayout`.** Any element with `flex`, `gap-*`, `justify-*` or `items-*` on it gets exactly one `UIListLayout` child, and that layout owns the positions of every child under it. See [layout and sizing](/vela-rbxts/guides/layout-and-sizing/) for the full model.
 
 ## Buttons
 
@@ -50,9 +46,9 @@ and pairing it with `transition` tweens the change instead of snapping it:
 A variant moves the element onto the [runtime path](/vela-rbxts/guides/dynamic-class-names/), and a
 gamepad or touch player may never hover — treat it as feedback, not the only signal.
 
-**There is no `active:` or `pressed:` variant.** Press feedback is state you own — track it with
-React events and branch between two fully static class strings, which keeps both looks on the static
-path with the full utility set:
+**There is no `active:` or `pressed:` variant.** Press feedback is state you own. Track it with
+React events and branch between two fully static class strings. Both looks stay on the static path
+with the full utility set:
 
 ```tsx title="src/client/ActionButton.tsx"
 export function ActionButton(props: { label: string; onClick: () => void }) {
@@ -114,12 +110,12 @@ any hue — swap `emerald` for `amber`, `rose`, or a palette of your own.
   scene="StatBarScene"
 />
 
-A meter needs no layout instance. The track is a `rounded-full` frame and the fill a plain child
-with `w-2/3 h-full`; with no `UIListLayout` on the track, the fill sits at its top-left origin.
+A meter needs no layout instance. The track is a `rounded-full` frame, and the fill a plain child
+with `w-2/3 h-full`. With no `UIListLayout` on the track, the fill sits at its top-left origin.
 Fractions lower to the *scale* component of `Size`, so `w-2/3` means two thirds of the track with no
 pixel maths.
 
-To drive the fill from live data, resist the computed class string — `w-*` is in the runtime
+To drive the fill from live data, resist the computed class string. `w-*` is in the runtime
 resolver's subset, but you would pay for the whole
 [runtime path](/vela-rbxts/guides/dynamic-class-names/) to express a number. Set `Size` directly and
 let the classes carry what does not change:
@@ -131,8 +127,8 @@ let the classes carry what does not change:
 ```
 
 One rule makes this safe: **never set the same property from a class and a prop on one element.** On
-a collision Vela emits after you and the class wins — an `h-full` beside that `Size` prop would
-overwrite it with `Size = (0, 1)` scale.
+a collision Vela emits after you and the class wins. An `h-full` beside that `Size` prop would
+overwrite it with a `Size = (0, 1)` scale.
 
 ## List rows
 
@@ -146,9 +142,9 @@ Lists are the pattern Roblox UIs live in: a `flex flex-col gap-2` column whose c
 `flex items-center gap-3` rows. Each element gets its own `UIListLayout`, so nesting costs nothing
 to reason about.
 
-The score column is pushed to the right edge with fixed widths — rank, avatar, name and score plus
-the gaps add up to the row's inner width. `justify-between` exists (it lowers to
-`UIListLayout.HorizontalFlex`), but the renderer behind these previews does not implement flex
+The score column is pushed to the right edge with fixed widths. Rank, avatar, name and score plus
+the gaps add up to the row's inner width. `justify-between` exists and lowers to
+`UIListLayout.HorizontalFlex`, but the renderer behind these previews does not implement flex
 distribution. Both are legitimate in a real place, and the fixed-width one is what you need whenever
 a column must not shrink.
 
@@ -164,7 +160,7 @@ is still a static string:
 ```
 
 What matters is the expression in the attribute, not where it appears. `className={rowClasses}` with
-a computed `rowClasses` is dynamic; the literal above is not.
+a computed `rowClasses` is dynamic. The literal above is not.
 
 ## A confirmation dialog
 
@@ -174,9 +170,9 @@ a computed `rowClasses` is dynamic; the literal above is not.
   scene="DialogScene"
 />
 
-The dialog combines everything above: a column with `gap-3`, a `text-wrap` body — `TextWrapped` is
-off by default, so long text clips without it — and a `justify-end` row for the buttons, which
-lowers to `HorizontalAlignment = Right`.
+The dialog combines everything above. A column with `gap-3`, a `text-wrap` body, and a `justify-end`
+row for the buttons that lowers to `HorizontalAlignment = Right`. `TextWrapped` is off by default,
+so long text clips without it.
 
 To present it as a modal, parent the card to a full-screen scrim and lift it above the rest of the
 interface:
@@ -187,9 +183,9 @@ interface:
 </frame>
 ```
 
-Three details do the work: `opacity-60` maps to `BackgroundTransparency` (inverted), `origin-center`
-sets `AnchorPoint` to `(0.5, 0.5)` so `left-1/2 top-1/2` centres the card rather than placing its
-corner, and `z-50` raises `ZIndex`. The scrim's transparency does not cascade — the card keeps its
+Three details do the work. `opacity-60` maps to `BackgroundTransparency`, inverted. `origin-center`
+sets `AnchorPoint` to `(0.5, 0.5)`, so `left-1/2 top-1/2` centres the card rather than placing its
+corner. And `z-50` raises `ZIndex`. The scrim's transparency does not cascade, so the card keeps its
 own opaque background.
 
 ## When a recipe needs state
@@ -199,11 +195,8 @@ rule is always the same:
 
 - **The look changes between known states** → branch between two complete static literals, as the
   button does. Full utility set, full diagnostics, zero runtime cost.
-- **A number changes continuously** → keep the classes static and set the property directly, as the
-  meter does — on a property no class on that element touches.
-- **Only a color, radius, spacing, or size varies** → a computed string is acceptable; those
-  families are within the [runtime resolver's subset](/vela-rbxts/guides/dynamic-class-names/). Know
-  that you are opting into the runtime path for that element.
+- **A number changes continuously** → keep the classes static and set the property directly, as the meter does, on a property no class on that element touches.
+- **Only a colour, radius, spacing or size varies** → a computed string is acceptable, since those families are within the [runtime resolver's subset](/vela-rbxts/guides/dynamic-class-names/). Know that you are opting into the runtime path for that element.
 - **The state is the pointer being over the element** → that one is built in: `hover:`, ideally with
   `transition`.
 
