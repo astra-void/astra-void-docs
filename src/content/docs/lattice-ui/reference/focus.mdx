@@ -15,7 +15,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 />
 
 Focus is the selection engine behind every layered Lattice UI primitive. Roblox exposes a single
-`GuiService.SelectedObject` with no scopes, traps or restore targets, so Focus tracks a registry of
+`GuiService.SelectedObject`, with no scopes, traps or restore targets. Focus tracks a registry of
 focusable **nodes** and **scopes**, decides which node should hold selection, and bridges that
 decision to and from `GuiService.SelectedObject`.
 
@@ -64,12 +64,9 @@ function FocusScope(props: {
 </FocusScope>
 ```
 
-`FocusScope` declares a region that participates in focus management. It registers a scope rooted at
-the rendered `GuiObject`, provides a scope id to descendants through context, and reads the ambient
-layer order so nested scopes resolve in the right order. With `trapped` set on an active scope,
-selection that escapes is pulled back to the best fallback node inside it; with `restoreFocus`, the
-scope captures whatever was selected before it activated and returns selection there on
-deactivation.
+`FocusScope` declares a region that participates in focus management. It registers a scope rooted at the rendered `GuiObject`, provides a scope id to descendants through context, and reads the ambient layer order so nested scopes resolve in the right order.
+
+With `trapped` set on an active scope, selection that escapes is pulled back to the best fallback node inside it. With `restoreFocus`, the scope captures whatever was selected before it activated and returns selection there on deactivation.
 
 It renders a transparent full-size `frame` as its root, or with `asChild` merges the scope root onto
 your single child element.
@@ -108,11 +105,11 @@ const nodeId = useFocusNode({ ref, disabled: props.disabled });
 return <textbutton ref={ref} Selectable Text={props.label} />;
 ```
 
-Registers a single `GuiObject` as a focus node for the component's lifetime and returns a ref
+Registers a single `GuiObject` as a focus node for the component's lifetime, and returns a ref
 holding the node id. It inherits the nearest scope id unless you pass `scopeId`, and disabled or
-invisible nodes are skipped by resolution and trapping. With `syncToRoblox` enabled the node mirrors
-to `GuiService.SelectedObject` while focused; set it `false` for a logically-focused node that
-should not drive native selection.
+invisible nodes are skipped by resolution and trapping. With `syncToRoblox` enabled, the node
+mirrors to `GuiService.SelectedObject` while focused. Set it `false` for a logically-focused node
+that should not drive native selection.
 
 <PropTable
   rows={[
@@ -134,7 +131,8 @@ function FocusScopeProvider(props: {
 }): React.Element;
 ```
 
-Provides a scope id to descendants. `FocusScope` renders this for you; use it directly only when wiring scope inheritance manually.
+Provides a scope id to descendants. `FocusScope` renders this for you, so use it directly only when
+wiring scope inheritance manually.
 
 ### useFocusScopeId
 
@@ -154,7 +152,7 @@ function FocusLayerProvider(props: {
 ```
 
 Provides the ambient focus layer order to descendants. Higher orders win when resolving which scope
-owns a node or which trapped scope is on top; the Layer package renders it around each dismissable
+owns a node, or which trapped scope is on top. The Layer package renders it around each dismissable
 layer.
 
 ### useFocusLayerOrder
@@ -183,11 +181,11 @@ function restoreSnapshot(snapshot: FocusRestoreSnapshot | undefined): GuiObject 
 ```
 
 - **`focusNode`** moves focus to a registered node by id.
-- **`focusGuiObject`** moves focus to a `GuiObject`, registering an implicit node for it if one is not already tracked — handy for focusing arbitrary instances that never called `useFocusNode`.
+- **`focusGuiObject`** moves focus to a `GuiObject`, registering an implicit node for it if one is not already tracked. Handy for focusing arbitrary instances that never called `useFocusNode`.
 - **`clearFocus`** drops focus entirely, then re-runs trap enforcement (a trapped scope may immediately reclaim selection).
 - **`canFocusNode`** reports whether a node could currently receive focus, without moving it.
 - **`getFocusedNode`** / **`getFocusedGuiObject`** read the currently focused node record or its `GuiObject`.
-- **`captureRestoreSnapshot`** records the current selection as a restore target; **`restoreSnapshot`** returns focus to a previously captured snapshot (or clears focus when the snapshot is empty).
+- **`captureRestoreSnapshot`** records the current selection as a restore target. **`restoreSnapshot`** returns focus to a previously captured snapshot, or clears focus when the snapshot is empty.
 
 ### Focus registration functions
 
@@ -204,10 +202,10 @@ function retainExternalFocusBridge(): void;
 function releaseExternalFocusBridge(): void;
 ```
 
-`registerFocusNode` / `unregisterFocusNode` add and remove nodes. `createFocusScopeId` allocates a
-scope id; `registerFocusScope` records a scope, `syncFocusScope` re-evaluates it after its inputs
+`registerFocusNode` and `unregisterFocusNode` add and remove nodes. `createFocusScopeId` allocates a
+scope id. `registerFocusScope` records a scope, `syncFocusScope` re-evaluates it after its inputs
 change, and `unregisterFocusScope` tears it down with restore handling. `retainExternalFocusBridge`
-/ `releaseExternalFocusBridge` are reference-counted: while one consumer is retained, the manager
+and `releaseExternalFocusBridge` are reference-counted: while one consumer is retained, the manager
 listens to external `GuiService.SelectedObject` changes and reconciles them back.
 
 ### Exported manager types
@@ -284,7 +282,7 @@ focusOrderedSelectionEntry(next);
 - **`findOrderedSelectionEntry`** returns the first available entry matching a predicate.
 - **`getCurrentOrderedSelectionEntry`** returns the available entry whose ref matches the currently focused `GuiObject`.
 - **`getFirstOrderedSelectionEntry`** returns the first available entry in order.
-- **`getRelativeOrderedSelectionEntry`** steps `direction` (`1` forward, `-1` back) from `currentId` across only the available entries, clamping at the ends; with no current entry it returns the first (forward) or last (back).
+- **`getRelativeOrderedSelectionEntry`** steps `direction`, `1` forward or `-1` back, from `currentId` across only the available entries, clamping at the ends. With no current entry it returns the first going forward, or the last going back.
 - **`focusOrderedSelectionEntry`** moves focus to an entry's `GuiObject` through the focus manager.
 
 <Callout title="Roblox selection is global and singular">

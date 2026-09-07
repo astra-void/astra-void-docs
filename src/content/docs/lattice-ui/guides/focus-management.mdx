@@ -9,7 +9,10 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-On Roblox, "focus" is gamepad and keyboard **selection**: a single `GuiObject` held by `GuiService.SelectedObject`. There is no focus tree and no tab order. The moment you layer surfaces, that one property becomes contended — open a modal and selection should move into it, close it and selection should land back on whatever opened it, and meanwhile the gamepad should not wander out.
+On Roblox, "focus" is gamepad and keyboard **selection**: a single `GuiObject` held by
+`GuiService.SelectedObject`. There is no focus tree and no tab order. The moment you layer surfaces,
+that one property becomes contended. Open a modal and selection should move into it. Close it and
+selection should land back on whatever opened it. Meanwhile the gamepad should not wander out.
 
 `@lattice-ui/react-focus` makes that deterministic. It keeps its own model of **focus scopes** and **focus nodes**, decides which node should be selected, and bridges that decision to `GuiService.SelectedObject`. Every layered primitive sits on top of it.
 
@@ -34,9 +37,11 @@ import {
 Two registrations drive everything.
 
 - A **focus node** is a selectable `GuiObject` the manager may select, registered with `useFocusNode`. The manager only selects a registered node, or an *implicit* one it infers when selection arrives from outside.
-- A **focus scope** is a region — a dialog body, a menu list — with rules about activity, trapping and restoration. `FocusScope` registers one and shares its id through context, so any `useFocusNode` inside belongs to it.
+- A **focus scope** is a region with rules about activity, trapping and restoration. A dialog body, a menu list. `FocusScope` registers one and shares its id through context, so any `useFocusNode` inside belongs to it.
 
-The manager resolves which node is focusable and writes it to `GuiService.SelectedObject`; when the player moves the gamepad it reads the change back and re-resolves. That two-way bridge is the point — your model and Roblox's selection stay in agreement.
+The manager resolves which node is focusable and writes it to `GuiService.SelectedObject`. When the
+player moves the gamepad, it reads the change back and re-resolves. That two-way bridge is the point
+— your model and Roblox's selection stay in agreement.
 
 ### Registering a focusable node
 
@@ -106,7 +111,10 @@ Use `asChild` when you want the scope root to *be* your frame instead of an extr
 
 ## Trapping selection
 
-A **trapped** scope keeps gamepad and keyboard selection inside it. While a trapped scope is active, the manager refuses to resolve any node outside its root: if the player moves selection out — or external code sets `SelectedObject` to something outside — selection is pulled back to a focusable node inside the scope.
+A **trapped** scope keeps gamepad and keyboard selection inside it. While a trapped scope is active,
+the manager refuses to resolve any node outside its root. If the player moves selection out, or
+external code sets `SelectedObject` to something outside, selection is pulled back to a focusable
+node inside the scope.
 
 ```tsx title="ModalSurface.tsx"
 import { FocusScope } from "@lattice-ui/react-focus";
@@ -121,17 +129,24 @@ export function ModalSurface(props: { open: boolean; children: React.ReactNode }
 }
 ```
 
-Trapping is **layer-aware**, not a stack of mutually exclusive locks. When several trapped scopes are active, the manager picks the *topmost* one — first by `FocusLayerProvider` layer order, then by registration order — and traps within it. Closing the top scope hands the trap to the next one down. This is exactly what lets a Popover open inside a Dialog without either fighting the other.
+Trapping is **layer-aware**, not a stack of mutually exclusive locks. When several trapped scopes
+are active, the manager picks the *topmost* one and traps within it. It ranks first by
+`FocusLayerProvider` layer order, then by registration order. Closing the top scope hands the trap
+to the next one down. This is exactly what lets a Popover open inside a Dialog without either
+fighting the other.
 
 <Callout title="Provide a focusable target before trapping">
-A trapped scope needs something to hold. On activation the manager looks for the scope's last-focused node, then the first focusable descendant. If the scope has no selectable `GuiObject` yet — for example because its content mounts a frame later — selection clears until one appears. Make sure at least one child is `Selectable` by the time the scope becomes active.
+A trapped scope needs something to hold. On activation the manager looks for the scope's last-focused node, then the first focusable descendant. If the scope has no selectable `GuiObject` yet, selection clears until one appears. That happens when its content mounts a frame later, for example. Make sure at least one child is `Selectable` by the time the scope becomes active.
 </Callout>
 
 ## Restoring selection
 
 When a scope with `restoreFocus` activates, it captures a **restore snapshot**: the node (or raw `GuiObject`) that was selected just before. When that scope deactivates, the manager replays the snapshot, returning selection to whatever opened the surface — typically the trigger.
 
-Restoration degrades gracefully. If the snapshot node is gone (unmounted, now invisible, or disabled), the manager walks up to the parent scope and selects its best fallback, then falls back to the topmost remaining trapped scope. It never leaves selection pointing at a dead instance.
+Restoration degrades gracefully. If the snapshot node is gone — unmounted, now invisible, or
+disabled — the manager walks up to the parent scope and selects its best fallback. Failing that, it
+falls back to the topmost remaining trapped scope. It never leaves selection pointing at a dead
+instance.
 
 You can drive this yourself for surfaces you build outside the primitives:
 
@@ -190,7 +205,10 @@ A `GuiObject` is not focusable until it is parented and effectively visible. Rig
 
 ## Ordered selection
 
-Grids, menus, and radio groups need **directional movement** — "next item", "previous item" — that skips disabled and hidden entries and wraps predictably. The ordered-selection helpers operate on a list of entries you maintain (each with an `id`, an `order`, and a ref) and resolve which one to move to.
+Grids, menus and radio groups need **directional movement**: "next item", "previous item". It has to
+skip disabled and hidden entries and wrap predictably. The ordered-selection helpers operate on a
+list of entries you maintain (each with an `id`, an `order`, and a ref) and resolve which one to
+move to.
 
 ```tsx title="useArrowNavigation.ts"
 import {
@@ -218,12 +236,15 @@ Key behaviors to rely on:
 - With no current selection, a `+1` direction lands on the first available entry and `-1` on the last.
 
 <Callout title="Direction is a fixed type">
-`OrderedSelectionDirection` is `-1 | 1`, not an arbitrary number. Map your gamepad/arrow input to one of those two values — for a horizontal group, `Left` is `-1` and `Right` is `1`; for vertical, `Up`/`Down`.
+`OrderedSelectionDirection` is `-1 | 1`, not an arbitrary number. Map your gamepad or arrow input to one of those two values. For a horizontal group, `Left` is `-1` and `Right` is `1`. For a vertical one, use `Up` and `Down`.
 </Callout>
 
 ## How primitives wire all of this
 
-When you use Dialog or Menu, the wiring above is already done. `Dialog.Content` renders a `FocusScope` with `trapFocus` and `restoreFocus`; `Dialog.Trigger` registers a focus node so it is the natural restore target. You only reach for `@lattice-ui/react-focus` directly when building a selectable surface the primitives do not cover.
+When you use Dialog or Menu, the wiring above is already done. `Dialog.Content` renders a
+`FocusScope` with `trapFocus` and `restoreFocus`. `Dialog.Trigger` registers a focus node, so it is
+the natural restore target. You only reach for `@lattice-ui/react-focus` directly when building a
+selectable surface the primitives do not cover.
 
 ```tsx title="Reading what a primitive already does"
 // Equivalent to what Dialog.Content sets up for you:

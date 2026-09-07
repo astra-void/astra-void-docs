@@ -10,8 +10,8 @@ draft: false
 import { Callout, PropTable } from "@/components/docs/mdx";
 
 UI motion on Roblox is property tweening over time. The hard part is not the tween but
-**coordination**: a surface that fades out has to stay mounted until the fade finishes, a property
-the layout system owns must not also be driven by an animation, and motion should collapse cleanly
+**coordination**. A surface that fades out has to stay mounted until the fade finishes. A property
+the layout system owns must not also be driven by an animation. And motion should collapse cleanly
 to an instant state change when a player has it disabled.
 
 `@lattice-ui/react-motion` is the foundation that solves this. It splits animation into three intents, each with a hook and a set of recipes:
@@ -20,7 +20,9 @@ to an instant state change when a player has it disabled.
 - **Response** — state-driven settling between two visual states, easing toward the active one.
 - **Feedback** — short one-shot accents for input: accent on, recover off.
 
-Underpinning all three is the **target contract**, which declares *which properties motion is allowed to own* on a given instance — the mechanism that stops motion and layout from stepping on each other.
+Underpinning all three is the **target contract**. It declares *which properties motion is allowed
+to own* on a given instance, and it is the mechanism that stops motion and layout from stepping on
+each other.
 
 ## Import
 
@@ -67,7 +69,7 @@ const custom = motionTargets.custom({
 ```
 
 <Callout title="Reserved properties are never animated">
-`AbsolutePosition`, `AbsoluteSize`, `AutomaticSize`, `LayoutOrder`, `Parent`, `Visible` and `ZIndex` are reserved for layout ownership and rejected regardless of role — animating one is dropped and reported as a diagnostic rather than silently fighting your layout. If motion needs to own geometry, animate a dedicated wrapper instead of the laid-out node.
+`AbsolutePosition`, `AbsoluteSize`, `AutomaticSize`, `LayoutOrder`, `Parent`, `Visible` and `ZIndex` are reserved for layout ownership and rejected regardless of role. Animating one is dropped and reported as a diagnostic, rather than silently fighting your layout. If motion needs to own geometry, animate a dedicated wrapper instead of the laid-out node.
 </Callout>
 
 ## Presence: reveal and exit
@@ -106,7 +108,8 @@ export function RevealCard(props: { open: boolean }) {
 }
 ```
 
-A `PresenceMotionConfig` has up to four parts. `initial` is the snapshot applied before reveal; `reveal` and `exit` are timed steps; `target` is the contract:
+A `PresenceMotionConfig` has up to four parts. `initial` is the snapshot applied before reveal.
+`reveal` and `exit` are timed steps, and `target` is the contract:
 
 <PropTable
   rows={[
@@ -125,21 +128,21 @@ Prefer a shared recipe over hand-rolling a config — they encode tested timing 
 - `createIndicatorRevealRecipe(size)` — grow-from-zero for indicators (`size-wrapper`).
 
 <Callout title="Match the transparency property to the instance">
-The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup` — no primitive renders one, so they are for a `canvasgroup` you attach the ref to yourself. The plain surface recipes animate `BackgroundTransparency`, which fades one instance's own background. Match the recipe to the instance, or the write is rejected by the target contract.
+The canvas-group recipes animate `GroupTransparency`, which only exists on a `CanvasGroup`. No primitive renders one, so they are for a `canvasgroup` you attach the ref to yourself. The plain surface recipes animate `BackgroundTransparency`, which fades one instance's own background. Match the recipe to the instance, or the write is rejected by the target contract.
 </Callout>
 
 ### forceMount and the lifecycle
 
-For finer control — keeping a node alive before it has entered, or reading the animation phase — use
-`usePresenceMotionController`, which returns `{ ref, phase, mounted, isExiting, isVisible, ... }`.
-The phase walks `exited → mounted → preparing → ready → visible → exiting`, so you can gate other
-behavior on it.
+For finer control, use `usePresenceMotionController`, which returns
+`{ ref, phase, mounted, isExiting, isVisible, ... }`. That covers keeping a node alive before it has
+entered, and reading the animation phase. The phase walks
+`exited → mounted → preparing → ready → visible → exiting`, so you can gate other behavior on it.
 
 ## Response: settling between states
 
 `useResponseMotion(active, properties, config?)` eases an instance between an **active** and
 **inactive** property set whenever `active` changes — for nodes that stay mounted and change
-appearance. The first application is instant; subsequent changes settle.
+appearance. The first application is instant. Subsequent changes settle.
 
 ```tsx title="SelectableChip.tsx"
 import { useResponseMotion, createSelectionResponseRecipe } from "@lattice-ui/react-motion";
@@ -168,7 +171,7 @@ export function SelectableChip(props: { selected: boolean; label: string }) {
 This is the exact pattern lattice-ui's own Checkbox and Radio group use. Recipes for response motion include `createSelectionResponseRecipe`, `createToggleResponseRecipe`, `createSliderThumbResponseRecipe(isDragging)`, `createFieldResponseRecipe`, and `createToastResponseRecipe`.
 
 <Callout title="active and inactive must define the same keys">
-`useResponseMotion` writes whichever set matches the current state, so both objects should describe the same properties — otherwise a colour set only in `active` never returns when the state flips back.
+`useResponseMotion` writes whichever set matches the current state, so both objects should describe the same properties. Otherwise a colour set only in `active` never returns when the state flips back.
 </Callout>
 
 ## Feedback: one-shot accents
@@ -224,7 +227,7 @@ export function App(props: { reduceMotion: boolean; children: React.ReactNode })
 ```
 
 <Callout title="Motion stays correct, not just pretty">
-Because disabled motion still applies the final values and fires `onExitComplete`, you never special-case reduced motion in component logic. Build the animated path; the instant one falls out.
+Because disabled motion still applies the final values and fires `onExitComplete`, you never special-case reduced motion in component logic. Build the animated path. The instant one falls out.
 </Callout>
 
 ## How primitives wire all of this
@@ -243,8 +246,8 @@ import { createPopperEntranceRecipe } from "@lattice-ui/react-motion";
 <Popover.Content transition={createPopperEntranceRecipe("bottom", 12, 0.2)} />
 ```
 
-`Dialog.Content` is the exception: its host is a full-screen `Frame`, so give it a `Position`-only
-config and fade the overlay or your own elements — or pass `asChild` with a `canvasgroup`. See
+`Dialog.Content` is the exception. Its host is a full-screen `Frame`, so give it a `Position`-only
+config and fade the overlay or your own elements. Or pass `asChild` with a `canvasgroup`. See
 [Fading a dialog](/lattice-ui/components/dialog/#fading-a-dialog).
 
 ## Related
