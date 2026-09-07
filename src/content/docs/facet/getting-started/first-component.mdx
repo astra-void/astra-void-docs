@@ -24,13 +24,13 @@ npx facet-rbxts add button
 ✔ write  src/shared/ui/button.tsx
 ```
 
-Three files for one component, because `button` declares `utils` and `text` as registry
-dependencies and `add` resolves those transitively. `utils` was already there if you ran `init`, in
-which case it is listed as `exists` and left alone — `add` never overwrites without `--overwrite`.
+Three files for one component, because `button` declares `utils` and `text` as registry dependencies
+and `add` resolves those transitively. `utils` is listed as `exists` and left alone if `init`
+already added it — `add` never overwrites without `--overwrite`.
 
-The npm packages the entry declares (`@facet-ui/react-variants`, `@lattice-ui/react-runtime`) are
-installed at the same time, through whichever package manager your lockfile implies. `--no-deps`
-skips that; `--dry-run` resolves and reports without writing anything.
+The npm packages the entry declares are installed at the same time, through whichever package
+manager your lockfile implies. `--no-deps` skips that; `--dry-run` resolves and reports without
+writing.
 
 ## Render it
 
@@ -80,20 +80,18 @@ If you have written shadcn/ui, two of these will bite you within the hour.
 ```
 
 roblox-ts React's `ReactNode` has no string member — host instances draw text from a `Text`
-property rather than from a text node — so a bare string child is a type error no matter what the
-component declares. `children` keeps its shadcn meaning: composition, for an icon or a nested
-element beside the label.
+property, not a text node — so a bare string child is a type error whatever the component declares.
+`children` keeps its shadcn meaning: composition.
 
-The prop is spelled uppercase, matching the Roblox instance property it shadows. That is the point:
-`Text` is already a member of `PassthroughProps<TextButton>`, so if Facet declared a lowercase
-`text` instead, a developer writing the obvious `<Button Text="Save" />` would have it land on the
-host instance and draw Roblox's 8px near-black default *underneath* the styled label. Declaring
-`Text` intercepts it. See [Text and labels](/facet/guides/text-and-labels/).
+The prop is spelled uppercase to shadow the Roblox instance property. `Text` is already a member of
+`PassthroughProps<TextButton>`, so a lowercase `text` would leave the obvious
+`<Button Text="Save" />` landing on the host instance and drawing Roblox's 8px near-black default
+*underneath* the styled label. See [Text and labels](/facet/guides/text-and-labels/).
 
 ### 2. Both axes, always
 
-`UIPadding` does not grow a frame on Roblox — it insets children. And Vela resolves a frame's size
-starting from `UDim2.new(0, 0, 0, 0)`, so nothing hugs its content unless you ask.
+`UIPadding` does not grow a frame on Roblox — it insets children — and Vela resolves a frame's size
+from `UDim2.new(0, 0, 0, 0)`, so nothing hugs its content unless you ask.
 
 ```
 h-9 px-4        → 0 × 36 pixels. Invisible.
@@ -101,14 +99,14 @@ h-9 w-fit px-4  → hugs its content. Correct.
 h-9 w-9         → fixed square. Also correct.
 ```
 
-`h-9 px-4` is a perfectly good shadcn button and renders nothing here. This is why `buttonVariants`
-carries `w-fit` in its base classes, and why the `icon` size overrides it with a concrete `w-9`.
-Every class string you write in a copied component needs an answer on both axes.
+`h-9 px-4` is a good shadcn button and renders nothing here. That is why `buttonVariants` carries
+`w-fit` in its base classes and the `icon` size overrides it with a concrete `w-9`. Every class
+string needs an answer on both axes.
 
 ### 3. Nothing inherits
 
-There is no cascade. `text-sm` on a button does not reach the label inside it: text properties
-belong to the instance that draws the text.
+There is no cascade: `text-sm` on a button does not reach the label inside it, because text
+properties belong to the instance that draws the text.
 
 That is why `button.tsx` exports *two* recipes:
 
@@ -117,32 +115,26 @@ export const buttonVariants = fv("… w-fit rounded-md", { /* geometry + surface
 export const buttonLabelVariants = fv("font-medium", { /* colour + size of the text */ });
 ```
 
-Both key off the same `variant` and `size` props. It is the single biggest structural difference
-from shadcn, where one class list on the parent styles everything under it.
+Both key off the same `variant` and `size` props — the biggest structural difference from shadcn,
+where one class list on the parent styles everything under it.
 
 <Callout title="Every text recipe declares a font-*">
-Rule 2 in another costume. Vela leaves `FontFace` untouched when no `font-*` token appears, and
-Roblox's untouched default is **LegacyArial** — not a weight of the font every other label resolves
-to, a different typeface, visibly larger at the same `TextSize`. `card`'s description had no
-`font-*` and rendered in Arial next to a SourceSansPro title, in the same header, for as long as
-nobody had looked at it. Weight is not optional styling here; it is the only thing that says *which
-font*.
+Vela leaves `FontFace` untouched when no `font-*` token appears, and Roblox's untouched default is **LegacyArial** — a different typeface, visibly larger at the same `TextSize`. `card`'s description had no `font-*` and rendered in Arial beside a SourceSansPro title until someone looked. Weight is not optional styling here; it is the only thing that says *which font*.
 </Callout>
 
 ## Now edit it
 
-That is the whole point of the model. `src/shared/ui/button.tsx` is a file in your repository:
-change the variants, drop the ones you do not use, rename the component. Facet has no mechanism to
-push an update over it, and no record that it ever gave it to you.
+That is the point of the model. `src/shared/ui/button.tsx` is a file in your repository: change the
+variants, drop the ones you do not use, rename the component. Facet has no mechanism to push an
+update over it.
 
-Editing is also the *only* override that reliably works. A `className` passed to a Facet component
-from outside is consumed by Vela at the call site and then overwritten by the component's own
-recipe — measured, silent, and covered in
+Editing is also the *only* override that reliably works: a `className` passed in from outside is
+consumed by Vela at the call site and then overwritten by the component's own recipe — see
 [Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 
-The one thing to preserve while you edit the class strings is **ordering discipline** — nothing may
-be appended after `props.className` inside the component, because Vela's resolution is
-last-token-wins. See [Variants and classes](/facet/guides/variants-and-classes/#the-one-rule).
+Preserve **ordering discipline** while you edit: nothing may be appended after `props.className`
+inside the component, because Vela's resolution is last-token-wins. See
+[Variants and classes](/facet/guides/variants-and-classes/#the-one-rule).
 
 ## Next step
 
