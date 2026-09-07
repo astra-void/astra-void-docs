@@ -20,14 +20,14 @@ per-package detail. Installing for the first time? You are on the current releas
 The current release: variants you define yourself, responsive ranges, configurable breakpoints,
 presets, per-corner radius, and transitions that reach the helper instances.
 
-**State variants.** `addVariant("open", { attribute: "State", equals: "open" })` registers an `open:`
-prefix that reads a Roblox attribute off the styled instance; `attr-[State=open]:` reads one inline.
-Both compose with every other variant, and only the condition travels to the runtime —
+**State variants.** `addVariant("open", { attribute: "State", equals: "open" })` registers an
+`open:` prefix that reads a Roblox attribute off the styled instance. `attr-[State=open]:` reads one
+inline. Both compose with every other variant. Only the condition travels to the runtime, so
 `open:rounded-lg` lowers `rounded-lg` exactly as a bare `rounded-lg` does. See
 [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/).
 
-**Responsive ranges.** `max-md:` is the exact complement of `md:` — minimum inclusive, maximum
-exclusive — so the two cover every viewport once. They chain: `md:max-lg:` addresses one bucket.
+**Responsive ranges.** `max-md:` is the exact complement of `md:`, minimum inclusive and maximum
+exclusive, so the two cover every viewport once. They also chain: `md:max-lg:` addresses one bucket.
 
 **Configurable breakpoints.** `theme.screens` is a theme axis like `colors`, so `tablet:` and
 `max-tablet:` are two lines of config. The default scale gains `xl` (1280) and `2xl` (1536).
@@ -38,15 +38,15 @@ them, so a project always outranks what it pulled in. A JSON config can inline a
 import one. See [presets](/vela-rbxts/reference/config/#presets).
 
 **Per-corner radius.** `rounded-l-lg`, `rounded-t-md` and `rounded-tr-[0.625rem]` write the
-individual `UICorner` properties, and **square off the corners they do not name** — so
+individual `UICorner` properties. They **square off the corners they do not name**, so
 `rounded-r-lg` alone keeps the left side flat. A directional utility beats the all-corner shorthand
 on the corners it names, in either order.
 
 **Transitions reach the helper instances.** `hover:rounded-xl` and `hover:border-blue-500` used to
-snap, since a radius and a stroke live on `UICorner` and `UIStroke` rather than on the element.
-They tween now, and `transition-shadow` joins the property groups. A custom motion driver receives
-those tweens with a fourth argument naming the helper; it is additive, so a three-argument driver
-keeps working.
+snap, since a radius and a stroke live on `UICorner` and `UIStroke` rather than on the element. They
+tween now, and `transition-shadow` joins the property groups. A custom motion driver receives those
+tweens with a fourth argument naming the helper. It is additive, so a three-argument driver keeps
+working.
 
 **Optional inlay hints.** The editor can show what each class lowers to after the class. Off by
 default, behind `velaRbxts.inlayHints.enabled`.
@@ -55,12 +55,11 @@ default, behind `velaRbxts.inlayHints.enabled`.
 changes. A config that throws is cached alongside one that resolves, so a typo is reported once and
 the next edit lifts it.
 
-**Three new prefix diagnostics.** `unknown-breakpoint` for a `max-` in front of something that is not
-a breakpoint, `malformed-attribute-variant` for an `attr-[…]` that does not parse, and
-`invalid-breakpoint-range` for a chain whose bounds leave no viewport.
+**Three new prefix diagnostics.** `unknown-breakpoint` fires on a `max-` in front of something that
+is not a breakpoint. `malformed-attribute-variant` fires on an `attr-[…]` that does not parse.
+`invalid-breakpoint-range` fires on a chain whose bounds leave no viewport.
 
-Sorting ranks the new variants in bands of their own; the order the existing variants sorted into is
-unchanged.
+Sorting ranks the new variants in bands of their own. The existing variants keep the order they had.
 
 ## 0.12.8
 
@@ -71,7 +70,7 @@ reports your own theme keys as unknown.
 ## 0.12.7
 
 **`justify-stretch`**, which sets `UIListLayout.HorizontalFlex` to `Enum.UIFlexAlignment.Fill`.
-`items-stretch` reached `VerticalFlex` from the start, but nothing reached the horizontal axis, so a
+`items-stretch` reached `VerticalFlex` from the start, but nothing reached the horizontal axis. A
 column that wanted its children to fill the width had no class for it.
 
 **A config the editor cannot read is now a notification** naming the file and the reason, rather than
@@ -80,73 +79,72 @@ a line in an output channel nobody opens.
 ## 0.12.6
 
 Three fixes, all a walk that stopped at a boundary too early. The `SurfaceGui` pin and an
-`opacity-*` fade both now carry through a **fragment, a wrapper or a provider** rather than turning
-around at one, and a component exported without a name — `export default (props) => …` — is read as
-a component root like the named form beside it.
+`opacity-*` fade now carry through a **fragment, a wrapper or a provider** rather than turning
+around at one. A component exported without a name, as `export default (props) => …`, is read as a
+component root like the named form beside it.
 
 ## 0.12.5
 
 **A `SurfaceGui` keeps its literal pixels.** It takes its pixel space from the part it is drawn on
-rather than from the viewport, and a `BillboardGui` sizes itself the same way, so following the rem
-curve there was wrong. Both are pinned now, on the static and runtime paths alike:
+rather than from the viewport, and a `BillboardGui` sizes itself the same way. Following the rem
+curve there was wrong. Both are pinned now, on the static and runtime paths alike.
 `theme.rem.pinnedUnder` names them, and emptying it puts them back on the curve. A container the
-compiler never sees — built in Luau, or in a file a React root is mounted into — is outside what this
-reaches; pin such a project with `theme.rem: { min: 16, max: 16 }`.
+compiler never sees is outside what this reaches. Pin such a project with
+`theme.rem: { min: 16, max: 16 }`.
 
 ## 0.12.4
 
 **A margin side is one signed slot, so the last class written to it lands.** Padding and a negative
-shift used to accumulate in separate slots, so neither could overwrite the other: `-ml-2 -ml-2`
-shifted by 16 rather than 8, and `ml-4 -ml-2` applied both a padding *and* a shift. A side that ends
-up negative moves the element; one that ends up positive pads it. `-mr-*` and `-mb-*` still report
+shift used to accumulate separately, so neither could overwrite the other. `-ml-2 -ml-2` shifted by
+16 rather than 8, and `ml-4 -ml-2` applied both a padding *and* a shift. A side that ends up
+negative moves the element. One that ends up positive pads it. `-mr-*` and `-mb-*` still report
 `unsupported-negative-margin`.
 
 **Sorting leaves the whitespace where its author put it**, so a class list written across several
 lines is no longer flattened on every save.
 
-Plus: `placeholder-transparent` is no longer offered by completion (Roblox has no placeholder
-transparency to lower to), and the language server exits on the `exit` notification instead of
-waiting for the pipe to close.
+Two smaller fixes. `placeholder-transparent` is no longer offered by completion, since Roblox has no
+placeholder transparency to lower to. The language server exits on the `exit` notification instead
+of waiting for the pipe to close.
 
 ## 0.12.3
 
 A patch, mostly in the editor — but two of these move the compiler as well.
 
 **A class an interpolation splices into is left alone.** `` `w-[${width}]` `` reaches the editor as
-two pieces and both were analyzed as whole classes, warning about a class you did not write.
+two pieces. Both were analyzed as whole classes, warning about a class you did not write.
 
 **Whitespace inside an arbitrary value no longer splits it.** `w-[calc(100% - 4px)]` was read as
-three classes and collected a diagnostic each; it reports the one it is owed now. The runtime splits
+three classes and collected a diagnostic each. It reports the one it is owed now. The runtime splits
 its class strings under the same rule, so a static class and a deferred one tokenize alike.
 
-Four editor fixes behind them: a config pushed by the editor never arrived (so your theme keys stayed
-unknown for the session); a file opening with a BOM answered one character to the left; completing
-inside a variant chain deleted the utility behind it; and sorting a value whose bracket never closes
-rewrote it.
+Four editor fixes behind them. A config pushed by the editor never arrived, so your theme keys
+stayed unknown for the session. A file opening with a BOM answered one character to the left.
+Completing inside a variant chain deleted the utility behind it. Sorting a value whose bracket never
+closes rewrote it.
 
 ## 0.12.2
 
 A patch, entirely in the editor — the compiler emits byte for byte what 0.12.0 did.
 
 **The editor understands a class value written as a function.** `className={() => "bg-blue-600"}` is
-how a Vide project writes a dynamic one, and the walk had no arm for a function at all, so
-completions, hover, diagnostics, swatches and sorting saw nothing in it. It follows what a function
-returns now, along with template interpolations, `as const`, `satisfies`, string concatenation, and
-an object's computed keys and spreads. Two interpolation bugs went with it: a half-typed file no
-longer reports `${flag` as an unknown utility, and the sort keeps the whitespace either side of an
-interpolation.
+how a Vide project writes a dynamic one. The walk had no arm for a function at all, so completions,
+hover, diagnostics, swatches and sorting saw nothing in it. It follows what a function returns now,
+along with template interpolations, `as const`, `satisfies`, string concatenation, and an object's
+computed keys and spreads. Two interpolation bugs went with it. A half-typed file no longer reports
+`${flag` as an unknown utility, and the sort keeps the whitespace either side of an interpolation.
 
 ## 0.12.1
 
 The one to be on if you write Vide. **A Vide project that never named `framework` compiled against
-the React host**, emitting an import of `@rbxts/vela-runtime` it has no reason to have installed. The
-tsconfig inference only ran for a project with no `vela.config.ts` at all, so a Vide project whose
+the React host**, emitting an import of `@rbxts/vela-runtime` it has no reason to have installed.
+The tsconfig inference only ran for a project with no `vela.config.ts` at all. A Vide project whose
 config set a theme or a plugin silently lost it.
 
 ## 0.12.0
 
-The largest release since 0.7.0: offsets became rem units, the runtime became a package instead of a
-copy, branches started resolving at compile time, and Vela learned to emit for a second UI library.
+The largest release since 0.7.0. Offsets became rem units. The runtime became a package instead of a
+copy. Branches started resolving at compile time, and Vela learned to emit for a second UI library.
 
 <Callout title="Two of these change what you already have">
 **Rendering moves on any viewport but the base one**, because every pixel offset now scales. And
@@ -155,28 +153,28 @@ warnings on code that was already wrong. Neither needs a code change. Nothing ab
 </Callout>
 
 **Every pixel offset a utility lowers is a rem unit.** `p-4`, `w-40`, `rounded-lg` and `text-sm` are
-measured against the viewport: one rem is 16px at 1920×1020 and scales from there, with no provider,
-hook or wrapper involved. Scale-valued utilities are untouched — `w-full` and `translate-x-1/2` stay
-fractions of the parent — and `TextSize` gains a ceiling of 100, where Roblox stops honoring it. To
-keep literal pixels, close the clamp with `theme: { rem: { min: 16, max: 16 } }`; the compiler then
-drops the scaling from the emit entirely. See [rem](/vela-rbxts/guides/theming/#rem).
+measured against the viewport. One rem is 16px at 1920×1020 and scales from there, with no provider,
+hook or wrapper involved. Scale-valued utilities are untouched: `w-full` and `translate-x-1/2` stay
+fractions of the parent. `TextSize` gains a ceiling of 100, where Roblox stops honouring it. To keep
+literal pixels, close the clamp with `theme: { rem: { min: 16, max: 16 } }`. The compiler then drops
+the scaling from the emit entirely. See [rem](/vela-rbxts/guides/theming/#rem).
 
 **The runtime ships as `@rbxts/vela-runtime` instead of being copied into every file.** Ten
-components used to carry ten copies of the same 5,500 lines, each with its own camera subscription
-and React context; it is one ModuleScript the whole place shares now. In the reference app `App.luau`
-went from 190,260 bytes to 27,912. Setup is unchanged — the package installs with `vela-rbxts` and
-sits under the `@rbxts` scope every roblox-ts project already lists.
+components used to carry ten copies of the same 5,500 lines, each with its own camera subscription.
+It is one ModuleScript the whole place shares now. In the reference app `App.luau` went from 190,260
+bytes to 27,912. Setup is unchanged — the package installs with `vela-rbxts` and sits under the
+`@rbxts` scope every roblox-ts project already lists.
 
 **The emit sends the theme you changed, not the whole palette.** A module whose host never has to
 *parse* a class value sends its scales emptied entirely.
 
 **A branch's classes are resolved at compile time.** `active ? "text-lg" : "text-sm"` names every
 token it can apply, so the compiler resolves all of them and hands the element the resolved props
-alongside the tests that decide them. That means the full utility set applies inside a branch, a bad
-utility in one reports a diagnostic instead of vanishing, and each test is evaluated once however
-many branches hang on it. It reads ternaries, `&&`, the literal behind `||`, arrays and object maps.
-A branch naming `m-*`, `divide-*`, `animate-*`, `transition*`, a text transform or `opacity-*` still
-takes the whole value down the runtime path. See
+alongside the tests that decide them. The full utility set applies inside a branch. A bad utility in
+one reports a diagnostic instead of vanishing, and each test is evaluated once however many branches
+hang on it. It reads ternaries, `&&`, the literal behind `||`, arrays and object maps. A branch
+naming `m-*`, `divide-*`, `animate-*`, `transition*`, a text transform or `opacity-*` still takes
+the whole value down the runtime path. See
 [dynamic class names](/vela-rbxts/guides/dynamic-class-names/#a-branch-lowers-at-compile-time).
 
 **`/N` opacity modifiers lower on every family with a transparency channel.** `border-slate-500/25`,
@@ -185,30 +183,30 @@ takes the whole value down the runtime path. See
 
 **Vela emits for [Vide](https://centau.github.io/vide/).** One config key, `framework: "vide"`, or
 nothing at all — it is inferred from a `jsxFactory` beginning with `Vide.`. A statically lowered
-element is identical under both targets; what differs is the runtime package the emit imports, and
-that a dynamic class value is written as a thunk. Two limits are inherent: a component element's prop
-names are fixed when it is called, and a `m-*` arriving out of an opaque call is warned rather than
-rendered. See [the Vide guide](/vela-rbxts/guides/vide/).
+element is identical under both targets. What differs is the runtime package the emit imports, and
+that a dynamic class value is written as a thunk. Two limits are inherent. A component element's
+prop names are fixed when it is called, and a `m-*` arriving out of an opaque call is warned rather
+than rendered. See [the Vide guide](/vela-rbxts/guides/vide/).
 
-Smaller things: hovers and completions read offsets in rem, arbitrary values read a `rem` unit, a base
-helper a variant rule overwrote no longer leaves two `UIPadding` under one instance, and the rule prop
-parser learned `Vector2`, `ColorSequence`, `NumberSequence` and `Font`.
+Smaller things. Hovers and completions read offsets in rem, and arbitrary values read a `rem` unit.
+A base helper a variant rule overwrote no longer leaves two `UIPadding` under one instance. The rule
+prop parser learned `Vector2`, `ColorSequence`, `NumberSequence` and `Font`.
 
 ## 0.11.1
 
-A patch. The runtime failed to typecheck in a project that sets `noUncheckedIndexedAccess`, which
-matters because a `className` carrying a state variant pulls it into the emit, where **your** compiler
-options check it.
+A patch. The runtime failed to typecheck in a project that sets `noUncheckedIndexedAccess`. That
+matters because a `className` carrying a state variant pulls it into the emit, where **your**
+compiler options check it.
 
 ## 0.11.0
 
 The first release that does not change how a single class lowers. It makes the transformer optional.
 
-**There is a `vela` command now**, for any project that cannot register a roblox-ts transform plugin
-— a pinned toolchain, a build system that drives `tsc` itself, a CI step that wants the lowered
-sources as a reviewable artifact. `vela build` mirrors `src` into `.vela/src`, transforming the files
-that use `className` and copying everything else through byte for byte; `vela watch` re-transforms on
-change. Both paths call the same compiler, so the output does not depend on which you pick. An
+**There is a `vela` command now**, for any project that cannot register a roblox-ts transform
+plugin. A pinned toolchain, a build system that drives `tsc` itself, or a CI step that wants the
+lowered sources as a reviewable artifact. `vela build` mirrors `src` into `.vela/src`, transforming
+the files that use `className` and copying everything else byte for byte. `vela watch` re-transforms
+on change. Both paths call the same compiler, so the output does not depend on which you pick. An
 identical output is never rewritten, and pruning reads a manifest of what an earlier run emitted, so
 a file the CLI never wrote is never deleted. See [the CLI reference](/vela-rbxts/reference/cli/).
 
@@ -221,23 +219,22 @@ Finishes the `opacity-*` work 0.9.0 started, and stops the inlined runtime from 
 register limit.
 
 **`opacity-*` crosses a component boundary, in both directions.** 0.9.0 faded a subtree by walking
-the JSX, and that walk ends where the JSX does — so a fade written *around* a component reached
-nothing it rendered, and one written *on* a component stopped at `BackgroundTransparency`. The alpha
-now travels as React context, through a provider that renders no instance, so the tree keeps its
-shape and names. Providers are *relative*: two nested fades compose rather than the inner one
-winning.
+the JSX, and that walk ends where the JSX does. A fade written *around* a component reached nothing
+it rendered, and one written *on* a component stopped at `BackgroundTransparency`. The alpha now
+travels as React context, through a provider that renders no instance, so the tree keeps its shape
+and names. Providers are *relative*: two nested fades compose rather than the inner one winning.
 
-**A class value that settles at render time is left whole to the runtime**, so an `opacity-*` written
+**A class value that settles at render time is left whole to the runtime.** An `opacity-*` written
 inside a recipe reaches the subtree it is written over.
 
-**`opacity-unreachable-child` is gone.** One difference between the paths remains: the static path
+**`opacity-unreachable-child` is gone.** One difference between the paths remains. The static path
 leaves a transparency *you* declared as a prop alone, while a fade arriving as context composes over
 both.
 
-**A configured motion driver no longer takes the tree down at mount.** A driver written the documented
-way compiles to a method carrying an implicit `self`, and the runtime called it detached, shifting
-every argument one place left. Methods are called as methods now, and the driver type states them as
-methods, so the arrow form is a compile error rather than a tree that disappears. See
+**A configured motion driver no longer takes the tree down at mount.** A driver written the
+documented way compiles to a method carrying an implicit `self`. The runtime called it detached,
+shifting every argument one place left. Methods are called as methods now, and the driver type
+states them as methods. The arrow form is a compile error rather than a tree that disappears. See
 [the motion driver](/vela-rbxts/reference/config/#motion-driver).
 
 **The inlined runtime is grouped into namespaces**, taking the busiest register file in an emitted
@@ -251,27 +248,27 @@ of 120, so crowding the limit again fails a test rather than your build.
 
 **And into the subtree written under it.** Roblox has no inherited transparency, so the transformer
 walks the JSX and hands every instance below the class the running product `1 - (1 - own) * alpha`.
-Children written inside an expression count; a `canvasgroup` on the way down ends the walk. Where
+Children written inside an expression count. A `canvasgroup` on the way down ends the walk. Where
 this parts ways with a real composite is overlapping siblings: each is faded rather than the group,
 so the overlap darkens.
 
 **`opacity-*` stopped being order-dependent.** It is held until the whole class list is read, then
-composed over whatever alpha the colors settled on, so `opacity-50 bg-slate-700` and
+composed over whatever alpha the colours settled on. `opacity-50 bg-slate-700` and
 `bg-slate-700 opacity-50` are the same thing.
 
-**The inlined runtime stopped costing every file 96 registers**, which had been failing whole
-components with `Out of local registers … exceeded limit 200` against code you never wrote.
+**The inlined runtime stopped costing every file 96 registers.** It had been failing whole
+components with `Out of local registers … exceeded limit 200`, against code you never wrote.
 
 If you are on 0.9.x and see `opacity-unreachable-child`, it is telling the truth — `{props.children}`
 and component children stayed out of the compile-time walk. 0.10.0 carries the alpha across both.
 
 ## 0.8.0
 
-**Every utility family resolves on the runtime class path.** The runtime host had implemented roughly
-a third of what the static path lowers, so a component whose `className` arrived as a *value* — the
-normal shape for a variant recipe — silently lost positioning, box constraints, the grid, gradients,
-rings, shadows, `z-*`, transforms, `opacity-*`, the ScrollingFrame family and most of the text
-families. All of them resolve dynamically now, with the static path's semantics.
+**Every utility family resolves on the runtime class path.** The runtime host had implemented
+roughly a third of what the static path lowers. A component whose `className` arrived as a *value*,
+the normal shape for a variant recipe, silently lost positioning, box constraints, the grid,
+gradients, rings, shadows, `z-*`, transforms, `opacity-*`, the ScrollingFrame family and most of the
+text families. All of them resolve dynamically now, with the static path's semantics.
 
 This is the release where [dynamic class names](/vela-rbxts/guides/dynamic-class-names/) stopped
 being a reduced dialect.
@@ -305,9 +302,7 @@ The release that drew most of the current configuration surface.
 ## 0.6.0
 
 <Callout title="Breaking-ish: grid cells are sized now">
-`UIGridLayout` stamps `CellSize` onto every child, and Vela's grid utilities never set it — so every
-cell fell back to Roblox's 100×100 default and a `grid-cols-2` of 430px cards collapsed to 100px
-squares. `grid-cols-N` now divides the axis into N tracks and hands each cell its share of the gap.
+`UIGridLayout` stamps `CellSize` onto every child, and Vela's grid utilities never set it. Every cell fell back to Roblox's 100×100 default, so a `grid-cols-2` of 430px cards collapsed to 100px squares. `grid-cols-N` now divides the axis into N tracks and hands each cell its share of the gap.
 
 The cross axis needs its own answer, so **`auto-rows-*` and `auto-cols-*`** set it from the spacing
 scale. Without one it stays at 100px, so existing grids keep their row extent and gain correct track
@@ -315,15 +310,15 @@ widths — anything compensating for 100px cells needs re-checking.
 </Callout>
 
 **`text-{color}` resolves on the runtime path.** The resolver had no `text-` branch at all, so every
-text color in a dynamic class value was dropped without a diagnostic. **`w-*` and `h-*` stop erasing
-each other in variant rules**, carrying the 0.5.2 fix into `md:w-32 md:h-32`.
+text colour in a dynamic class value was dropped without a diagnostic. **`w-*` and `h-*` stop
+erasing each other in variant rules**, carrying the 0.5.2 fix into `md:w-32 md:h-32`.
 
 ## 0.5.2
 
-**`w-*` and `h-*` stop erasing each other on the runtime path.** `Size` holds both axes, so a runtime
-rule naming one used to state a whole `UDim2` and zero the other. Worth re-reading if you worked
-around this: the axis that lost was left at zero, which also made a scale-based `rounded-full` compute
-to nothing.
+**`w-*` and `h-*` stop erasing each other on the runtime path.** `Size` holds both axes, so a
+runtime rule naming one used to state a whole `UDim2` and zero the other. Worth re-reading if you
+worked around this: the axis that lost was left at zero, which also made a scale-based
+`rounded-full` compute to nothing.
 
 ## 0.5.1
 
@@ -336,9 +331,9 @@ Roblox paints every `GuiObject` as an opaque gray box with a 1px border, and a f
 ever *adds* properties can never take that back.
 
 A supported host element **that carries a `className`** now starts from `BackgroundTransparency = 1`
-and `BorderSizePixel = 0`. Anything that actually paints opts back out — a `bg-*` utility,
-`opacity-*`, a gradient stop, or a transparency you declared as a prop — and a background painted by
-a variant reopens it at runtime. An element with no `className` is untouched, and so is a
+and `BorderSizePixel = 0`. Anything that actually paints opts back out: a `bg-*` utility,
+`opacity-*`, a gradient stop, or a transparency you declared as a prop. A background painted by a
+variant reopens it at runtime. An element with no `className` is untouched, and so is a
 **component**.
 
 **Anywhere the gray default was load-bearing, the element now renders invisible.** Add the `bg-*` it
@@ -361,32 +356,29 @@ on runtime-path elements are typed from the tag rather than as `Ref<unknown>`.
 ## 0.4.1
 
 <Callout title="Breakpoints did not work in 0.4.0">
-The `0.4.0` runtime helper read `Camera.ViewportSize` **once, at mount**, and Roblox often still
-reports a 1×1 viewport then — so **`sm:`, `md:` and `lg:` never matched and orientation was always
-landscape**. `0.4.1` follows the camera's signal, which fixes the initial evaluation and makes
+The `0.4.0` runtime helper read `Camera.ViewportSize` **once, at mount**, and Roblox often still reports a 1×1 viewport then. **`sm:`, `md:` and `lg:` never matched, and orientation was always landscape.** `0.4.1` follows the camera's signal, which fixes the initial evaluation and makes
 breakpoints react to resizes. The input variants and `hover:` were never affected.
 </Callout>
 
 **`divide-*` drew one separator too many** whenever the element carried a utility that lowers a
-helper instance. Config errors name the key that failed, `tsx-parse-failed` carries a real source
-range, and malformed `configJson` is an error rather than a silent fallback to the default theme.
+helper instance. Config errors name the key that failed, and `tsx-parse-failed` carries a real
+source range. Malformed `configJson` is an error rather than a silent fallback to the default theme.
 
 ## 0.4.0
 
 Where `hover:`, arbitrary hex colors and `/N` opacity modifiers arrived. Breakpoints and orientation
-are broken in this release, as described above; if you are pinned to it, drive reflow from your own
-state — see
+are broken in this release, as described above. If you are pinned to it, drive reflow from your own
+state. See
 [Responsive and input variants](/vela-rbxts/guides/responsive-and-input-variants/#driving-reflow-yourself).
 
 ## Earlier
 
-**0.3.0** landed most of the surface this documentation describes at once: far-edge positioning,
+**0.3.0** landed most of the surface this documentation describes at once. Far-edge positioning,
 `content-*`/`self-*`, `order-*`, grid, `translate-*`, `space-x/y-*`, `ring`/`outline`, `leading-*`,
-the case transforms and decorations, the whole motion layer, and the structural utilities — margins
-and `divide-*`.
+the case transforms and decorations, the whole motion layer, and the structural utilities.
 
 **0.2.1** added `vela.config.json` and the palette `DEFAULT` key, and moved the declaration file to
-`src/vela-env.d.ts` — `src/vela-rbxts.d.ts` collides with the package name under a `baseUrl` of
+`src/vela-env.d.ts`. `src/vela-rbxts.d.ts` collides with the package name under a `baseUrl` of
 `src`, so the augmentation silently never loaded.
 
 **0.2.0** was the first public release.
@@ -408,26 +400,27 @@ lowered `shadow-*` can fail to instantiate and unwind the tree around it. A dyna
 the same element is unaffected.
 
 **The host guards are not symmetric.** The runtime path drops a utility the host element cannot
-carry; the static path warns `unsupported-host-utility` and writes it anyway, so a build that ignores
-warnings reaches Roblox, which rejects the assignment far from the class list that caused it.
+carry. The static path warns `unsupported-host-utility` and writes it anyway, so a build that
+ignores warnings reaches Roblox, which rejects the assignment far from the class list that caused
+it.
 
-**A fade that arrives as context composes over a transparency you declared yourself**, since a
-consumer reading the alpha at runtime cannot tell your prop from one Vela lowered. Overlapping
-siblings under one `opacity-*` also darken where they overlap.
+**A fade that arrives as context composes over a transparency you declared yourself.** A consumer
+reading the alpha at runtime cannot tell your prop from one Vela lowered. Overlapping siblings under
+one `opacity-*` also darken where they overlap.
 
 **A plugin utility that reaches back into itself expands to nothing** — the depth cap terminates
 silently, with no diagnostic.
 
 **`divide-transparent` is refused while `divide-white/10` resolves.** The `/N` modifier moved to
-every family with a transparency channel in 0.12.0; the `transparent` *keyword* did not.
+every family with a transparency channel in 0.12.0. The `transparent` *keyword* did not.
 
 **Under Vide, a `m-*` the compiler cannot see is warned rather than rendered**, because a margin box
 is an instance above one Vide has already parented.
 
-**A theme value that is not a valid expression fails silently, three ways.** Vela splices in the first
-expression that parses and drops the rest, so a trailing comment is lost, `"#3b82f6"` becomes a type
-error, and `"#a1b2c3"` parses as a TypeScript private name and emits bare
-([theming guide](/vela-rbxts/guides/theming/#values-are-source-code-not-values)).
+**A theme value that is not a valid expression fails silently, three ways.** Vela splices in the
+first expression that parses and drops the rest. A trailing comment is lost, `"#3b82f6"` becomes a
+type error, and `"#a1b2c3"` parses as a TypeScript private name and emits bare. See the
+[theming guide](/vela-rbxts/guides/theming/#values-are-source-code-not-values).
 
 **TypeScript 7 is not supported.** 7.x fails the host adapter's call with
 `compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')` on the first
