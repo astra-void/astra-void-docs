@@ -14,9 +14,12 @@ import { PackageMeta, PackageInstall, PropTable, Callout } from "@/components/do
   importName="lattice"
 />
 
-The `lattice` CLI is a Node tool for Lattice UI projects. It scaffolds new `rbxts/react` games, installs primitive packages together with their required peers and providers, and audits an existing project for missing dependencies. It is published to npm as `lattice-ui` and exposes two equivalent binaries: `lattice` and `lattice-ui`.
+The `lattice` CLI scaffolds new `rbxts/react` games, installs primitive packages with their required
+peers and providers, and audits an existing project for missing dependencies. It is published to npm
+as `lattice-ui` and exposes two equivalent binaries, `lattice` and `lattice-ui`.
 
-Use the CLI when you want package selection, peer resolution, and project health checks handled for you instead of editing `package.json` by hand.
+Use it when you want package selection, peer resolution and health checks handled for you rather
+than editing `package.json` by hand.
 
 ## Running the CLI
 
@@ -35,15 +38,16 @@ npm i -g lattice-ui
 lattice <command> [options]
 ```
 
-Both binaries (`lattice` and `lattice-ui`) run the same program. Run `lattice help` for the built-in usage summary or `lattice version` to print the installed version.
+Both binaries run the same program. `lattice help` prints the usage summary, `lattice version` the
+installed version.
 
 <Callout title="With npx, use the package name">
-`npx lattice` does not work — `npx` resolves the published **package** name, not the shorthand binary alias, so it fails to find anything to run. Always write `npx lattice-ui`. The short `lattice` form is for an installed CLI, global or local.
+`npx lattice` does not work — `npx` resolves the published **package** name, not the binary alias. Always write `npx lattice-ui`; the short `lattice` form is for an installed CLI.
 </Callout>
 
 ## Help
 
-Every command has its own help page as of 0.7.0, and three spellings reach it:
+Every command has its own help page, and three spellings reach it:
 
 ```bash
 lattice add --help
@@ -53,9 +57,11 @@ lattice add --help
 lattice help add
 ```
 
-A malformed run reaches it too — `lattice add --bogus --help` prints the `add` page rather than complaining about the unknown option first. `-h` works everywhere `--help` does.
+A malformed run reaches it too — `lattice add --bogus --help` prints the `add` page rather than
+complaining about the unknown option first.
 
-A command's page lists its usage, its own options, and its examples. For `add`, `remove`, and `upgrade` it also lists **every available component and preset** — previously the only way to see that list was to start an interactive run and read the prompt.
+A command's page lists its usage, options and examples. For `add`, `remove` and `upgrade` it also
+lists **every available component and preset**.
 
 ## Global options
 
@@ -76,7 +82,9 @@ Unknown option for add: --prest
   Run `lattice add --help` to see the supported options.
 ```
 
-The same suggestion machinery covers command names, component names, and preset names, so `lattice add dialogg` proposes `dialog` rather than failing blankly. Component and preset names are validated *before* a package manager is resolved — previously a typo could surface an unrelated package-manager error first whenever more than one manager was installed.
+The same suggestion machinery covers command, component and preset names, so `lattice add dialogg`
+proposes `dialog`. Names are validated *before* a package manager is resolved, so a typo cannot
+surface an unrelated package-manager error first.
 
 ## Terminal behavior
 
@@ -87,21 +95,27 @@ The same suggestion machinery covers command names, component names, and preset 
 | `NO_HYPERLINK` | Disables OSC 8 hyperlinks. |
 | `FORCE_HYPERLINK` | Forces hyperlinks on. Any value except `0` enables it. |
 
-Color previously keyed off TTY detection alone. It now honors the `NO_COLOR`/`FORCE_COLOR` contract first, then falls back to TTY detection, and `TERM=dumb` always disables it.
+Colour honours the `NO_COLOR`/`FORCE_COLOR` contract first, then falls back to TTY detection;
+`TERM=dumb` always disables it.
 
-Project paths and package names are printed as **OSC 8 hyperlinks** so they are clickable in terminals that support them. Paths are shortened against the working directory and `~`. Hyperlinks are off automatically under `CI` and outside a terminal, since a few terminals print the raw escape sequence rather than ignoring it.
+Project paths and package names print as **OSC 8 hyperlinks**, shortened against the working
+directory and `~`. They are off automatically under `CI` and outside a terminal, since a few
+terminals print the raw escape sequence.
 
 <Callout title="Piped output stays flat">
-When output is not a terminal, the CLI drops to a flat ASCII layout so logs and CI transcripts stay readable. Everything below describing the connected-run layout applies to interactive terminals.
+When output is not a terminal the CLI drops to a flat ASCII layout, so everything below about the connected-run layout applies to interactive terminals only.
 </Callout>
 
 ## Output
 
-Each run prints as one connected flow: a vertical gutter threads the header, each titled block, and the closing verdict together, with tree branches for the rows inside a block and the elapsed time on the last line. This replaced the five ceremonial sections every command used to print — counts now live in the heading of the block they describe, so `doctor` no longer states its warning count three times, and the `?` glyph is gone from informational lines where it read as a question.
+Each run prints as one connected flow: a vertical gutter threads the header, each titled block and
+the closing verdict, with tree branches for the rows inside a block and the elapsed time on the last
+line. Counts live in the heading of the block they describe.
 
 Commands also report which package manager they resolved and why.
 
-While a progress spinner is running, the package manager's own output is buffered and surfaced only if the command fails. Inherited output used to interleave with the animation, scattering spinner frames through the install log. Pass `--verbose` to stream it live instead.
+While a progress spinner is running, the package manager's own output is buffered and surfaced only
+if the command fails. Pass `--verbose` to stream it live instead.
 
 <Callout title="--verbose actually works now">
 The flag was documented by the logger but never parsed, so `logger.debug` and the verbose file-copy logging were unreachable before 0.7.0.
@@ -109,7 +123,7 @@ The flag was documented by the logger but never parsed, so `logger.debug` and th
 
 ## Interactive prompts
 
-Selection prompts are keyboard-driven as of 0.7.0. They previously took a comma-separated list of numbers, and an answer that failed to parse aborted the whole command instead of re-asking.
+Selection prompts are keyboard-driven.
 
 | Key | Action |
 | --- | --- |
@@ -120,7 +134,8 @@ Selection prompts are keyboard-driven as of 0.7.0. They previously took a comma-
 | `Enter` | Confirm |
 | `Ctrl-C` or `Esc` | Cancel |
 
-The list scrolls when it is taller than the terminal, keeping the cursor in view. Cancelling restores the cursor and takes the terminal out of raw mode — Ctrl-C previously exited before the restore could run, leaving the cursor hidden.
+The list scrolls when it is taller than the terminal, keeping the cursor in view, and cancelling
+restores the cursor and takes the terminal out of raw mode.
 
 ## Commands
 
@@ -162,9 +177,14 @@ Initializes Lattice inside an existing project. Unlike `create`, it accepts no p
 npx lattice-ui init --dry-run
 ```
 
-`init` is also the migration path off the 0.6.1 rename. Before merging the template it rewrites any pre-0.6.1 package names in `dependencies`/`devDependencies` to their `react-` replacements (`@lattice-ui/dialog` → `@lattice-ui/react-dialog`, `@lattice-ui/core` → `@lattice-ui/react-runtime`), resolving a version for each replacement it has to add. Dropping the old name matters: leaving both in the manifest makes the old and new copies resolve side by side, which npm then rejects on peer resolution.
+`init` is also the migration path off the 0.6.1 rename: before merging the template it rewrites any
+pre-0.6.1 package names to their `react-` replacements (`@lattice-ui/dialog` →
+`@lattice-ui/react-dialog`, `@lattice-ui/core` → `@lattice-ui/react-runtime`). Dropping the old name
+matters — leaving both makes the two copies resolve side by side, which npm rejects on peer
+resolution.
 
-If the install fails, `init` and `create` roll their file changes back rather than leaving a half-written scaffold for the next run to merge on top of.
+If the install fails, `init` and `create` roll their file changes back rather than leaving a
+half-written scaffold.
 
 <PropTable
   rows={[
@@ -178,15 +198,17 @@ If the install fails, `init` and `create` roll their file changes back rather th
 
 ### add
 
-Installs one or more component packages along with everything they need. Pass component names directly (comma- or space-separated) and/or `--preset` groups. With no names or presets and without `--yes`, `add` prompts you to pick presets and components interactively. Run `lattice add --help` to see every available component and preset without starting a run.
+Installs one or more component packages with everything they need. Pass component names (comma- or
+space-separated) and/or `--preset` groups; with neither, and without `--yes`, `add` prompts
+interactively. `lattice add --help` lists every available component and preset.
 
 ```bash
 npx lattice-ui add dialog,toast --preset overlay
 ```
 
-For each selected component the CLI gathers its npm package, its **peers** (`@rbxts/react`, `@rbxts/react-roblox`), and any **required providers**, then installs the set minus whatever is already present. **Optional providers** are reported as suggestions but not installed. After a real run it points you at `doctor`.
-
-`context-menu` and `motion` were missing from the registry before 0.7.0, so `lattice add context-menu` and `lattice add motion` failed with "Unknown component". Both resolve now.
+For each component the CLI gathers its npm package, its **peers** and any **required providers**,
+then installs the set minus whatever is already present. **Optional providers** are suggested but
+not installed.
 
 <PropTable
   rows={[
@@ -218,7 +240,8 @@ npx lattice-ui remove dialog --dry-run
 
 ### upgrade
 
-Upgrades installed `@lattice-ui/*` packages. Same selection inputs and flags as `add` and `remove`. Pre-0.6.1 package names are skipped rather than upgraded — their dist-tags no longer move, so run `init` to rewrite them to their `react-` replacements first.
+Upgrades installed `@lattice-ui/*` packages, with the same selection inputs and flags as `add` and
+`remove`. Pre-0.6.1 names are skipped rather than upgraded — run `init` to rewrite them first.
 
 ```bash
 npx lattice-ui upgrade --dry-run
@@ -272,19 +295,22 @@ Presets are named bundles of components so you can install a related set in one 
 
 ## Package manager resolution
 
-When `--pm` is omitted, the CLI resolves a package manager automatically from the project lockfile or installed managers; pass `--pm <pnpm|npm|yarn>` to override that choice. `doctor` surfaces resolution problems: a missing lockfile, multiple lockfiles, or a `packageManager` field that does not match the resolved manager.
+With `--pm` omitted, the CLI resolves a package manager from the project lockfile or installed
+managers. `doctor` surfaces resolution problems: a missing lockfile, multiple lockfiles, or a
+`packageManager` field that does not match.
 
-The resolved manager is also **pinned** into the project. `create` and `init` record it as a `devEngines.packageManager` entry, and `add`, `remove`, and `upgrade` reapply the pin before they touch dependencies — if the pin names a different manager than the one this run uses, the CLI warns and repins. The pin is what keeps a project scaffolded with pnpm from being quietly installed with npm: both managers refuse to install when the pin names the other one.
+The resolved manager is also **pinned** into the project as a `devEngines.packageManager` entry,
+reapplied by `add`, `remove` and `upgrade` before they touch dependencies; a pin naming a different
+manager warns and repins. Both managers refuse to install when the pin names the other one.
 
 <Callout title="Peers and providers">
-Every component declares the peers it needs (`@rbxts/react`, `@rbxts/react-roblox`) and, for layered primitives, optional providers such as `@lattice-ui/react-layer`'s `PortalProvider`. `add` installs peers and required providers automatically but only *suggests* optional providers — wire those up yourself when you want the behavior they enable (for example, portal-mounted dialog or menu content).
+Every component declares the peers it needs and, for layered primitives, optional providers such as `@lattice-ui/react-layer`'s `PortalProvider`. `add` installs peers and required providers but only *suggests* optional ones — wire those up yourself when you want portal-mounted content.
 </Callout>
 
 ## Dry runs
 
-`init`, `add`, `remove`, and `upgrade` all accept `--dry-run`. A dry run prints the exact package-manager command it would run and reports what it *would* do, which is the safest way to preview a change before committing to it.
-
-Before 0.7.0 a dry run closed by claiming work it had not done — `lattice add --dry-run` reported "Added components: …" and "Installed packages: 4" despite changing nothing, and `remove` and `upgrade` did the same.
+`init`, `add`, `remove` and `upgrade` all accept `--dry-run`, which prints the exact package-manager
+command it would run and reports what it *would* do.
 
 ## Related
 
