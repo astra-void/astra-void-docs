@@ -33,10 +33,8 @@ import {
 } from "vela-rbxts";
 ```
 
-`definePreset`, `VelaPreset` and `ThemeScreens` arrived with
-[presets and configurable breakpoints](/vela-rbxts/reference/config/#presets) in 0.13.0; the plugin
-and variant types are re-exports of `@vela-rbxts/config`, so nothing needs to be installed to reach
-them.
+The plugin and variant types are re-exports of `@vela-rbxts/config`, so nothing needs to be
+installed to reach them.
 
 ### defineConfig
 
@@ -44,11 +42,9 @@ them.
 function defineConfig(input?: TailwindConfigInput): TailwindConfig;
 ```
 
-Takes an input-shaped theme object and resolves it against the built-in defaults, returning a fully
-resolved config. The argument is optional; `defineConfig()` returns a fresh object that is deep-equal
-to `defaultConfig` but not the same reference. This is what you call
-in `vela.config.ts`, and it is injected into that file's scope automatically, which is why stripping
-the import from it still works. See [Configuration](/vela-rbxts/reference/config/).
+Takes an input-shaped theme object and resolves it against the built-in defaults. The argument is
+optional; `defineConfig()` returns a fresh object deep-equal to `defaultConfig`. It is injected into
+`vela.config.ts`'s scope automatically, which is why stripping the import still works.
 
 ### defaultConfig
 
@@ -56,10 +52,8 @@ the import from it still works. See [Configuration](/vela-rbxts/reference/config
 const defaultConfig: TailwindConfig;
 ```
 
-The resolved built-in theme: 28 color families, ten named radius keys plus a `DEFAULT`, and a
-single spacing key. This is
-what Vela uses when no `vela.config.ts` is found. Import it if you need to read the defaults — for
-example to reuse a default palette value while replacing the rest.
+The resolved built-in theme: 28 colour families, ten named radius keys plus a `DEFAULT`, and a
+single spacing key. This is what Vela uses when no `vela.config.ts` is found.
 
 ### createTransformer
 
@@ -72,12 +66,11 @@ function createTransformer(
 // { name, getFileEligibility, shouldTransformFile, transformSource, transformFile }
 ```
 
-The rbxtsc host bridge. It returns an object whose `name` is `"@vela-rbxts/rbxtsc-host"`, along with
-the eligibility predicates and the transform entry point. `transformSource` and `transformFile` are
-the same function object under two names — calling either one does the same thing.
+The rbxtsc host bridge, returning an object whose `name` is `"@vela-rbxts/rbxtsc-host"` plus the
+eligibility predicates and the transform entry point. `transformSource` and `transformFile` are the
+same function under two names.
 
-You do not need this to use Vela. It exists for tooling that drives the transform itself rather than
-going through the TypeScript plugin.
+You do not need this to use Vela — it exists for tooling that drives the transform itself.
 
 <Callout title="Two different createTransformer functions">
 `createTransformer` imported from `vela-rbxts` is the **rbxtsc host bridge** described above.
@@ -85,9 +78,7 @@ going through the TypeScript plugin.
 `createTransformer` on `vela-rbxts/transformer` is the **TypeScript program transformer factory**.
 It is a completely different function with a different signature and a different job.
 
-The one that goes in `tsconfig.json` is `vela-rbxts/transformer`. If you import `createTransformer`
-from the root package and pass the result to roblox-ts, nothing will be transformed and you will get
-no error explaining why.
+The one that goes in `tsconfig.json` is `vela-rbxts/transformer`. Pass the root package's `createTransformer` to roblox-ts and nothing is transformed, with no error explaining why.
 </Callout>
 
 ### Types
@@ -141,28 +132,25 @@ declare global {
 }
 ```
 
-That augmentation is what makes `className` type-check on `frame`, `textlabel`, and the other host
-elements. It only applies once the module has been imported somewhere your program includes, which is
-why a project that never imports `vela-rbxts` at runtime still needs a reference to it — typically a
-one-line `.d.ts`:
+That augmentation is what makes `className` type-check on the host elements, and it applies only
+once the module is imported somewhere your program includes — typically a one-line `.d.ts`:
 
 ```ts title="src/vela-env.d.ts"
 import "vela-rbxts";
 ```
 
-Several helpers exist in `@vela-rbxts/config` but are deliberately **not** re-exported from the root
-package: `SHADES`, `PALETTE_DEFAULT_KEY`, `resolveThemeColors`, `mergeColorRegistry`,
-`normalizeColorRegistry`, `normalizeColorScale`, and the `Shade`, `PaletteKey`, `PaletteDefaultKey`,
-`ThemeScale`, `ColorPalette`, `ColorValue`, `ColorScaleInput`, `ThemeColors`, `ColorInputMap`,
-`ThemeConfig`, and `ThemeConfigInput` types. Reach into `@vela-rbxts/config` directly if you need
-them, and expect them to be less stable than the root surface.
+Several helpers exist in `@vela-rbxts/config` but are **not** re-exported from the root: `SHADES`,
+`PALETTE_DEFAULT_KEY`, `resolveThemeColors`, `mergeColorRegistry`, `normalizeColorRegistry`,
+`normalizeColorScale`, and the `Shade`, `PaletteKey`, `PaletteDefaultKey`, `ThemeScale`,
+`ColorPalette`, `ColorValue`, `ColorScaleInput`, `ThemeColors`, `ColorInputMap`, `ThemeConfig` and
+`ThemeConfigInput` types. Reach into `@vela-rbxts/config` directly, and expect them to be less
+stable.
 
 ## From `vela-rbxts/transformer`
 
-This subpath is a CommonJS module whose export is a callable program-transformer factory. The
-function also carries `.createTransformer`, `.createRbxtsTailwindProgramTransformer`, and `.default`
-properties, all pointing at itself — so every resolution style a tool might attempt lands on the same
-function.
+A CommonJS module whose export is a callable program-transformer factory. It also carries
+`.createTransformer`, `.createRbxtsTailwindProgramTransformer` and `.default`, all pointing at
+itself, so every resolution style lands on the same function.
 
 This is the value that goes in `tsconfig.json`:
 
@@ -174,8 +162,7 @@ This is the value that goes in `tsconfig.json`:
 }
 ```
 
-The factory throws if roblox-ts does not hand it a TypeScript instance, so a failure here is loud
-rather than silent. Plugin options are documented in
+The factory throws if roblox-ts does not hand it a TypeScript instance. Plugin options are in
 [Configuration](/vela-rbxts/reference/config/#tsconfig-plugin-options).
 
 ## Published packages
@@ -196,49 +183,39 @@ rather than silent. Plugin options are documented in
 | `@vela-rbxts/lsp` | The language server binary and its platform packages | Only if you wire up a non-VS Code editor yourself |
 | `vela-rbxts-lsp` | The VS Code extension, published as a VSIX rather than to npm | Install from the marketplace as `astra-void.vela-rbxts-lsp` |
 
-For almost every project the answer is the same: install `vela-rbxts`, add the transformer to
-`tsconfig.json`, and install the VS Code extension. Everything else arrives as a dependency.
+For almost every project: install `vela-rbxts`, add the transformer to `tsconfig.json`, install the
+VS Code extension. Everything else arrives as a dependency.
 
-The three `@rbxts/vela-runtime*` packages are the exception to "nothing of Vela's reaches your place".
-They sit under the `@rbxts` scope on purpose: roblox-ts only resolves a package whose scope directory is
-one of the project's `typeRoots`, and `node_modules/@rbxts` is the one every roblox-ts project already
-lists and every Rojo template already maps. So they need no tsconfig change and no Rojo mapping — but
-pnpm does need `nodeLinker: hoisted` for the directory to be real, which is
+The three `@rbxts/vela-runtime*` packages are the exception to "nothing of Vela's reaches your
+place". They sit under the `@rbxts` scope because roblox-ts only resolves a package whose scope
+directory is one of the project's `typeRoots`, and that is the one every roblox-ts project lists and
+every Rojo template maps. So they need no tsconfig or Rojo change — but pnpm needs
+`nodeLinker: hoisted` for the directory to be real,
 [covered in installation](/vela-rbxts/getting-started/installation/#install-the-packages).
 
-Each host declares its own UI library — `@rbxts/react`, `@rbxts/vide` — as an **optional** peer, which
-is what keeps a Vide project from installing React. The host you do not emit for is inert: nothing
-imports it.
+Each host declares its own UI library as an **optional** peer, which keeps a Vide project from
+installing React. The host you do not emit for is inert.
 
-Since 0.11.0 the root package also declares two `bin` entries, `vela` and `vela-rbxts`, pointing at
-the same CLI. It lowers a source tree ahead of `rbxtsc` for projects that cannot register the
-transformer — see [the CLI reference](/vela-rbxts/reference/cli/).
+The root package also declares two `bin` entries, `vela` and `vela-rbxts`, pointing at the same CLI.
+It lowers a source tree ahead of `rbxtsc` for projects that cannot register the transformer — see
+[the CLI reference](/vela-rbxts/reference/cli/).
 
-The runtime took three releases to get here. Before 0.9.0 it was a string literal inside the Rust
-crate. 0.9.0 moved it to real TypeScript the repo typechecks and formats, still inlined into every
-module that needed it. 0.12.0 published it — split into the neutral core and one host per target —
-and turned the inlining into an import.
+All packages are versioned in lockstep at **0.13.0**, the VS Code extension included; never mix
+versions across the `@vela-rbxts/*` scope. What changed in each release is in the
+[release notes](/vela-rbxts/reference/release-notes/).
 
-All packages are versioned in lockstep at **0.13.0**, including the VS Code extension. There is no
-scenario in which you should mix versions across the `@vela-rbxts/*` scope. What changed in each
-release is in the [release notes](/vela-rbxts/reference/release-notes/).
-
-Three subpaths beyond the roots are public. `@vela-rbxts/rbxtsc-host/project-config` exposes the
-config discovery and loading logic — the VS Code extension uses it to evaluate config files
-it is watching, and any editor integration you write can do the same. `@vela-rbxts/compiler/native`
-exposes the raw N-API binding underneath the compiler's default entry. Both `vela-rbxts` and
-`@vela-rbxts/compiler` also declare `"./package.json"` in their exports maps, which is boilerplate
-for tooling that reads the manifest rather than an API you would call. The root package additionally
-ships a `schema.json` describing the config input shape — point a `vela.config.json`'s `$schema` at
-it for editor validation.
+Three subpaths beyond the roots are public. `@vela-rbxts/rbxtsc-host/project-config` exposes config
+discovery and loading, which the VS Code extension uses to evaluate the config files it watches.
+`@vela-rbxts/compiler/native` exposes the raw N-API binding. Both roots also declare
+`"./package.json"` in their exports maps. The root package ships a `schema.json` describing the
+config input shape — point a `vela.config.json`'s `$schema` at it.
 
 ## Version requirements
 
-Be aware of what is and is not enforced. **No package declares an `engines` field** except the VS
-Code extension, which requires VS Code `^1.90.0`. **No package declares any `peerDependencies`.**
-roblox-ts, TypeScript, and React are ordinary dependencies or devDependencies throughout, so nothing
-is checked at install time and npm will not warn you about a mismatch. You find out from a build
-failure — and, in the TypeScript case below, from one that does not mention versions at all.
+**No package declares an `engines` field** except the VS Code extension, which requires VS Code
+`^1.90.0`, and **no package declares any `peerDependencies`.** roblox-ts, TypeScript and React are
+ordinary dependencies throughout, so nothing is checked at install time. You find out from a build
+failure — and in the TypeScript case below, from one that does not mention versions.
 
 What the project is developed and tested against:
 
@@ -251,18 +228,13 @@ What the project is developed and tested against:
 | `@rbxts/services` | `^1.6.0` |
 
 <Callout title="TypeScript is an upper bound, not just a floor">
-`@vela-rbxts/rbxtsc-host` resolves `typescript` from **your** project — it declares no dependency on
-one — and calls into its API directly. TypeScript 7 moved enough of that API to break the call, so a
-project on the current TypeScript fails on its first file with
-`compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')`, naming neither
-TypeScript nor a version.
+`@vela-rbxts/rbxtsc-host` resolves `typescript` from **your** project and calls into its API directly. TypeScript 7 moved enough of that API to break the call, so a project on the current TypeScript fails on its first file with `compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')`.
 
-`5.9.3` is the tested pin and `6.x` also builds. Note that roblox-ts's own `typescript` dependency
-does not save you here: it pins `=5.5.3` for itself, while Vela reads the one in your project.
+`5.9.3` is the tested pin and `6.x` also builds. roblox-ts's own `typescript` does not save you — it pins `=5.5.3` for itself, while Vela reads the one in your project.
 </Callout>
 
-`@rbxts/services` is a genuine runtime dependency, not just a type package: the injected runtime
-helper imports `UserInputService` and `Workspace` from it to evaluate variants.
+`@rbxts/services` is a genuine runtime dependency: the runtime helper imports `UserInputService` and
+`Workspace` from it to evaluate variants.
 
 ### Prebuilt compiler binaries
 
@@ -275,16 +247,14 @@ The compiler ships N-API binaries for these targets:
 - `x86_64-apple-darwin`
 - `x86_64-pc-windows-msvc`
 
-There is **no `aarch64-pc-windows-msvc` build**, so Windows on ARM has no prebuilt binary. There is
-also no linux arm64 musl build. On an unsupported target you need to build the compiler crate from
-source.
+There is **no `aarch64-pc-windows-msvc` build** and no linux arm64 musl build, so those two targets
+need the compiler crate built from source.
 
-Two things that look like escape hatches and are not. The napi-rs loader ends with a WASI fallback
-that reaches for `@vela-rbxts/compiler-wasm32-wasi`, which is not published, so it always falls
-through to `Cannot find native binding.` — a message whose advice, to reinstall without a lockfile,
-is misleading on a platform that simply has no binary. And `@vela-rbxts/compiler-wasm` is a separate
-package with its own API rather than a drop-in fallback — `@vela-rbxts/rbxtsc-host` depends on the
-native `@vela-rbxts/compiler` alone, so it cannot pick the WebAssembly build up for a build.
+Two things look like escape hatches and are not. The napi-rs loader ends with a WASI fallback
+reaching for `@vela-rbxts/compiler-wasm32-wasi`, which is not published, so it always falls through
+to `Cannot find native binding.` — whose advice to reinstall without a lockfile is misleading on a
+platform that has no binary. And `@vela-rbxts/compiler-wasm` is a separate package with its own API,
+not a drop-in fallback.
 
 ## See also
 

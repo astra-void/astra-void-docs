@@ -50,7 +50,7 @@ interface LoomPreviewOptions {
 | `loom-preview:gallery-targets` | — | `serve` | Only with `targets`: serves and watches the `virtual:loom-targets` import map. |
 | `loom-preview:index-html` | `pre` | both | Unless `html: false`: the generated page, in serve and build. |
 
-`enforce: "pre"` on the resolver is load-bearing: Vite's core `vite:resolve` runs ahead of *normal*
+`enforce: "pre"` on the resolver is load-bearing: Vite's core `vite:resolve` runs ahead of normal
 user plugins, so a normal-phase `resolveId` would never see the bare specifiers whose package `main`
 points at Luau.
 
@@ -79,17 +79,10 @@ config.
 }
 ```
 
-- **`esbuild.jsx: "automatic"`** — roblox-ts source never imports React, so the classic transform
-  would throw `React is not defined`.
-- **`optimizeDeps.exclude`** — the loom packages own the WASM engine; pre-bundling would break their
-  `new URL(...wasm)` references, and several hold module state that must exist exactly once.
-- **`optimizeDeps.include`** — an *installed* `@loom-dev/react` is the exception: it imports the
-  CommonJS `react-reconciler`, and Vite serves an excluded dep's imports raw, which in a published
-  install dies on `does not provide an export named 'DefaultEventPriority'`. Pre-bundling the adapter
-  folds the reconciler into its chunk. Every included id is also aliased to an absolute path, because
-  Vite resolves `optimizeDeps` entries from *your* project root, which has no `@loom-dev/*` in it.
-  A source checkout is left unbundled, so developing loom keeps its HMR.
-- **`optimizeDeps` and `server.fs`** are dev-only. The aliases and `esbuild.jsx` drive both modes.
+- **`esbuild.jsx: "automatic"`** — roblox-ts source never imports React, so the classic transform would throw `React is not defined`.
+- **`optimizeDeps.exclude`** — the loom packages own the WASM engine; pre-bundling would break their `new URL(...wasm)` references, and several hold module state that must exist once.
+- **`optimizeDeps.include`** — an *installed* `@loom-dev/react` is the exception: it imports the CommonJS `react-reconciler`, and Vite serves an excluded dep's imports raw, which dies on `does not provide an export named 'DefaultEventPriority'`. Every included id is also aliased to an absolute path, because Vite resolves `optimizeDeps` entries from *your* project root. A source checkout is left unbundled, so developing loom keeps its HMR.
+- **`optimizeDeps` and `server.fs`** are dev-only; the aliases and `esbuild.jsx` drive both modes.
 
 ## Alias table
 
@@ -110,18 +103,13 @@ Order matters; more specific patterns come first.
 | `react-reconciler`, `react-reconciler/constants`, `@loom-dev/react`, and the loom packages it imports | Absolute paths — added only for an installed loom, so the pre-bundled adapter chunk can find them from `node_modules/.vite/deps`. |
 | `@rbxts/vide` | `@loom-dev/vide`. |
 
-All targets are **absolute paths**, resolved as `../src` relative to the executing plugin module — so
-they work whether loom is installed in the project, linked from a checkout, or pointed at a foreign
-workspace by the CLI.
+All targets are **absolute paths**, resolved as `../src` relative to the executing plugin module, so
+they work whether loom is installed, linked from a checkout, or pointed at a foreign workspace.
 
 <Callout title="The React aliases are not scoped to Roblox code">
-`react`, `react/jsx-runtime` and `react/jsx-dev-runtime` are rewritten for *every* module in the
-config, and `esbuild.jsx: "automatic"` applies globally too. Adding `loomPreview()` to an existing
-React web app's Vite config replaces that app's React. Keep the preview in its own Vite project.
+`react`, `react/jsx-runtime` and `react/jsx-dev-runtime` are rewritten for *every* module in the config, and `esbuild.jsx: "automatic"` applies globally. Adding `loomPreview()` to an existing React app's Vite config replaces that app's React — keep the preview in its own project.
 
-Absolute-path aliases are used rather than `resolve.dedupe` on purpose: dedupe would re-anchor React
-at *your* project root, which may hoist a different major, and the aliased `@rbxts/react` and the
-reconciler's React must be the same instance or hooks dispatch breaks.
+Absolute-path aliases are used rather than `resolve.dedupe` because dedupe would re-anchor React at *your* project root, which may hoist a different major — and the aliased `@rbxts/react` and the reconciler's React must be the same instance.
 </Callout>
 
 ## The generated page
@@ -129,20 +117,17 @@ reconciler's React must be the same instance or hooks dispatch breaks.
 Unless `html: false`, the plugin owns the entry document.
 
 **Serve.** A middleware answers `/` and `/index.html` with the generated document, run through
-`transformIndexHtml` so Vite's own injections (the HMR client, the globals script) still apply. It
-is base-aware, so an embedded gallery mounted under `/loom-preview/` answers there.
+`transformIndexHtml` so Vite's own injections still apply. It is base-aware, so an embedded gallery
+mounted under `/loom-preview/` answers there.
 
-- Without `targets`, it registers *after* Vite's own middlewares and only when the project root has
-  no `index.html` — a project that ships one keeps it.
-- With `targets`, it registers *ahead* of them and always wins: the gallery page (sidebar + stage +
-  `#loom-root`) is what `targets` asked for. Its module script points at the shell through a
-  `/@fs/` URL, and the shell pulls the target map from `virtual:loom-targets`.
+- Without `targets`, it registers *after* Vite's own middlewares and only when the project root has no `index.html`.
+- With `targets`, it registers *ahead* of them and always wins. Its module script points at the shell through a `/@fs/` URL, and the shell pulls the target map from `virtual:loom-targets`.
 
-**Build.** There is no dev-server URL space, so the same document is served as a *virtual*
-`<root>/index.html` and wired up as the Rollup input — which is what makes `vite build` work in a
-project with no HTML file at all. An explicit `build.rollupOptions.input` is left alone. In gallery
-mode the page's script is a generated entry module that imports the globals, then a generated target
-map of relative `import()`s Rollup code-splits per target, then the shell.
+**Build.** With no dev-server URL space, the same document is served as a *virtual*
+`<root>/index.html` wired up as the Rollup input, which is what makes `vite build` work in a project
+with no HTML file. An explicit `build.rollupOptions.input` is left alone. In gallery mode the page's
+script imports the globals, then a generated target map of relative `import()`s Rollup code-splits
+per target, then the shell.
 
 <Callout title="Entry detection">
 With no `entry` option, the first existing path wins:
@@ -153,8 +138,7 @@ src/client/main.client.tsx   src/client/main.client.ts
 src/main.tsx   src/main.ts   src/index.tsx   src/client.tsx
 ```
 
-None of them and no `index.html` (and no `targets`) is an error naming the candidates, raised when
-the page is first requested or when the build starts.
+None of them, no `index.html` and no `targets` is an error naming the candidates, raised when the page is first requested or the build starts.
 </Callout>
 
 ## Globals injection
@@ -166,48 +150,37 @@ Under `serve`, the plugin registers a virtual module `virtual:loom-globals` and 
 <script type="module" src="/@id/__x00__virtual:loom-globals"></script>
 ```
 
-A `<script src>` rather than an inline bare import, so it resolves whether the `index.html` is a real
-file or generated by the middleware. The virtual module body imports the globals installer by
-absolute path — a bare `@loom-dev/preview/globals` would resolve from the (possibly foreign) project
-root and fail.
+A `<script src>` rather than an inline bare import, so it resolves whether the `index.html` is a
+real file or generated. The virtual module imports the globals installer by absolute path — a bare
+`@loom-dev/preview/globals` would resolve from the (possibly foreign) project root and fail.
 
-Under `build` that mechanism is unavailable: `transformIndexHtml` runs *after* bundling, so an
-injected `src` never joins the module graph. Instead the HTML plugin collects the page's entry
-modules — from the generated document, or by reading the `<script type="module">` tags out of your
-own `index.html` — and prepends `import ".../globals.ts"` to each. ESM evaluates imports depth-first
-in source order, so a prepended import runs before anything else the entry pulls in.
+Under `build` that is unavailable — `transformIndexHtml` runs *after* bundling, so an injected `src`
+never joins the graph. Instead the HTML plugin collects the page's entry modules and prepends
+`import ".../globals.ts"` to each; ESM evaluates imports depth-first in source order, so it runs
+before anything else.
 
 ## Resolution
 
 `resolveId` handles bare specifiers only — anything starting with `.`, `/`, `\0`, or containing `:`
-(so `node:`, `virtual:`, `data:`, `http:`) falls through untouched. Scoped packages and subpaths never
-contain a colon, so the check is safe.
+falls through untouched. Scoped packages and subpaths never contain a colon.
 
 For a bare specifier from a real importer:
 
-1. **Source-first redirect.** Unless the specifier starts with `@rbxts/`, walk up from the importer
-   looking for `node_modules/<pkg>/package.json`. If that package's `"main"` ends in `.lua`/`.luau`,
-   resolve to its `src/index.ts` or `src/index.tsx` instead. This runs *before* Vite resolves
-   anything, so it works even when the package was never compiled and `out/` does not exist.
-   `@rbxts/*` is excluded because those must go through the alias table, not to their own source.
-2. **Normal resolution**, wrapped in a `try` — a package whose `"main"` points at a missing file can
-   make `this.resolve` throw, and that is treated as unresolved so Vite reports it rather than
-   crashing the plugin.
-3. **Post-resolution fallback.** If the result is a `.luau`/`.lua` file, walk up to the nearest
-   `package.json` and retry that package's `src/index.ts(x)`.
+1. **Source-first redirect.** Unless the specifier starts with `@rbxts/`, walk up from the importer for `node_modules/<pkg>/package.json`; if its `"main"` ends in `.lua`/`.luau`, resolve to `src/index.ts(x)` instead. This runs *before* Vite resolves anything, so it works even when `out/` does not exist. `@rbxts/*` is excluded because those go through the alias table.
+2. **Normal resolution**, wrapped in a `try` — a package whose `"main"` points at a missing file can make `this.resolve` throw, which is treated as unresolved.
+3. **Post-resolution fallback.** If the result is a `.luau`/`.lua` file, walk up to the nearest `package.json` and retry that package's `src/index.ts(x)`.
 
-Verdicts are memoized per specifier. A `false` verdict means "not Luau — let normal resolution
-handle it", which is why the memo can be keyed on the specifier alone.
+Verdicts are memoized per specifier; `false` means "not Luau, let normal resolution handle it",
+which is why the memo can be keyed on the specifier alone.
 
 ## The import-equals transform
 
-Applies to any `.ts`/`.tsx` file outside `node_modules` (previewed workspace sources typically resolve
-through symlinks to real paths outside `node_modules`, so the exclusion is safe).
+Applies to any `.ts`/`.tsx` file outside `node_modules` — previewed workspace sources resolve
+through symlinks to real paths outside it, so the exclusion is safe.
 
 The regex is anchored to line starts, so `const x = require(...)` and commented-out forms never
-match, and the quote character is backreferenced so mixed quotes inside a specifier cannot
-false-positive. Files with no occurrence of the substring `require` short-circuit immediately. The
-rewrite is idempotent — its output no longer matches.
+match, and the quote character is backreferenced against mixed quotes. Files with no `require`
+substring short-circuit, and the rewrite is idempotent.
 
 It runs in both serve and build, because esbuild lowers import-equals identically in either mode.
 

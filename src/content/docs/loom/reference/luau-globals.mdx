@@ -9,18 +9,16 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-A roblox-ts source file compiles against Luau's global environment, not JavaScript's. It calls
-`table.insert` without importing anything, indexes strings from 1, and expects `math.clamp` to exist.
-None of that is in a browser.
+A roblox-ts source file compiles against Luau's global environment, not JavaScript's: it calls
+`table.insert` with no import, indexes strings from 1, and expects `math.clamp`. None of that is in
+a browser.
 
-Loom installs it. `installGlobals()` — injected ahead of your entry by the plugin, on both the dev
-server and a static build — defines the whole standard library on `globalThis` before a single
-component evaluates, so previewed code calls it exactly as written.
+Loom installs it. `installGlobals()`, injected ahead of your entry on both the dev server and a
+static build, defines the whole standard library on `globalThis` before a single component
+evaluates.
 
 <Callout title="The library was completed in `0.8.0`">
-Before that release `luau.ts` shipped most of it and left out `table`, which is the one UI code
-reaches for most: a component that built its rows with `table.insert` died on `table is not defined`
-before it ever rendered. `bit32`, `utf8`, `debug` and `buffer` arrived in the same release.
+Before that release `luau.ts` left out `table`, which UI code reaches for most: a component building its rows with `table.insert` died on `table is not defined`. `bit32`, `utf8`, `debug` and `buffer` arrived in the same release.
 </Callout>
 
 ## What is installed

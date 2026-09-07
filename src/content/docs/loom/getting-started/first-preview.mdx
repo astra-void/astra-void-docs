@@ -9,21 +9,20 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-The lowest-friction way to see your UI in a browser adds nothing to the previewed project itself: no
-`vite.config.ts`, no `index.html`, no entry rewrite. You run the CLI and hand it a directory.
+The lowest-friction way to see your UI in a browser adds nothing to the project: no
+`vite.config.ts`, no `index.html`, no entry rewrite. Run the CLI and hand it a directory.
 
 ```bash title="Preview a project"
 pnpm exec loom preview ~/code/my-game
 ```
 
-The directory does not have to be the one `loom-dev` is installed in, and it does not need a
-`node_modules` of its own. The plugin aliases `@rbxts/react` and friends to **absolute paths** inside
-the installed `@loom-dev/preview` package precisely so a foreign tree resolves; `server.fs.allow` is
-widened to cover both that package's directory and the previewed project's workspace root.
+The directory does not have to be the one `loom-dev` is installed in, and needs no `node_modules` of
+its own: the plugin aliases `@rbxts/react` and friends to **absolute paths** inside
+`@loom-dev/preview`, and widens `server.fs.allow` to cover both that package and the previewed
+project's workspace root.
 
 <Callout title="The same thing from a vite.config.ts">
-If the project would rather own its Vite config, a config containing nothing but the plugin gets you
-exactly this — including the generated page and the entry detection below:
+A config containing nothing but the plugin gets you exactly this, generated page and entry detection included:
 
 ```ts title="vite.config.ts"
 import { loomPreview } from "@loom-dev/preview/vite";
@@ -133,23 +132,20 @@ createRoot().render(<App />);
 pnpm install && pnpm vite
 ```
 
-Open the printed URL and you get a dark full-viewport page with a rounded card in the middle: a
-label, a blue button, and a count that goes up when you click. `UDim2`, `Color3`, `Enum` and
-`Vector2` are never imported — the plugin installs them as real globals before your entry evaluates.
-Editing `main.client.tsx` hot-reloads.
+Open the printed URL and you get a dark full-viewport page with a rounded card: a label, a blue
+button, and a count that goes up when you click. `UDim2`, `Color3`, `Enum` and `Vector2` are never
+imported — the plugin installs them as globals before your entry evaluates. Editing
+`main.client.tsx` hot-reloads.
 
 <Callout title="This project does not typecheck yet">
-esbuild strips types without reading a `tsconfig.json`, so it renders regardless. Your editor will
-still redline `@rbxts/react`, `UDim2` and the lowercase intrinsics until you add the ambient
-declarations — see [TypeScript setup](/loom/guides/typescript-setup/).
+esbuild strips types without reading a `tsconfig.json`, so it renders regardless. Your editor will redline `@rbxts/react`, `UDim2` and the lowercase intrinsics until you add the ambient declarations — see [TypeScript setup](/loom/guides/typescript-setup/).
 </Callout>
 
 ## What the plugin looks for
 
-With no `index.html` in the project root, the plugin generates one and serves it from middleware.
-That generated page is minimal — a full-viewport `#loom-root` mount point on a `#14161a` background,
-plus a module script pointing at your entry. To find the entry it walks this list in order and takes
-the first hit:
+With no `index.html` in the project root the plugin generates one and serves it from middleware: a
+full-viewport `#loom-root` mount point on a `#14161a` background, plus a module script pointing at
+your entry. To find the entry it takes the first hit from this list:
 
 ```text title="Entry candidates, in priority order"
 src/main.client.tsx
@@ -162,10 +158,9 @@ src/index.tsx
 src/client.tsx
 ```
 
-These are roblox-ts client-entry conventions, so a normal project already satisfies one — and an
-entry that follows none of them can be named explicitly with the plugin's `entry` option. If your
-project has its own `index.html`, the plugin leaves it alone and Vite serves it as the entry
-document — in that case the `<script type="module">` inside it decides what loads.
+These are roblox-ts client-entry conventions, so a normal project already satisfies one; an entry
+that follows none can be named with the plugin's `entry` option. A project with its own `index.html`
+keeps it, and the `<script type="module">` inside decides what loads.
 
 When neither exists, the CLI exits with the full candidate list rather than serving a blank page:
 
@@ -177,8 +172,8 @@ loom: no index.html and no client entry found in /Users/you/code/my-game
 
 ## The entry must mount itself
 
-Loom does not call your component for you. The entry has to mount at module top level, exactly the
-way a roblox-ts client script does:
+Loom does not call your component for you — the entry has to mount at module top level, the way a
+roblox-ts client script does:
 
 ```tsx title="src/main.client.tsx"
 import { createRoot } from "@rbxts/react-roblox";
@@ -188,17 +183,16 @@ createRoot().render(<App />);
 ```
 
 `@rbxts/react-roblox` is aliased to loom's browser client, whose `createRoot()` ignores the Roblox
-target instance you would normally pass and creates its own absolutely-positioned container under
-`#loom-root`. Passing `Players.LocalPlayer.WaitForChild("PlayerGui")` is harmless — the argument is
-accepted and discarded — so you do not have to fork your entry for the preview.
+target instance and creates its own container under `#loom-root`. Passing
+`Players.LocalPlayer.WaitForChild("PlayerGui")` is harmless, so you need not fork your entry for the
+preview.
 
 <Callout title="A blank preview usually means the entry only exports">
 Two seconds after load, if `#loom-root` still has no child elements, loom logs:
 
 `[loom] nothing mounted into #loom-root after 2s — does your entry call createRoot().render(<App />) at the top level?`
 
-That is the single most common first-run problem: an entry file that exports a component instead of
-rendering one. Check the browser console before assuming the layout engine failed.
+That is the most common first-run problem: an entry that exports a component instead of rendering one.
 </Callout>
 
 For `vide` the same rule applies with `mount`:
@@ -212,9 +206,8 @@ mount(App);
 
 ## Preview many components at once
 
-One entry gives you one screen. A component library wants a browsable list instead, which is what
-**gallery mode** is: name any file `*.loom.tsx`, export a `preview` object from it, and add
-`--targets`.
+One entry gives one screen. **Gallery mode** gives a browsable list: name any file `*.loom.tsx`,
+export a `preview` object from it, and add `--targets`.
 
 ```tsx title="src/scenes/Button.loom.tsx"
 export const preview = {
@@ -234,11 +227,10 @@ export const preview = {
 pnpm exec loom preview . --targets
 ```
 
-Every match gets a sidebar entry, mounts lazily, and is wrapped in its own error boundary — one
-broken scene does not take the page down. No client entry is needed in gallery mode, and
-`loom build --targets` emits the same thing as a static, deep-linkable site. The target file
-contract, the glob rules and the URL parameters are in [Gallery
-targets](/loom/guides/gallery-targets/).
+Every match gets a sidebar entry, mounts lazily, and is wrapped in its own error boundary. No client
+entry is needed, and `loom build --targets` emits the same thing as a static, deep-linkable site.
+The file contract, glob rules and URL parameters are in
+[Gallery targets](/loom/guides/gallery-targets/).
 
 ## Flags
 
@@ -246,25 +238,23 @@ targets](/loom/guides/gallery-targets/).
 loom preview [dir] [--port <n>] [--host] [--targets [glob]]
 ```
 
-`dir` defaults to `.`. `--port` takes a number and errors out if it is not numeric. `--host` is a
-boolean that binds all interfaces, unless it is followed by a non-flag value, which is then used as
-the bind address. `--targets` switches to gallery mode, covered in [Gallery
-targets](/loom/guides/gallery-targets/).
+`dir` defaults to `.`. `--port` takes a number and errors if it is not numeric. `--host` binds all
+interfaces, unless followed by a non-flag value used as the bind address. `--targets` switches to
+gallery mode.
 
-An optional `<dir>/loom.config.ts` supplies `targets` and `port` when the flags are absent; CLI flags
-always win. See the [CLI reference](/loom/reference/cli/) for the exact precedence rules.
+An optional `<dir>/loom.config.ts` supplies `targets` and `port` when the flags are absent; CLI
+flags win. See the [CLI reference](/loom/reference/cli/).
 
 ## What you get
 
-Standard Vite dev-server behavior, because it *is* a Vite dev server: HMR on save, source maps, and
-esbuild-speed TSX transpilation. Nothing runs `rbxtsc`. Input works — clicks reach `Activated`,
-typing reaches `TextBox`, and `UserInputService` fires — so state-driven UI can be exercised in the
-browser rather than in Studio.
+Standard Vite dev-server behaviour, because it *is* a Vite dev server: HMR on save, source maps,
+esbuild-speed TSX transpilation, and nothing running `rbxtsc`. Input works too — clicks reach
+`Activated`, typing reaches `TextBox`, `UserInputService` fires.
 
 ## Next step
 
-Before you trust what you see, read [Scope and status](/loom/getting-started/scope-and-status/) —
-it lists what loom renders faithfully and what it accepts and ignores.
+[Scope and status](/loom/getting-started/scope-and-status/) lists what loom renders faithfully and
+what it accepts and ignores.
 
 After that: [Vite integration](/loom/guides/vite-integration/) when you want the preview to live
 inside your own project, or [How it works](/loom/getting-started/how-it-works/) for the architecture
