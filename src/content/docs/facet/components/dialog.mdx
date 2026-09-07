@@ -94,12 +94,7 @@ One wrapper, at the client entry, for the whole app — not per dialog. Every la
 declares the same one, so this edit happens once.
 
 <Callout title="Why the CLI edits a file for this and nothing else">
-`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json` — both belong to you, and a pattern-matched edit that mangles one is worse than a printed snippet.
-
-This is the exception, because everything else the CLI reports is a **build-time** failure, in front
-of the person who just ran the command.
-
-A missing `PortalProvider` fails at runtime, in production, long after the snippet scrolled past — so `facet add` parses your entry, asks, and writes it.
+`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json` — both belong to you. This is the exception because everything else the CLI reports fails at **build** time, in front of the person who just ran the command, while a missing `PortalProvider` fails at runtime in production.
 </Callout>
 
 `facet doctor` notices when the provider goes missing again.

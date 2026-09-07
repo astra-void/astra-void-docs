@@ -90,11 +90,9 @@ Vela hands the component props and children; it cannot make the component do any
 `Box` does not spread its unrecognized props onto a Roblox host element and render its children, the
 styling is lost — and **there is no diagnostic for that**, at compile time or in the editor.
 
-This is how `className` behaves on the web too: it works because the component passes it down to a
-DOM node. A component library can be built to receive this shape deliberately —
-[lattice-ui](/lattice-ui/) forwards unknown props from every part and re-parents Vela's helper
-instances under the element the props land on. [Styling Lattice with
-Vela](/lattice-ui/guides/styling-with-vela/) is a worked example.
+A component library can be built to receive this shape deliberately: [lattice-ui](/lattice-ui/)
+forwards unknown props from every part and re-parents Vela's helper instances under the element the
+props land on. [Styling Lattice with Vela](/lattice-ui/guides/styling-with-vela/) is a worked example.
 </Callout>
 
 Because the eventual host element is unknown, the per-element utility restrictions do not apply
@@ -151,13 +149,9 @@ A [Vide](/vela-rbxts/guides/vide/) project imports `@rbxts/vela-runtime-vide` in
 <Callout title="Most files send an emptied theme">
 That config carries only what your project changed — the runtime holds the defaults itself, so an
 untouched scale sends `{}`. A file whose host never has to *parse* a class value sends its scales
-emptied entirely: a variant, a branch, a margin or a `divide-*` all reach the host through props the
-compiler already resolved, so those tables would sit unread.
-
-A file that does hand the host a class value it cannot see into — a computed `className`, or a host
-taking a spread — keeps the full tables. `preflight`, `theme.rem` and the motion driver stay either
-way. An emptied table is marked in `theme.replaced`, telling the runtime to take it as given rather
-than merging its own defaults back underneath.
+emptied entirely; one that does — a computed `className`, or a host taking a spread — keeps the full
+tables. `preflight`, `theme.rem` and the motion driver stay either way, and an emptied table is
+marked in `theme.replaced` so the runtime takes it as given.
 </Callout>
 
 ### What triggers the runtime path

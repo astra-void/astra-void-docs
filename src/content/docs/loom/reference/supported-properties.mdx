@@ -213,10 +213,8 @@ The build finds those ids two ways: it reads the emitted output for `rbxassetid:
 | `ScrollBarImageTransparency` | **Accepted** | The thumb is drawn opaque. |
 | `VerticalScrollBarInset` `HorizontalScrollBarInset` | **Accepted** | The bar is always painted *over* the canvas — Roblox's `ScrollBarInset.None`, which is also the engine's default. `AbsoluteWindowSize` reserves nothing for it, so a layout that budgets for an inset bar comes out that many pixels wider here than in Studio. |
 
-<Callout title="Scrolling only started working in `0.9.3`">
-A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, and loom capped every child's growth at its parent's box — right for a `45%` column, wrong for a canvas. The column came out exactly the window's height, so nothing overflowed and nothing scrolled.
-
-A `ScrollingFrame` now leaves its children no ceiling on an axis whose canvas is free to grow. The bar is drawn from the same window/canvas math the adapters feed back, so it cannot disagree with the numbers a component sized itself against.
+<Callout title="A `ScrollingFrame` gives its children no growth ceiling">
+A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, so a `ScrollingFrame` leaves its children no ceiling on an axis whose canvas is free to grow — otherwise the column comes out exactly the window's height and nothing scrolls. The bar is drawn from the same window/canvas maths the adapters feed back, so it cannot disagree with the numbers a component sized itself against.
 </Callout>
 
 <Callout title="AutomaticSize plus an explicit CanvasSize">

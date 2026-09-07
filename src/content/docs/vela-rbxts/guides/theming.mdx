@@ -87,7 +87,7 @@ export default defineConfig({
 ```
 
 <Callout title="The runtime path understands only two exact shapes">
-Everything above is the **static** path. A class resolved at runtime carries your theme as string *data*, re-parsed in Luau by two parsers accepting exactly `Color3.fromRGB(r, g, b)` with three numeric arguments in `0`–`255` and `new UDim(a, b)` with two. Anything else compiles fine and then **silently degrades at runtime**: `"Color3.new(0.1, 0.2, 0.3)"` drops out of the runtime colour scale, `"new UDim(0, PADDING)"` falls back to `new UDim(0, 0)`. Keep every theme value in those two literal forms, even if you do not think you use a dynamic `className`.
+Everything above is the **static** path. A class resolved at runtime carries your theme as string *data*, re-parsed in Luau by two parsers accepting exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)` with numeric arguments. Anything else compiles fine and then **silently degrades at runtime**, so keep every theme value in those two literal forms.
 </Callout>
 
 ### Only what you changed travels

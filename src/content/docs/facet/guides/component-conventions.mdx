@@ -9,18 +9,18 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-The conventions every component in the registry follows. They matter because you will edit the
-copied files and write your own beside them.
+The conventions every component in the registry follows — you will edit the copied files and write
+your own beside them.
 
-Most of them exist because a web instinct is wrong here. Each one says which instinct it corrects.
+Most exist because a web instinct is wrong here.
 
 ## 1. Declare both axes. Always.
 
 Vela resolves a frame's size from `UDim2.new(0, 0, 0, 0)`. Nothing infers a size from content unless
 you ask, and **`UIPadding` does not grow a frame** — it insets its children.
 
-So `h-9 px-4`, a perfectly good shadcn button, renders **zero pixels wide**. That is not
-hypothetical; it is what the first published `button` did.
+So `h-9 px-4`, a perfectly good shadcn button, renders **zero pixels wide** — which is what the
+first published `button` did.
 
 ```
 h-9 px-4        → 0 × 36. Invisible.
@@ -33,16 +33,16 @@ Every leaf declares a width *and* a height: a concrete class on each axis, or `w
 
 ## 2. `AutomaticSize` is a chain
 
-A container set to hug its content can only measure children that already know their own size. One
-child with an unresolved axis and the parent collapses.
+A container set to hug its content can only measure children that already know their own size; one
+child with an unresolved axis collapses the parent.
 
-When a component nests — button → label, card → header → title — **every level** needs an answer.
-`card` is the clearest case: every part carries `w-full h-fit`, all the way down.
+When a component nests, **every level** needs an answer. `card` is the clearest case: every part
+carries `w-full h-fit`.
 
 ## 3. Nothing inherits
 
-There is no cascade. `text-sm` on a button does not reach the label inside it; text properties belong
-to the instance that draws the text.
+There is no cascade: `text-sm` on a button does not reach the label inside it, because text
+properties belong to the instance that draws the text.
 
 So **a component with a label needs a second recipe for that label**: `buttonVariants` sizes the
 button, `buttonLabelVariants` styles the text, both keyed off the same `size` prop. See
@@ -62,11 +62,11 @@ button, `buttonLabelVariants` styles the text, both keyed off the same `size` pr
 **one instance can hold one layout**.
 
 A component that sets any of them owns its children's arrangement, so a consumer wanting a different
-one must *replace* those classes rather than add to them.
+one must *replace* those classes.
 
-So do not add a wrapper frame just to get a second layout — restructure the parts, which you can do
-freely because the file is yours. Generally: **do not add an instance to carry what an existing
-instance can carry**. That is why the registry has no `AspectRatio` component:
+So do not add a wrapper frame just to get a second layout — restructure the parts. **Do not add an
+instance to carry what an existing instance can carry**, which is why the registry has no
+`AspectRatio` component:
 
 ```tsx
 <imagelabel className="w-full aspect-video" Image={thumbnail} />
@@ -74,16 +74,15 @@ instance can carry**. That is why the registry has no `AspectRatio` component:
 
 That component exists in CSS to hide a `padding-bottom: 56.25%` trick. Roblox has
 `UIAspectRatioConstraint` and Vela lowers straight onto it, so a wrapper would add a frame, a file
-and a level to the `AutomaticSize` chain to deliver what you can already write on the element you
-have — and be less capable, since the class works on any host instance while a component forces a
-`Frame`.
+and a level to the `AutomaticSize` chain — and be less capable, since the class works on any host
+instance while a component forces a `Frame`.
 
 **Ratio is a class, not a component.**
 
 ## 6. Flat named exports
 
-`Card`, `CardHeader`, `CardTitle` — not `Card.Root`. Namespace objects are right for a library; this
-is source someone pastes and edits, so each part reads independently and can be deleted on its own.
+`Card`, `CardHeader`, `CardTitle` — not `Card.Root`. This is source someone pastes and edits, so
+each part reads independently and deletes on its own.
 
 Facet components wrap Lattice's namespaces rather than re-exporting them:
 
@@ -98,41 +97,39 @@ export function DialogContent(props: DialogContentProps) { /* styled */ }
 The *parts* stay flat, but a component file exports one recipe **object**, not one export per part.
 
 Luau allows 200 local registers per function and a module body is a function, so every module-scope
-`local` costs one — including every `export const`. On a Vela version that inlined its runtime into
-each file, `card`'s six exported recipes pushed the module over 200 and it stopped loading, with an
-error naming generated code its author never wrote:
+`local` costs one — every `export const` included. On a Vela version that inlined its runtime into
+each file, `card`'s six exported recipes pushed the module over 200 and it stopped loading:
 
 ```
 Out of local registers when trying to allocate CardHeader
 ```
 
-Not a compile error — the module simply failed at load. Six `export const`s cost six registers, one
-object costs one, which is why `card` and `alert` both export a single object.
+Not a compile error — the module failed at load. Six `export const`s cost six registers, one object
+costs one, which is why `card` and `alert` both export a single object.
 
 Emitted components now sit around 18–24 module-scope locals, which is why `^0.9.0` is the floor the
-CLI installs. The headroom is much larger — still finite, and still measurable:
+CLI installs. The headroom is larger, still finite, and measurable:
 
 ```bash
 grep -c "^local " out/shared/ui/card.luau
 ```
 
-A number in the twenties is normal. A number near 200 means the next part you add to that component
-is the one that breaks it.
+A number in the twenties is normal; one near 200 means the next part you add breaks the component.
 </Callout>
 
 ## 7. Icons are text glyphs, replaceable by slot
 
 Roblox has no icon font, and shipping images means uploading assets to somebody's account and owning
-the moderation and licensing forever. Facet renders `▾`, `✓`, `✕` as text and exposes the slot, so a
-project wanting real artwork passes its own through `children`.
+the moderation forever. Facet renders `▾`, `✓`, `✕` as text and exposes the slot, so a project
+wanting real artwork passes its own through `children`.
 
 ## 8. Roles, never ramp steps
 
 `bg-muted`, not `bg-zinc-800`. This is what makes `facetTheme({ base: "slate" })` retheme every
 copied component without editing one of them.
 
-Enforced by review, not by tooling — the class strings are just text. If changing your theme base
-requires editing a component, this rule was broken somewhere in it.
+Enforced by review, not tooling. If changing your theme base requires editing a component, the rule
+was broken somewhere in it.
 
 ## 9. `ClassValue` is a reserved name
 
@@ -230,9 +227,9 @@ selected.
 
 ### B. A `className` on a primitive call site has to be an attribute
 
-Vela rewrites the call sites it can **see**. Written as an attribute, `className` is resolved. Folded
-into a shared spread, it is just a key in an object — it reaches the primitive as a raw string prop,
-is dropped in silence, and the component renders unstyled with no diagnostic.
+Vela rewrites the call sites it can **see**. Written as an attribute, `className` is resolved;
+folded into a shared spread it is just a key in an object, reaching the primitive as a raw string
+prop and dropped in silence.
 
 ```tsx
 // resolved
@@ -243,13 +240,12 @@ is dropped in silence, and the component renders unstyled with no diagnostic.
 ```
 
 [`toggle-group`](/facet/components/toggle-group/#classname-is-written-out-on-both-branches) is where
-this bit, because it renders its root twice and the shared spread was the obvious tidy-up.
+this bit: it renders its root twice, and the shared spread was the obvious tidy-up.
 
 ### C. Where the primitive owns a property, the recipe stays off it
 
-A primitive that writes `Size` or `Position` every frame is as load-bearing as the `UIListLayout`
-that owns one, and rule 5 applies to both. Three components omit a class they would otherwise be
-required to have:
+A primitive that writes `Size` or `Position` every frame is as load-bearing as a `UIListLayout` that
+owns one. Three components omit a class they would otherwise be required to have:
 
 | Component | What it omits | Who owns it |
 | --- | --- | --- |
@@ -257,44 +253,44 @@ required to have:
 | [`switch`](/facet/components/switch/#the-thumb-has-no-position) | any position on the thumb | `Switch.Thumb`, which animates it |
 | [`textarea`](/facet/components/textarea/#the-input-declares-no-height) | a height on the input | `Textarea.Input`, which grows it by row |
 
-The failure mode is the one that looks like it works: a declared width on
-[`progress`](/facet/components/progress/#the-indicator-has-no-width)'s indicator renders correctly on
-mount and is overwritten as soon as the value moves.
+The failure mode looks like it works: a declared width on
+[`progress`](/facet/components/progress/#the-indicator-has-no-width)'s indicator renders correctly
+on mount and is overwritten as soon as the value moves.
 
 ### D. A forwarded prop bag crosses a boundary widened
 
-`toSlotProps` is the crossing point. The typed passthrough bag collides with the runtime host's `ref`
-and with primitives that type `children` as a *single* element — what `asChild` merges onto — so
-several files add a local `forwardProps` that widens the bag and drops `children` from its type
-alone. The bag never carries one; `children` is always an own prop.
+`toSlotProps` is the crossing point. The typed passthrough bag collides with the runtime host's
+`ref` and with primitives that type `children` as a *single* element, so several files add a local
+`forwardProps` widening the bag and dropping `children` from its type. The bag never carries one —
+`children` is always an own prop.
 
 ## Wrapping a layered primitive
 
 [`dialog`](/facet/components/dialog/) is the first, and three more things came out of it.
 
 **A `PortalProvider` has to be above the app.** `Dialog.Portal` reads a strict context for the
-`BasePlayerGui` it renders into. Missing it *throws on open* rather than rendering nowhere — which is
-the better of the two failures, and still the only build-clean runtime failure in the registry. The
-component declares it, so `facet add` can [offer to write it](/facet/reference/cli/#wiring-a-provider)
-and `facet doctor` can notice when it goes missing.
+`BasePlayerGui` it renders into, and missing it *throws on open* rather than rendering nowhere — the
+only build-clean runtime failure in the registry. The component declares it, so `facet add` can
+[offer to write it](/facet/reference/cli/#wiring-a-provider) and `facet doctor` notices when it goes
+missing.
 
 **The styled panel is a frame inside the primitive's content, never the content itself.** The
 primitive forces `Size` on its own host so the layer spans the screen, *and* takes the first host
-element under it as the boundary an outside press is measured against. A `className` there fights the
-first and — through the `UICorner` Vela prepends for `rounded-*` — quietly becomes the second.
+element under it as the outside-press boundary. A `className` there fights the first and, through
+the `UICorner` Vela prepends for `rounded-*`, quietly becomes the second.
 
 **A class forwarded to another component has to reach one `className` expression.** Vela resolves a
 `className` at the call site and hands the component the resolved *properties*, so a class routed
-through a wrapper's `className` prop is overwritten by that wrapper's own recipe. `dialog` spells the
-prop [`overlayClassName`](/facet/components/dialog/#overlayclassname-not-classname) and merges it
-where the overlay actually resolves. It is the
+through a wrapper's `className` is overwritten by that wrapper's recipe. `dialog` spells the prop
+[`overlayClassName`](/facet/components/dialog/#overlayclassname-not-classname) and merges it where
+the overlay resolves — the
 [`TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one level up.
 
 ## Two things about spread order
 
-**Neutral defaults first.** Roblox instance defaults are themselves a look — a bare `textbutton` is
-an opaque grey box labelled "Button". `BackgroundTransparency`, `BorderSizePixel`, `Text` and
-`AutoButtonColor` get cleared before anything visual is applied.
+**Neutral defaults first.** A bare `textbutton` is an opaque grey box labelled "Button", so
+`BackgroundTransparency`, `BorderSizePixel`, `Text` and `AutoButtonColor` are cleared before
+anything visual is applied.
 
 **Then consumer passthrough, then behavior props.** Behavior is never overridable — event handlers
 are *composed* rather than replaced:
@@ -303,14 +299,12 @@ are *composed* rather than replaced:
 Event: composeEvents(passthrough.Event, { Activated: handleActivated })
 ```
 
-Appearance is a weaker promise than the ordering suggests. Vela emits a component's class-derived
-props *after* every spread, whatever order the author wrote them in, so a consumer's passthrough
-value loses to anything the recipe sets. What survives is any property the classes do not touch —
-`LayoutOrder`, `Position`, `Visible`, `ZIndex`. See
-[Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
+Appearance is a weaker promise than the ordering suggests: Vela emits a component's class-derived
+props *after* every spread, so a consumer's passthrough value loses to anything the recipe sets.
+What survives is any property the classes do not touch — `LayoutOrder`, `Position`, `Visible`,
+`ZIndex`.
 
 ## Readability is a feature
 
-Prefer a readable 60-line component over a clever 20-line one. The consumer reads this code — it is
-the product, not an implementation detail. A copied file that is hard to edit has failed at the one
-thing the copy-in model is for.
+Prefer a readable 60-line component over a clever 20-line one. The consumer reads this code — a
+copied file that is hard to edit has failed at the one thing the copy-in model is for.
