@@ -109,13 +109,13 @@ typography, with variant-prefixed tokens last:
 ```
 
 **The sort never changes what your classes do.** Utilities that can write the same Roblox property
-are treated as one group and keep their relative order within it, so a `px-4` written after `p-2`
-stays after it. A template keeps the whitespace around each interpolation.
+are treated as one group and keep their relative order within it. A `px-4` written after `p-2` stays
+after it. A template keeps the whitespace around each interpolation.
 
 **It does not change how they are laid out either.** Whitespace between tokens is carried over as
-written, so a class list broken across several lines stays that way. An arbitrary payload containing
-a space, such as `w-[calc(100% - 4px)]`, moves as the single class it is. A value whose bracket
-never closes is left alone entirely.
+written. A class list broken across several lines stays that way. An arbitrary payload containing a
+space, such as `w-[calc(100% - 4px)]`, moves as the single class it is. A value whose bracket never
+closes is left alone entirely.
 
 Run it from the editor's source-action menu, or on save:
 
@@ -129,8 +129,8 @@ Run it from the editor's source-action menu, or on save:
 
 Any LSP client supporting source actions can invoke it by that kind. The underlying API is
 `sortClassNames` on `@vela-rbxts/compiler`. It takes `{ source, fileName }` and returns
-`{ edits: [{ range: { start, end }, text }] }`, the same offsets the server turns into workspace
-edits.
+`{ edits: [{ range: { start, end }, text }] }`. Those are the same offsets the server turns into
+workspace edits.
 
 Text synchronization is incremental and the position encoding is UTF-16.
 

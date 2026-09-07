@@ -8,7 +8,7 @@ sidebar:
 ---
 
 Loom is a pnpm workspace with a Rust half and a TypeScript half. Only two packages are things you
-install directly; the rest are internal boundaries that happen to be published so the dependency
+install directly. The rest are internal boundaries that happen to be published so the dependency
 graph resolves.
 
 ## What you install
@@ -59,11 +59,11 @@ loom-dev ──► @loom-dev/preview ──► @loom-dev/react ──► @loom-d
 ```
 
 Nothing below `@loom-dev/react` knows a frontend framework exists. That is what let the `vide`
-adapter drop in beside the React one without changes to the layout engine or the renderer, and it is
+adapter drop in beside the React one, with no changes to the layout engine or the renderer. It is
 the intended extension point for a future Luau frontend.
 
-The gallery shell lives in `@loom-dev/preview`, not the CLI: gallery mode is a plugin option
-(`loomPreview({ targets })`), and the CLI is one of its callers rather than its owner. `loom-dev`
+The gallery shell lives in `@loom-dev/preview`, not the CLI. Gallery mode is a plugin option,
+`loomPreview({ targets })`, and the CLI is one of its callers rather than its owner. `loom-dev`
 keeps only what is genuinely command-shaped — argument parsing, `loom.config.ts`, and the embed API.
 
 ## Versioning

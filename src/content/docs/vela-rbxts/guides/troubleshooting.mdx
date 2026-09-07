@@ -13,7 +13,7 @@ Vela reports most mistakes as [diagnostics](/vela-rbxts/reference/diagnostics/).
 the other situation: **something is wrong on screen and the build said nothing.**
 
 <Callout title="Check your version first">
-Most of the silent failures below were fixed releases ago. Run `npm ls @vela-rbxts/compiler` and read the [release notes](/vela-rbxts/reference/release-notes/) first. Runtime-path coverage gaps, `opacity-*` not reaching a subtree, "out of local registers", a motion driver taking the tree down at mount, and a slow build all have upgrading as the whole fix.
+Most of the silent failures below were fixed releases ago. Run `npm ls @vela-rbxts/compiler` and read the [release notes](/vela-rbxts/reference/release-notes/) first. Upgrading is the whole fix for several problems. Runtime-path coverage gaps, `opacity-*` not reaching a subtree, "out of local registers", a motion driver taking the tree down at mount, and a slow build.
 </Callout>
 
 ## "A class did nothing"
@@ -67,7 +67,7 @@ or `space-*`, and a list layout owns its children's positions. Position an eleme
 plain frame.
 
 **An element sits outside its parent after `right-*` or `bottom-*`.** Those set the coordinate from
-the far edge but do not anchor the element, so its top-left corner lands there. Add the matching
+the far edge but do not anchor the element. Its top-left corner lands there. Add the matching
 `origin-*`, as in `right-2 bottom-2 origin-bottom-right`.
 
 **`justify-*` behaves strangely.** `justify-center` and `justify-between` set two *different*
@@ -114,7 +114,7 @@ up from each source file, so a stray `vela.config.ts` in a subdirectory shadows 
 compositing the group. Put them in a `canvasgroup` and fade that.
 
 **A themed colour works statically but not on a dynamically-classed element.** The runtime path
-re-parses theme values from text and accepts exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`
+re-parses theme values from text. It accepts exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`
 with numeric literals. Anything else silently degrades. See [theming](/vela-rbxts/guides/theming/).
 
 ## "Everything got bigger or smaller after upgrading to 0.12.0"

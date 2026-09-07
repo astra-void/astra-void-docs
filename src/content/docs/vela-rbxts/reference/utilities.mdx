@@ -413,14 +413,13 @@ The value is converted to transparency as `100 - n`. Any non-integer or out-of-r
 `unsupported-opacity-value`.
 
 **It fades everything the element draws.** That is `BackgroundTransparency` on every host,
-`TextTransparency` on the text hosts, `ImageTransparency` on the image hosts, and the `Transparency`
-of a `UIStroke` or `UIShadow` the same class list drew.
+`TextTransparency` on the text hosts and `ImageTransparency` on the image hosts. It also covers the
+`Transparency` of a `UIStroke` or `UIShadow` the same class list drew.
 
-**And the subtree under it.** Roblox has no inherited transparency, so Vela hands every instance
-below the class a running product: `1 - (1 - own) * alpha`. Children written inside an expression
-count, and so do `{props.children}` and component children, which the alpha reaches through React
-context. A `canvasgroup` ends the descent — its `GroupTransparency` composites the subtree in one
-pass.
+**And the subtree under it.** Roblox has no inherited transparency. Vela hands every instance below
+the class a running product: `1 - (1 - own) * alpha`. Children written inside an expression count,
+and so do `{props.children}` and component children, which the alpha reaches through React context.
+A `canvasgroup` ends the descent — its `GroupTransparency` composites the subtree in one pass.
 
 **It is order-independent, and multiplies with `/N`.** The utility is held until the whole class
 list is read, then composed over whatever alpha the colours settled on. `opacity-50 bg-blue-600/50`
@@ -604,8 +603,8 @@ sections above and [Diagnostics](/vela-rbxts/reference/diagnostics/).
 When `className` is a dynamic expression rather than something Vela can collapse at compile time,
 the class string is resolved by the injected runtime helper instead. **Every family on this page
 resolves there**, with the static path's semantics. Opacity modifiers, arbitrary values, and the
-families that only meet at the end: the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a
-grid track and the gap it gives back.
+families that only meet at the end. That last group is the two `Size` axes, `Position` and
+`AnchorPoint`, `FontFace`, and a grid track with the gap it gives back.
 
 One thing differs, and it is the runtime path being stricter rather than thinner. **A utility the
 host element cannot carry is dropped** instead of written, since assigning `TextColor3` to a `Frame`
