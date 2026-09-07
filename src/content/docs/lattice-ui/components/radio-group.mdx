@@ -214,7 +214,7 @@ export function DifficultyCards() {
 
 ### Disabled items
 
-`disabled` on an item makes it inert and removes it from navigation — it cannot be activated, drops
+`disabled` on an item makes it inert and removes it from navigation. It cannot be activated, drops
 out of gamepad selection, and arrow movement steps over it. `disabled` on `Root` freezes the whole
 group.
 
@@ -248,8 +248,8 @@ export function GameModePicker() {
 ### Dynamic item lists
 
 Directional navigation walks the registry in **mount order**. Appending keeps mount and visual order
-aligned; inserting into the middle renders in the middle but navigates last, so prefer append-only
-growth or a `LayoutOrder` mirroring mount order.
+aligned. Inserting into the middle renders in the middle but navigates last, so prefer append-only
+growth, or a `LayoutOrder` mirroring mount order.
 
 ```tsx title="LoadoutPicker.tsx"
 import { useState } from "@rbxts/react";
@@ -289,13 +289,13 @@ export function LoadoutPicker() {
 
 ### Value and selection
 
-Controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage; with neither
-the group starts empty. An `Item` is checked when its `value` equals the group value, and
-`onValueChange` only ever receives a defined string — interaction cannot clear the selection,
+Controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage. With neither,
+the group starts empty. An `Item` is checked when its `value` equals the group value.
+`onValueChange` only ever receives a defined string, so interaction cannot clear the selection,
 matching native radio behaviour.
 
 Activating an item calls the group's `setValue`. A `disabled` `Root` drops every change, so neither
-activation nor programmatic movement alters the value; an individual `disabled` item only refuses
+activation nor programmatic movement alters the value. An individual `disabled` item only refuses
 its own activation.
 
 ### Activation
@@ -309,24 +309,24 @@ fires.
 
 ### Orientation and arrow-key navigation
 
-`orientation` selects the arrow-key axis each item listens on; the other is ignored. A matching
+`orientation` selects the arrow-key axis each item listens on, and the other is ignored. A matching
 press resolves the next entry from the ordered registry, focuses it through the
 [focus manager](/lattice-ui/guides/focus-management/), and selects it in the same step.
 
-Movement covers **available** entries only — disabled, invisible or non-`Selectable` entries are
-skipped — and clamps at the ends. If the selected item is itself unavailable, the next forward move
-lands on the first available item and the next backward move on the last.
+Movement covers **available** entries only, skipping disabled, invisible or non-`Selectable` ones,
+and clamps at the ends. If the selected item is itself unavailable, the next forward move lands on
+the first available item and the next backward move on the last.
 
 ### Item registration order
 
 Each item is stamped with a monotonically increasing `order` on its first render and keeps it for
-its lifetime; remounting assigns a fresh, higher one. Navigation sorts by that order, so it tracks
-**mount order rather than visual position** — render from one array, append new entries, and lay
-them out with a matching `SortOrder`.
+its lifetime. Remounting assigns a fresh, higher one. Navigation sorts by that order, so it tracks
+**mount order rather than visual position**. Render from one array, append new entries, and lay them
+out with a matching `SortOrder`.
 
 ### Item rendering and color
 
-An `Item` renders an unstyled `textbutton` — no size, no label, no colours — and does not render
+An `Item` renders an unstyled `textbutton` with no size, label or colours, and does not render
 `value` as its text. Pass a `Text` of your own, or children.
 
 The item never writes `BackgroundColor3`, which is why it accepts no `transition` — that prop only
@@ -335,7 +335,14 @@ and animate it yourself.
 
 ### Indicator presence and motion
 
-`RadioGroup.Indicator` is presence-driven by its parent item's checked state: it mounts when the item becomes checked and unmounts when another item is chosen, holding through any exit transition first. It runs no motion of its own — pass `createIndicatorRevealRecipe(size)` from `@lattice-ui/react-motion` as `transition`, built at the size your dot settles at, to grow it from zero while fading in. Pass `forceMount` to keep the indicator mounted regardless of checked state, bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child element is rendered in place of the frame the part renders and its `Visible` property is bound to the presence state.
+`RadioGroup.Indicator` is presence-driven by its parent item's checked state. It mounts when the
+item becomes checked and unmounts when another item is chosen, holding through any exit transition
+first. It runs no motion of its own. Pass `createIndicatorRevealRecipe(size)` from
+`@lattice-ui/react-motion` as `transition`, built at the size your dot settles at, to grow it from
+zero while fading in. Pass `forceMount` to keep the indicator mounted regardless of checked state,
+bypassing the presence wrapper so you can drive visibility yourself. With `asChild`, your child
+element is rendered in place of the frame the part renders and its `Visible` property is bound to
+the presence state.
 
 ### Root renders no container
 
