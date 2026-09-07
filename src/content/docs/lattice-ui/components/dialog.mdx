@@ -580,10 +580,6 @@ import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
 
 That buys an offscreen render target the size of the screen, which is why it is opt-in.
 
-<Callout title="asChild moves the outside-press boundary down a level">
-Outside presses are measured against the first direct host element inside `Dialog.Content`. With `asChild` your element *is* that host and spans the layer, so the boundary moves to its first host child — keep your panel there.
-</Callout>
-
 Presence timing is independent: with or without a `transition`, the content stays mounted until its
 exit resolves. `forceMount` keeps it mounted while closed and lets long exits run outside the
 wrapper's bounded unmount window.
@@ -594,10 +590,6 @@ animate it yourself with `createOverlayFadeRecipe()`.
 
 <Callout title="An unstyled overlay is invisible, not absent">
 `Dialog.Overlay` renders a fully transparent full-screen `textbutton`. It still covers the screen and still swallows presses — which is how press-to-close and modal blocking work — but it draws nothing until you give it a color. Pass `BackgroundColor3` and `BackgroundTransparency` directly; it also renders children, so a `uigradient` or nested frame works too.
-</Callout>
-
-<Callout title="Make your panel the first child of Content">
-Outside-press detection hit-tests against the first direct host element inside `Dialog.Content` — or, with `asChild`, inside the element you supplied. Render your panel frame as that first child and keep everything interactive inside it, or presses on your own surface will be treated as outside and dismiss the dialog.
 </Callout>
 
 <Callout title="Roblox layering">

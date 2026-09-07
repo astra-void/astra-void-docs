@@ -70,33 +70,34 @@ is still open.
 
 - **A list can flow alphabetically.** `SortOrder` defaults to `Enum.SortOrder.Name` on every layout,
   as it does in Studio, so children with distinct `Name`s sort by name rather than by source order.
-  Loom defaulted to `LayoutOrder` until `0.7.0`; a list that reordered on upgrade was already
-  ordering that way in the engine. Set `SortOrder={Enum.SortOrder.LayoutOrder}` for the old
-  behaviour.
+  Set `SortOrder={Enum.SortOrder.LayoutOrder}` for the other behaviour.
 - **No typechecking.** esbuild strips types; a preview renders whether or not your project typechecks.
   See [TypeScript setup](/loom/guides/typescript-setup/).
-- **`print` types oddly.** The globals declaration deliberately omits `print` because `lib.dom`
-  already declares one and redeclaring is a compile error. The runtime still overwrites the value.
-- **Unimplemented services fail at the call, not the import.** `@rbxts/services` is aliased to a
-  module exporting both the [services the runtime implements](/loom/reference/services/) and the ten
-  it cannot honestly stand in for — `MarketplaceService`, `TeleportService`, `DataStoreService` and
-  friends, all of which need a Roblox server on the other end. Those resolve to a warned stub whose
-  method calls throw by name, so a UI that merely *imports* one alongside the services it really uses
-  still mounts.
+- **`print` types oddly.** The globals declaration omits `print` because `lib.dom` already declares
+  one and redeclaring is a compile error. The runtime still overwrites the value.
+- **Unimplemented services fail at the call, not the import.** The ten services loom cannot honestly
+  stand in for — `MarketplaceService`, `TeleportService`, `DataStoreService` and friends — resolve to
+  a warned stub whose method calls throw by name, so a UI that merely *imports* one still mounts.
 - **A Luau-only package needs a shim.** Most roblox-ts packages redirect to their own TypeScript
-  source automatically; a declaration-only one has no source to redirect to and fails by name until
-  you point [`shims`](/loom/guides/package-compatibility/#shims) at a browser module. `@rbxts/react`,
+  source automatically; a declaration-only one has none and fails by name until you point
+  [`shims`](/loom/guides/package-compatibility/#shims) at a browser module. `@rbxts/react`,
   `@rbxts/react-roblox`, `@rbxts/services`, `@rbxts/vide`, `@rbxts/ui-labs`, `@rbxts/ripple` and
   `@rbxts/react-ripple` are handled out of the box.
 - **`rbxassetid://` is resolved for you, twice over.** Roblox's thumbnail API sends no CORS headers,
-  so a dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no server to ask, so as of `0.7.0` the ids are resolved at build time and the images written into the output. They are read out of the bundle — and, since `0.9.5`, by mounting each gallery target and reading the tree, which is what finds an id composed at runtime. An image the first render never reaches
-  still needs a real URL, or your own `setImageResolver`.
-- **The React version is pinned in effect.** The adapter's reconciler targets React 18; the plugin
-  aliases bare `react` to one absolute path to guarantee a single instance.
+  so a dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A
+  [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no
+  server to ask, so the ids are resolved at build time — read out of the bundle, and by mounting each
+  gallery target and reading the tree, which is what finds an id composed at runtime. An image the
+  first render never reaches still needs a real URL, or your own `setImageResolver`.
+- **The React version is pinned in effect.** The adapter's reconciler targets React 18, and the
+  plugin aliases bare `react` to one absolute path to guarantee a single instance.
 - **Text metrics are the browser's, corrected toward the engine's.** Loom measures with canvas
-  `measureText()`, so shaping and hinting are not Roblox's. Three things narrow the gap. The preview loads the right typeface itself as of `0.9.0`. `TextSize` is divided by the face box rather than spent as a `font-size` as of `0.9.3`. And advances are quantized to the half pixel and kerned the way the engine spends them as of `0.9.4`–`0.9.5`. Against `GetTextBoundsAsync` at 50 widths, the
-  wrapped line count now matches 49 times; what is left is a measurement about a percent roomy, so
-  text wraps a hair early rather than overflowing. [The detail](/loom/guides/fonts/#where-a-line-breaks).
+  `measureText()`, so shaping and hinting are not Roblox's. Three things narrow the gap: the preview
+  loads the right typeface itself, `TextSize` is divided by the face box rather than spent as a
+  `font-size`, and advances are quantized to the half pixel and kerned the way the engine spends
+  them. Against `GetTextBoundsAsync` at 50 widths the wrapped line count matches 49 times; what is
+  left is a measurement about a percent roomy, so text wraps a hair early rather than overflowing.
+  [The detail](/loom/guides/fonts/#where-a-line-breaks).
 
 ## Versioning
 

@@ -73,21 +73,10 @@ Directories are left alone, and so is anything you added next to the removed fil
 
 ## Why there is no lock file
 
-A `facet.lock` of per-file content hashes is the obvious fix for what `diff` cannot say. Three
-reasons it was dropped:
-
-**A hash answers *whether*, and a diff has to show *how*.** Showing what a merge would involve needs
-the text you started from. So the record that would satisfy `facet diff` is not a hash but a second
-copy of every component, committed to your repository — vendoring the registry into the project the
-CLI just copied out of.
-
-**Even the yes/no is weaker than it looks.** The hash goes stale for reasons that are not edits — a
-project-wide formatter pass, a rename, a move. Facet would then report that you changed everything:
-true, useless, and indistinguishable from upstream having rewritten every component.
-
-**It is a file you commit, never edit, and cannot read.** The promise of the model is that a copied
-file is yours; a lock file is Facet keeping a ledger about files it gave away, and the first time it
-disagrees with reality it is a puzzle in your repository.
+A `facet.lock` of per-file content hashes is the obvious fix for what `diff` cannot say, and it was
+dropped. A hash answers *whether* a file differs, not *how* — showing that needs the text you started
+from, which means a second copy of every component committed to your repository. It also goes stale
+for reasons that are not edits: a formatter pass, a rename, a move.
 
 ## Pinning a registry revision
 

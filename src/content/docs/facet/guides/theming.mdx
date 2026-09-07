@@ -122,32 +122,18 @@ anything Vela will emit.
 Vela resolves `className` at compile time, so `bg-primary` becomes a literal `Color3` in the emitted Luau. A build carries exactly one theme, and `facetTheme({ mode: "dark" })` is a decision made by the compiler.
 
 There is no `useTheme()` and no way to flip a settings toggle to light mode with the components as
-they are.
-
-The previews on this site show it: flipping the docs' light/dark toggle **reloads the frame against a different build** rather than repainting the running one.
+they are. The previews on this site show it: flipping the docs' light/dark toggle **reloads the frame
+against a different build** rather than repainting the running one.
 </Callout>
 
-This is a real gap and it is [an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open),
-not an oversight. The three options on the table:
+This is a real gap and [an open decision](/facet/getting-started/scope-and-status/#decisions-that-are-open).
+Facet does nothing about it today; the honest fix is for Vela to lower `bg-primary` to a read from a
+runtime token table rather than to a literal, which Facet cannot make unilaterally. The tempting
+middle option — a runtime `ThemeProvider` alongside classes — splits the styling story in two, and
+the failure mode is a component whose background is themeable and whose border is not.
 
-1. **Do nothing.** One mode per build. Simplest, and correct for most games, which pick a look and
-   keep it. This is where Facet is.
-2. **A runtime `ThemeProvider` alongside classes.** A React context supplies `Color3` values;
-   components read it for the handful of props that need to change and use classes for everything
-   else. This is the tempting one and probably the trap — it splits the styling story in two, and
-   the failure mode is a component whose background is themeable and whose border is not, with
-   nothing in the source explaining which is which.
-3. **Vela emits a token indirection.** Lower `bg-primary` to a read from a runtime token table the
-   consumer can swap, instead of to a literal. This is the honest fix, and it is a Vela change —
-   which means Facet cannot make it unilaterally.
-
-The leaning is 1 now, 3 eventually. If 3 becomes real, `@facet-ui/theme` is the natural place to
-define which tokens are runtime-swappable, and no registry component changes.
-
-**Until then**, if you need a runtime toggle: it belongs in your copy of the components, applied as
-instance props rather than classes, the same way `Button` handles its disabled fade. That is the
-escape hatch the copy-in model gives you, and taking it is a decision to maintain those components
-yourself.
+**Until then**, a runtime toggle belongs in your copy of the components, applied as instance props
+rather than classes, the same way `Button` handles its disabled fade.
 
 ## Retheming without touching a component
 

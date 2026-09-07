@@ -123,10 +123,6 @@ That split is literal. A primitive sets behavior plus the minimum needed to neut
 
 `Dialog.Content` still traps focus and handles dismissal — neither of which the frame inside it has to know about. It holds its content mounted until any exit transition finishes too, though the transition itself is opt-in: pass `transition` when you want one.
 
-## Why it is the same everywhere
-
-Once you can read one primitive, you can read them all: find the `Root`, check whether it is open- or value-controlled, scan the parts, and drop `asChild` where you want your own element. The behavior contract stays stable across packages while your app keeps full control of how things look.
-
 ## Next step
 
 Apply the model end to end in [Your first dialog](/lattice-ui/getting-started/first-dialog/), then browse the [Dialog reference](/lattice-ui/components/dialog/) to see the per-part props in context.

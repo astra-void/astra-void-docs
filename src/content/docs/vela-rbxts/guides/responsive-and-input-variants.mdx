@@ -186,50 +186,38 @@ and names what is missing.
 
 ## The cost: any variant forces the runtime path
 
-This is the part worth internalizing before you reach for a variant.
-
-Vela normally lowers `className` at compile time. The class string disappears, and the output is
-plain Roblox props plus a few helper instances — no per-element work, no extra imports.
-
-A variant condition cannot be evaluated at compile time, because it depends on the player's screen,
-input device, or pointer. So any token carrying a variant prefix switches that element onto the
-**runtime path**. The JSX tag is replaced with a `VelaRuntimeHost` component, the variant tokens are
-serialized into a `__velaRules` JSON prop, the original tag travels as `__velaTag`, and the static
+A variant condition cannot be evaluated at compile time, so any token carrying a variant prefix
+switches that element onto the **runtime path**: the JSX tag becomes a `VelaRuntimeHost`, the variant
+tokens are serialized into `__velaRules`, the original tag travels as `__velaTag`, and the static
 props are emitted as casts.
 
 <Callout title="A variant in a plain string literal is enough">
-You do not need a dynamic `className` to trigger this. `className="sm:w-full"` — a fully static
-string literal — is enough. One variant-prefixed token anywhere in the file pulls the runtime host
-into that file's output.
+`className="sm:w-full"` — a fully static string literal — is enough. One variant-prefixed token
+anywhere in the file pulls the runtime host into that file's output.
 </Callout>
 
-Since **0.12.0** what that costs the file is an import. The host lives in `@rbxts/vela-runtime`, one
-ModuleScript the whole place shares. A file that needs it carries a `createVelaRuntimeHost(...)`
-call and the config it hands over — a few hundred bytes, or a few thousand for a file whose host
-must parse a class value and therefore keeps the full theme tables. Before that the host was inlined
-whole into every such file: the same 5,500 lines twenty times over for twenty component files, each
-copy running its own camera subscription, its own rem binding and its own React context.
+What it costs the file is an import. The host lives in `@rbxts/vela-runtime`, one ModuleScript the
+whole place shares, so a file that needs it carries a `createVelaRuntimeHost(...)` call and the config
+it hands over — a few hundred bytes, or a few thousand for a file whose host must parse a class value
+and therefore keeps the full theme tables. The host imports `{ Players, TweenService,
+UserInputService, Workspace }` from `@rbxts/services`, normalizes your theme's colour and spacing
+strings, and installs subscriptions on each element that uses it.
 
-The host imports `{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services` plus
-your UI library, normalizes your theme's color and spacing strings into `Color3` and `UDim` values,
-and installs subscriptions on each element that uses it.
+Two consequences:
 
-The practical consequences:
-
-- **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment
-  changes, instead of being a fixed set of props.
-- **Theme values are re-parsed from text.** A host that has to parse a class value reads your theme from serialized text through two narrow Luau parsers. A value that is valid roblox-ts but not shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades silently in game — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
+- **Per-element work.** Every runtime-path element re-resolves its tokens whenever the environment changes.
+- **Theme values are re-parsed from text**, but only where the host must parse a class value. A value
+  that is valid roblox-ts but not shaped like `Color3.fromRGB(r, g, b)` or `new UDim(a, b)` degrades
+  silently in game — see [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/#what-the-runtime-path-still-costs).
   A variant alone does not put you here: its rules are resolved by the compiler, so a variant-only
   file ships its scales emptied.
 
-Output size is no longer on that list, and neither are diagnostics — variant-prefixed tokens are
-analyzed statically, so you keep your warnings for them. Coverage is not on it either, as of 0.12.0:
-the runtime path resolves every utility family the static path does.
+Output size, diagnostics and coverage are not on that list — variant-prefixed tokens are analyzed
+statically, and the runtime path resolves every utility family the static path does.
 
-The recommendation is softer than it was, and now rests on runtime work rather than emit size. Use
-variants where they earn their keep: a handful of top-level layout containers that genuinely need to
-reflow between phone and desktop, an input hint that only makes sense on gamepad, hover feedback on
-interactive controls. Keep leaf components on plain static classes.
+Use variants where they earn their keep: a handful of top-level containers that reflow between phone
+and desktop, an input hint that only makes sense on gamepad, hover feedback on interactive controls.
+Keep leaf components on plain static classes.
 
 ## Driving reflow yourself
 

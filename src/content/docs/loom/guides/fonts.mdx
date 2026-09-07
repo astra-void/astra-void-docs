@@ -141,34 +141,29 @@ added — useful in tests, and rarely otherwise.
 
 ## `TextSize` is not a font size
 
-The right typeface is half of matching the engine. The other half is drawing it at the right size,
-and the two properties do not mean the same thing.
-
-**Roblox fits the whole face into `TextSize`** — ascender to descender, which is why a one-line
-label measures exactly `TextSize` tall. CSS `font-size` sets the em square instead, and a face's
-ascent plus descent runs well past 1em. Painting `font-size: TextSize` therefore drew every glyph
-too big by that font's own ratio — 17% for Roboto, 47% for Oswald — and everything downstream
-inherited it: text measured wider, wrapped earlier, and `AutomaticSize` boxes came out too large. It
-all looked like a wrap bug.
+**Roblox fits the whole face into `TextSize`** — ascender to descender, which is why a one-line label
+measures exactly `TextSize` tall. CSS `font-size` sets the em square instead, and a face's ascent plus
+descent runs well past 1em, so painting `font-size: TextSize` drew every glyph too big by that font's
+own ratio — 17% for Roboto, 47% for Oswald — and text measured wider, wrapped earlier and grew
+`AutomaticSize` boxes too large.
 
 Loom divides by the face box, so `TextSize` means what the engine means by it. `LineHeight` follows:
 the engine's pitch is `TextSize`-relative, so it is set in pixels off `TextSize`, and a
 `<font size="…">` run inside `RichText` converts through the metrics of the face that run lands in.
 
-**Which box to divide by is itself a measurement.** The browser reports one, and it is not the
-number Roblox divides by — Roboto reports 1.17 where the engine sizes it as 1.14. So loom carries
-the engine's own ratio for each family [it registers](#the-families-that-ship-a-face), solved
-against `TextService:GetTextBoundsAsync` at `TextSize` 18. Twenty-four of the twenty-eight reproduce
-all 24 sampled glyphs exactly, and the other five are still closer than the browser's. **A family
-with no entry — anything you registered yourself, `Gotham` included — keeps the measured box.**
+**Which box to divide by is itself a measurement.** The browser reports one, and it is not the number
+Roblox divides by — Roboto reports 1.17 where the engine sizes it as 1.14. So loom carries the
+engine's own ratio for each family [it registers](#the-families-that-ship-a-face), solved against
+`TextService:GetTextBoundsAsync` at `TextSize` 18. Twenty-four of the twenty-eight reproduce all 24
+sampled glyphs exactly, and the rest are still closer than the browser's. **A family with no entry —
+anything you registered yourself, `Gotham` included — keeps the measured box.**
 
 <Callout title="A calibration only applies to a face the browser really has">
-A registration is a claim about a file the page still has to fetch. Applying the engine ratio on that claim alone means a failed fetch paints the fallback while loom sizes the text as though the registered face were there — every advance off the wrong glyphs.
+A registration is a claim about a file the page still has to fetch, and applying the engine ratio on that claim alone would paint the fallback while sizing the text as though the registered face were there.
 
-Only a dev server lands there — a static build carries its font files in its own output — which is
-what made it read as a dev-only rendering bug rather than a font that failed to load.
-
-Since `0.9.6` the calibration applies only when the browser can actually paint the family, and otherwise loom measures the face it really has. It is self-correcting: a font-loading cycle drops the metric caches and the label re-measures. `familyIsAvailable` is exported for hosts registering their own faces.
+So the calibration applies only when the browser can actually paint the family, and otherwise loom
+measures the face it really has. It is self-correcting: a font-loading cycle drops the metric caches
+and the label re-measures. `familyIsAvailable` is exported for hosts registering their own faces.
 </Callout>
 
 ## Where a line breaks

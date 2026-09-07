@@ -90,30 +90,25 @@ them inherits all three. They are written up in
 <Callout title="A preview is not Studio">
 Every component page carries a live preview, and it is the real thing as far as it goes: the actual registry source, lowered by the actual Vela compiler against the actual theme tokens, rendered by [Loom](/loom/). What it is *not* is Roblox — Loom reimplements the layout and text measurement rather than running the engine, and its fidelity is [deliberately partial](/loom/getting-started/scope-and-status/).
 
-So a preview is strong evidence and weak proof. Where these pages state what something looks like on screen, someone opened Studio and looked.
+So a preview is strong evidence and weak proof. Where these pages state what something looks like on
+screen, someone opened Studio and looked.
 </Callout>
 
-- **The geometry of the one-primitive tier is unverified.** All twelve compile and render, but what
-  the type system cannot see is thumb travel, range fill, scrollbar placement and textarea growth.
-  Those are the four things Studio still has to answer for that tier.
-- **`dialog`'s geometry is unverified too**, and its three questions are separate: whether the panel
-  lands centred, whether the dim covers the screen beneath it, and whether the close ✕ reaches the
-  panel's right edge. The last one the preview *cannot* show — Loom does not lay out what `self-end`
-  lowers to. See [the corner ✕](/facet/components/dialog/#the-corner--is-not-a-corner-).
+- **The geometry of the one-primitive tier is unverified.** All twelve compile and render, but thumb
+  travel, range fill, scrollbar placement and textarea growth are what Studio still has to answer for.
+- **`dialog`'s geometry is unverified too**: whether the panel lands centred, whether the dim covers
+  the screen beneath it, and whether the close ✕ reaches the panel's right edge. The last the preview
+  *cannot* show — Loom does not lay out what `self-end` lowers to. See
+  [the corner ✕](/facet/components/dialog/#the-corner--is-not-a-corner-).
 - **No `rbxtsc` check in the CLI's own test suite.** `test/e2e.test.ts` runs `init`, `add` and
-  `doctor` against a temporary registry, offline, with packages faked into `node_modules` at chosen
-  versions — which is the only way to assert on a project sitting below a floor. What it does not do
-  is compile the result. The playground app build is what checks that, and CI runs both on every
-  branch and pull request.
-- **No image icons.** Facet renders `▾`, `✓`, `✕` as text glyphs and exposes the slot, so a project
-  that wants real artwork passes its own. That is a
+  `doctor` against a temporary registry, offline, with packages faked in at chosen versions — the
+  only way to assert on a project sitting below a floor — but does not compile the result. The
+  playground app build checks that, and CI runs both.
+- **No image icons.** Facet renders `▾`, `✓`, `✕` as text glyphs and exposes the slot, which is a
   [settled position](/facet/guides/component-conventions/#7-icons-are-text-glyphs-replaceable-by-slot),
   not a gap.
-- **No blocks.** `login-form`, `settings-panel`, `inventory-grid`, `shop-row` are on the roadmap,
-  after the singles settle.
-- **Pinning is per project, not per component.** A revision says "this project builds against that
-  registry", not "`button` came from that revision and `card` from this one", so `facet diff` still
-  cannot attribute a change. See
+- **No blocks.** `login-form`, `settings-panel`, `inventory-grid`, `shop-row` are on the roadmap.
+- **Pinning is per project, not per component**, so `facet diff` still cannot attribute a change. See
   [Updating copied components](/facet/guides/updating-copied-components/#pinning-a-registry-revision).
 
 ## What is coming, in order
@@ -170,27 +165,21 @@ Each of these is written down in the repo with the reasoning kept where it can b
 
 ## Decisions that are open
 
-- **Runtime theming.** Vela resolves classes at compile time, so a build carries one mode. A
-  settings menu with a light/dark toggle has no answer today. The leaning is: do nothing now, and
-  eventually get a Vela-side token indirection — which Facet cannot make unilaterally. The tempting
-  middle option, a runtime `ThemeProvider` alongside classes, is probably the trap: it buys runtime
-  theming at the cost of the property that makes copy-in work, which is that a component's
-  appearance is entirely described by its classes.
-- **Whether `facet diff` should fetch the text a component was copied from.** Revisions make it *possible*, since the base text is now addressable rather than something you would have to store. But it needs a record of which revision each component came from, which reopens [provenance](/facet/guides/updating-copied-components/#why-there-is-no-lock-file). Nothing is
-  built.
-- **`facet create`** — scaffolding a new roblox-ts project preconfigured for Facet, as Lattice's CLI
-  does.
-- **What to do about the inert `className` prop.** Every component advertises one, and a class
-  passed to it from a Vela-compiled call site is dropped in silence —
-  [why](/facet/guides/variants-and-classes/#overriding-from-the-call-site). The options are to stop
-  advertising it, to keep it as the internal composition slot it actually is, or to push for a Vela
-  change that hands a component its `className` as a string instead of pre-resolving it. Nothing is
-  decided.
-- **Whether the registry should make `asChild`'s missing label easier.** `asChild` itself is no
-  longer in question — it works as of Lattice 0.8.0, verified in Studio against a bare `<textbutton>`
-  child, with the recipe's background, size, hover variant and re-parented `UICorner`/`UIListLayout`/
-  `UIPadding` all crossing `Slot` intact. What does *not* cross is the label: `TextSlot` never
-  renders on that path, so the child draws its own text at Roblox's 8px near-black default.
-  `buttonLabelVariants` is exported so a consumer can state it themselves, but whether that pairing
-  should be documented, automated, or something else is unresolved. See
-  [Button](/facet/components/button/#aschild).
+- **Runtime theming.** A build carries one mode, so a settings menu with a light/dark toggle has no
+  answer today. The leaning is to do nothing now and eventually get a Vela-side token indirection —
+  which Facet cannot make unilaterally. A runtime `ThemeProvider` alongside classes is the tempting
+  middle option and probably the trap.
+- **Whether `facet diff` should fetch the text a component was copied from.** Revisions make it
+  possible, but it needs a record of which revision each component came from, which reopens
+  [provenance](/facet/guides/updating-copied-components/#why-there-is-no-lock-file).
+- **`facet create`** — scaffolding a new roblox-ts project preconfigured for Facet, as Lattice's CLI does.
+- **What to do about the inert `className` prop.** Every component advertises one, and a class passed
+  to it from a Vela-compiled call site is dropped in silence —
+  [why](/facet/guides/variants-and-classes/#overriding-from-the-call-site). Stop advertising it, keep
+  it as the internal composition slot it is, or push for a Vela change that hands a component its
+  `className` as a string.
+- **Whether the registry should make `asChild`'s missing label easier.** `asChild` works, verified in
+  Studio: the recipe's background, size, hover variant and re-parented modifiers all cross `Slot`
+  intact. What does *not* cross is the label — `TextSlot` never renders on that path, so the child
+  draws its own text at Roblox's 8px near-black default. `buttonLabelVariants` is exported so a
+  consumer can state it themselves. See [Button](/facet/components/button/#aschild).

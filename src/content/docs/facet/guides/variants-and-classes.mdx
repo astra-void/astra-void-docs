@@ -181,17 +181,6 @@ property by property.
 not: the recipe says `h-full`, and it resolves last. Two thirds of the class list works, which reads
 as "the class worked" right up until the size is wrong.
 
-### Why the `className` prop exists at all
-
-It is not decoration. Inside the component it is a real slot that a *sibling* recipe or a wrapper in
-the same file threads through, and `fv()`'s ordering discipline is what makes that composition
-correct. It is also what a copied component uses on itself once you edit it. It just cannot be
-driven from outside by a Vela-compiled caller.
-
-Whether Facet should keep advertising it as a public prop, drop it, or push for a Vela change that
-hands components their `className` as a string is
-[open](/facet/getting-started/scope-and-status/#decisions-that-are-open).
-
 ## `ClassValue` is a reserved name
 
 Vela inlines its runtime into every file it transforms, and that runtime declares a local
