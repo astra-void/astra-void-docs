@@ -102,9 +102,9 @@ Shared by every visual class.
 
 ### `AutomaticSize` on text
 
-Auto-sizing text is measured browser-side. The adapter runs a canvas `measureText()` with the font
-the renderer paints and hands the result to the WASM engine as `TextBounds`, since font metrics do
-not exist inside it. Which typeface that is, and why it is worth pinning, is
+Auto-sizing text is measured browser-side. Font metrics do not exist inside the WASM engine. The
+adapter runs a canvas `measureText()` with the font the renderer paints, and hands the result over
+as `TextBounds`. Which typeface that is, and why it is worth pinning, is
 [Fonts and text metrics](/loom/guides/fonts/).
 
 `TextWrapped` is honoured, and runs are laid into lines at word boundaries. **One function decides
@@ -116,7 +116,7 @@ between — not the immediate parent. A parent that is itself `AutomaticSize` wa
 label, so wrapping against it never wraps.
 
 The re-wrap settles inside the paint that caused it. The first measurement after a container narrows
-is against the old width, so the adapter re-lays-out until the two agree, up to four passes before
+is against the old width. The adapter re-lays-out until the two agree, up to four passes before
 deferring to the next frame. It patches the DOM once.
 
 A `RichText` string is measured run by run in the font its tags ask for, so a bold run does not

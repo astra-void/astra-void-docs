@@ -252,8 +252,8 @@ export function TradeConfirmation(props: { onConfirm: () => void }) {
 
 ### Disabled state
 
-`disabled` blocks toggling entirely — activation is ignored and `setChecked` calls from context are
-dropped — and removes the button from gamepad selection.
+`disabled` blocks toggling entirely. Activation is ignored, `setChecked` calls from context are
+dropped, and the button leaves gamepad selection.
 
 ```tsx title="PremiumOption.tsx"
 import { Checkbox } from "@lattice-ui/react-checkbox";
@@ -272,8 +272,8 @@ export function PremiumOption(props: { hasPremium: boolean }) {
 ### Checked state
 
 `Checkbox.Root` is controllable on `checked`/`onCheckedChange`, with `defaultChecked` for
-uncontrolled usage. The state is a `CheckedState` — `true`, `false` or `"indeterminate"` — so it
-covers the tri-state "select all" pattern as well as a plain toggle.
+uncontrolled usage. The state is a `CheckedState`: `true`, `false` or `"indeterminate"`. It covers
+the tri-state "select all" pattern as well as a plain toggle.
 
 Activation toggles from `"indeterminate"` to `true`, otherwise flipping the boolean. Set the
 indeterminate state yourself through controlled `checked` — the toggle never produces it.

@@ -197,8 +197,8 @@ static props are emitted as casts.
 
 What it costs the file is an import. The host lives in `@rbxts/vela-runtime`, one ModuleScript the
 whole place shares. A file that needs it carries a `createVelaRuntimeHost(...)` call and the config
-it hands over: a few hundred bytes, or a few thousand for a file whose host must parse a class value
-and therefore keeps the full theme tables. The host imports
+it hands over. That is a few hundred bytes. It is a few thousand for a file whose host must parse a
+class value and therefore keeps the full theme tables. The host imports
 `{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your
 theme's colour and spacing strings, and installs subscriptions on each element that uses it.
 
@@ -256,8 +256,7 @@ export function Shell(props: { children?: React.Element }) {
 
 - [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) — the other way onto the runtime
   path, and what that path costs you.
-- [Utilities reference — Motion](/vela-rbxts/reference/utilities/#motion) — transitions and
-  animations that pair with variants.
+- [Utilities reference: Motion](/vela-rbxts/reference/utilities/#motion). Transitions and animations that pair with variants.
 - [Layout and sizing](/vela-rbxts/guides/layout-and-sizing/) — the utilities you will most often
   want to vary by breakpoint.
 - [Diagnostics](/vela-rbxts/reference/diagnostics/) — the full warning code list.

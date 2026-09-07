@@ -106,7 +106,7 @@ string.format("%02d:%05.1f | %-10s|", 7, 3.14159, "ab");
 
 roblox-ts also calls these off a string receiver. `String.prototype` carries `.lower()`, `.upper()`,
 `.sub()`, `.rep()`, `.find()`, `.gsub()`, `.format()`, `.gmatch()`, `.byte()`, `.len()`,
-`.reverse()` and `.size()`, each delegating to the library above with the same 1-based indices and
+`.reverse()` and `.size()`. Each delegates to the library above, with the same 1-based indices and
 tuple returns. `.sub()` deliberately replaces the Annex B HTML wrapper JavaScript ships under that
 name.
 
@@ -131,10 +131,10 @@ silently ignored. A scene wanting the same "random" layout every reload works.
 
 ## `os.date`
 
-A strftime subset: `%a %A %b %B %c %d %H %I %j %m %M %p %S %x %X %y %Y %%`, with an unrecognized
-specifier left as written. The `*t` and `!*t` table forms and the `!` UTC prefix work on any format.
-`os.time` accepts a date table as well as no argument, and `os.difftime` subtracts two of its
-results.
+A strftime subset: `%a %A %b %B %c %d %H %I %j %m %M %p %S %x %X %y %Y %%`. An unrecognized
+specifier is left as written. The `*t` and `!*t` table forms and the `!` UTC prefix work on any
+format. `os.time` accepts a date table as well as no argument, and `os.difftime` subtracts two of
+its results.
 
 ## `debug` profiling shows up in devtools
 

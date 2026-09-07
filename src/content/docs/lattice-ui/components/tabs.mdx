@@ -408,8 +408,8 @@ Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontr
 value is a plain string each `Trigger` and `Content` matches against, and `onValueChange` fires only
 with a defined value.
 
-When the active value points at no enabled trigger — on first mount with no default, or after the
-selected trigger is removed or disabled — `Root` falls back to the first enabled trigger, or the
+The active value can point at no enabled trigger, on first mount with no default or after the
+selected trigger is removed or disabled. `Root` then falls back to the first enabled trigger, or the
 next enabled one after whichever was last selected.
 
 ### Trigger registration and selection
@@ -430,7 +430,7 @@ does not lay out the `List`, so add your own `uilistlayout`.
 ### Panels and presence
 
 `Tabs.Content` is present only while its `value` is active. By default it mounts through a
-`Presence` boundary running a surface-reveal recipe, unmounting after the exit completes; override
+`Presence` boundary running a surface-reveal recipe, and unmounts after the exit completes. Override
 it with `transition`. `forceMount` keeps the panel in the tree, toggling `Visible` from the active
 value and motion phase.
 

@@ -209,10 +209,10 @@ Loading the right face pins the *typeface*, and `0.9.3`–`0.9.6` pinned the siz
 wrap. What is left is that a browser's text engine is still not Roblox's: shaping, hinting and
 sub-pixel rounding differ.
 
-Measured against `TextService:GetTextBoundsAsync`, with Roboto at `TextSize` 18 and a long paragraph
-laid out at 50 widths from 320 to 1300, the painted line count matches the engine at 49 of the 50.
-String widths are exact on 6 of 10 sampled strings, and never off by more than half a unit. The
-wrapped line count matched 34 times when CSS was doing the wrapping.
+It was measured against `TextService:GetTextBoundsAsync`, with Roboto at `TextSize` 18 and a long
+paragraph laid out at 50 widths from 320 to 1300. The painted line count matches the engine at 49 of
+the 50. String widths are exact on 6 of 10 sampled strings, and never off by more than half a unit.
+The wrapped line count matched 34 times when CSS was doing the wrapping.
 
 What remains is that the measurement runs about a percent roomy. Text wraps a hair early rather than
 overflowing its box, which is the safe direction to be wrong in. Before `0.9.0` this was not a
