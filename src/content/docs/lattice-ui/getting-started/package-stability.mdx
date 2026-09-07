@@ -10,7 +10,7 @@ import { StatusBadge, Callout } from "@/components/docs/mdx";
 import { LATTICE_MINOR, LATTICE_VERSION } from "@/lib/lattice-version";
 
 Lattice UI is in the `0.x` phase, and the whole workspace shares one **lockedstep** version — but
-that number is not a maturity guarantee. Some packages are on a clear path to `v1.0`; others are
+that number is not a maturity guarantee. Some packages are on a clear path to `v1.0`. Others are
 available while their APIs settle. This page tells you which is which.
 
 ## What lockedstep 0.x means
@@ -48,9 +48,9 @@ Pin `popper`, `context-menu`, `select` and `slider` to a known-good version and 
 ## What v1.0 means here
 
 The `v1.0` milestone targets the **main stable UI layer**, not every package. The priority is a
-dependable foundation — `runtime`, `focus`, `layer`, `motion`, `style`, `system` — with predictable
-composition, state, focus, keyboard navigation, layering and motion across the primary primitives,
-plus clearer semver expectations.
+dependable foundation: `runtime`, `focus`, `layer`, `motion`, `style` and `system`. That means
+predictable composition, state, focus, keyboard navigation, layering and motion across the primary
+primitives, plus clearer semver expectations.
 
 Reaching `v1` for the main UI layer does **not** stabilize the experimental or tooling packages.
 Feature-limited packages can stay in `0.x` longer and graduate only when their APIs are ready.
@@ -58,7 +58,7 @@ Feature-limited packages can stay in `0.x` longer and graduate only when their A
 ## What is coming
 
 The current release is `v{LATTICE_VERSION}`, finishing what `v0.7.0` started. `0.7` drew the line
-between behaviour and appearance: every primitive ships unstyled, props forward onto the instance a
+between behaviour and appearance. Every primitive ships unstyled, props forward onto the instance a
 part renders and are type-checked against it, and motion only runs when you pass a `transition`.
 `v{LATTICE_MINOR}.0` takes the last appearance decision out of the primitives, rendering every
 motion host as a `Frame` rather than a `CanvasGroup`. That is what the stable-direction surface

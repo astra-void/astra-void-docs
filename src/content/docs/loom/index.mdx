@@ -8,16 +8,16 @@ section: home
 Loom takes the `@rbxts/react` (or `vide`) UI tree you already ship to Roblox and renders it in a
 browser, with Roblox layout semantics rather than CSS ones. `UIListLayout`, `UIPadding`,
 `AutomaticSize`, `UISizeConstraint` and text measurement are computed by a Rust layout engine
-compiled to WASM; the result is painted into plain DOM nodes. Clicks, keyboard input and hover
-route back through `UserInputService` and instance signals, so a preview is interactive, not a
-screenshot.
+compiled to WASM. The result is painted into plain DOM nodes. Clicks, keyboard input and hover route
+back through `UserInputService` and instance signals, so a preview is interactive, not a screenshot.
 
-The delivery mechanism is Vite. One plugin — `loomPreview()` — does all of it. It aliases
-`@rbxts/react`, `@rbxts/react-roblox` and `@rbxts/services` onto browser adapters, installs the
-Roblox datatype globals (`UDim2`, `Color3`, `Enum`, `game`) and the Luau standard library before
-your entry evaluates, rewrites roblox-ts `import X = require(...)` statements to ESM, and resolves
-packages whose `main` points at uncompiled Luau straight to their TypeScript source. There is no
-roblox-ts build step in the loop — esbuild transpiles the same TSX, and HMR works.
+The delivery mechanism is Vite. One plugin, `loomPreview()`, does all of it. It aliases
+`@rbxts/react`, `@rbxts/react-roblox` and `@rbxts/services` onto browser adapters. It installs the
+Roblox datatype globals such as `UDim2`, `Color3`, `Enum` and `game`, plus the Luau standard
+library, before your entry evaluates. It rewrites roblox-ts `import X = require(...)` statements to
+ESM. And it resolves packages whose `main` points at uncompiled Luau straight to their TypeScript
+source. There is no roblox-ts build step in the loop — esbuild transpiles the same TSX, and HMR
+works.
 
 It generates the page too, so a roblox-ts source tree needs no `index.html` and no entry wiring:
 

@@ -14,7 +14,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime"]}
 />
 
-Style is the visual foundation: a theme of design tokens, helpers for merging Roblox host props, a
+Style is the visual foundation. A theme of design tokens, helpers for merging Roblox host props, a
 recipe system for variant-driven styling, and the `Box`/`Text` primitives that render those props
 onto host instances.
 
@@ -150,9 +150,9 @@ only in `colors`.
 
 ### createRecipe
 
-A variant-driven styling helper: given base styles, named variants, default selections and compound
-variants, it returns a resolver turning a variant selection plus a theme into one merged props
-object.
+A variant-driven styling helper. Given base styles, named variants, default selections and compound
+variants, it returns a resolver. That resolver turns a variant selection plus a theme into one
+merged props object.
 
 ```ts
 function createRecipe<Props, Variants>(
@@ -217,9 +217,9 @@ function mergeGuiProps<Props>(
 ): Partial<Props>;
 ```
 
-The low-level merge used throughout. It shallow-merges up to three prop objects (`base`, `variant`,
-`user`, last wins) and **composes** the `Event` and `Change` handler tables rather than overwriting
-them, so two layers binding the same event both run.
+The low-level merge used throughout. It shallow-merges up to three prop objects, `base`, `variant`
+and `user`, with the last winning. It **composes** the `Event` and `Change` handler tables rather
+than overwriting them, so two layers binding the same event both run.
 
 <Callout title="Roblox event tables">
 react-lua passes Roblox event connections through `Event` and `Change`, so plain shallow-spreading would drop a base layer's handlers when a later layer binds the same signal. This helper chains them.

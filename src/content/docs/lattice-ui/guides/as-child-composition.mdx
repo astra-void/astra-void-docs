@@ -131,8 +131,8 @@ export function SettingsButton() {
 
 ## When not to use it
 
-- **You only want to restyle the part.** Pass the props directly; they forward onto the rendered instance and are type-checked against it.
-- The part needs to **render multiple internal nodes** to do its job. `Slot` clones one child only; let the part render its own structure.
+- **You only want to restyle the part.** Pass the props directly. They forward onto the rendered instance and are type-checked against it.
+- The part needs to **render multiple internal nodes** to do its job. `Slot` clones one child only. Let the part render its own structure.
 - You would have to **spread the merged behavior across several siblings**. That is a sign the part's own host is the right contract.
 - The **host element is part of the package contract** (some parts deliberately render a specific structure). Overriding it can break the primitive's assumptions.
 

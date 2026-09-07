@@ -15,7 +15,7 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 />
 
 Runtime is the foundation under every other Lattice UI package. It pins a single React and
-React-Roblox runtime and provides the composition utilities primitives reuse: a strict context
+React-Roblox runtime, and provides the composition utilities primitives reuse. A strict context
 factory, ref-merging helpers, the `Slot` component behind `asChild`, and a controllable-state hook.
 
 You rarely import it directly when consuming a primitive, but it is the first package you reach for
@@ -99,8 +99,8 @@ const [open, setOpen] = useControllableState({
 ```
 
 Powers the controlled/uncontrolled pattern across Lattice UI — the
-`open`/`defaultOpen`/`onOpenChange` triad. With `value` provided the state is **controlled** and
-returned verbatim; with `value` undefined the hook manages state from `defaultValue`. The setter
+`open`/`defaultOpen`/`onOpenChange` triad. With `value` provided, the state is **controlled** and
+returned verbatim. With `value` undefined, the hook manages state from `defaultValue`. The setter
 takes a value or an updater, calls `onChange` whenever the resolved value changes, and writes
 internal state only when uncontrolled. Identical values are skipped.
 
@@ -190,8 +190,8 @@ Returns `undefined` when there is none.
 function toRef<T>(value: unknown): AnyRef<T> | undefined;
 ```
 
-Narrows an unknown value to a usable ref — a function or a table — returning `undefined` for
-anything else. Useful when a ref arrives through an untyped prop bag.
+Narrows an unknown value to a usable ref, a function or a table, returning `undefined` for anything
+else. Useful when a ref arrives through an untyped prop bag.
 
 <Callout title="Roblox refs hold Instances">
 Refs in `@rbxts/react` resolve to Roblox `Instance` objects, not DOM nodes. A freshly created `useRef()` may start with `current` absent rather than explicitly `nil`, which is why `toRef` treats any table as a valid mutable ref object.
