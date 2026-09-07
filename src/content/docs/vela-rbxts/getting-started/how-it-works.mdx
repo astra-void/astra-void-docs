@@ -50,8 +50,8 @@ against the merged theme. Out comes new source text plus a diagnostic list.
 **The text goes back out**, as text rather than an AST. Under the transformer it is parsed into a
 fresh `SourceFile` and substituted in memory. Diagnostics are handed back through roblox-ts's
 `addDiagnostic`. **On a roblox-ts that does not expose that hook they are dropped silently.** Under
-the CLI the text is written to the mirrored path, skipped when byte-identical so `rbxtsc -w` is not
-woken. The CLI prints the diagnostics itself.
+the CLI the text is written to the mirrored path. It is skipped when byte-identical, so `rbxtsc -w`
+is not woken. The CLI prints the diagnostics itself.
 
 ## What gets touched
 

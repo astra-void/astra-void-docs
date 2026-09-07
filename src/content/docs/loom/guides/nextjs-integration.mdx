@@ -207,7 +207,7 @@ The server binds to `127.0.0.1` on purpose: a proxy upstream for local developme
 
 ## Routing details worth knowing
 
-- **The bare mount path is rewritten straight to the slashed upstream URL**, rather than through the catch-all. This is loop avoidance, not pedantry. Next strips trailing slashes with a 308 while the gallery middleware adds them with a 301, so routing the bare path through the catch-all would bounce those two redirects against each other forever.
+- **The bare mount path is rewritten straight to the slashed upstream URL**, rather than through the catch-all. This is loop avoidance, not pedantry. Next strips trailing slashes with a 308, while the gallery middleware adds them with a 301. Routing the bare path through the catch-all would bounce those two redirects against each other forever.
 - **Your own `rewrites()` are preserved**, whichever shape they use. A flat array keeps Next's own meaning of `afterFiles`. A `{ beforeFiles, afterFiles, fallback }` object is merged, with loom's rules layered in front of the matching group and `fallback` untouched.
 - **`next build` resolves rewrites too**, since they are baked into the routes manifest. That is how the static-serve rule gets into a production deployment without the wrapper doing anything at `next start` time.
 

@@ -118,11 +118,11 @@ interface PresenceMotionController<T extends Instance> {
 }
 ```
 
-The full presence controller. It exposes the lifecycle, so you can gate the reveal on layout being
-measured with `ready` and `markReady`, keep an instance mounted across its exit with `forceMount`,
-and read `phase`, `isExiting`, `isVisible` and `mounted`. With motion disabled, the reveal and exit
-snapshots apply instantly. `phase` advances through `exited`, `mounted`, `preparing`, `ready`,
-`visible` and `exiting`.
+The full presence controller. It exposes the lifecycle. Gate the reveal on layout being measured
+with `ready` and `markReady`, keep an instance mounted across its exit with `forceMount`, and read
+`phase`, `isExiting`, `isVisible` and `mounted`. With motion disabled, the reveal and exit snapshots
+apply instantly. `phase` advances through `exited`, `mounted`, `preparing`, `ready`, `visible` and
+`exiting`.
 
 <PropTable
   rows={[

@@ -230,7 +230,7 @@ fully transparent, and `opacity-40` emits `0.6`.
 A non-integer or out-of-range value reports `unsupported-opacity-value`. The editor's completion list shows a shorter set of round numbers, but that list is suggestion sugar — `opacity-37` compiles fine.
 
 **It fades everything the element draws, and everything under it.** The value reaches every
-transparency channel the host paints, then is handed down the subtree as a running product,
+transparency channel the host paints. It is then handed down the subtree as a running product,
 `1 - (1 - own) * alpha`. That descent crosses component boundaries too, travelling as a React
 context through `{props.children}`.
 

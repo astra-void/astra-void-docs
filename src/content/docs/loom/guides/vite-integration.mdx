@@ -128,7 +128,7 @@ any module that touches `UDim2` evaluates. That applies to the generated page *a
 `index.html`, whose module scripts it reads out of the file.
 
 <Callout title="Older versions needed a manual globals import">
-Before 0.3.0 the globals were dev-server-only. A stock `vite build` compiled cleanly, shipped, and then threw `ReferenceError: UDim2 is not defined` on first render, unless you wrote `import "@loom-dev/preview/globals";` as the first import of your entry. That import is now
+Before 0.3.0 the globals were dev-server-only. A stock `vite build` compiled cleanly, shipped, then threw `ReferenceError: UDim2 is not defined` on first render. The fix was writing `import "@loom-dev/preview/globals";` as the first import of your entry. That import is now
 unnecessary — and still harmless if you keep it, since the installer is idempotent.
 </Callout>
 

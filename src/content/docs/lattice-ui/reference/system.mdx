@@ -15,9 +15,9 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 />
 
 System sits one level above `@lattice-ui/react-style`. Style owns the raw theme and host-prop
-helpers. System adds the app-facing layer on top of it: a **density** system that scales spacing,
-radius and type globally, **layout primitives** (`Stack`, `Row`, `Grid`) that drive Roblox layout
-instances from theme spacing tokens, and **surface tones** for consistent backgrounds and borders.
+helpers. System adds the app-facing layer on top of it. A **density** system scales spacing, radius
+and type globally. **Layout primitives** (`Stack`, `Row`, `Grid`) drive Roblox layout instances from
+theme spacing tokens, and **surface tones** keep backgrounds and borders consistent.
 `SystemProvider` ties the theme and density together and feeds a density-resolved `Theme` down
 through `ThemeProvider`.
 
