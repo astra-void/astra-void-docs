@@ -14,14 +14,14 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime", "@rbxts/services"]}
 />
 
-Motion is the animation foundation for Lattice UI. It works in terms of **intent** (a tempo and
-tone) and **target contracts** (which properties motion may own on an instance). Three hooks cover
-the three domains — **presence** for mount/unmount transitions, **response** for state-to-state
-settling, **feedback** for momentary accents — and a library of recipes encodes the house style for
+Motion is the animation foundation for Lattice UI. It works in terms of **intent**, a tempo and
+tone, and **target contracts**, which properties motion may own on an instance. Three hooks cover
+the three domains: **presence** for mount and unmount transitions, **response** for state-to-state
+settling, and **feedback** for momentary accents. A library of recipes encodes the house style for
 common surfaces.
 
-Dialog, Popover, Menu, Tooltip, Toast, Slider and Switch all animate through these hooks, and the
-whole system respects a global policy so motion can be reduced or disabled app-wide.
+Dialog, Popover, Menu, Tooltip, Toast, Slider and Switch all animate through these hooks. The whole
+system respects a global policy, so motion can be reduced or disabled app-wide.
 
 ## Import
 
@@ -56,8 +56,8 @@ function MotionProvider(props: {
 </MotionProvider>
 ```
 
-Sets the ambient motion policy for the subtree. With `mode="full"` (the default) animations run
-normally; with `mode="none"`, or `disableAllMotion` set, every hook snaps to its goal values. Wrap
+Sets the ambient motion policy for the subtree. With `mode="full"`, the default, animations run
+normally. With `mode="none"`, or `disableAllMotion` set, every hook snaps to its goal values. Wrap
 it near your app root and bind it to a player's reduced-motion preference.
 
 ### useMotionPolicy
@@ -118,11 +118,11 @@ interface PresenceMotionController<T extends Instance> {
 }
 ```
 
-The full presence controller. It exposes the lifecycle so you can gate the reveal on layout being
-measured (`ready` / `markReady`), keep an instance mounted across its exit (`forceMount`), and read
-`phase`, `isExiting`, `isVisible` and `mounted`. With motion disabled the reveal and exit snapshots
-apply instantly. `phase` advances through `exited`, `mounted`, `preparing`, `ready`, `visible` and
-`exiting`.
+The full presence controller. It exposes the lifecycle, so you can gate the reveal on layout being
+measured with `ready` and `markReady`, keep an instance mounted across its exit with `forceMount`,
+and read `phase`, `isExiting`, `isVisible` and `mounted`. With motion disabled, the reveal and exit
+snapshots apply instantly. `phase` advances through `exited`, `mounted`, `preparing`, `ready`,
+`visible` and `exiting`.
 
 <PropTable
   rows={[
@@ -152,8 +152,8 @@ const ref = useResponseMotion<Frame>(checked, {
 ```
 
 Animates an instance between two property sets as `active` toggles. The first mount applies the
-current state instantly; subsequent toggles settle using `config.settle`. This is the hook behind
-toggles, sliders, selection indicators and progress fills.
+current state instantly, and subsequent toggles settle using `config.settle`. This is the hook
+behind toggles, sliders, selection indicators and progress fills.
 
 ### useFeedbackEffect
 
@@ -222,7 +222,8 @@ const motionTargets: {
 };
 ```
 
-Each role permits a different set of properties (appearance properties — colors and transparencies, plus `Rotation` — are always allowed):
+Each role permits a different set of properties. Appearance properties are always allowed: colours,
+transparencies and `Rotation`.
 
 <PropTable
   rows={[
@@ -266,9 +267,9 @@ interface FeedbackEffectConfig {
 }
 ```
 
-`MotionIntent` expresses *how* something moves — a `tempo`, a `tone`, and/or an explicit `duration`
-— rather than raw easing curves. Presence has `initial`/`reveal`/`exit` steps, response a single
-`settle` intent, feedback `accent`/`recover`.
+`MotionIntent` expresses *how* something moves, through a `tempo`, a `tone` and an optional explicit
+`duration`, rather than raw easing curves. Presence has `initial`, `reveal` and `exit` steps.
+Response has a single `settle` intent, and feedback has `accent` and `recover`.
 
 Other exported types include `MotionDomain` (`"presence" | "response" | "feedback"`), `PresenceMotionPhase`, `MotionTargetContractOptions`, and `MotionPolicy`.
 
@@ -287,9 +288,9 @@ function createIndicatorRevealRecipe(size: UDim2, duration?: number): PresenceMo
 ```
 
 - **`createSurfaceRevealRecipe`** — a small upward slide plus background fade for opaque surfaces.
-- **`createCanvasGroupRevealRecipe`** — the same slide using `GroupTransparency`, for a `CanvasGroup` you supply yourself. No primitive renders one; `Dialog.Content`, whose host spans the layer, wants a `Position`-only config instead.
+- **`createCanvasGroupRevealRecipe`** — the same slide using `GroupTransparency`, for a `CanvasGroup` you supply yourself. No primitive renders one. `Dialog.Content`, whose host spans the layer, wants a `Position`-only config instead.
 - **`createOverlayFadeRecipe`** — a plain backdrop fade (to half transparency on reveal).
-- **`createPopperEntranceRecipe`** / **`createCanvasGroupPopperEntranceRecipe`** — directional entrances offset by `placement` for anchored popovers. The first matches the `frame` every anchored part renders; the second is for a `canvasgroup` passed in through `asChild`.
+- **`createPopperEntranceRecipe`** and **`createCanvasGroupPopperEntranceRecipe`** — directional entrances offset by `placement`, for anchored popovers. The first matches the `frame` every anchored part renders. The second is for a `canvasgroup` passed in through `asChild`.
 - **`createIndicatorRevealRecipe`** — grows an indicator from zero to `size` with a fade, for selection/check indicators.
 
 ### Response recipes
@@ -306,7 +307,7 @@ function createProgressResponseRecipe(duration?: number): ResponseMotionConfig;
 function createToastResponseRecipe(duration?: number): ResponseMotionConfig;
 ```
 
-`createSliderThumbResponseRecipe` tightens to an instant tempo while dragging; the rest map their
+`createSliderThumbResponseRecipe` tightens to an instant tempo while dragging. The rest map their
 named surface to a tuned settle intent.
 
 ### Feedback recipes
@@ -318,7 +319,8 @@ function createPressFeedbackEffect(duration?: number): FeedbackEffectConfig;
 function createFocusAccentEffect(duration?: number): FeedbackEffectConfig;
 ```
 
-`createPressFeedbackEffect` gives an expressive accent on press and a calm recover; `createFocusAccentEffect` does the same for focus emphasis, with a slightly longer accent.
+`createPressFeedbackEffect` gives an expressive accent on press and a calm recover.
+`createFocusAccentEffect` does the same for focus emphasis, with a slightly longer accent.
 
 ### Target utilities
 
@@ -352,11 +354,11 @@ Builds the directional `UDim2` offset a surface animates from, given a placement
 The popper entrance recipes use it to slide content in from the correct side.
 
 <Callout title="Motion can only touch delegated properties">
-Every write goes through a target contract. Animating a property the contract does not own — `Position` under an `appearance` role, say — is rejected with a diagnostic. Move geometry into an isolated wrapper, or use a `layout` target.
+Every write goes through a target contract. Animating a property the contract does not own is rejected with a diagnostic, such as `Position` under an `appearance` role. Move geometry into an isolated wrapper, or use a `layout` target.
 </Callout>
 
 <Callout title="Disabled motion snaps instead of animating">
-With `disableAllMotion` (or `mode="none"`) the hooks apply their target snapshots immediately and still fire completion callbacks. Lifecycle behaviour is identical; only the in-between animation is skipped.
+With `disableAllMotion`, or `mode="none"`, the hooks apply their target snapshots immediately and still fire completion callbacks. Lifecycle behaviour is identical, and only the in-between animation is skipped.
 </Callout>
 
 ## Related
