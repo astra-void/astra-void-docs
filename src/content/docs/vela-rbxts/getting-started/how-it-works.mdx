@@ -20,12 +20,12 @@ between is one shared pipeline, which is why both tracks emit the same Luau.
 
 **Something hands the adapter a file.** Under the *transformer*, roblox-ts resolves the
 `tsconfig.json` plugin entry and calls the exported factory with your `Program` and its own
-`typescript` instance — the factory throws without that instance, so it cannot be driven by plain
-`tsc`. Under the *CLI*, `vela build` walks `--src` itself and calls the same adapter per file, with
-no `Program` and no plugin options.
+`typescript` instance. The factory throws without that instance, so plain `tsc` cannot drive it.
+Under the *CLI*, `vela build` walks `--src` itself and calls the same adapter per file, with no
+`Program` and no plugin options.
 
-**The host adapter filters files.** Five conditions, in order; a file failing any is passed through
-untouched:
+**The host adapter filters files.** Five conditions, in order. A file that fails any is passed
+through untouched:
 
 1. The filename ends in `.tsx`, case-insensitively. **`.ts` files are never transformed**, so a
    `className` built in a `.ts` helper is invisible to Vela.
@@ -38,42 +38,43 @@ The last three are toggles (`skipNodeModules`, `requireClassName`, `requireJsxSy
 default, and there is no glob support.
 
 **The adapter finds your config.** Vela walks up from each file's directory looking for
-`vela.config.ts` or `vela.config.json`, the `.ts` form winning when a directory has both. A
-TypeScript config is stripped of its `vela-rbxts` imports, transpiled, and executed in a scope where
+`vela.config.ts` or `vela.config.json`. The `.ts` form wins when a directory has both. A TypeScript
+config is stripped of its `vela-rbxts` imports, transpiled, and executed in a scope where
 `defineConfig` and `defaultConfig` are injected. A TypeScript diagnostic throws, as does an export
 that is neither a resolved config nor an input-shaped object. Finding nothing gets you the default
 theme. See [config discovery](/vela-rbxts/reference/config/#discovery) for the caching.
 
-**The native compiler parses and lowers.** The Rust compiler parses the TSX, walks the JSX tree,
-resolves each class token against the merged theme, and produces new source text plus a diagnostic
-list.
+**The native compiler parses and lowers.** It walks the JSX tree, resolves each class token against
+the merged theme, and produces new source text plus a diagnostic list.
 
 **The text goes back out**, as text rather than an AST. Under the transformer it is parsed into a
-fresh `SourceFile` and substituted in memory, with diagnostics handed back through roblox-ts's
-`addDiagnostic`; **on a roblox-ts that does not expose that hook they are dropped silently.** Under
+fresh `SourceFile` and substituted in memory, and diagnostics are handed back through roblox-ts's
+`addDiagnostic`. **On a roblox-ts that does not expose that hook they are dropped silently.** Under
 the CLI the text is written to the mirrored path, skipped when byte-identical so `rbxtsc -w` is not
 woken, and diagnostics are printed by the CLI itself.
 
 ## What gets touched
 
-An element is lowered if it is a supported host element or a component. Vela recognizes exactly eight
-host elements:
+An element is lowered if it is a supported host element or a component. Vela recognizes exactly
+eight host elements:
 
 `frame`, `scrollingframe`, `canvasgroup`, `textlabel`, `textbutton`, `textbox`, `imagelabel`, `imagebutton`
 
-A component is any tag starting with an uppercase letter — `<Panel />` — or any member expression,
-`<Switch.Root />`, at any depth. A namespaced tag such as `<svg:rect />` is never a component.
+A component is any tag starting with an uppercase letter, such as `<Panel />`, or any member
+expression such as `<Switch.Root />`, at any depth. A namespaced tag like `<svg:rect />` is never a
+component.
 
 Anything else is skipped with its `className` left untouched, reporting
 `classname-on-unsupported-host`. That covers lowercase intrinsics Vela does not implement, like
-`screengui`, and namespaced tags — the warning names only the local part, so `<svg:rect />` is
+`screengui`, and namespaced tags. The warning names only the local part, so `<svg:rect />` is
 reported as `rect`.
 
 ### `className` on components
 
-`<Panel className="p-4 bg-slate-800" />` is lowered the way a host element is. On the static path the
-resolved props become ordinary JSX attributes on the component, `className` is removed, and helper
-instances are prepended as children. A self-closing component that needs helpers gains a closing tag:
+`<Panel className="p-4 bg-slate-800" />` is lowered the way a host element is. On the static path
+the resolved props become ordinary JSX attributes on the component, `className` is removed, and
+helper instances are prepended as children. A self-closing component that needs helpers gains a
+closing tag:
 
 ```tsx title="In"
 <Box className="bg-slate-700 rounded-md" />
@@ -86,24 +87,19 @@ instances are prepended as children. A self-closing component that needs helpers
 ```
 
 <Callout title="The component has to forward what it does not consume">
-Vela hands the component props and children; it cannot make the component do anything with them. If
-`Box` does not spread its unrecognized props onto a Roblox host element and render its children, the
-styling is lost — and **there is no diagnostic for that**, at compile time or in the editor.
+Vela hands the component props and children. It cannot make the component do anything with them. If `Box` does not spread its unrecognized props onto a Roblox host element and render its children, the styling is lost. **There is no diagnostic for that**, at compile time or in the editor.
 
-A component library can be built to receive this shape deliberately: [lattice-ui](/lattice-ui/)
-forwards unknown props from every part and re-parents Vela's helper instances under the element the
-props land on. [Styling Lattice with Vela](/lattice-ui/guides/styling-with-vela/) is a worked example.
+A component library can be built to receive this shape. [lattice-ui](/lattice-ui/) forwards unknown props from every part and re-parents Vela's helper instances under the element the props land on. [Styling Lattice with Vela](/lattice-ui/guides/styling-with-vela/) is a worked example.
 </Callout>
 
-Because the eventual host element is unknown, the per-element utility restrictions do not apply
-inside a component's `className`. The editor offers the full set there and never raises
+The eventual host element is unknown, so the per-element utility restrictions do not apply inside a
+component's `className`. The editor offers the full set there and never raises
 `unsupported-host-utility`. Whether `text-lg` means anything depends on which host your component
 renders, and nothing checks that.
 
 ## The two lowering paths
 
-Which one you get changes the shape of the output, the size of the supported utility set, and whether
-anything runs at runtime.
+Which one you get changes the shape of the output and whether anything runs at runtime.
 
 ### Static lowering
 
@@ -111,32 +107,32 @@ The default. The compiler resolves every token to a concrete value, emits Roblox
 element, prepends helper instances as children, and removes the `className`. The element keeps its
 tag, and nothing from Vela survives into the running game. This path supports the full utility set.
 
-It also emits two properties you did not ask for: a host element carrying a `className` starts from
-`BackgroundTransparency = 1` and `BorderSizePixel = 0`, so the opaque gray box Roblox gives every
-`GuiObject` is not something every class list has to paint over. Anything that actually paints opts
-back out, and a background painted by a variant reopens it at runtime. Components are never
-preflighted. See [`preflight`](/vela-rbxts/reference/config/#preflight).
+It also emits two properties you did not ask for. A host element carrying a `className` starts from
+`BackgroundTransparency = 1` and `BorderSizePixel = 0`, so no class list has to paint over the
+opaque grey box Roblox gives every `GuiObject`. Anything that actually paints opts back out, and a
+background painted by a variant reopens it at runtime. Components are never preflighted. See
+[`preflight`](/vela-rbxts/reference/config/#preflight).
 
 ### The runtime path
 
 When Vela cannot finish at compile time it swaps the element's tag for `VelaRuntimeHost`, imported
 from `@rbxts/vela-runtime` and configured once at the top of the module body. Static props it did
 resolve are emitted with an `as never` cast, since the host's prop type does not describe them.
-Conditional rules are serialized into `__velaRules` with their conditions in `__velaTests`, and the
+Conditional rules are serialized into `__velaRules`, their conditions into `__velaTests`, and the
 original tag travels as `__velaTag`. Structural work rides along in further internal props:
-`__velaTransition`, `__velaAnimation`, `__velaText`, `__velaMargin`, `__velaDivide`.
+`__velaTransition`, `__velaAnimation`, `__velaText`, `__velaMargin` and `__velaDivide`.
 
-For a host element `__velaTag` is the tag string. For a component it is a live reference —
-`__velaTag={Box}` — so the host renders your component rather than an intrinsic.
+For a host element, `__velaTag` is the tag string. For a component it is a live reference,
+`__velaTag={Box}`, so the host renders your component rather than an intrinsic.
 
 At runtime the host normalizes theme strings into `Color3` and `UDim` values, reads the environment,
 applies whichever rules match, tokenizes any dynamic `className`, strips the internal props, and
 calls `React.createElement` with the original tag and the helper children. It reads
-`Workspace.CurrentCamera.ViewportSize` for width, height, orientation and rem,
+`Workspace.CurrentCamera.ViewportSize` for width, height, orientation and rem. It reads
 `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, and
 `MouseEnter`/`MouseLeave` on the element for `hover:`.
 
-The host is a package, not a copy — one ModuleScript the whole place shares, over the target-neutral
+The host is a package, not a copy. One ModuleScript the whole place shares, over the target-neutral
 `@rbxts/vela-runtime-core`. A transformed module carries an import and its config:
 
 ```ts title="What a runtime-path module emits"
@@ -147,20 +143,16 @@ const VelaRuntimeHost = createVelaRuntimeHost({ preflight: true, theme: { … },
 A [Vide](/vela-rbxts/guides/vide/) project imports `@rbxts/vela-runtime-vide` in the same position.
 
 <Callout title="Most files send an emptied theme">
-That config carries only what your project changed — the runtime holds the defaults itself, so an
-untouched scale sends `{}`. A file whose host never has to *parse* a class value sends its scales
-emptied entirely; one that does — a computed `className`, or a host taking a spread — keeps the full
-tables. `preflight`, `theme.rem` and the motion driver stay either way, and an emptied table is
-marked in `theme.replaced` so the runtime takes it as given.
+That config carries only what your project changed. The runtime holds the defaults itself, so an untouched scale sends `{}`. A file whose host never has to *parse* a class value sends its scales emptied entirely. One that does, through a computed `className` or a host taking a spread, keeps the full tables. `preflight`, `theme.rem` and the motion driver stay either way, and an emptied table is marked in `theme.replaced` so the runtime takes it as given.
 </Callout>
 
 ### What triggers the runtime path
 
 Any one of these is sufficient.
 
-**A `className` expression that does not collapse to one static token list** — a template literal
-with an interpolation, a variable, a call, a spread. A **branch** is on this list only in the sense
-that it needs the host to read its conditions: `a ? "x" : "y"` names its tokens in the source, so the
+**A `className` expression that does not collapse to one static token list.** A template literal
+with an interpolation, a variable, a call, a spread. A **branch** is on this list only because it
+needs the host to read its conditions. `a ? "x" : "y"` names its tokens in the source, so the
 compiler resolves every one of them, with diagnostics, and hands the element the resolved props
 alongside the tests.
 
@@ -171,12 +163,12 @@ static string literal forces the runtime path:
 <frame className="w-full sm:w-1/2" />
 ```
 
-The trigger is the variant, not the dynamism, and the cost is an import.
+The trigger is the variant, not the dynamism. The cost is an import.
 
-**A structural utility.** Margins (except the static `mx-auto`/`my-auto`), `divide-*` and `animate-*`
-build wrapper frames, separator frames or animation loops — none can be a static prop. The one motion
-utility that does *not* promote is `transition-*` alone: with nothing to animate it warns
-`transition-without-runtime` and is dropped.
+**A structural utility.** Margins (except the static `mx-auto`/`my-auto`), `divide-*` and
+`animate-*` build wrapper frames, separator frames or animation loops. None can be a static prop.
+The one motion utility that does *not* promote is `transition-*` alone. With nothing to animate, it
+warns `transition-without-runtime` and is dropped.
 
 <Callout title="The in-game token resolver understands far less than the compiler">
 It handles the colour, background, radius, padding, margin, gap and sizing prefixes, plus `divide-*`,
