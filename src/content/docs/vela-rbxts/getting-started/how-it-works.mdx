@@ -160,19 +160,18 @@ Any one of these is sufficient.
 
 **A `className` expression that does not collapse to one static token list** — a template literal
 with an interpolation, a variable, a call, a spread. A **branch** is on this list only in the sense
-that it needs the host to read its conditions: `a ? "x" : "y"` and `["w-40", tall && "h-10"]` name
-their tokens in the source, so the compiler resolves every one of them, with diagnostics, and hands
-the element the resolved props alongside the tests. Nothing is parsed in-game there.
+that it needs the host to read its conditions: `a ? "x" : "y"` names its tokens in the source, so the
+compiler resolves every one of them, with diagnostics, and hands the element the resolved props
+alongside the tests.
 
-**Any token carrying a variant prefix.** This one catches people out. A variant depends on the live
-environment, so even a plain static string literal forces the runtime path:
+**Any token carrying a variant prefix.** A variant depends on the live environment, so even a plain
+static string literal forces the runtime path:
 
 ```tsx title="Static string, runtime path"
 <frame className="w-full sm:w-1/2" />
 ```
 
-The trigger is the variant, not the dynamism. The cost is an import, so the file grows by a few
-lines.
+The trigger is the variant, not the dynamism, and the cost is an import.
 
 **A structural utility.** Margins (except the static `mx-auto`/`my-auto`), `divide-*` and `animate-*`
 build wrapper frames, separator frames or animation loops — none can be a static prop. The one motion
@@ -180,7 +179,7 @@ utility that does *not* promote is `transition-*` alone: with nothing to animate
 `transition-without-runtime` and is dropped.
 
 <Callout title="The in-game token resolver understands far less than the compiler">
-It handles the color, background, radius, padding, margin, gap and sizing prefixes, plus `divide-*`,
+It handles the colour, background, radius, padding, margin, gap and sizing prefixes, plus `divide-*`,
 the case transforms, the decorations and the motion families. Every other utility inside a *text*
 `className` the host has to parse — layout, alignment, text size, position, constraints — is dropped
 with no diagnostic.
@@ -191,7 +190,6 @@ go through the static resolver and are only *evaluated* at runtime, which is why
 </Callout>
 
 The full list of divergences is in [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
-Read it before you reach for a computed `className`.
 
 ## Five rules that keep you on the static path
 

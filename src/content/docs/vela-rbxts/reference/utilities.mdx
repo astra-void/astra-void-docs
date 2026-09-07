@@ -603,31 +603,21 @@ sections above and [Diagnostics](/vela-rbxts/reference/diagnostics/).
 
 When `className` is a dynamic expression rather than something Vela can collapse at compile time,
 the class string is resolved by the injected runtime helper instead. **Every family on this page
-resolves there as of 0.8.0**, with the static path's semantics. That covers opacity modifiers,
-arbitrary values, and the families that only meet at the end: the two `Size` axes, `Position` and
-`AnchorPoint`, `FontFace`, a grid track and the gap it gives back.
+resolves there**, with the static path's semantics — opacity modifiers, arbitrary values, and the
+families that only meet at the end: the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a
+grid track and the gap it gives back.
 
-Until 0.8.0 the helper implemented roughly a third of the static path and dropped the rest **without
-a diagnostic**, because the compiler never sees the final string. If you are reading around a
-workaround written against an older release, that is what it was for. 0.6.0 added text colors, 0.7.0
-added layout, sizing and the text families, and 0.8.0 added everything else.
+One thing differs, and it is the runtime path being stricter rather than thinner: **a utility the
+host element cannot carry is dropped** instead of written, since assigning `TextColor3` to a `Frame`
+is a hard Roblox error. The static path writes it anyway — see [supported
+elements](#supported-elements).
 
-One thing still differs, and it is the runtime path being stricter rather than thinner: **a utility
-the host element cannot carry is dropped** instead of written, since assigning `TextColor3` to a
-`Frame` is a hard Roblox error. The static path writes it anyway — see
-[supported elements](#supported-elements).
-
-`opacity-*` meets the two paths halfway. As of 0.10.0 the compiler stops fading the subtree under a
-computed `className` itself and leaves the whole thing to the host. The host resolves the class list
-and hands the children one alpha, so an `opacity-*` written inside a variant recipe reaches the
-subtree it is written over, the same as a literal one would.
-
-Two long-standing runtime caveats are gone. `order-*` resolves, so a dynamically classed element sets
-its own `LayoutOrder` again, and the `auto`/`fit` sizing keywords reach `AutomaticSize` — `w-fit`,
-`h-auto` and `size-fit` all work in a computed string.
+`opacity-*` meets the two paths halfway: the compiler leaves the whole class list to the host, which
+resolves it and hands the children one alpha, so an `opacity-*` written inside a variant recipe
+reaches the subtree it is written over.
 
 Read [Dynamic class names](/vela-rbxts/guides/dynamic-class-names/) for the cost model and for what
-promotes an element onto this path in the first place.
+promotes an element onto this path.
 
 ## See also
 
