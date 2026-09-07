@@ -18,12 +18,12 @@ builds a panel with a title and a caption, then walks through what each class na
   scene="PanelScene"
 />
 
-That preview is not a screenshot: the example was lowered by the same compiler `rbxtsc` loads. The
-**Classes** tab is the source with `className` on it, the **Lowered** tab is what came out, and that
-source is the snippet below, line for line.
+That preview is not a screenshot. The example was lowered by the same compiler `rbxtsc` loads.
+**Classes** is the source with `className` on it, **Lowered** is what came out, and that source is
+the snippet below, line for line.
 
 The **Lowered** tab also shows `BackgroundTransparency` and `BorderSizePixel` on elements whose
-classes mention neither. That is [preflight](/vela-rbxts/reference/config/#preflight): Roblox paints
+classes mention neither. That is [preflight](/vela-rbxts/reference/config/#preflight). Roblox paints
 every `GuiObject` as an opaque grey box, so an element carrying a `className` starts transparent and
 borderless unless something paints it.
 
@@ -49,16 +49,16 @@ export function Panel() {
 ```
 
 Every class here resolves at compile time. The one thing that survives into the output is the rem
-scaler, which makes those offsets follow the player's viewport — [What comes out](#what-comes-out)
+scaler, which makes those offsets follow the player's viewport. [What comes out](#what-comes-out)
 shows it.
 
 <Callout title="Why every element carries a size">
-`h-24` on the panel and `w-full h-6` on the labels are Roblox defaults showing through, not Vela requirements. A `GuiObject` starts at `Size = (0, 0, 0, 0)`, so a class list that only sets a width leaves the height at zero and the panel compiles cleanly to an invisible frame containing two invisible labels. `w-fit`/`h-fit` lower to `AutomaticSize` if you would rather Roblox measured the content.
+`h-24` on the panel and `w-full h-6` on the labels are Roblox defaults showing through, not Vela requirements. A `GuiObject` starts at `Size = (0, 0, 0, 0)`. A class list that only sets a width leaves the height at zero, and the panel compiles cleanly to an invisible frame containing two invisible labels. Use `w-fit`/`h-fit` to lower to `AutomaticSize` instead.
 </Callout>
 
 ## Put it on screen
 
-Vela changes nothing about how you mount a component — this is ordinary `@rbxts/react-roblox`. The
+Vela changes nothing about how you mount a component. This is ordinary `@rbxts/react-roblox`. The
 one Vela-specific detail is the wrapper: `screengui` is **not** one of the eight host elements Vela
 lowers, so classes belong on a `frame` inside it.
 
@@ -81,16 +81,16 @@ root.render(
 );
 ```
 
-Rojo maps this file into `StarterPlayer/StarterPlayerScripts` like any other client entry point, and
-the `.client` in the filename is what makes roblox-ts emit a LocalScript. Note the extension too —
-Vela only transforms `.tsx` files.
+Rojo maps this file into `StarterPlayer/StarterPlayerScripts` like any other client entry point. The
+`.client` in the filename is what makes roblox-ts emit a LocalScript. Note the extension too: Vela
+only transforms `.tsx` files.
 
 Build, sync, and press play: the panel from the preview above is now in your place.
 
 ## What each class lowers to
 
-The `frame` classes split two ways: properties set on the Frame, and helper instances that exist as
-children because Roblox models layout, padding, corners and strokes as separate objects.
+The `frame` classes split two ways. Some set properties on the Frame. The rest become helper
+instances, because Roblox models layout, padding, corners and strokes as separate objects.
 
 | Class | Result | Value |
 |---|---|---|
@@ -104,41 +104,40 @@ children because Roblox models layout, padding, corners and strokes as separate 
 | `border-slate-700` | `UIStroke.Color` and `Transparency` | `Color3.fromRGB(49, 65, 88)`, `0` |
 | `w-80 h-24` | `Size` | `UDim2.fromOffset(320, 96)` |
 
-Every offset in that column is a **rem** value at the base viewport, not a fixed pixel count:
+Every offset in that column is a **rem** value at the base viewport, not a fixed pixel count.
 `new UDim(0, 16)` is what `p-4` is worth at 1920×1020. See [rem](/vela-rbxts/guides/theming/#rem).
 
 A few of those deserve a note.
 
-`flex` and `flex-col` write to the same instance: bare `flex` sets `FillDirection` to `Horizontal`,
+`flex` and `flex-col` write to the same instance. Bare `flex` sets `FillDirection` to `Horizontal`,
 and `flex-col` overwrites it with `Vertical`. Only one `UIListLayout` is emitted however many layout
 classes you stack, so `flex-col` alone is enough for a column.
 
 `gap-4` and `p-4` both resolve `4` through the theme's `spacing` scale, where the built-in default
-has its only entry. Every other numeric key — `p-2`, `gap-6`, `p-1.5` — comes from an arithmetic
-fallback: a non-negative multiple of `0.5`, times four pixels. That is why `w-80` is 320 pixels
-rather than a lookup failure.
+has its only entry. Every other numeric key comes from an arithmetic fallback: a non-negative
+multiple of `0.5`, times four pixels. That is why `w-80` is 320 pixels rather than a lookup failure.
 
 `w-80` and `h-24` merge into one `Size` rather than one replacing the other, producing a single
-`UDim2.fromOffset(320, 96)`. Drop the `h-24` and the height falls back to zero and the panel
-disappears. (On the runtime path the merge does not happen; the later token wins.)
+`UDim2.fromOffset(320, 96)`. Drop the `h-24` and the height falls back to zero, so the panel
+disappears. On the runtime path the merge does not happen and the later token wins.
 
-`border` and `border-slate-700` are two utilities sharing a prefix: the bare form sets thickness,
-the colour form sets colour and transparency. `border-slate-700` alone gives a coloured stroke with
-no explicit thickness.
+`border` and `border-slate-700` are two utilities sharing a prefix. The bare form sets thickness.
+The colour form sets colour and transparency, so `border-slate-700` alone gives a coloured stroke
+with no explicit thickness.
 
-The `textlabel` classes are mostly text-only: `text-slate-100` sets `TextColor3`, `text-lg` sets
+The `textlabel` classes are mostly text-only. `text-slate-100` sets `TextColor3`, `text-lg` sets
 `TextSize` to `18`, `text-left` sets `TextXAlignment` to `Left`, and `font-semibold` sets
 `FontFace`. Their `w-full h-6` goes through the same sizing path as the panel's, mixing a scale and
-an offset — `new UDim2(1, 0, 0, 24)`.
+an offset into `new UDim2(1, 0, 0, 24)`.
 
-`text-*` is disambiguated by value, not prefix: a known size key becomes `TextSize`, an alignment
-keyword `TextXAlignment`, anything else a colour. Misspell a size and you get a theme-key warning
-about a colour.
+`text-*` is disambiguated by value, not prefix. A known size key becomes `TextSize`, an alignment
+keyword becomes `TextXAlignment`, and anything else is read as a colour. Misspell a size and you get
+a theme-key warning about a colour.
 
 ## What comes out
 
 The transformer removes `className`, emits the resolved properties on the element, and prepends the
-helper instances ahead of your own children. This is the emitted TSX, with line breaks added:
+helper instances ahead of your own children. Here is the emitted TSX, with line breaks added:
 
 ```tsx title="Transformed output (line breaks added; nothing else changed)"
 import { createVelaRemScaler, __VelaOpacity } from "@rbxts/vela-runtime";
@@ -187,33 +186,33 @@ const __VelaRem = createVelaRemScaler({
 ```
 
 Four things there were never in your class list. `BorderSizePixel` and the labels'
-`BackgroundTransparency` are [preflight](/vela-rbxts/reference/config/#preflight) — the panel skips
+`BackgroundTransparency` are [preflight](/vela-rbxts/reference/config/#preflight). The panel skips
 the transparency because `bg-slate-800` paints it. `SortOrder = LayoutOrder` is emitted on every
 Vela layout so `order-*` works.
 
-And every offset is wrapped in `__VelaRem.scale` — [rem](/vela-rbxts/guides/theming/#rem). The
-literal inside is the value at a 1920×1020 viewport, the trailing number is a binding slot, and
+Every offset is wrapped in `__VelaRem.scale`. That is [rem](/vela-rbxts/guides/theming/#rem). The
+literal inside is the value at a 1920×1020 viewport, and the trailing number is a binding slot.
 `TextSize` goes through `scaleText`, which caps at 100. Pin `theme.rem` and the wrappers disappear,
 leaving plain literals.
 
-That is why the **Lowered** tab shows plain literals and this block does not: every preview in these
+That is why the **Lowered** tab shows plain literals and this block does not. Every preview in these
 docs is compiled with rem pinned, to keep the render one pixel per pixel.
 
-One more thing not shown above: a component definition's root is wrapped in `<__VelaOpacity.Fade>`,
-which is how an `opacity-*` on an ancestor reaches a statically lowered subtree. It renders no
-instance.
+One more thing is not shown above. A component definition's root is wrapped in
+`<__VelaOpacity.Fade>`, which is how an `opacity-*` on an ancestor reaches a statically lowered
+subtree. It renders no instance.
 
 The helpers are prepended, so they sort ahead of your own children. That does not affect layout, but
 it matters if you index children positionally.
 
-This is the **static path**: the element keeps its tag, no class list is parsed in game, and every
+This is the **static path**. The element keeps its tag, no class list is parsed in game, and every
 token was resolved and checked at build time. The
 [pipeline page](/vela-rbxts/getting-started/how-it-works/) explains when that stops being true.
 
 ## Something that does not work
 
 Vela is a Roblox-shaped subset of Tailwind, not a port. The Roblox text engine exposes no letter
-spacing, so `tracking-*` cannot mean anything:
+spacing, so `tracking-*` cannot mean anything.
 
 ```tsx title="This warns"
 <frame className="tracking-wide p-4 bg-slate-800" />
@@ -225,12 +224,12 @@ The build still succeeds, but the transformer reports a warning through roblox-t
 [@vela-rbxts/compiler] no-roblox-equivalent: Tailwind "tracking" utilities have no Roblox equivalent, so "tracking-wide" is ignored.
 ```
 
-`p-4` and `bg-slate-800` are applied normally; only the inexpressible token is dropped. A class Vela
+`p-4` and `bg-slate-800` are applied normally. Only the inexpressible token is dropped. A class Vela
 has never heard of gets `unsupported-utility-family` instead, so the two failure modes are
 distinguishable.
 
 Colours have their own failure mode. You reach a shade by naming it or through the palette's
-`DEFAULT`, and a palette with neither is an error rather than a fallback — say a `brand` family with
+`DEFAULT`. A palette with neither is an error rather than a fallback. Say a `brand` family defines
 only `500` and `700`:
 
 ```tsx title="This warns too"
@@ -245,11 +244,12 @@ Write `bg-brand-500`, or add a `DEFAULT` key. The built-in palettes all ship one
 `500`, which is why `bg-slate` needs no shade while `bg-brand` does.
 
 <Callout title="Where the squiggle lands">
-For a static string `className` the compiler anchors each diagnostic to the token's real position. A computed `className` produces diagnostics with no range, and the host adapter falls back to the first textual occurrence of the token anywhere in the file, so the underline can land on an earlier comment or string. Diagnostics carrying no token at all are reported at the start of the file. The message and code are always correct.
+For a static string `className` the compiler anchors each diagnostic to the token's real position. A computed `className` produces diagnostics with no range. The host adapter then falls back to the first textual occurrence of the token anywhere in the file, so the underline can land on an earlier comment or string. Diagnostics carrying no token at all are reported at the start of the file. The message and code are always correct.
 </Callout>
 
 The full list of codes, and what each one means, is in the [diagnostics reference](/vela-rbxts/reference/diagnostics/).
 
 ## Next step
 
-See how the transformer fits into an `rbxtsc` build, and what makes it switch to a runtime path, in [How it works](/vela-rbxts/getting-started/how-it-works/).
+Read [How it works](/vela-rbxts/getting-started/how-it-works/) for how the transformer fits into an
+`rbxtsc` build, and what makes it switch to a runtime path.

@@ -16,9 +16,8 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy, ForwardedProps, Loom
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
-Dialog is the primitive for any surface that takes over the screen — confirmations, forms, settings
-panels. It coordinates open state, focus, dismissal and exit motion, so your component renders only
-the frame and its contents.
+Dialog renders a surface that takes over the screen: confirmations, forms, settings panels. It
+manages open state, focus, dismissal and exit motion. You render the frame and its contents.
 
 ## Preview
 
@@ -65,7 +64,7 @@ import { Dialog } from "@lattice-ui/react-dialog";
 ### Basic usage
 
 Uncontrolled state seeded with `defaultOpen`, a trigger, a dimmed overlay and a close button.
-`Dialog.Overlay` covers the screen and dismisses on press whether or not you style it, but draws
+`Dialog.Overlay` covers the screen and dismisses on press whether or not you style it. It draws
 nothing until you colour it.
 
 ```tsx title="QuestDialog.tsx"
@@ -119,10 +118,9 @@ export function QuestDialog() {
 
 ### Controlled confirmation from a game event
 
-Pass `open` and `onOpenChange` when something other than a trigger drives the dialog. With no
-`Dialog.Trigger` there is nothing meaningful focused at open time, so opt out with
-`restoreFocus={false}`. An outside press still closes through `onOpenChange`, so treat `open`
-becoming `false` as the "dismissed" signal.
+Pass `open` and `onOpenChange` when something other than a trigger drives the dialog. Without a
+`Dialog.Trigger`, nothing is focused at open time, so set `restoreFocus={false}`. An outside press
+still closes through `onOpenChange`. Treat `open` becoming `false` as the dismissal signal.
 
 ```tsx title="TradeRequestDialog.tsx"
 import { useEffect, useState } from "@rbxts/react";
@@ -195,7 +193,7 @@ export function TradeRequestDialog(props: {
 
 Use `asChild` on `Dialog.Overlay` for a different backdrop element class, and `transition` on
 `Dialog.Content` for the entrance. The overlay runs no motion and owns no colour, so the dim and any
-fade are yours, and it closes the dialog on press, so keep the child an activatable button class.
+fade are yours. It closes the dialog on press, so keep the child an activatable button class.
 
 ```tsx title="StoreDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -268,9 +266,9 @@ export function StoreDialog() {
 ### Non-modal panel that vetoes dismissal
 
 `modal={false}` removes the full-screen input sink, so the world and other UI stay interactive.
-Modality controls blocking, not dismissal, so a persistent panel must also veto the close with
-`event.preventDefault()` in `onInteractOutside`. Dropping `trapFocus` lets gamepad selection leave
-the panel.
+Modality controls blocking, not dismissal. A persistent panel must also veto the close with
+`event.preventDefault()` in `onInteractOutside`. Drop `trapFocus` to let gamepad selection leave the
+panel.
 
 ```tsx title="CraftingPanel.tsx"
 import { useState } from "@rbxts/react";
@@ -326,7 +324,7 @@ There is no overlay here on purpose — a backdrop would read as modal, and dism
 
 ### Stacked dialogs with display order
 
-Each `Dialog.Content` mounts its own layered `ScreenGui` whose `DisplayOrder` is `displayOrderBase`
+Each `Dialog.Content` mounts its own layered `ScreenGui`. Its `DisplayOrder` is `displayOrderBase`
 plus a global mount counter, so a later-opened dialog lands above an earlier one at the same base.
 Explicit bands make the ordering deterministic against your other layered UI. Outside presses always
 go to the top-most open layer.
@@ -429,10 +427,10 @@ tied to the settings content tree.
 
 ### Exit animation with forceMount
 
-Without `forceMount`, `Dialog.Content` sits inside a presence wrapper that unmounts it once the exit
-reports completion, with a short fallback window that can cut a long exit off. `forceMount` bypasses
-the wrapper: the content stays mounted while closed, the full exit always plays, and child state
-such as scroll position survives between opens.
+Without `forceMount`, `Dialog.Content` sits inside a presence wrapper. The wrapper unmounts it once
+the exit reports completion, and its short fallback window can cut a long exit off. `forceMount`
+bypasses the wrapper. The content stays mounted while closed, the full exit always plays, and child
+state such as scroll position survives between opens.
 
 ```tsx title="MatchResultsDialog.tsx"
 import { Dialog } from "@lattice-ui/react-dialog";
@@ -502,24 +500,26 @@ A force-mounted dialog that has never opened renders with its exit values pre-ap
 
 ### Open state
 
-Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled. Every path to a
-state change goes through the same `setOpen`, so `onOpenChange` sees all of them.
+Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled. Every state
+change goes through the same `setOpen`, so `onOpenChange` sees all of them.
 
 ### Focus and selection
 
 `Dialog.Content` wraps its children in a focus scope that **traps focus** and **restores** it to whatever was focused just before opening, both on by default.
 
-`Dialog.Trigger` makes restoration reliable by focusing itself in the same activation that opens the
-dialog, so the restore snapshot points at it. Without a trigger, pass `restoreFocus={false}` or move
-focus yourself after closing.
+`Dialog.Trigger` focuses itself in the same activation that opens the dialog, so the restore
+snapshot points at it. Without a trigger, pass `restoreFocus={false}` or move focus yourself after
+closing.
 
 ### Dismissal and layering
 
-`Dialog.Content` registers on a global dismissable-layer stack, and an outside pointer press routes
-to the **top-most open layer only**: `onPointerDownOutside` fires, then `onInteractOutside`, then
-the dialog closes unless either called `event.preventDefault()`.
+`Dialog.Content` registers on a global dismissable-layer stack. An outside pointer press routes to
+the **top-most open layer only**. `onPointerDownOutside` fires, then `onInteractOutside`, then the
+dialog closes unless either called `event.preventDefault()`.
 
-"Outside" is measured against the first direct host element you render inside `Dialog.Content`; additional top-level host children also count as inside. Under `asChild` the rule applies one level down.
+"Outside" is measured against the first direct host element you render inside `Dialog.Content`.
+Additional top-level host children also count as inside. Under `asChild`, the rule applies one level
+down.
 
 `modal` (default `true`) controls blocking, not dismissal: it puts a full-screen input sink
 underneath. With `modal={false}` the world stays interactive, but outside presses still dismiss
@@ -553,9 +553,9 @@ const RISE: PresenceMotionConfig = {
 
 #### Fading a dialog
 
-The host is a plain `Frame` spanning the layer, and a `Frame` has no property that fades its
-descendants — animating its `BackgroundTransparency` fills the screen with a rectangle. So either
-keep the content transition to `Position` and put the fade where the pixels are:
+The host is a plain `Frame` spanning the layer. A `Frame` has no property that fades its
+descendants, so animating its `BackgroundTransparency` fills the screen with a rectangle. Keep the
+content transition to `Position` and put the fade where the pixels are:
 
 - **Fade the dim.** `createOverlayFadeRecipe()` on an element inside `Dialog.Overlay` covers most of what a dialog reveal reads as.
 - **Fade your own elements.** Animate `BackgroundTransparency` on your panel and `TextTransparency` / `ImageTransparency` on its children from the same `open` state. Keep those durations at or under the content transition's exit duration, or presence unmounts the tree first.
@@ -580,13 +580,13 @@ import { createCanvasGroupRevealRecipe } from "@lattice-ui/react-motion";
 
 That buys an offscreen render target the size of the screen, which is why it is opt-in.
 
-Presence timing is independent: with or without a `transition`, the content stays mounted until its
+Presence timing is independent. With or without a `transition`, the content stays mounted until its
 exit resolves. `forceMount` keeps it mounted while closed and lets long exits run outside the
 wrapper's bounded unmount window.
 
-`Dialog.Overlay` exposes no `transition` prop — an unstyled overlay has nothing to fade — but still
-owns presence timing. To animate a dim, render an element inside the overlay (or pass `asChild`) and
-animate it yourself with `createOverlayFadeRecipe()`.
+`Dialog.Overlay` exposes no `transition` prop, since an unstyled overlay has nothing to fade. It
+still owns presence timing. To animate a dim, render an element inside the overlay, or pass
+`asChild`, and animate it yourself with `createOverlayFadeRecipe()`.
 
 <Callout title="An unstyled overlay is invisible, not absent">
 `Dialog.Overlay` renders a fully transparent full-screen `textbutton`. It still covers the screen and still swallows presses — which is how press-to-close and modal blocking work — but it draws nothing until you give it a color. Pass `BackgroundColor3` and `BackgroundTransparency` directly; it also renders children, so a `uigradient` or nested frame works too.
