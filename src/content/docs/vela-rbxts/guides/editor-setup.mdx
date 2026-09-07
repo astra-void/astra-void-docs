@@ -9,7 +9,9 @@ sidebar:
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-Vela ships a language server, `vela-rbxts-lsp`, and a VS Code extension that drives it. The server reuses the compiler crate directly, so what the editor tells you about a class name is what the compiler would do with it — the same parser, the same theme resolution, the same diagnostic codes.
+Vela ships a language server, `vela-rbxts-lsp`, and a VS Code extension that drives it. The server
+reuses the compiler crate directly, so what the editor tells you about a class name is what the
+compiler would do with it. The same parser, the same theme resolution, the same diagnostic codes.
 
 ## VS Code
 
@@ -53,11 +55,11 @@ The declared capability set is small and deliberate.
 **Completions.** Offered only when the compiler reports the cursor inside a `className` context, on
 the trigger characters `-`, `:`, `"`, `'` and space. There is no resolve step, so every item arrives
 complete, and a completion rewrites the segment under the cursor and nothing else.
-`placeholder-transparent` is not offered on a `textbox`, which the compiler turns down; every other
+`placeholder-transparent` is not offered on a `textbox`, which the compiler turns down. Every other
 family taking the `transparent` keyword still offers it.
 
 <Callout title="A class value the compiler has to walk into counts as that context">
-Every capability on this page reads the class strings out of the shapes a `className` is really written in: a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a dynamic class value, plus a template's interpolations, `as const`, `satisfies`, string concatenation, and an object's computed keys and spreads.
+Every capability on this page reads the class strings out of the shapes a `className` is really written in. Chief among them a **function**, which is how a [Vide](/vela-rbxts/guides/vide/) project writes a dynamic class value. Also a template's interpolations, `as const`, `satisfies`, string concatenation, and an object's computed keys and spreads.
 </Callout>
 
 **Hover.** Shows what a class token resolves to. A viewport-scaled offset reads as its rem value
@@ -72,7 +74,7 @@ version. There is no pull-diagnostics provider.
 **Document colors and color presentations.** Color utilities get a swatch in the gutter and can be edited through the editor's color picker.
 
 **Code actions.** Quickfixes driven by diagnostics whose source is `vela-rbxts`, each offering up to
-three ranked replacements plus a "remove token" action, and the **source action**
+three ranked replacements plus a "remove token" action. There is also the **source action**
 `source.sortVelaClasses` below.
 
 **Document highlight.** Highlights other occurrences of the token under the cursor.
@@ -89,7 +91,7 @@ They are **off by default**, behind `velaRbxts.inlayHints.enabled`. The labels c
 compiler's own lowering, read back through an editor API.
 
 That is the complete list. The server does **not** provide go-to-definition, references, rename,
-formatting, semantic tokens or signature help; your editor falls back to its TypeScript language
+formatting, semantic tokens or signature help. Your editor falls back to its TypeScript language
 service for them.
 
 ### Sorting class names
@@ -112,8 +114,8 @@ stays after it. A template keeps the whitespace around each interpolation.
 
 **It does not change how they are laid out either.** Whitespace between tokens is carried over as
 written, so a class list broken across several lines stays that way. An arbitrary payload containing
-a space — `w-[calc(100% - 4px)]` — moves as the single class it is, and a value whose bracket never
-closes is left alone entirely.
+a space, such as `w-[calc(100% - 4px)]`, moves as the single class it is. A value whose bracket
+never closes is left alone entirely.
 
 Run it from the editor's source-action menu, or on save:
 
@@ -126,8 +128,8 @@ Run it from the editor's source-action menu, or on save:
 ```
 
 Any LSP client supporting source actions can invoke it by that kind. The underlying API is
-`sortClassNames` on `@vela-rbxts/compiler`, taking `{ source, fileName }` and returning
-`{ edits: [{ range: { start, end }, text }] }` — the same offsets the server turns into workspace
+`sortClassNames` on `@vela-rbxts/compiler`. It takes `{ source, fileName }` and returns
+`{ edits: [{ range: { start, end }, text }] }`, the same offsets the server turns into workspace
 edits.
 
 Text synchronization is incremental and the position encoding is UTF-16.
@@ -139,7 +141,7 @@ Inside a component's `className` the rule is dropped rather than merely unenforc
 </Callout>
 
 The editor also suppresses `unknown-theme-key` while the payload typed so far is still a prefix of a
-real key, so `bg-sla` never flashes a warning on the way to `bg-slate-800` while `bg-nope` warns
+real key. `bg-sla` never flashes a warning on the way to `bg-slate-800`, while `bg-nope` warns
 immediately.
 
 <Callout title="A config the extension cannot read now says so">
@@ -159,7 +161,7 @@ its own is the VS Code extension id, published as a VSIX, so a bare `npx vela-rb
 nothing.
 
 **The server does not read `vela.config.ts` from disk.** It has no file loader and no config
-discovery — the client evaluates each config and hands over the result. Without that the server
+discovery. The client evaluates each config and hands over the result. Without that, the server
 falls back to the built-in default theme and every custom key reports `unknown-theme-key`.
 
 Pass the configs in `initializationOptions`:
@@ -173,14 +175,14 @@ Pass the configs in `initializationOptions`:
 }
 ```
 
-`workspaceRoot` and `configs` are top-level siblings. Get the shape wrong and there is no error: the
+`workspaceRoot` and `configs` are top-level siblings. Get the shape wrong and there is no error. The
 server deserializes with `from_value(...).ok().unwrap_or_default()`, so anything unparseable becomes
 zero configs and you are back on the default theme.
 
 Each entry is a directory plus the resolved config serialized as JSON. The server matches a file to the nearest containing `dir`, which is how per-package configs in a monorepo work.
 
-To update configs after startup, send the custom method `vela-rbxts/setConfigs`; its payload carries
-only `configs`. That is what the VS Code extension does — it watches `**/vela.config.{ts,json}`,
+To update configs after startup, send the custom method `vela-rbxts/setConfigs`. Its payload carries
+only `configs`. That is what the VS Code extension does. It watches `**/vela.config.{ts,json}`,
 evaluates each match through `@vela-rbxts/rbxtsc-host/project-config`, and pushes `{ dir, json }`
 pairs at startup and on every change.
 

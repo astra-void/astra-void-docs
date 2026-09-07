@@ -40,25 +40,26 @@ Studio before shipping.
 | Dev loop: Vite plugin, HMR, `loom preview`, `loom build` | Complete. |
 | `vide` adapter | Shipped, on the same Scene IR. |
 
-Those rows are area-level. For the per-property answer — is `AutomaticCanvasSize` honored, does
-`UIGradient.Rotation` work, what happens to `ScrollBarThickness` — see [Supported instances and
-properties](/loom/reference/supported-properties/).
+Those rows are area-level. For the per-property answer, see
+[Supported instances and properties](/loom/reference/supported-properties/). Is
+`AutomaticCanvasSize` honoured, does `UIGradient.Rotation` work, what happens to
+`ScrollBarThickness`.
 
-The practical proof point: a full headless component library — dialogs, popovers, comboboxes,
-selects, tabs, sliders, focus scopes, portals and layers — renders and behaves correctly under `loom
-preview`, across more than fifty scenes, without a single source change on the library's side.
+The practical proof point is a full headless component library. Dialogs, popovers, comboboxes,
+selects, tabs, sliders, focus scopes, portals and layers all render and behave correctly under
+`loom preview`, across more than fifty scenes, without a single source change on the library's side.
 
 ## Not implemented
 
-**`Gotham` and `BuilderSans`, out of the box.** Roblox's default family, and the Builder faces behind
-it today, are proprietary and cannot be redistributed, so the preview loads only the openly licensed
-families. Both are still *named*, so they resolve to a stack and warn rather than drifting silently,
-and a project that has the files registers them itself — see [Fonts and text
-metrics](/loom/guides/fonts/).
+**`Gotham` and `BuilderSans`, out of the box.** Roblox's default family, and the Builder faces
+behind it today, are proprietary and cannot be redistributed. The preview loads only the openly
+licensed families. Both are still *named*, so they resolve to a stack and warn rather than drifting
+silently. A project that has the files registers them itself. See
+[Fonts and text metrics](/loom/guides/fonts/).
 
 **Metatables.** `setmetatable` / `getmetatable` / `newproxy` are not installed. Loom runs the
-author's TypeScript, whose classes are JavaScript classes, and there is no faithful way to give a
-plain object a metatable's `__index` behaviour without proxying every table in the program.
+author's TypeScript, whose classes are JavaScript classes. There is no faithful way to give a plain
+object a metatable's `__index` behaviour without proxying every table in the program.
 
 **A roblox-ts compiler transform.** The preview path deliberately skips `rbxtsc` and lets esbuild
 transpile. A standalone transform, which would let loom consume compiled output rather than source,
@@ -68,36 +69,15 @@ is still open.
 
 ## Things that are true, not bugs
 
-- **A list can flow alphabetically.** `SortOrder` defaults to `Enum.SortOrder.Name` on every layout,
-  as it does in Studio, so children with distinct `Name`s sort by name rather than by source order.
-  Set `SortOrder={Enum.SortOrder.LayoutOrder}` for the other behaviour.
-- **No typechecking.** esbuild strips types; a preview renders whether or not your project typechecks.
-  See [TypeScript setup](/loom/guides/typescript-setup/).
+- **A list can flow alphabetically.** `SortOrder` defaults to `Enum.SortOrder.Name` on every layout, as it does in Studio. Children with distinct `Name`s sort by name rather than by source order. Set `SortOrder={Enum.SortOrder.LayoutOrder}` for the other behaviour.
+- **No typechecking.** esbuild strips types, so a preview renders whether or not your project typechecks. See [TypeScript setup](/loom/guides/typescript-setup/).
 - **`print` types oddly.** The globals declaration omits `print` because `lib.dom` already declares
   one and redeclaring is a compile error. The runtime still overwrites the value.
-- **Unimplemented services fail at the call, not the import.** The ten services loom cannot honestly
-  stand in for — `MarketplaceService`, `TeleportService`, `DataStoreService` and friends — resolve to
-  a warned stub whose method calls throw by name, so a UI that merely *imports* one still mounts.
-- **A Luau-only package needs a shim.** Most roblox-ts packages redirect to their own TypeScript
-  source automatically; a declaration-only one has none and fails by name until you point
-  [`shims`](/loom/guides/package-compatibility/#shims) at a browser module. `@rbxts/react`,
-  `@rbxts/react-roblox`, `@rbxts/services`, `@rbxts/vide`, `@rbxts/ui-labs`, `@rbxts/ripple` and
-  `@rbxts/react-ripple` are handled out of the box.
-- **`rbxassetid://` is resolved for you, twice over.** Roblox's thumbnail API sends no CORS headers,
-  so a dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A
-  [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no
-  server to ask, so the ids are resolved at build time — read out of the bundle, and by mounting each
-  gallery target and reading the tree, which is what finds an id composed at runtime. An image the
-  first render never reaches still needs a real URL, or your own `setImageResolver`.
-- **The React version is pinned in effect.** The adapter's reconciler targets React 18, and the
-  plugin aliases bare `react` to one absolute path to guarantee a single instance.
-- **Text metrics are the browser's, corrected toward the engine's.** Loom measures with canvas
-  `measureText()`, so shaping and hinting are not Roblox's. Three things narrow the gap: the preview
-  loads the right typeface itself, `TextSize` is divided by the face box rather than spent as a
-  `font-size`, and advances are quantized to the half pixel and kerned the way the engine spends
-  them. Against `GetTextBoundsAsync` at 50 widths the wrapped line count matches 49 times; what is
-  left is a measurement about a percent roomy, so text wraps a hair early rather than overflowing.
-  [The detail](/loom/guides/fonts/#where-a-line-breaks).
+- **Unimplemented services fail at the call, not the import.** The ten services loom cannot honestly stand in for resolve to a warned stub whose method calls throw by name. `MarketplaceService`, `TeleportService`, `DataStoreService` and friends. A UI that merely *imports* one still mounts.
+- **A Luau-only package needs a shim.** Most roblox-ts packages redirect to their own TypeScript source automatically. A declaration-only one has none, and fails by name until you point [`shims`](/loom/guides/package-compatibility/#shims) at a browser module. `@rbxts/react`, `@rbxts/react-roblox`, `@rbxts/services`, `@rbxts/vide`, `@rbxts/ui-labs`, `@rbxts/ripple` and `@rbxts/react-ripple` are handled out of the box.
+- **`rbxassetid://` is resolved for you, twice over.** Roblox's thumbnail API sends no CORS headers, so a dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no server to ask, so the ids are resolved at build time. They are read out of the bundle, and found by mounting each gallery target and reading the tree, which catches an id composed at runtime. An image the first render never reaches still needs a real URL, or your own `setImageResolver`.
+- **The React version is pinned in effect.** The adapter's reconciler targets React 18, and the plugin aliases bare `react` to one absolute path to guarantee a single instance.
+- **Text metrics are the browser's, corrected toward the engine's.** Loom measures with canvas `measureText()`, so shaping and hinting are not Roblox's. Three things narrow the gap. The preview loads the right typeface itself. `TextSize` is divided by the face box rather than spent as a `font-size`. And advances are quantized to the half pixel and kerned the way the engine spends them. Against `GetTextBoundsAsync` at 50 widths, the wrapped line count matches 49 times. What is left is a measurement about a percent roomy, so text wraps a hair early rather than overflowing. [The detail](/loom/guides/fonts/#where-a-line-breaks).
 
 ## Versioning
 
