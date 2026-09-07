@@ -30,9 +30,7 @@ exist so real component code — which sets them for the Roblox build — runs u
 edits.
 
 <Callout title="An enum prop can be written as a bare string">
-The engine takes the string wherever it takes the item — `AutomaticSize="XY"` *is*
-`Enum.AutomaticSize.XY`, and roblox-ts's own React typings offer both spellings. Loom reads either,
-everywhere, as of `0.9.1`. Before that release the Scene IR encoded a string happily, but every place the adapters read one *back* off an instance insisted on an `EnumItem`. A label written `AutomaticSize="XY"` was auto-sized by the layout and measured by nobody, so it collapsed to zero and spilled its text. `FontSize` written as a string was ignored the same way.
+The engine takes the string wherever it takes the item — `AutomaticSize="XY"` *is* `Enum.AutomaticSize.XY`, and roblox-ts's own React typings offer both spellings. Loom reads either, everywhere.
 </Callout>
 
 <Callout title="`EnumItem.Value` changed in `0.12.0`">
@@ -113,43 +111,32 @@ font the renderer paints and hands the result to the WASM engine as `TextBounds`
 metrics do not exist inside the engine. Which typeface that is, and why it is worth pinning, is
 [Fonts and text metrics](/loom/guides/fonts/).
 
-`TextWrapped` is honored: the runs are laid into lines at word boundaries rather than measured as one
-long line. Since `0.9.5` **one function decides every wrap** — measurement asks it how many lines a
-label needs, and the text layer asks it where to put the breaks it paints. Before that the box came
-from the measurer while the glyphs inside it were left to CSS, which wraps on its own kerned run
-widths, so a label could reserve nine lines and paint eight, breaking at different words than Studio.
-The advances behind it are the engine's: half-pixel per grapheme since `0.9.4`, plus the run's kerning
-since `0.9.5`.
+`TextWrapped` is honored: runs are laid into lines at word boundaries rather than measured as one
+long line, and **one function decides every wrap** — measurement asks it how many lines a label
+needs, and the text layer asks where to put the breaks it paints. The advances behind it are the
+engine's, half a pixel per grapheme plus the run's kerning.
 
-**The wrap width is the nearest ancestor that has a width of its own**, less every
-`UIPadding` in between — not the immediate parent. A parent that is itself `AutomaticSize` was sized
-*by* the label, so wrapping against it is the same circle as wrapping against the label's own width,
-and the text never wraps at all. The library idiom stacks two or three such containers (a padded body
-inside a flex item inside a card), and the card — the one node with a real width — is where the room
-actually runs out.
+**The wrap width is the nearest ancestor with a width of its own**, less every `UIPadding` in
+between — not the immediate parent. A parent that is itself `AutomaticSize` was sized *by* the
+label, so wrapping against it never wraps at all. The library idiom stacks two or three such
+containers, and the one node with a real width is where the room runs out.
 
 The re-wrap settles inside the paint that caused it. The wrap width comes from the layout that paint
-produces, so the first measurement after a container narrows is still against the old width. The
-adapter re-encodes and re-lays-out until the two agree — up to four passes, then it defers to the
-next frame — and patches the DOM once, with the settled result. Rendering the first pass would put a
-label wider than its container on screen for a frame — which, during a live window drag, is every
-frame.
+produces, so the first measurement after a container narrows is against the old width; the adapter
+re-lays-out until the two agree — up to four passes, then it defers to the next frame — and patches
+the DOM once. Rendering the first pass would put a too-wide label on screen for a frame, which
+during a window drag is every frame.
 
 A `RichText` string is measured run by run in the font its own tags ask for, so a bold or resized run
 does not clip. An empty `TextBox` is measured against its `PlaceholderText`, which is what it
 displays — otherwise an `AutomaticSize.Y` input would collapse to zero height and become unclickable.
 
-Both adapters do this. The `vide` adapter measured by splitting on newlines only until `0.6.4`, so
-`TextWrapped` did nothing there and the same scene laid out differently through vide than through
-react — the one thing a shared Scene IR is supposed to rule out.
+Both adapters do this, so the same scene lays out identically through vide and react.
 
 The wrap width also carries the `UIPadding` insets in between, **including scale ones**. The layout
-engine resolves a scale inset against the node's own width where its X axis is a real one, and
-against zero where the axis is automatic — a scale inset on an automatic axis is circular, since the
-width sets the padding sets the width. Until `0.8.1` the adapter read offsets only — the right
-answer for the automatic case and wrong for the other. A wrapped label under a
-`PaddingLeft={new UDim(0.15, 0)}` ancestor was measured against a width that ignored the inset, and
-came out with a box built for fewer lines than it was then painted with.
+engine resolves a scale inset against the node's own width where its X axis is real, and against
+zero where the axis is automatic — a scale inset on an automatic axis is circular, since the width
+sets the padding sets the width.
 
 ### `TextSize` is a face height, not a font size
 
@@ -157,46 +144,34 @@ came out with a box built for fewer lines than it was then painted with.
 ascender to descender, which is why one line measures exactly that tall — while CSS `font-size` sets
 the em square, and a face's ascent plus descent runs well past 1em.
 
-Until `0.9.3` loom painted `font-size: TextSize` straight through, so every glyph came out too big by
-its own face's ratio: 17% for Roboto, 25% for Merriweather, 47% for Oswald. Text then measured that
-much wider, wrapped that much earlier, and `AutomaticSize` boxes came out taller and wider than the
-engine's. Loom now divides by the face box, and `LineHeight` sets the line box in pixels off
-`TextSize` because the pitch the engine spends is `TextSize`-relative rather than font-size relative.
-Which ratio to divide by is itself calibrated per family — see
-[`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
+Loom divides by the face box rather than painting `font-size: TextSize` straight through, which
+would draw every glyph too big by its face's own ratio. `LineHeight` sets the line box in pixels off
+`TextSize`, since the engine's pitch is `TextSize`-relative. Which ratio to divide by is calibrated
+per family — see [`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
 
-Until `0.8.1` the text overlay was also clipped to the box the layout computed, so the browser's
-taller line boxes had nowhere to go and the clip took the difference out of the glyphs. A
-paragraph's last line lost the tails of its `y`, `p` and `g`, and at a large `TextSize` the first
-line lost the tops of its ascenders. The clip rect carries that overhang now, with padding handing
-the content box its original height straight back. Nothing about the layout moves: `TextBounds`,
-`AbsoluteSize` and every rect around the label are the values they were, and a label still clips its
-own text at its left and right edges.
+The clip rect carries the overhang the browser's taller line boxes need, with padding handing the
+content box its original height back — otherwise a paragraph's last line loses the tails of its `y`,
+`p` and `g`. Nothing about the layout moves: `TextBounds`, `AbsoluteSize` and every rect around the
+label are unchanged, and a label still clips its own text at its left and right edges.
 
 ### `AutomaticSize` is bounded by the parent
 
-Roblox bounds automatic growth: an object with `AutomaticSize` on an axis grows up to the maximum
-size its parent allows, and a `TextWrapped` label grows until that maximum and only *then* wraps.
-Until `0.6.4` loom grew unbounded, so any content with an irreducible minimum — a row of buttons, a
-long word — pushed its container past the slot positioning it. At a narrow viewport a `45%`-wide
-card grew over the card beside it.
+Roblox bounds automatic growth: an object with `AutomaticSize` grows up to the maximum its parent
+allows, and a `TextWrapped` label grows to that maximum and only *then* wraps.
 
-Every auto-sized node now carries the ceiling its parent leaves, inherited through the padding in
-between. `Size` remains the floor even when it is itself past that ceiling, and a wrapping
-`UIListLayout` on an automatic fill axis wraps against the same ceiling rather than measuring as one
-run. Content that still does not fit **overflows**, which is what the engine does — it does not widen
-the object to make room.
+Every auto-sized node carries the ceiling its parent leaves, inherited through the padding in
+between. `Size` remains the floor even past that ceiling, and a wrapping `UIListLayout` wraps
+against the same ceiling. Content that still does not fit **overflows**, which is what the engine
+does — it does not widen the object to make room.
 
-**A `ScrollingFrame` is the exception**, since `0.9.3`. A canvas free to grow is one whose entire
-point is outgrowing the window, so children of a `ScrollingFrame` get no ceiling on an axis carrying
-`AutomaticCanvasSize` or a `CanvasSize` of 0. A `CanvasSize` that gives the axis a real extent is
-still the ceiling it always was. Before that release the ceiling applied here too, so the canvas came
-out exactly the window's size and nothing ever scrolled.
+**A `ScrollingFrame` is the exception.** A canvas free to grow is one whose whole point is
+outgrowing the window, so its children get no ceiling on an axis carrying `AutomaticCanvasSize` or a
+`CanvasSize` of 0. A `CanvasSize` giving the axis a real extent is still a ceiling.
 
 ## Image properties
 
-Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text — a
-background-painted element rather than an `<img>`, because a sprite window and a 9-slice both place a
+Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text, as a
+background-painted element rather than an `<img>` — a sprite window and a 9-slice both place a
 *region* of the source, which `object-fit` cannot express.
 
 | Property | Status | Notes |
@@ -225,9 +200,7 @@ Roblox's thumbnail API sends no CORS headers, so the browser cannot resolve an a
   server-side and answered as a redirect from `<base>__loom/asset/<id>`.
 - **In a static build** (`loom build`, `vite build`) there is no server later. The ids are resolved *at build time*, the images downloaded into the output, and a `__loom/assets.json` manifest points the page at them — see [Static builds and embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
 
-The build finds those ids two ways. It reads the emitted output for `rbxassetid://<digits>`, and — since `0.9.5` — it mounts each gallery target in node and reads the live tree, which catches an id composed at runtime (`` `rbxassetid://${iconId}` ``). An image the first render never reaches
-is still missed. Anywhere else, install your own resolver with `setImageResolver` from
-`@loom-dev/renderer`.
+The build finds those ids two ways: it reads the emitted output for `rbxassetid://<digits>`, and it mounts each gallery target in node and reads the live tree, catching an id composed at runtime. An image the first render never reaches is still missed — install your own resolver with `setImageResolver` for those.
 </Callout>
 
 ## TextBox properties
@@ -252,15 +225,9 @@ is still missed. Anywhere else, install your own resolver with `setImageResolver
 | `VerticalScrollBarInset` `HorizontalScrollBarInset` | **Accepted** | The bar is always painted *over* the canvas — Roblox's `ScrollBarInset.None`, which is also the engine's default. `AbsoluteWindowSize` reserves nothing for it, so a layout that budgets for an inset bar comes out that many pixels wider here than in Studio. |
 
 <Callout title="Scrolling only started working in `0.9.3`">
-A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, and loom capped every child's automatic growth at its parent's box. Right for a `45%` column; wrong for a canvas, where outgrowing the window is the whole point. The column came out exactly the window's
-height, so the canvas equalled the window, nothing overflowed and nothing scrolled. And with no bar
-drawn, a frame that *did* have something to scroll looked like a static clipped box.
+A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, and loom capped every child's growth at its parent's box — right for a `45%` column, wrong for a canvas. The column came out exactly the window's height, so nothing overflowed and nothing scrolled.
 
-A `ScrollingFrame` now leaves its children no ceiling on an axis whose canvas is free to grow —
-`AutomaticCanvasSize`, or a `CanvasSize` of 0 on that axis. A `CanvasSize` that gives the axis a real
-extent is still the ceiling it always was. The bar is drawn from the same window/canvas math the
-adapters feed back as `AbsoluteWindowSize`/`AbsoluteCanvasSize`, so it cannot disagree with the
-numbers a component sized itself against.
+A `ScrollingFrame` now leaves its children no ceiling on an axis whose canvas is free to grow. The bar is drawn from the same window/canvas math the adapters feed back, so it cannot disagree with the numbers a component sized itself against.
 </Callout>
 
 <Callout title="AutomaticSize plus an explicit CanvasSize">
@@ -292,10 +259,9 @@ gets a real number instead of collapsing to zero height.
 
 ### `SortOrder` defaults to `Name`
 
-Every `UIGridStyleLayout` defaults `SortOrder` to `Enum.SortOrder.Name`, which is the engine's own
-default — so **a list whose children carry distinct `Name`s flows alphabetically**, not in source
-order. Children with equal names keep source order (the sort is stable), which is why a tree that
-never sets `Name` is unaffected either way.
+Every `UIGridStyleLayout` defaults `SortOrder` to `Name`, the engine's own default — so **a list
+whose children carry distinct `Name`s flows alphabetically**, not in source order. The sort is
+stable, so a tree that never sets `Name` is unaffected.
 
 Loom defaulted to `LayoutOrder` until `0.7.0`. If a list reordered itself when you upgraded, it was
 already ordering that way in Studio; set `SortOrder={Enum.SortOrder.LayoutOrder}` to get source /
@@ -318,9 +284,8 @@ each line's own children are the cells:
 
 A column is as wide as its widest cell and a row as tall as its tallest, both measured against the
 **table's** content box — so a `0.25` scale cell is a quarter of the table, not of its row. A line
-spans the whole table on its minor axis, which is what the engine reports for the row frames
-themselves. The line's own `Size` is ignored, and so is any `UIPadding` on it — insetting each line
-separately would slide its cells off the columns they define.
+spans the whole table on its minor axis; its own `Size` is ignored, as is any `UIPadding` on it,
+which would otherwise slide its cells off the columns they define.
 
 `FillEmptySpaceColumns` / `FillEmptySpaceRows` scale the tracks **proportionally** so the table spans
 its container — in both directions, so a table whose natural width overruns is squeezed by the same
@@ -349,9 +314,7 @@ const pager = useRef<{ Next(): void; CurrentPageIndex: number }>();
 `PageEnter` → `Stopped`; `Circular` decides whether `Next` and `Previous` wrap at the ends.
 
 <Callout title="CurrentPage is an instance, so the engine reads an index">
-Roblox's `CurrentPage` is a **GuiObject reference**, and a Scene IR property value is a datatype —
-never a node — so it cannot cross the wasm boundary. The layout engine reads `CurrentPageIndex`, a
-0-based int the runtime keeps in step; `CurrentPage` still reads back as the instance for your code.
+Roblox's `CurrentPage` is a **GuiObject reference**, and a Scene IR property value is a datatype rather than a node, so it cannot cross the wasm boundary. The layout engine reads `CurrentPageIndex`, a 0-based int the runtime keeps in step; `CurrentPage` still reads back as the instance.
 
 That only matters if you drive a pager from something other than the `@rbxts/react` adapter: set
 `CurrentPageIndex` on the node yourself.

@@ -9,9 +9,9 @@ sidebar:
 
 import { Callout, Details, PackageInstall } from "@/components/docs/mdx";
 
-Vela is a compile-time utility-class system for `roblox-ts` UI — React by default, and [Vide](https://centau.github.io/vide/) when the project says so. You write Tailwind-shaped class names on Roblox host elements and on your own components, and Vela rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
+Vela is a compile-time utility-class system for `roblox-ts` UI — React by default, [Vide](https://centau.github.io/vide/) when the project says so. Write Tailwind-shaped class names on Roblox host elements and your own components, and Vela rewrites them into real Roblox properties and helper instances before roblox-ts emits Luau.
 
-It is a compiler over your `.tsx` files, not a component library you render. **Where that compiler runs is yours to pick** — as a plugin inside `rbxtsc`, or as a command that runs before it. This page installs the packages, sets up whichever you choose, and gets the type declaration in place.
+It is a compiler over your `.tsx` files, not a component library. **Where that compiler runs is yours to pick** — a plugin inside `rbxtsc`, or a command that runs before it.
 
 ## Install the packages
 
@@ -35,8 +35,7 @@ The `typescript@5.9.3` pin is deliberate: Vela calls into **your** TypeScript in
 on the first file. Nothing enforces the pin, so this is on you.
 
 <Callout title="pnpm needs `nodeLinker: hoisted`">
-Vela's runtime reaches your place *transitively*, and pnpm's default isolated linker does not put a
-transitive dependency where roblox-ts and Rojo look. Set the linker once, at the workspace root:
+Vela's runtime reaches your place *transitively*, and pnpm's isolated linker does not put a transitive dependency where roblox-ts and Rojo look. Set the linker once, at the workspace root:
 
 ```yaml title="pnpm-workspace.yaml"
 nodeLinker: hoisted
@@ -46,25 +45,21 @@ npm and Yarn hoist by default and need nothing.
 </Callout>
 
 <Details title="Why the linker matters, and why a nested .npmrc will not do">
-Both roblox-ts and Rojo resolve `@rbxts/*` by walking real directories. Under pnpm's default layout `node_modules/@rbxts/vela-runtime` simply does not exist: the package is real, but it lives inside `node_modules/.pnpm`.
+Both roblox-ts and Rojo resolve `@rbxts/*` by walking real directories, and under pnpm's default layout `node_modules/@rbxts/vela-runtime` does not exist — the package is real, but it lives inside `node_modules/.pnpm`.
 
-Most roblox-ts projects have `nodeLinker: hoisted` already, for the same reason and not because of
-Vela. A nested `.npmrc` will not do it — pnpm reads `nodeLinker` only from the workspace root.
+Most roblox-ts projects set `nodeLinker: hoisted` already, for the same reason. A nested `.npmrc` will not do it — pnpm reads it only from the workspace root.
 </Details>
 
 <Details title="What the TypeScript pin protects you from, and the rest of the version matrix">
-Vela's host adapter resolves `typescript` from **your** install and calls into its API, and
-TypeScript 7 moved enough of it that the call fails. Installing plain `typescript` today gets you 7.x
-and a build that dies on the first file:
+Vela's host adapter resolves `typescript` from **your** install and calls into its API, and TypeScript 7 moved enough of it that the call fails — so installing plain `typescript` today gets 7.x and a build that dies on the first file:
 
 ```text title="rbxtsc output with typescript@7"
 src/client/Panel.tsx:1:1 - error TS89000: [@vela-rbxts/rbxtsc-host] compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')
 ```
 
-`5.9.3` is what the Vela repo pins and tests against; `6.x` also builds. Nothing enforces this. No
-package in the repo declares a `peerDependency`, and the only `engines` field anywhere is the VS
-Code extension's `vscode: ^1.91.0`, so your package manager will not warn you — and the error you
-get names neither TypeScript nor a version.
+`5.9.3` is what the repo pins and tests against; `6.x` also builds. Nothing enforces it — no package
+declares a `peerDependency` — so your package manager will not warn you, and the error names neither
+TypeScript nor a version.
 
 The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0.0`**,
 `@rbxts/compiler-types ^3.0.0-types.0`, `@rbxts/types ^1.0.935`, `@rbxts/react ^17.3.7-ts.1`, and
@@ -72,24 +67,21 @@ The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0
 </Details>
 
 <Details title="Why no runtime host appears in those commands">
-What Vela emits for an element it could not settle at compile time is an import of a **runtime host** —
-`@rbxts/vela-runtime` for React, `@rbxts/vela-runtime-vide` for Vide. Both ship as dependencies of
-`vela-rbxts`, so neither appears in the commands above and neither is yours to keep in sync.
+An element Vela could not settle at compile time emits an import of a **runtime host** — `@rbxts/vela-runtime` for React, `@rbxts/vela-runtime-vide` for Vide. Both ship as dependencies of `vela-rbxts`, so neither is yours to keep in sync.
 
-Each host declares *its* UI library as an optional peer, which is what keeps the split honest. Rojo
-maps the whole `node_modules/@rbxts` directory into the place, so `@rbxts/react` in a Vide project
-would be React shipping to every player of a game that never renders it. It does not, because
-nothing pulls it in. The host you do not emit for is one inert ModuleScript that no module imports.
+Each host declares *its* UI library as an optional peer, which keeps the split honest: Rojo maps the
+whole `node_modules/@rbxts` directory into the place, so `@rbxts/react` in a Vide project would be
+React shipping to every player of a game that never renders it. The host you do not emit for is one
+inert ModuleScript no module imports.
 
-`@rbxts/services` matters beyond your own imports for the same reason. The host reads `{ UserInputService, Workspace }` from it to resolve viewport, input mode and rem, so it must resolve in the built place even if you never import it by hand. `@rbxts/react-roblox` is what you need to
-mount a React tree at all; Vide mounts itself.
+`@rbxts/services` matters beyond your own imports for the same reason: the host reads `{ UserInputService, Workspace }` from it to resolve viewport, input mode and rem, so it must resolve in the built place even if you never import it. `@rbxts/react-roblox` is what mounts a React tree; Vide mounts itself.
 </Details>
 
 ## Choose how Vela runs
 
-There are two ways to run it, and they are the same compiler either way. **The transformer** registers
-a plugin so the lowering happens inside `rbxtsc`. **The CLI** lowers your sources into a second tree
-first, and `rbxtsc` then compiles ordinary TSX with no plugin at all.
+Two ways to run it, the same compiler either way. **The transformer** registers a plugin so the
+lowering happens inside `rbxtsc`. **The CLI** lowers your sources into a second tree first, and
+`rbxtsc` then compiles ordinary TSX with no plugin.
 
 Neither is a lesser mode. They differ in where the work sits in your build, and that decides which one
 fits:
@@ -106,8 +98,8 @@ fits:
 | Available since | 0.1.0 | 0.11.0 |
 
 Pick the transformer when `rbxtsc` is your build and you want one moving part. Pick the CLI when a
-plugin is not an option — a pinned toolchain, a build system that drives `tsc` itself — or when you
-positively want the lowered sources as an artifact to inspect in review or in CI.
+plugin is not an option — a pinned toolchain, a build system driving `tsc` itself — or when you want
+the lowered sources as an artifact to review.
 
 Everything after this section is shared: the config file, the type declaration, and the smoke test all
 work the same on both.
@@ -124,16 +116,14 @@ Add one entry to `compilerOptions.plugins` in your existing `tsconfig.json`:
 }
 ```
 
-That is the entire tsconfig change. Everything else stays as your roblox-ts project already has it — Vela requires no compiler option of its own, and if the project builds today it will keep building. If you do not have a project yet, start from [roblox-ts's quick start](https://roblox-ts.com/docs/quick-start) and come back here.
+That is the entire tsconfig change — Vela requires no compiler option of its own, so a project that
+builds today keeps building. Without a project yet, start from
+[roblox-ts's quick start](https://roblox-ts.com/docs/quick-start).
 
 <Details title="Why the entry names a /transformer subpath, and what else goes in it">
-`vela-rbxts/transformer` is a separate export from the package root. The root export (`vela-rbxts`)
-gives you `defineConfig` and types; the `/transformer` subpath is the callable roblox-ts consumes. Do
-not swap one for the other.
+`vela-rbxts/transformer` is a separate export from the package root: the root gives you `defineConfig` and types, the subpath is the callable roblox-ts consumes. Do not swap one for the other.
 
-The plugin entry object is also where transformer options go — file-filter toggles, a diagnostic code
-base, a project root. The defaults are what you want to start with; the
-[configuration reference](/vela-rbxts/reference/config/) covers the rest.
+The plugin entry object is also where transformer options go — file filters, a diagnostic code base, a project root. The defaults are what you want to start with; the [configuration reference](/vela-rbxts/reference/config/) covers the rest.
 </Details>
 
 ### Track B — the CLI
@@ -160,21 +150,17 @@ npx vela build && npx rbxtsc -p tsconfig.json
 ```
 
 If a plugin entry is still registered, or `rootDir` still points at `src`, `vela build` says so on
-every run rather than letting the two paths quietly duplicate each other. The
-[CLI reference](/vela-rbxts/reference/cli/) has every flag, the watch behavior, and the exit codes.
+every run rather than letting the two paths duplicate each other. The
+[CLI reference](/vela-rbxts/reference/cli/) has every flag.
 
 <Details title="Edit src, never the generated tree">
-On track B the mirror is a build output. An edit inside `.vela/src` survives exactly until the next
-run touches that file, and nothing warns you when it disappears. Your editor and `tsc --noEmit` will
-point at the generated tree too, since that is what `rootDir` names — the language server still reads
-your real sources, so completions and hover on `className` are unaffected.
+The mirror is a build output: an edit inside `.vela/src` survives until the next run touches that file, with no warning when it disappears. Your editor and `tsc --noEmit` point at the generated tree too, since that is what `rootDir` names — but the language server still reads your real sources, so completions and hover are unaffected.
 </Details>
 
 ## Add `vela.config.ts`
 
-Optional. With no config file at all, Vela uses its built-in default theme — 28 color families, the
-radius scale, the spacing fallback — and infers the framework from your `tsconfig.json`. Add the file
-when you want your own theme values:
+Optional. With no config file Vela uses its built-in default theme and infers the framework from
+your `tsconfig.json`. Add the file when you want your own theme values:
 
 ```ts title="vela.config.ts"
 import { defineConfig } from "vela-rbxts";
@@ -196,18 +182,16 @@ export default defineConfig({
 });
 ```
 
-Two things to get right: every value is an **expression string written in the roblox-ts dialect**, not
-a color object or a number — and it goes under `theme.extend`, because a top-level `theme.colors`
-replaces the entire registry *and* discards `theme.extend.colors` silently. Full merge behavior is in
-the [theming guide](/vela-rbxts/guides/theming/).
+Two things to get right: every value is an **expression string in the roblox-ts dialect**, not a
+colour object or a number, and it goes under `theme.extend` — a top-level `theme.colors` replaces
+the entire registry *and* discards `theme.extend.colors` silently. See the
+[theming guide](/vela-rbxts/guides/theming/).
 
 <Details title="Where the file goes, and where Vela looks for it">
-Vela looks for `vela.config.ts` or `vela.config.json` — the `.ts` form wins when both exist — walking up from each source file's directory until it finds one or hits the filesystem root. There are no
-`.js`, `.mjs` or `.cjs` variants and no `package.json` key.
+Vela looks for `vela.config.ts` or `vela.config.json` — the `.ts` form wins when both exist — walking up from each source file's directory. There are no `.js`, `.mjs` or `.cjs` variants and no `package.json` key.
 
-Keep it at the project root, **outside** `rootDir` — Vela loads it itself, with Node, so it is build
-tooling rather than game code. Dropped into `src/`, roblox-ts sweeps it up with the rest of your
-sources and fails the build outright:
+Keep it at the project root, **outside** `rootDir`: Vela loads it with Node, so it is build tooling
+rather than game code. Dropped into `src/`, roblox-ts sweeps it up and fails the build:
 
 ```text title="rbxtsc output"
 src/vela.config.ts:1:30 - error TS roblox-ts: You cannot use modules directly under node_modules.
@@ -218,23 +202,22 @@ src/vela.config.ts:1:30 - error TS roblox-ts: You cannot use modules directly un
 
 Note that this is the opposite of the `.d.ts` file below, which *must* live inside `rootDir`.
 
-One wrinkle at the root: a roblox-ts `tsconfig.json` includes only `src`, so a typed-ESLint setup
-will report `vela.config.ts` as a file not included in the project. Widening `include` would hand
-the file back to roblox-ts, so the fix is either an ESLint override for that one path or the JSON
-form, `vela.config.json`, which no TypeScript tool tries to own.
+One wrinkle at the root: a roblox-ts `tsconfig.json` includes only `src`, so typed ESLint reports `vela.config.ts` as outside the project. Widening `include` would hand the file back to roblox-ts, so use an ESLint override for that path, or the JSON form, which no TypeScript tool tries to own.
 </Details>
 
 ## Declare the `className` prop
 
-Roblox host elements have no `className` prop in `@rbxts/types`. Vela adds one by augmenting `React.Attributes` globally, and that augmentation only takes effect if the package is imported for its side effect somewhere in your program. Create a declaration file to do that once:
+Roblox host elements have no `className` prop in `@rbxts/types`. Vela adds one by augmenting
+`React.Attributes` globally, which only takes effect if the package is imported for its side effect
+somewhere in your program:
 
 ```ts title="src/vela-env.d.ts"
 import "vela-rbxts";
 ```
 
-Without it, every `className` you write is a type error, even though Vela would still have processed
-it. Keep the file inside `src` so TypeScript picks it up with the rest of your sources; on track B the
-CLI copies `.d.ts` files through unchanged, so it arrives inside the generated tree too.
+Without it every `className` is a type error, even though Vela would still have processed it. Keep
+the file inside `src`; under the CLI, `.d.ts` files are copied through unchanged, so it arrives in
+the generated tree too.
 
 <Callout title="Do not name the file src/vela-rbxts.d.ts">
 A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` before `node_modules` for a bare specifier. Under that name, `import "vela-rbxts"` resolves to the declaration file itself rather than the package, so the augmentation never loads and `className` stays a type error — with no diagnostic pointing at the cause. Any other name works.
