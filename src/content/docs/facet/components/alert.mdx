@@ -105,7 +105,7 @@ is yours — add the context, or collapse the parts into one component taking tw
 | `default` | `bg-card border-border` | `text-card-foreground` | `text-muted-foreground` |
 | `destructive` | `bg-card border-destructive` | `text-destructive` | `text-destructive` |
 
-The destructive surface is the *same* `bg-card` as the default; only the border and text change. A
+The destructive surface is the *same* `bg-card` as the default. Only the border and text change. A
 red fill behind body text is a contrast problem the theme cannot solve, and the border carries the
 signal alone.
 
@@ -120,7 +120,7 @@ export const alertVariants = {
 ```
 
 One object rather than three `export const`s, for the reason
-[Card](/facet/components/card/#six-parts-one-recipe-object) is written the same way: every exported
+[Card](/facet/components/card/#six-parts-one-recipe-object) is written the same way. Every exported
 name costs a Luau register, and `card` once went over the 200-register limit and stopped loading.
 Three parts is nowhere near that ceiling — the shape is the convention, kept because it is free.
 
@@ -131,11 +131,11 @@ See [the register limit](/facet/guides/component-conventions/#6-flat-named-expor
 Every part carries it, exactly as `card` does: **width from the parent, height from the content**.
 A part that fails to resolve a height collapses the alert above it.
 
-`whitespace-normal` and `text-left` are on both text parts because Roblox centres text and keeps it
-on one line by default — which matters most for a description, the part most likely to wrap.
+`whitespace-normal` and `text-left` are on both text parts, because Roblox centres text and keeps it
+on one line by default. That matters most for a description, the part most likely to wrap.
 
-`font-normal` on the description is not redundant beside `font-medium` on the title: Vela leaves
-`FontFace` alone when no `font-*` appears, and Roblox's default is LegacyArial —
+`font-normal` on the description is not redundant beside `font-medium` on the title. Vela leaves
+`FontFace` alone when no `font-*` appears, and Roblox's default is LegacyArial. That is
 [the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes).
 
 ## The root keeps its background

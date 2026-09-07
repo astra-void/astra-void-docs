@@ -10,7 +10,7 @@ sidebar:
 import { Callout, Details, PackageInstall } from "@/components/docs/mdx";
 
 Facet publishes three packages, and **the components are not among them** — they are text on a
-static registry the CLI fetches and copies in. You install the CLI; it installs the other two when
+static registry the CLI fetches and copies in. You install the CLI. It installs the other two when
 they are needed.
 
 <PackageInstall packageName="facet-rbxts" dev />
@@ -63,7 +63,7 @@ Without it `className` is inert and nothing errors — you get a screen of grey 
 <Details title="Version floors: why the CLI pins vela-rbxts@^0.9.0">
 The CLI installs `vela-rbxts@^0.9.0` as a build dependency, and that floor is not decorative:
 
-- **Below 0.7.0**, `w-fit` and `font-*` silently do nothing on the computed-`className` path every `fv()` recipe produces — which is how the first published `button` shipped zero pixels wide.
+- **Below 0.7.0**, `w-fit` and `font-*` silently do nothing on the computed-`className` path every `fv()` recipe produces. That is how the first published `button` shipped zero pixels wide.
 - **Below 0.8.0**, `opacity-*`, `whitespace-*` and `leading-*` join them.
 - **Below 0.9.0**, `card` does not compile *at all*: the inlined runtime spent roughly 96 of Luau's 200 local registers before the file declared anything of its own.
 
@@ -110,7 +110,7 @@ No `import` specifier is set on those aliases by default, so copied files reach 
 <Details title="Why init creates files but never edits them">
 Both `vela.config.ts` and `tsconfig.json` belong to you and are routinely non-trivial — JSONC, comments, spreads, computed values. A pattern-matched edit that mangles one is worse than a printed snippet.
 
-There is exactly one file the CLI *does* edit, and it took a real parser: `facet add` wraps your client entry in the providers a component declares, using `@babel/parser` for positions and string splices for the edit. It is behind a prompt — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
+There is exactly one file the CLI *does* edit, and it took a real parser. `facet add` wraps your client entry in the providers a component declares, using `@babel/parser` for positions and string splices for the edit. It is behind a prompt — see [wiring a provider](/facet/reference/cli/#wiring-a-provider).
 </Details>
 
 ## Verify
@@ -119,9 +119,9 @@ There is exactly one file the CLI *does* edit, and it took a real parser: `facet
 npx facet-rbxts doctor
 ```
 
-`doctor` checks the whole setup: the config, the import aliases, the transformer, the theme, which
-components are installed, whether the tokens they name resolve, and whether the packages underneath
-meet the floors those files need.
+`doctor` checks the whole setup. The config, the import aliases, the transformer, the theme, and
+which components are installed. It also checks whether the tokens they name resolve, and whether the
+packages underneath meet the floors those files need.
 
 Then add something and build:
 

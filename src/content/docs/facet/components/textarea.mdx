@@ -62,12 +62,12 @@ input: fv(
 ```
 
 Rule 1 of the [conventions](/facet/guides/component-conventions/#1-declare-both-axes-always) is
-declare both axes, always — a Roblox instance with an unresolved axis renders at zero and takes the
+declare both axes, always. A Roblox instance with an unresolved axis renders at zero, and takes the
 row above it with it. This recipe breaks that rule on purpose, and it is the only one that does.
 
 `Textarea.Input` owns `Size.Y`. It measures the wrapped text and sets the height between `minRows`
-and `maxRows` on every keystroke. A height class here would not lose an argument with the primitive —
-it would be overwritten a frame later, which is worse, because the first render would look right.
+and `maxRows` on every keystroke. A height class here would not lose an argument with the primitive.
+It would be overwritten a frame later, which is worse, because the first render would look right.
 
 <Callout title="This is the same rule as the slider's missing flex">
 Where a Lattice primitive owns a property, the recipe stays off it. [Slider](/facet/components/slider/#the-track-has-no-flex--and-that-is-the-point)
@@ -134,8 +134,8 @@ omits position from its thumb. A primitive that owns a property is as load-beari
 />
 
 `invalid` is stated on the root **and** on the input, for
-[the reason Text field spells out](/facet/components/text-field/#invalid-is-stated-twice-and-that-is-not-a-bug):
-nothing inherits, so the context half and the appearance half are two different props on two
+[the reason Text field spells out](/facet/components/text-field/#invalid-is-stated-twice-and-that-is-not-a-bug).
+Nothing inherits, so the context half and the appearance half are two different props on two
 different instances.
 
 ## `autoResize` off
@@ -144,8 +144,8 @@ With `autoResize={false}` the primitive stops touching `Size.Y`, and the recipe'
 becomes the problem rule 1 warns about: give the input one.
 
 This is the rare case where a call-site `className` is the right place to do it. A class written
-there is resolved at that call site and arrives as instance properties, which the component's own
-recipe then overwrites *for the properties it also names* — and this recipe names no height, so
+there is resolved at that call site and arrives as instance properties. The component's own recipe
+then overwrites *the properties it also names*. This recipe names no height, so
 `<TextareaInput className="h-24" />` survives. Anything the recipe does state, like `w-full`, does
 not. The mechanism, and why it reads backwards from `cn`'s own composition rules, is in
 [overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).

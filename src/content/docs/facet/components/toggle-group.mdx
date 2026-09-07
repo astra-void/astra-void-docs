@@ -119,13 +119,11 @@ const className = toggleGroupVariants.root({ className: props.className });
 )}
 ```
 
-The obvious tidy-up — folding `className` into the shared `passthrough` bag — is the thing that
-breaks it.
+The obvious tidy-up, folding `className` into the shared `passthrough` bag, is the thing that breaks
+it.
 
 <Callout title="Vela rewrites the call sites it can see">
-A `className` written as an **attribute** is a call site the transformer resolves. A `className`
-tucked inside a spread is just a key in an object; it reaches the primitive as a raw string prop and
-is dropped in silence, with no diagnostic. The component renders unstyled and nothing says why.
+A `className` written as an **attribute** is a call site the transformer resolves. A `className` tucked inside a spread is just a key in an object. It reaches the primitive as a raw string prop and is dropped in silence, with no diagnostic. The component renders unstyled and nothing says why.
 
 Write it as an attribute. Every component in the registry does, including the ones where a spread
 would read better.
@@ -137,7 +135,7 @@ and the mirrored value is the union's full width. One branch per arm keeps the n
 ## The pressed state, and where it lands
 
 The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) is the
-group's value, held with `useControllableState` and handed to each item through a Facet context —
+group's value, held with `useControllableState` and handed to each item through a Facet context.
 Lattice's own is private, and each item's surface changes with whether it is pressed.
 
 ```tsx
@@ -147,7 +145,7 @@ className={toggleGroupVariants.item({
 ```
 
 `hover:bg-accent` is repeated on the pressed branch on purpose. The base recipe has
-`hover:bg-muted`, and last-token-wins means the later `hover:bg-accent` replaces it — without it, a
+`hover:bg-muted`, and last-token-wins means the later `hover:bg-accent` replaces it. Without it, a
 pressed item would go *lighter* under the cursor than it is at rest.
 
 The label's colour is a second class on a second instance:
