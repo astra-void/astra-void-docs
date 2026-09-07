@@ -33,7 +33,7 @@ Every leaf declares a width *and* a height: a concrete class on each axis, or `w
 
 ## 2. `AutomaticSize` is a chain
 
-A container set to hug its content can only measure children that already know their own size; one
+A container set to hug its content can only measure children that already know their own size. One
 child with an unresolved axis collapses the parent.
 
 When a component nests, **every level** needs an answer. `card` is the clearest case: every part
@@ -44,13 +44,13 @@ carries `w-full h-fit`.
 There is no cascade: `text-sm` on a button does not reach the label inside it, because text
 properties belong to the instance that draws the text.
 
-So **a component with a label needs a second recipe for that label**: `buttonVariants` sizes the
-button, `buttonLabelVariants` styles the text, both keyed off the same `size` prop. See
+So **a component with a label needs a second recipe for that label**. `buttonVariants` sizes the
+button, and `buttonLabelVariants` styles the text, both keyed off the same `size` prop. See
 [Text and labels](/facet/guides/text-and-labels/#a-label-needs-its-own-recipe).
 
 ## 4. Text arrives as a prop, renders as a child instance
 
-`Text?: string` on every component that draws a string; `children` stays composition, and
+`Text?: string` on every component that draws a string. `children` stays composition, and
 `~/lib/text`'s `TextSlot` picks between them. See [Text and labels](/facet/guides/text-and-labels/).
 
 **Every text recipe declares a `font-*`** — rule 1 again. Vela leaves `FontFace` untouched when no
@@ -73,9 +73,9 @@ instance to carry what an existing instance can carry**, which is why the regist
 ```
 
 That component exists in CSS to hide a `padding-bottom: 56.25%` trick. Roblox has
-`UIAspectRatioConstraint` and Vela lowers straight onto it, so a wrapper would add a frame, a file
-and a level to the `AutomaticSize` chain — and be less capable, since the class works on any host
-instance while a component forces a `Frame`.
+`UIAspectRatioConstraint` and Vela lowers straight onto it. A wrapper would add a frame, a file and
+a level to the `AutomaticSize` chain, and be less capable: the class works on any host instance,
+while a component forces a `Frame`.
 
 **Ratio is a class, not a component.**
 
@@ -114,7 +114,7 @@ CLI installs. The headroom is larger, still finite, and measurable:
 grep -c "^local " out/shared/ui/card.luau
 ```
 
-A number in the twenties is normal; one near 200 means the next part you add breaks the component.
+A number in the twenties is normal. One near 200 means the next part you add breaks the component.
 </Callout>
 
 ## 7. Icons are text glyphs, replaceable by slot
@@ -193,17 +193,17 @@ export function Thing(props: ThingProps) {
 ## Wrapping a Lattice primitive
 
 Everything above holds for a component that is a recipe plus a host element. Twelve of the
-components added in 0.4.0 sit on a Lattice primitive instead, and three more rules came out of
-building them — written once here rather than twelve times in the files.
+components added in 0.4.0 sit on a Lattice primitive instead. Three more rules came out of building
+them, written once here rather than twelve times in the files.
 
 ### A. State you style by is mirrored, not reached for
 
-Lattice keeps its contexts **private**. `Checkbox.Root` knows whether it is checked; nothing outside
-the primitive can read that. But the border and the fill are the wrapper's job, so the wrapper needs
-the same answer.
+Lattice keeps its contexts **private**. `Checkbox.Root` knows whether it is checked, and nothing
+outside the primitive can read that. But the border and the fill are the wrapper's job, so the
+wrapper needs the same answer.
 
-The way out is not to reach in. Hold the value in the copied file with `useControllableState` — the
-same hook the primitive uses — and drive the primitive **controlled** from it:
+The way out is not to reach in. Hold the value in the copied file with `useControllableState`, the
+same hook the primitive uses, and drive the primitive **controlled** from it:
 
 ```tsx
 const [checked, setChecked] = useControllableState<CheckedState>({
@@ -216,19 +216,19 @@ const [checked, setChecked] = useControllableState<CheckedState>({
 ```
 
 One copy of the state, and it lives in the file you own. Where a component does *not* style by a
-state, there is no mirror: [`progress`](/facet/components/progress/) maps a number to a width and
-[`radio-group`](/facet/components/radio-group/#half-the-state-is-mirrored-half-is-not)'s inner dot is
-mounted and unmounted by the primitive.
+state, there is no mirror. [`progress`](/facet/components/progress/) maps a number to a width, and
+[`radio-group`](/facet/components/radio-group/#half-the-state-is-mirrored-half-is-not)'s inner dot
+is mounted and unmounted by the primitive.
 
 The cost is that the mirror only knows what it was told. `Tabs.Root` falls back to the first enabled
-trigger when it has no value, and the mirror cannot see that decision — so
-[`tabs` needs a `defaultValue`](/facet/components/tabs/#pass-defaultvalue) or nothing styles as
+trigger when it has no value, and the mirror cannot see that decision. So
+[`tabs` needs a `defaultValue`](/facet/components/tabs/#pass-defaultvalue), or nothing styles as
 selected.
 
 ### B. A `className` on a primitive call site has to be an attribute
 
-Vela rewrites the call sites it can **see**. Written as an attribute, `className` is resolved;
-folded into a shared spread it is just a key in an object, reaching the primitive as a raw string
+Vela rewrites the call sites it can **see**. Written as an attribute, `className` is resolved.
+Folded into a shared spread, it is just a key in an object, reaching the primitive as a raw string
 prop and dropped in silence.
 
 ```tsx
@@ -260,8 +260,8 @@ on mount and is overwritten as soon as the value moves.
 ### D. A forwarded prop bag crosses a boundary widened
 
 `toSlotProps` is the crossing point. The typed passthrough bag collides with the runtime host's
-`ref` and with primitives that type `children` as a *single* element, so several files add a local
-`forwardProps` widening the bag and dropping `children` from its type. The bag never carries one —
+`ref`, and with primitives that type `children` as a *single* element. Several files add a local
+`forwardProps` that widens the bag and drops `children` from its type. The bag never carries one:
 `children` is always an own prop.
 
 ## Wrapping a layered primitive
@@ -269,21 +269,21 @@ on mount and is overwritten as soon as the value moves.
 [`dialog`](/facet/components/dialog/) is the first, and three more things came out of it.
 
 **A `PortalProvider` has to be above the app.** `Dialog.Portal` reads a strict context for the
-`BasePlayerGui` it renders into, and missing it *throws on open* rather than rendering nowhere — the
-only build-clean runtime failure in the registry. The component declares it, so `facet add` can
+`BasePlayerGui` it renders into. Missing it *throws on open* rather than rendering nowhere, which is
+the only build-clean runtime failure in the registry. The component declares it, so `facet add` can
 [offer to write it](/facet/reference/cli/#wiring-a-provider) and `facet doctor` notices when it goes
 missing.
 
 **The styled panel is a frame inside the primitive's content, never the content itself.** The
-primitive forces `Size` on its own host so the layer spans the screen, *and* takes the first host
-element under it as the outside-press boundary. A `className` there fights the first and, through
-the `UICorner` Vela prepends for `rounded-*`, quietly becomes the second.
+primitive forces `Size` on its own host so the layer spans the screen. It *also* takes the first
+host element under it as the outside-press boundary. A `className` there fights the first, and
+through the `UICorner` Vela prepends for `rounded-*` it quietly becomes the second.
 
 **A class forwarded to another component has to reach one `className` expression.** Vela resolves a
-`className` at the call site and hands the component the resolved *properties*, so a class routed
+`className` at the call site and hands the component the resolved *properties*. A class routed
 through a wrapper's `className` is overwritten by that wrapper's recipe. `dialog` spells the prop
 [`overlayClassName`](/facet/components/dialog/#overlayclassname-not-classname) and merges it where
-the overlay resolves — the
+the overlay resolves. It is the
 [`TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one level up.
 
 ## Two things about spread order
@@ -299,9 +299,9 @@ are *composed* rather than replaced:
 Event: composeEvents(passthrough.Event, { Activated: handleActivated })
 ```
 
-Appearance is a weaker promise than the ordering suggests: Vela emits a component's class-derived
+Appearance is a weaker promise than the ordering suggests. Vela emits a component's class-derived
 props *after* every spread, so a consumer's passthrough value loses to anything the recipe sets.
-What survives is any property the classes do not touch — `LayoutOrder`, `Position`, `Visible`,
+What survives is any property the classes do not touch: `LayoutOrder`, `Position`, `Visible`,
 `ZIndex`.
 
 ## Readability is a feature

@@ -48,14 +48,14 @@ npm and Yarn hoist by default. A nested `.npmrc` will not do it — pnpm reads `
 </Callout>
 
 <Details title="What the TypeScript pin protects you from, and the rest of the version matrix">
-Vela's host adapter resolves `typescript` from **your** install and calls into its API, and TypeScript 7 moved enough of it that the call fails — so plain `typescript` today gets 7.x and a build that dies on the first file:
+Vela's host adapter resolves `typescript` from **your** install and calls into its API. TypeScript 7 moved enough of that API to break the call, so a plain `typescript` install today gets 7.x and a build that dies on the first file:
 
 ```text title="rbxtsc output with typescript@7"
 src/client/Panel.tsx:1:1 - error TS89000: [@vela-rbxts/rbxtsc-host] compiler-invocation-failed: Cannot read properties of undefined (reading 'Latest')
 ```
 
-`5.9.3` is what the repo pins and tests against; `6.x` also builds. No package declares a
-`peerDependency`, so your package manager will not warn you and the error names neither TypeScript
+`5.9.3` is what the repo pins and tests against, and `6.x` also builds. No package declares a
+`peerDependency`, so your package manager will not warn you, and the error names neither TypeScript
 nor a version.
 
 The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0.0`**,
@@ -64,11 +64,9 @@ The rest of what Vela is developed against: **Node 24** in CI, **roblox-ts `^3.0
 </Details>
 
 <Details title="Why no runtime host appears in those commands">
-An element Vela could not settle at compile time imports a **runtime host** — `@rbxts/vela-runtime` for React, `@rbxts/vela-runtime-vide` for Vide. Both ship as dependencies of `vela-rbxts`, and each declares *its* UI library as an optional peer, so the host you do not emit for is one inert ModuleScript.
+An element Vela could not settle at compile time imports a **runtime host**: `@rbxts/vela-runtime` for React, `@rbxts/vela-runtime-vide` for Vide. Both ship as dependencies of `vela-rbxts`, and each declares *its* UI library as an optional peer. The host you do not emit for is one inert ModuleScript.
 
-`@rbxts/services` matters beyond your own imports: the host reads `{ UserInputService, Workspace }`
-from it for viewport, input mode and rem, so it must resolve in the built place.
-`@rbxts/react-roblox` mounts a React tree; Vide mounts itself.
+`@rbxts/services` matters beyond your own imports. The host reads `{ UserInputService, Workspace }` from it for viewport, input mode and rem, so it must resolve in the built place. `@rbxts/react-roblox` mounts a React tree, and Vide mounts itself.
 </Details>
 
 ## Choose how Vela runs
@@ -90,9 +88,9 @@ They differ in where the work sits in your build:
 | Processes to keep running | One | Two |
 | Available since | 0.1.0 | 0.11.0 |
 
-Pick the transformer when `rbxtsc` is your build. Pick the CLI when a plugin is not an option — a
-pinned toolchain, a build system driving `tsc` itself — or when you want the lowered sources as an
-artifact.
+Pick the transformer when `rbxtsc` is your build. Pick the CLI when a plugin is not an option, such
+as a pinned toolchain or a build system driving `tsc` itself, or when you want the lowered sources
+as an artifact.
 
 Everything after this section is shared: the config file, the type declaration, and the smoke test all
 work the same on both.
@@ -115,7 +113,7 @@ yet, start from [roblox-ts's quick start](https://roblox-ts.com/docs/quick-start
 <Details title="Why the entry names a /transformer subpath, and what else goes in it">
 `vela-rbxts/transformer` is a separate export from the package root: the root gives you `defineConfig` and types, the subpath is the callable roblox-ts consumes.
 
-The plugin entry object is also where transformer options go — file filters, a diagnostic code base, a project root — all covered in the [configuration reference](/vela-rbxts/reference/config/).
+The plugin entry object is also where transformer options go: file filters, a diagnostic code base, a project root. All are covered in the [configuration reference](/vela-rbxts/reference/config/).
 </Details>
 
 ### Track B — the CLI
@@ -172,8 +170,8 @@ export default defineConfig({
 });
 ```
 
-Two things to get right: every value is an **expression string in the roblox-ts dialect**, and it
-goes under `theme.extend` — a top-level `theme.colors` replaces the whole registry *and* discards
+Two things to get right. Every value is an **expression string in the roblox-ts dialect**, and it
+goes under `theme.extend`. A top-level `theme.colors` replaces the whole registry *and* discards
 `theme.extend.colors` silently. See the [theming guide](/vela-rbxts/guides/theming/).
 
 <Details title="Where the file goes, and where Vela looks for it">
@@ -208,7 +206,7 @@ Without it every `className` is a type error, even though Vela would still have 
 the file inside `src` — under the CLI, `.d.ts` files are copied through unchanged.
 
 <Callout title="Do not name the file src/vela-rbxts.d.ts">
-A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` before `node_modules` for a bare specifier. Under that name `import "vela-rbxts"` resolves to the declaration file itself, so the augmentation never loads and `className` stays a type error with nothing pointing at the cause. Any other name works.
+A roblox-ts project sets `baseUrl` to `src`, and TypeScript tries `baseUrl` before `node_modules` for a bare specifier. Under that name, `import "vela-rbxts"` resolves to the declaration file itself. The augmentation never loads, and `className` stays a type error with nothing pointing at the cause. Any other name works.
 </Callout>
 
 ## Install the language server
@@ -243,10 +241,10 @@ Then point your client's server command at it:
 npx --package @vela-rbxts/lsp vela-rbxts-lsp
 ```
 
-`--package` is not optional: the binary is named `vela-rbxts-lsp` but the package owning it is
-`@vela-rbxts/lsp`, while `vela-rbxts-lsp` alone is the VS Code extension id, published as a VSIX.
-The platform binary arrives as an optional dependency picked by `os`/`cpu`. Linux arm64 musl and
-Windows on ARM have no prebuilt binary on either channel and need a source build.
+`--package` is not optional. The binary is named `vela-rbxts-lsp`, but the package owning it is
+`@vela-rbxts/lsp`. `vela-rbxts-lsp` alone is the VS Code extension id, published as a VSIX. The
+platform binary arrives as an optional dependency picked by `os`/`cpu`. Linux arm64 musl and Windows
+on ARM have no prebuilt binary on either channel and need a source build.
 
 **Nothing hands the server your config here.** Passing the resolved theme is the client's job,
 through `initializationOptions`. Skip it and the server falls back to the default theme, so every
@@ -281,10 +279,7 @@ You need no Vela-specific Rojo mapping.
 <Details title="Why the runtime import resolves with no project change">
 Most of what Vela produces is a Roblox property or a helper instance emitted as a JSX child. The rest is an import of `@rbxts/vela-runtime`, one ModuleScript the whole place shares.
 
-It resolves because roblox-ts only resolves a package whose scope directory is one of the project's
-`typeRoots`, and `node_modules/@rbxts` is the one every roblox-ts project lists and every Rojo
-template maps to `ReplicatedStorage` — the same route `@rbxts/react` takes. (This is what the
-`nodeLinker` note is about: the directory has to be real for either tool to walk into it.)
+It resolves because roblox-ts only resolves a package whose scope directory is one of the project's `typeRoots`. `node_modules/@rbxts` is the one every roblox-ts project lists and every Rojo template maps to `ReplicatedStorage`, the same route `@rbxts/react` takes. This is what the `nodeLinker` note is about: the directory has to be real for either tool to walk into it.
 </Details>
 
 ## Check that it actually took
@@ -314,14 +309,13 @@ If you get the warning, everything is wired: Vela is running and diagnostics are
 the file.
 
 <Details title="No warning — what to check">
-**`className` is also a type error in your editor.** The ambient declaration is not loading — check
-the `.d.ts` file exists inside `src` and is not named `src/vela-rbxts.d.ts`.
+**`className` is also a type error in your editor.** The ambient declaration is not loading. Check that the `.d.ts` file exists inside `src` and is not named `src/vela-rbxts.d.ts`.
 
-**`className` type-checks fine.** On track A, either the transformer is not running — check the `plugins` entry spells the `/transformer` subpath and the file ends in `.tsx` — or your roblox-ts does not expose `context.addDiagnostic` and is discarding every Vela warning, which makes broken classes look clean forever. On track B, check you ran `vela build` and that its header names the directory you expected.
+**`className` type-checks fine.** On track A, either the transformer is not running, or your roblox-ts does not expose `context.addDiagnostic` and is discarding every Vela warning. For the first, check that the `plugins` entry spells the `/transformer` subpath and the file ends in `.tsx`. The second makes broken classes look clean forever. On track B, check you ran `vela build` and that its header names the directory you expected.
 </Details>
 
 <Details title="What the emitted file should look like">
-Check the emitted file — `out/` on track A, `.vela/src` on track B. `p-4` should have become a `<uipadding>` child and the `className` attribute should be gone; if the attribute survived, the element was skipped.
+Check the emitted file: `out/` on track A, `.vela/src` on track B. `p-4` should have become a `<uipadding>` child, and the `className` attribute should be gone. If the attribute survived, the element was skipped.
 
 The padding values read as `__VelaRem.scale(new UDim(0, 16), 0)` rather than a bare `new UDim(0, 16)`, and the file grows an import of `@rbxts/vela-runtime`. That is [rem](/vela-rbxts/guides/theming/#rem): `16` is the value at the base viewport, and the scaler follows the real one.
 </Details>
@@ -330,9 +324,7 @@ The padding values read as `__VelaRem.scale(new UDim(0, 16), 0)` rather than a b
 
 - [Your first component](/vela-rbxts/getting-started/first-component/) — write a panel, put it on
   screen, and read exactly what each class lowered to.
-- [Editor setup](/vela-rbxts/guides/editor-setup/) — what the server you just installed actually
-  provides, the three settings it contributes, sorting class names on save, and how to configure a
-  non-VS Code client.
+- [Editor setup](/vela-rbxts/guides/editor-setup/) — what the server provides, the three settings it contributes, sorting class names on save, and configuring a non-VS Code client.
 - [The playground](/vela-playground/) — compile class strings in the browser against the real
   compiler, with no project at all.
 - [Vide](/vela-rbxts/guides/vide/) — what changes when the project emits for Vide instead of React,
