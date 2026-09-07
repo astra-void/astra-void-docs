@@ -11,8 +11,8 @@ import { Callout } from "@/components/docs/mdx";
 
 `loomPreview()` is the whole product. The `loom` CLI is a thin wrapper around it: a Vite server with
 `configFile: false` and this one plugin. Anything the CLI does, your own `vite.config.ts` gets by
-calling the plugin yourself — including the parts that used to be CLI-only, namely the generated
-page, the client-entry detection and gallery mode.
+calling the plugin yourself. That includes the generated page, the client-entry detection and
+gallery mode.
 
 Everything below was verified end to end against Vite 6.4.3 and pnpm 11, on a project sitting outside
 loom's own workspace.
@@ -54,19 +54,14 @@ export default defineConfig({
 That is genuinely the whole config, and there is **no `index.html` to write either**. `vite` and
 `vite build` now work against a roblox-ts source tree as-is:
 
-- `loomPreview()` returns an array of plugins and contributes its own `esbuild`, `optimizeDeps`,
-  `resolve.alias` and `server.fs.allow` through the `config` hook, deep-merged with — and overridable
-  by — whatever you write.
-- With no `index.html` in the project root, it generates one: a full-viewport `#loom-root` on a
-  `#14161a` background plus a module script pointing at your client entry, which it finds by walking
-  the roblox-ts conventions (`src/main.client.tsx` first — the [full
-  list](/loom/getting-started/first-preview/#what-the-plugin-looks-for) is in Your first preview).
+- `loomPreview()` returns an array of plugins. It contributes its own `esbuild`, `optimizeDeps`, `resolve.alias` and `server.fs.allow` through the `config` hook, deep-merged with whatever you write and overridable by it.
+- With no `index.html` in the project root, it generates one. A full-viewport `#loom-root` on a `#14161a` background, plus a module script pointing at your client entry. It finds that entry by walking the roblox-ts conventions, starting at `src/main.client.tsx`. The [full list](/loom/getting-started/first-preview/#what-the-plugin-looks-for) is in Your first preview.
 
 See the [plugin reference](/loom/reference/vite-plugin/) for the exact contributions.
 
 ## 3. Options
 
-Every option is optional; the defaults are what the CLI uses.
+Every option is optional. The defaults are what the CLI uses.
 
 ```ts title="vite.config.ts"
 loomPreview({
@@ -85,9 +80,7 @@ loomPreview({
 | `html` | `boolean` | `true` | `false` keeps the plugin out of the HTML business entirely — no generated page, no entry detection, no Rollup input. Only the module plumbing stays. |
 
 <Callout title="Your own index.html still wins">
-The generated page only fills in when the project root has no `index.html`. If it has one, Vite
-serves it as usual and the plugin stays out of the way — in that case the `#loom-root` element is
-yours to provide (see below). Gallery mode is the one exception: `targets` means you asked for the
+The generated page only fills in when the project root has no `index.html`. If it has one, Vite serves it as usual and the plugin stays out of the way. The `#loom-root` element is then yours to provide, as below. Gallery mode is the one exception: `targets` means you asked for the
 sidebar shell, so its page wins over a project `index.html`.
 </Callout>
 
@@ -115,8 +108,8 @@ it is unstyled and the preview will not fill the viewport.
 </html>
 ```
 
-That is exactly what the plugin generates, so the reason to write it yourself is wanting something
-else in the document — a font link, a wrapper element, your own background.
+That is exactly what the plugin generates. Write it yourself when you want something else in the
+document: a font link, a wrapper element, your own background.
 
 The entry itself is an ordinary roblox-ts client entry — see [Your first
 preview](/loom/getting-started/first-preview/). At this point `vite` serves an interactive preview:
@@ -129,15 +122,13 @@ pnpm vite build     # → dist/
 ```
 
 The build emits a self-contained client-only SPA: your entry, the adapter, the renderer and the WASM
-layout binary, hostable anywhere. The Roblox datatype globals are part of the bundle — the plugin
-prepends `import ".../globals.ts"` to the page's entry modules, so `installGlobals()` runs before any
-module that touches `UDim2` evaluates. That applies to the generated page *and* to your own
+layout binary, hostable anywhere. The Roblox datatype globals are part of the bundle. The plugin
+prepends `import ".../globals.ts"` to the page's entry modules, so `installGlobals()` runs before
+any module that touches `UDim2` evaluates. That applies to the generated page *and* to your own
 `index.html`, whose module scripts it reads out of the file.
 
 <Callout title="Older versions needed a manual globals import">
-Before 0.3.0 the globals were dev-server-only: a stock `vite build` compiled cleanly, shipped, and
-then threw `ReferenceError: UDim2 is not defined` on first render unless you wrote
-`import "@loom-dev/preview/globals";` as the first import of your entry. That import is now
+Before 0.3.0 the globals were dev-server-only. A stock `vite build` compiled cleanly, shipped, and then threw `ReferenceError: UDim2 is not defined` on first render, unless you wrote `import "@loom-dev/preview/globals";` as the first import of your entry. That import is now
 unnecessary — and still harmless if you keep it, since the installer is idempotent.
 </Callout>
 
@@ -152,17 +143,17 @@ export default defineConfig({
 });
 ```
 
-Each target becomes its own async chunk, and the built page honors the same
-[`?target=` / `?chrome=` / `?theme=` / `?background=` / `?base=` URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract)
-`loom build` produces — they are the same code path. The target contract itself is covered in
+Each target becomes its own async chunk. The built page honours the same
+[URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract) `loom build` produces,
+since they are the same code path. The target contract itself is covered in
 [Gallery targets](/loom/guides/gallery-targets/).
 
 ## Next steps
 
-Three things reliably break a working setup once it moves into a real workspace: importing the
+Three things reliably break a working setup once it moves into a real workspace. Importing the
 plugin by file path, pointing it at an unbuilt source checkout, and sharing a Vite config with an
-app that has its own React. All three are in [Advanced Vite
-setup](/loom/guides/advanced-vite-setup/).
+app that has its own React. All three are in
+[Advanced Vite setup](/loom/guides/advanced-vite-setup/).
 
 For error strings and what each one actually means, see
 [Troubleshooting](/loom/guides/troubleshooting/).
