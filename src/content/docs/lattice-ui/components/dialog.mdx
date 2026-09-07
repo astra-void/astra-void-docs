@@ -33,8 +33,8 @@ import { Dialog } from "@lattice-ui/react-dialog";
 
 ## Anatomy
 
-`Trigger`, `Overlay` and `Close` are optional depending on how you drive the dialog; `Root`,
-`Portal` and `Content` are the minimum useful surface.
+`Root`, `Portal` and `Content` are the minimum useful surface. `Trigger`, `Overlay` and `Close` are
+optional, depending on how you drive the dialog.
 
 <PrimitiveAnatomy title="Dialog anatomy">
 
@@ -528,7 +528,7 @@ unless you veto them.
 ### Motion and presence
 
 `Dialog.Content` renders your children inside a full-screen `Frame` and runs **no motion of its
-own**. Pass a `transition` and it is used as-is; animate `Position` and the whole surface slides:
+own**. Pass a `transition` and it is used as-is. Animate `Position` and the whole surface slides:
 
 ```tsx title="Opting into the reveal"
 import { motionTargets, type PresenceMotionConfig } from "@lattice-ui/react-motion";
@@ -589,11 +589,11 @@ still owns presence timing. To animate a dim, render an element inside the overl
 `asChild`, and animate it yourself with `createOverlayFadeRecipe()`.
 
 <Callout title="An unstyled overlay is invisible, not absent">
-`Dialog.Overlay` renders a fully transparent full-screen `textbutton`. It still covers the screen and still swallows presses — which is how press-to-close and modal blocking work — but it draws nothing until you give it a color. Pass `BackgroundColor3` and `BackgroundTransparency` directly; it also renders children, so a `uigradient` or nested frame works too.
+`Dialog.Overlay` renders a fully transparent full-screen `textbutton`. It still covers the screen and still swallows presses, which is how press-to-close and modal blocking work. But it draws nothing until you give it a color. Pass `BackgroundColor3` and `BackgroundTransparency` directly. It also renders children, so a `uigradient` or nested frame works too.
 </Callout>
 
 <Callout title="Roblox layering">
-The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, ignoring GUI inset) rendered into `BasePlayerGui`, not the local component tree. Use `container` on `Dialog.Portal` to target a specific `PlayerGui` and `displayOrderBase` to place the layer's `DisplayOrder` band; within a band, later-opened layers stack above earlier ones automatically.
+The layered surface is a generated `ScreenGui` (with `ZIndexBehavior.Sibling`, ignoring GUI inset) rendered into `BasePlayerGui`, not the local component tree. Use `container` on `Dialog.Portal` to target a specific `PlayerGui`, and `displayOrderBase` to place the layer's `DisplayOrder` band. Within a band, later-opened layers stack above earlier ones automatically.
 </Callout>
 
 ## API reference

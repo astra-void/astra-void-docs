@@ -33,7 +33,7 @@ import { Popover } from "@lattice-ui/react-popover";
 
 ## Anatomy
 
-`Root`, `Portal` and `Content` are the minimum useful surface; `Trigger`, `Anchor` and `Close`
+`Root`, `Portal` and `Content` are the minimum useful surface. `Trigger`, `Anchor` and `Close`
 depend on how you drive and position it.
 
 <PrimitiveAnatomy title="Popover anatomy">
@@ -66,8 +66,8 @@ depend on how you drive and position it.
 ### Basic popover
 
 An uncontrolled root, a trigger projected onto your own button, and a content surface in a portal.
-The trigger toggles on activation and doubles as the positioning anchor, an outside press dismisses,
-and the content wrapper is an auto-sized `frame` — so your frame inside needs only a size.
+The trigger toggles on activation and doubles as the positioning anchor, and an outside press
+dismisses. The content wrapper is an auto-sized `frame`, so your frame inside needs only a size.
 
 ```tsx title="EmoteInfoPopover.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -150,8 +150,8 @@ export function QuestTrackerCallout() {
 ### Controlled by game state
 
 Pass `open` and `onOpenChange` when something outside decides visibility. An outside press or
-`Popover.Close` still calls `onOpenChange(false)`, so your state stays the source of truth, and no
-trigger is needed — the anchor alone positions the surface.
+`Popover.Close` still calls `onOpenChange(false)`, so your state stays the source of truth. No
+trigger is needed, because the anchor alone positions the surface.
 
 ```tsx title="InventoryHint.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -194,8 +194,8 @@ export function InventoryHint(props: { hasNewItem: boolean; onDismiss: () => voi
 
 ### Placement and offsets
 
-Positioning is tuned on `Popover.Content`: `placement` requests a side, `sideOffset` adds a gap,
-`alignOffset` shifts along the cross axis, `collisionPadding` keeps a minimum distance from the
+Positioning is tuned on `Popover.Content`. `placement` requests a side, `sideOffset` adds a gap,
+`alignOffset` shifts along the cross axis, and `collisionPadding` keeps a minimum distance from the
 screen edge. When the requested side does not fit the content flips, and its entrance animates from
 whichever side resolved.
 
@@ -337,7 +337,7 @@ the entrance animates from the placement that actually resolved.
 
 `Popover.Content` mounts a focus scope tied to the open state. Non-modal by default it is **not
 trapped**, so selection moves freely between the popover and the rest of the screen. The trigger
-focuses itself just before opening and the scope restores focus on close; `modal` on the `Root`
+focuses itself just before opening, and the scope restores focus on close. `modal` on the `Root`
 traps the scope instead.
 
 ### Dismissal

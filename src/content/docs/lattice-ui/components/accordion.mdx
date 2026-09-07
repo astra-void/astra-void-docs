@@ -390,22 +390,22 @@ export function PatchNotes() {
 `Accordion.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled
 usage. State is the open item value(s), not booleans, and `type` selects the policy:
 
-- `type="single"` (the default) keeps at most one item open; `onValueChange` receives a string, `""` when everything is collapsed.
-- `type="multiple"` allows any number; the value is a de-duplicated array.
+- `type="single"`, the default, keeps at most one item open. `onValueChange` receives a string, `""` when everything is collapsed.
+- `type="multiple"` allows any number. The value is a de-duplicated array.
 
 The root normalizes whatever shape it is given — an array collapses to its first entry in single
 mode, a lone string is wrapped in multiple mode. The same logic is exported as
 [`normalizeAccordionValue` and `nextAccordionValues`](#helpers).
 
 `Accordion.Item` considers itself open when its `value` is in the root's open set, and each
-`Accordion.Trigger` toggles through the shared toggle, so controlled and uncontrolled accordions
-behave identically.
+`Accordion.Trigger` toggles through the shared toggle. Controlled and uncontrolled accordions behave
+identically.
 
 ### Collapsible
 
-`collapsible` only affects `type="single"`: with it, activating the open trigger collapses it;
-without it (the default), one item always stays open. In `type="multiple"` items can always be
-toggled closed.
+`collapsible` only affects `type="single"`. With it, activating the open trigger collapses it.
+Without it, which is the default, one item always stays open. In `type="multiple"` items can always
+be toggled closed.
 
 ### Structure and layout
 
@@ -433,7 +433,7 @@ from the value you control on the root.
 `Accordion.Content` is presence-driven: it mounts when its item opens and unmounts when it closes,
 holding through any exit transition. It runs no motion of its own.
 
-Pass a `PresenceMotionConfig` as `transition`; `createSurfaceRevealRecipe()` gives a rise-and-fade.
+Pass a `PresenceMotionConfig` as `transition`. `createSurfaceRevealRecipe()` gives a rise-and-fade.
 It animates `BackgroundTransparency`, so give the body a background or animate its children. Under
 `asChild`, your element replaces the frame and its `Visible` is bound to presence.
 

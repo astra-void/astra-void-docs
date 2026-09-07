@@ -88,10 +88,7 @@ Flattens `ClassValue`s into a space-separated string: strings pass through, numb
 arrays recurse, records contribute keys whose value is `true`, and everything else is dropped.
 
 <Callout title="cn does not resolve conflicting utilities">
-Unlike `tailwind-merge`, which of `p-2 p-4` wins is Vela's call, not this package's — Vela resolves
-left to right and a later token overwrites an earlier one, so class order *is* specificity. A merge
-pass would cost a token table tracking every Vela family, kept in sync with a compiler still adding
-families, to reproduce an outcome that is already correct.
+Unlike `tailwind-merge`, which of `p-2 p-4` wins is Vela's call, not this package's. Vela resolves left to right and a later token overwrites an earlier one, so class order *is* specificity. A merge pass would cost a token table tracking every Vela family, kept in sync with a compiler still adding families. It would reproduce an outcome that is already correct.
 [The full argument](/facet/guides/variants-and-classes/#cn-does-not-resolve-conflicts).
 </Callout>
 
@@ -104,10 +101,10 @@ families, to reproduce an outcome that is already correct.
 | `ClassItem` | `ClassValue` minus `null` and `undefined` — what may sit inside an array *this package* builds |
 | `VariantShape`, `VariantSelection`, `VariantConfig`, `CompoundVariant` | Recipe types |
 
-`ClassValue` **mirrors Vela's exactly**, and exactness matters rather than similarity: Vela augments
+`ClassValue` **mirrors Vela's exactly**, and exactness matters rather than similarity. Vela augments
 `React.Attributes` with `className`, and TypeScript intersects `React.Attributes` into every
-component's props — so `props.className` inside a Facet component carries Vela's type no matter what
-the component declared. A narrower mirror simply fails to accept it.
+component's props. `props.className` inside a Facet component carries Vela's type no matter what the
+component declared. A narrower mirror simply fails to accept it.
 
 <Callout title="Import it as ClassName, not ClassValue">
 Vela inlines its runtime into every file it transforms, and that runtime declares a local
@@ -121,7 +118,7 @@ Worth knowing if you edit this package or write something like it.
 
 **Lua tables cannot hold `nil` without leaving a hole.** roblox-ts therefore rejects `undefined` and
 `null` as array element types — they are the same value at runtime. Accepting them on the way in is
-fine; they are just never stored, which is what `ClassItem` exists to express.
+fine. They are just never stored, which is what `ClassItem` exists to express.
 
 **Arrays and records lower onto the same Lua table type**, so the first key's type is what tells
 them apart at runtime:
@@ -131,7 +128,8 @@ const firstKey = next(value as unknown as UnknownTable)[0];
 if (typeIs(firstKey, "number")) { /* array */ } else { /* record */ }
 ```
 
-There is also a type-level trap in `fv`'s signature: the `Variants` default is `Record<never, never>`
-rather than `VariantShape`, because mapping over `VariantShape`'s string keys produces an index
-signature of `string | undefined`, which then collides with the `className` slot on the selection
-object. Without that default, `fv("…")` with no variants fails to type-check at every call site.
+There is also a type-level trap in `fv`'s signature. The `Variants` default is
+`Record<never, never>` rather than `VariantShape`. Mapping over `VariantShape`'s string keys
+produces an index signature of `string | undefined`, which then collides with the `className` slot
+on the selection object. Without that default, `fv("…")` with no variants fails to type-check at
+every call site.
