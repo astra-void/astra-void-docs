@@ -23,8 +23,8 @@ import { Label } from "../shared/ui/label";
 <Label Text="Display name" />
 ```
 
-A second text colour is a second element, not a `className` on this one — a class written here is
-lowered before `Label` ever sees it, and then overwritten by the component's own recipe. See
+A second text colour is a second element, not a `className` on this one. A class written here is
+lowered before `Label` ever sees it, then overwritten by the component's own recipe. See
 [Overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 
 <FacetPreview
@@ -63,13 +63,14 @@ export const labelVariants = fv("text-foreground text-sm font-medium");
 ```
 
 That is the whole thing — no variant axes. `fv()` with no config is still worth using over a bare
-string: it gives you the `className` slot with the right ordering, and it is the seam a variant axis
+string. It gives you the `className` slot with the right ordering, and it is the seam a variant axis
 grows into if you add one.
 
 `font-medium` is not optional. Vela leaves `FontFace` untouched when no `font-*` token appears, and
-Roblox's untouched default is LegacyArial — a different typeface at a visibly different size from
-the SourceSansPro everything else resolves to. Every text recipe in the registry declares a weight
-for that reason. See [Text and labels](/facet/guides/text-and-labels/#every-text-recipe-declares-a-font-).
+Roblox's untouched default is LegacyArial. That is a different typeface, at a visibly different size
+from the SourceSansPro everything else resolves to. Every text recipe in the registry declares a
+weight for that reason. See
+[Text and labels](/facet/guides/text-and-labels/#every-text-recipe-declares-a-font-).
 
 ## A leaf, so it draws its own text
 

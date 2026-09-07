@@ -19,7 +19,7 @@ Two conventions repeat throughout, both worth internalizing before you copy anyt
 - **Everything has an explicit size.** Roblox instances default to zero-height `Size` values, which is why the examples write `w-*` and `h-*` on almost everything. The noise is Roblox's defaults, not Vela's requirements. Backgrounds are not in that bucket any more: since 0.5.0
   [preflight](/vela-rbxts/reference/config/#preflight) starts every classed element transparent, so
   a label that should not paint needs no `bg-transparent`.
-- **Rows and columns are `UIListLayout`.** Any element with `flex`, `gap-*`, `justify-*` or `items-*` on it gets exactly one `UIListLayout` child, and that layout owns the positions of every child under it. See [layout and sizing](/vela-rbxts/guides/layout-and-sizing/) for the full model.
+- **Rows and columns are `UIListLayout`.** Any element with `flex`, `gap-*`, `justify-*` or `items-*` on it gets exactly one `UIListLayout` child. That layout owns the positions of every child under it. See [layout and sizing](/vela-rbxts/guides/layout-and-sizing/) for the full model.
 
 ## Buttons
 
@@ -126,8 +126,8 @@ let the classes carry what does not change:
 </frame>
 ```
 
-One rule makes this safe: **never set the same property from a class and a prop on one element.** On
-a collision Vela emits after you and the class wins. An `h-full` beside that `Size` prop would
+One rule makes this safe. **Never set the same property from a class and a prop on one element.** On
+a collision Vela emits after you, and the class wins. An `h-full` beside that `Size` prop would
 overwrite it with a `Size = (0, 1)` scale.
 
 ## List rows

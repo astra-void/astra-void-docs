@@ -75,8 +75,8 @@ Everything else is forwarded onto the `Frame`.
 | `destructive` | `bg-destructive` | `text-destructive-foreground` |
 | `outline` | `border border-input` | `text-foreground` |
 
-Both recipes are exported — `badgeVariants` and `badgeLabelVariants` — because nothing inherits and
-the label's colour has to live on the instance that draws the text.
+Both recipes are exported, `badgeVariants` and `badgeLabelVariants`. Nothing inherits, so the
+label's colour has to live on the instance that draws the text.
 
 ## `size-fit` is the whole geometry
 
@@ -87,7 +87,7 @@ export const badgeVariants = fv(
 );
 ```
 
-There is no `h-*` and no `w-*` here. `size-fit` resolves both axes to automatic sizing, which is the
+There is no `h-*` and no `w-*` here. `size-fit` resolves both axes to automatic sizing. That is the
 only correct answer for a pill that has to be exactly as wide as its text plus its padding. The rule
 it satisfies is [declare both axes](/facet/guides/component-conventions/#1-declare-both-axes-always)
 — `size-fit` is an answer on each, not an absence of one.
@@ -96,6 +96,6 @@ That also makes the badge the clearest case of the `AutomaticSize` chain: it can
 because `TextSlot` renders its label with `size-fit` too. A label with an unresolved axis and the
 badge collapses with it.
 
-`rounded-full` is a pill rather than a rounded rectangle; `px-2 py-1` insets the label without
-growing the frame, which is exactly what `UIPadding` does and exactly why the frame needs `size-fit`
+`rounded-full` is a pill rather than a rounded rectangle. `px-2 py-1` insets the label without
+growing the frame, which is exactly what `UIPadding` does. It is also why the frame needs `size-fit`
 to grow around it.

@@ -67,9 +67,9 @@ words above it are a [`Label`](/facet/components/label/) you place yourself.
 </ProgressPrimitive.Root>
 ```
 
-`Progress.Root` renders no instance — it turns `value` and `max` into a ratio and nothing else — so
-the track is a plain `<frame>` in the copied file, with the primitive wrapped around it. Same
-inversion as [`Avatar`](/facet/components/avatar/#the-circle-is-drawn-here-not-by-the-primitive).
+`Progress.Root` renders no instance. It turns `value` and `max` into a ratio and nothing else. The
+track is a plain `<frame>` in the copied file, with the primitive wrapped around it. Same inversion
+as [`Avatar`](/facet/components/avatar/#the-circle-is-drawn-here-not-by-the-primitive).
 
 ## The indicator has no width
 
@@ -91,11 +91,11 @@ value changes. [Textarea](/facet/components/textarea/#the-input-declares-no-heig
 the same reason.
 </Callout>
 
-`overflow-hidden` on the root is what keeps the fill's square end inside the rounded track:
+`overflow-hidden` on the root is what keeps the fill's square end inside the rounded track.
 `ClipsDescendants` clips to the rectangle, and the indicator's own `rounded-full` does the corners.
 
 ## `indeterminate` is not a value
 
-`<Progress indeterminate />` ignores `value` entirely. Use it for work whose end you cannot measure
-— a server round trip, an asset load with no progress signal — rather than passing a fake number
+`<Progress indeterminate />` ignores `value` entirely. Use it for work whose end you cannot measure,
+such as a server round trip or an asset load with no progress signal. It beats passing a fake number
 that never advances.

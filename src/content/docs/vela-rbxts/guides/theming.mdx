@@ -108,7 +108,7 @@ underneath. None of this changes what a class resolves to.
 For colours the merge is deeper than a key swap. `extend` merges family by family, and shade by shade when both sides are palettes, so extending `blue` with only a `400` keeps the other ten shades. A literal replaces a palette wholesale, and vice versa.
 
 <Callout title="theme.colors silently discards theme.extend.colors">
-When a top-level `theme.colors` is present, `theme.extend.colors` is **thrown away without a warning**. The same trap applies to every other axis. **Use `theme.extend.colors` alone to add colours.** Set both and every built-in palette disappears, *and* the colours you thought you were adding never resolve, so `bg-brand-500` fails with `unknown-theme-key`.
+When a top-level `theme.colors` is present, `theme.extend.colors` is **thrown away without a warning**. The same trap applies to every other axis. **Use `theme.extend.colors` alone to add colours.** Set both and every built-in palette disappears. The colours you thought you were adding never resolve either, so `bg-brand-500` fails with `unknown-theme-key`.
 </Callout>
 
 ```ts title="vela.config.ts"
@@ -263,8 +263,8 @@ The [configuration reference](/vela-rbxts/reference/config/#the-default-theme) l
 value. Two things about those defaults are worth knowing here.
 
 **The spacing scale is arithmetic, not data.** A key not found in `theme.spacing` is multiplied by
-4, so `p-1.5` is 6px and `p-40` is 160px without either being in the theme. Add spacing keys only
-for a *named* step like `gutter`. Because `"4"` is a real entry, redefining it changes `p-4` while
+4. `p-1.5` is 6px and `p-40` is 160px, without either being in the theme. Add spacing keys only for
+a *named* step like `gutter`. Because `"4"` is a real entry, redefining it changes `p-4` while
 leaving `p-3` and `p-5` on the arithmetic path.
 
 **`screens` and `fontFamily` are the two exceptions to this page's rule.** Their values are plain

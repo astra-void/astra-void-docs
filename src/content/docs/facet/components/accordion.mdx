@@ -70,7 +70,7 @@ item: fv("flex-col w-full h-fit"),
 ```
 
 `border-*` lowers to a `UIStroke`, which **outlines the whole instance**, so Vela
-[drops](/vela-rbxts/guides/colors-and-surfaces/#borders) `border-b` — silently here, since a
+[drops](/vela-rbxts/guides/colors-and-surfaces/#borders) `border-b`. It is silent here, since a
 recipe's classes resolve at runtime and the compiler's diagnostic never fires. What survives is
 `border-border`, colouring a stroke that draws on all four sides, so every item comes out **boxed**
 rather than underlined.
@@ -82,7 +82,7 @@ root's children. Two items get one rule between them and nothing under the last 
 <Callout title="Changing the divider in your copy">
 The file is yours, so:
 
-- **A heavier rule** — `divide-y-2` on the root; the family takes `0`, `1`, `2`, `4` or `8`.
+- **A heavier rule.** `divide-y-2` on the root. The family takes `0`, `1`, `2`, `4` or `8`.
 - **No rule at all** — drop both `divide-*` classes.
 - **A rule you place yourself** — [`Separator`](/facet/components/separator/) between items, which is what the registry uses for dividers elsewhere.
 
@@ -149,9 +149,9 @@ Without it, `AccordionTrigger` would need its item's `value` to ask the first co
   <AccordionPrimitive.Trigger …>
 ```
 
-No `flex-*` on the header, deliberately: it would lower to a `UIListLayout` **sibling** of the
-header's single child, and the primitive types `children` as one element, so there is no room for
-it. Both axes are still declared, per
+No `flex-*` on the header, deliberately. It would lower to a `UIListLayout` **sibling** of the
+header's single child. The primitive types `children` as one element, so there is no room for it.
+Both axes are still declared, per
 [rule 1](/facet/guides/component-conventions/#1-declare-both-axes-always).
 
 The same constraint is why the trigger's label and chevron arrive wrapped in a fragment: the
