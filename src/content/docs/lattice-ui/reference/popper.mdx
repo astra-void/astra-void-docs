@@ -15,12 +15,12 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
 />
 
 Popper is the placement engine behind Popover, Tooltip, Menu and Select listboxes. Given an anchor
-`GuiObject` and a content `GuiObject`, it computes where the content should sit, falls back to a
+`GuiObject` and a content `GuiObject`, it computes where the content should sit. It falls back to a
 better side when the requested one would overflow, and keeps the result in sync as the anchor,
 content or viewport changes.
 
 It works in screen space through `AbsolutePosition` and `AbsoluteSize`, so it does not care how the
-surface is composed — it returns a `UDim2` position and an `AnchorPoint` to apply to the content
+surface is composed. It returns a `UDim2` position and an `AnchorPoint` to apply to the content
 node.
 
 <Callout title="Experimental">
@@ -61,9 +61,9 @@ return (
 );
 ```
 
-It measures the anchor's `AbsolutePosition`/`AbsoluteSize` and the content's `AbsoluteSize` and runs
-`computePopper`, subscribing to anchor layout, content size and viewport resizes through the
-observers below and reconciling the observed instances every `Heartbeat` so the right nodes stay
+It measures the anchor's `AbsolutePosition`/`AbsoluteSize` and the content's `AbsoluteSize`, then
+runs `computePopper`. It subscribes to anchor layout, content size and viewport resizes through the
+observers below. It reconciles the observed instances every `Heartbeat`, so the right nodes stay
 tracked as refs swap. Updates run in a layout effect, so positioning applies before paint.
 
 Viewport bounds come from the content's nearest `ScreenGui` ancestor, honouring the topbar inset
@@ -116,7 +116,7 @@ const { position, anchorPoint, placement } = computePopper({
 
 It evaluates the requested placement, then its opposite, then the two orthogonal sides, scoring each
 by viewport overflow plus a small penalty for an orthogonal fallback. The first zero-overflow
-candidate wins; otherwise the least-bad one is clamped inside the viewport with `collisionPadding`.
+candidate wins. Otherwise the least-bad one is clamped inside the viewport with `collisionPadding`.
 The returned `position` is an offset `UDim2` already adjusted for the resolved `anchorPoint`.
 
 `ComputePopperInput` merges the positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) with the required geometry:
@@ -155,7 +155,9 @@ motion-owned.
 function subscribeViewport(anchor: GuiObject | undefined, onChange: () => void): ObserverUnsubscribe;
 ```
 
-Watches whatever defines the viewport bounds. If the anchor lives under a `ScreenGui`, it tracks that `ScreenGui`'s `AbsoluteSize`; otherwise it falls back to the current camera's `ViewportSize`, re-binding automatically when `Workspace.CurrentCamera` changes. Returns an unsubscribe function.
+Watches whatever defines the viewport bounds. If the anchor lives under a `ScreenGui`, it tracks
+that `ScreenGui`'s `AbsoluteSize`. Otherwise it falls back to the current camera's `ViewportSize`,
+re-binding automatically when `Workspace.CurrentCamera` changes. Returns an unsubscribe function.
 
 ### Types
 

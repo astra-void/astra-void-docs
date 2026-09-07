@@ -17,8 +17,8 @@ pnpm exec loom preview ~/code/my-game
 ```
 
 The directory does not have to be the one `loom-dev` is installed in, and needs no `node_modules` of
-its own: the plugin aliases `@rbxts/react` and friends to **absolute paths** inside
-`@loom-dev/preview`, and widens `server.fs.allow` to cover both that package and the previewed
+its own. The plugin aliases `@rbxts/react` and friends to **absolute paths** inside
+`@loom-dev/preview`. It also widens `server.fs.allow` to cover both that package and the previewed
 project's workspace root.
 
 <Callout title="The same thing from a vite.config.ts">
@@ -132,9 +132,9 @@ createRoot().render(<App />);
 pnpm install && pnpm vite
 ```
 
-Open the printed URL and you get a dark full-viewport page with a rounded card: a label, a blue
-button, and a count that goes up when you click. `UDim2`, `Color3`, `Enum` and `Vector2` are never
-imported — the plugin installs them as globals before your entry evaluates. Editing
+Open the printed URL and you get a dark full-viewport page with a rounded card. It holds a label, a
+blue button, and a count that goes up when you click. `UDim2`, `Color3`, `Enum` and `Vector2` are
+never imported — the plugin installs them as globals before your entry evaluates. Editing
 `main.client.tsx` hot-reloads.
 
 <Callout title="This project does not typecheck yet">
@@ -143,9 +143,9 @@ esbuild strips types without reading a `tsconfig.json`, so it renders regardless
 
 ## What the plugin looks for
 
-With no `index.html` in the project root the plugin generates one and serves it from middleware: a
-full-viewport `#loom-root` mount point on a `#14161a` background, plus a module script pointing at
-your entry. To find the entry it takes the first hit from this list:
+With no `index.html` in the project root, the plugin generates one and serves it from middleware. It
+is a full-viewport `#loom-root` mount point on a `#14161a` background, plus a module script pointing
+at your entry. To find the entry it takes the first hit from this list:
 
 ```text title="Entry candidates, in priority order"
 src/main.client.tsx
@@ -158,7 +158,7 @@ src/index.tsx
 src/client.tsx
 ```
 
-These are roblox-ts client-entry conventions, so a normal project already satisfies one; an entry
+These are roblox-ts client-entry conventions, so a normal project already satisfies one. An entry
 that follows none can be named with the plugin's `entry` option. A project with its own `index.html`
 keeps it, and the `<script type="module">` inside decides what loads.
 
@@ -242,7 +242,7 @@ loom preview [dir] [--port <n>] [--host] [--targets [glob]]
 interfaces, unless followed by a non-flag value used as the bind address. `--targets` switches to
 gallery mode.
 
-An optional `<dir>/loom.config.ts` supplies `targets` and `port` when the flags are absent; CLI
+An optional `<dir>/loom.config.ts` supplies `targets` and `port` when the flags are absent. CLI
 flags win. See the [CLI reference](/loom/reference/cli/).
 
 ## What you get

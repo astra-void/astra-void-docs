@@ -95,9 +95,9 @@ compiler never sees is outside what this reaches. Pin such a project with
 ## 0.12.4
 
 **A margin side is one signed slot, so the last class written to it lands.** Padding and a negative
-shift used to accumulate separately, and neither could overwrite the other. `-ml-2 -ml-2` shifted by
-16 rather than 8, and `ml-4 -ml-2` applied both a padding *and* a shift. A side that ends up
-negative moves the element. One that ends up positive pads it. `-mr-*` and `-mb-*` still report
+shift used to accumulate separately. Neither could overwrite the other. `-ml-2 -ml-2` shifted by 16
+rather than 8, and `ml-4 -ml-2` applied both a padding *and* a shift. A side that ends up negative
+moves the element. One that ends up positive pads it. `-mr-*` and `-mb-*` still report
 `unsupported-negative-margin`.
 
 **Sorting leaves the whitespace where its author put it**, so a class list written across several
@@ -160,10 +160,10 @@ literal pixels, close the clamp with `theme: { rem: { min: 16, max: 16 } }`. The
 the scaling from the emit entirely. See [rem](/vela-rbxts/guides/theming/#rem).
 
 **The runtime ships as `@rbxts/vela-runtime` instead of being copied into every file.** Ten
-components used to carry ten copies of the same 5,500 lines, each with its own camera subscription.
-It is now one ModuleScript the whole place shares. In the reference app `App.luau` went from 190,260
-bytes to 27,912. Setup is unchanged — the package installs with `vela-rbxts` and sits under the
-`@rbxts` scope every roblox-ts project already lists.
+components used to carry ten copies of the same 5,500 lines. Each copy had its own camera
+subscription. It is now one ModuleScript the whole place shares. In the reference app `App.luau`
+went from 190,260 bytes to 27,912. Setup is unchanged — the package installs with `vela-rbxts` and
+sits under the `@rbxts` scope every roblox-ts project already lists.
 
 **The emit sends the theme you changed, not the whole palette.** A module whose host never has to
 *parse* a class value sends its scales emptied entirely.
@@ -257,7 +257,7 @@ composed over whatever alpha the colours settled on. `opacity-50 bg-slate-700` a
 `bg-slate-700 opacity-50` are the same thing.
 
 **The inlined runtime stopped costing every file 96 registers.** It had been failing whole
-components with `Out of local registers … exceeded limit 200`, against code nobody wrote.
+components with `Out of local registers … exceeded limit 200`. That was against code nobody wrote.
 
 If you are on 0.9.x and see `opacity-unreachable-child`, it is telling the truth — `{props.children}`
 and component children stayed out of the compile-time walk. 0.10.0 carries the alpha across both.
@@ -265,11 +265,10 @@ and component children stayed out of the compile-time walk. 0.10.0 carries the a
 ## 0.8.0
 
 **Every utility family resolves on the runtime class path.** The runtime host had implemented
-roughly a third of what the static path lowers. A component whose `className` arrived as a *value* —
-the normal shape for a variant recipe — silently lost most of the rest. Positioning, box
-constraints, the grid, gradients, rings, shadows, `z-*`, transforms, `opacity-*`, the ScrollingFrame
-family and most of the text families. All of them resolve dynamically now, with the static path's
-semantics.
+roughly a third of what the static path lowers. A component whose `className` arrived as a *value*,
+the normal shape for a variant recipe, silently lost most of the rest. Positioning, box constraints,
+the grid, gradients, rings, shadows, `z-*`, transforms, `opacity-*`, the ScrollingFrame family and
+most of the text families. All of them resolve dynamically now, with the static path's semantics.
 
 This is the release where [dynamic class names](/vela-rbxts/guides/dynamic-class-names/) stopped
 being a reduced dialect.

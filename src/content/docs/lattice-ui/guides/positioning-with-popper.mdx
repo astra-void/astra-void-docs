@@ -9,12 +9,12 @@ draft: false
 
 import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
 
-Anchored surfaces — popovers, menus, selects, tooltips, comboboxes — face the same problem: place a
-floating panel next to an anchor so it stays on the requested side, lines up as asked, and never
-spills off the viewport.
+Anchored surfaces all face the same problem: popovers, menus, selects, tooltips and comboboxes.
+Place a floating panel next to an anchor so it stays on the requested side, lines up as asked, and
+never spills off the viewport.
 
 `@lattice-ui/react-popper` is the positioning engine shared by every anchored primitive. Give it an
-anchor ref, a content ref and a desired placement; it measures both `GuiObject`s, picks the best
+anchor ref, a content ref and a desired placement. It measures both `GuiObject`s, picks the best
 side that fits, and hands back a `Position`, an `AnchorPoint` and the resolved `placement`.
 
 Most of the time you set `placement`, `sideOffset`, `alignOffset` and `collisionPadding` on a
@@ -57,7 +57,8 @@ orthogonal sides, scoring each by how far it would overflow the viewport includi
 `collisionPadding`. The least-overflowing candidate wins, a perfect fit short-circuits the search,
 and the chosen side comes back as `placement`.
 
-Because the chosen side can differ from the side you asked for, drive your entrance motion and any visual arrow from the *resolved* placement, not the requested one:
+The chosen side can differ from the side you asked for. Drive your entrance motion and any visual
+arrow from the *resolved* placement, not the requested one:
 
 ```tsx title="Reading the resolved placement"
 const popper = usePopper({ anchorRef, contentRef, placement: "bottom" });
@@ -70,7 +71,8 @@ If nothing fits, Popper clamps the least-bad candidate inside the viewport (resp
 
 ## Using it through a component
 
-In practice you set these props on the component's content part. Popover is representative; menu, select, tooltip, and combobox expose the same names.
+In practice you set these props on the component's content part. Popover is representative. Menu,
+select, tooltip and combobox expose the same names.
 
 ```tsx title="GuildBadgePopover.tsx"
 import { Popover } from "@lattice-ui/react-popover";
@@ -167,7 +169,7 @@ On the first frame the content has not been measured, so `isPositioned` is `fals
 Popper reads `AbsolutePosition` and `AbsoluteSize` from the anchor and content, then derives placement against the viewport. Two Roblox specifics matter:
 
 - **Viewport bounds come from the nearest `ScreenGui`,** not the camera. Popper walks up from the content to find its `ScreenGui` ancestor and uses that `AbsoluteSize` (adjusted for `GetGuiInset` when the gui respects the inset). This keeps positioning correct for portaled surfaces and Studio plugin guis, not just full-screen `ScreenGui`s. If no `ScreenGui` is found it falls back to the current camera's `ViewportSize`.
-- **It re-measures reactively.** Popper subscribes to the anchor's `AbsolutePosition`/`AbsoluteSize`, the content's `AbsoluteSize`, and the viewport's size, recomputing whenever any of them change — so it tracks layout shifts, automatic sizing, and resolution changes without polling.
+- **It re-measures reactively.** Popper subscribes to the anchor's `AbsolutePosition`/`AbsoluteSize`, the content's `AbsoluteSize` and the viewport's size, recomputing whenever any of them change. It tracks layout shifts, automatic sizing and resolution changes without polling.
 
 <Callout title="Refs must point at GuiObjects">
 `anchorRef` and `contentRef` must resolve to real `GuiObject`s before Popper can measure anything. If either ref is empty Popper reports `isPositioned: false` and waits. When the anchor lives behind `asChild`, make sure the host element actually forwards its ref to the trigger.
