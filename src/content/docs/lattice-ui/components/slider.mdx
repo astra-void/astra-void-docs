@@ -17,7 +17,7 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 />
 
 Slider is the primitive for picking a number from a continuous range: volume, sensitivity,
-brightness. It owns the value — clamping to `[min, max]` and snapping to `step` — and turns pointer
+brightness. It owns the value, clamping to `[min, max]` and snapping to `step`, and turns pointer
 drags and keyboard input into value changes.
 
 Your component renders only the track, the filled range and the thumb.
@@ -34,7 +34,7 @@ import { Slider } from "@lattice-ui/react-slider";
 
 ## Anatomy
 
-`Root`, `Track` and `Thumb` form the minimum useful slider; `Range` shows the filled portion up to
+`Root`, `Track` and `Thumb` form the minimum useful slider. `Range` shows the filled portion up to
 the current value.
 
 <PrimitiveAnatomy title="Slider anatomy">
@@ -66,7 +66,7 @@ Slider is **single-thumb only**: `value`/`defaultValue` are a single `number`, n
 ### Basic volume slider
 
 Uncontrolled state seeded with `defaultValue`. Every part renders unstyled, so the track, range and
-thumb each carry their own size and colour; the primitive owns only the geometry it computes from
+thumb each carry their own size and colour. The primitive owns only the geometry it computes from
 the value. For "save on release", use `onValueCommit`.
 
 ```tsx title="VolumeSlider.tsx"
@@ -132,8 +132,8 @@ export function BrightnessSlider() {
 ### Fine-grained steps with min and max
 
 Every value is clamped to `[min, max]` and snapped to the nearest multiple of `step` counted from
-`min`, so a slider from 0.1 to 2 in 0.05 increments lands only on 0.10, 0.15, 0.20. Format the
-readout yourself.
+`min`. A slider from 0.1 to 2 in 0.05 increments lands only on 0.10, 0.15, 0.20. Format the readout
+yourself.
 
 ```tsx title="SensitivitySlider.tsx"
 import { useState } from "@rbxts/react";
@@ -178,9 +178,9 @@ export function SensitivitySlider(props: { onCommit: (sensitivity: number) => vo
 
 ### Vertical orientation
 
-Set `orientation="vertical"` for a column-style control. The default track becomes 10x220, the range
-fills from the bottom, and dragging maps the pointer's Y position to the value with the top of the
-track as `max`.
+Set `orientation="vertical"` for a column-style control. The default track becomes 10x220, and the
+range fills from the bottom. Dragging maps the pointer's Y position to the value, with the top of
+the track as `max`.
 
 ```tsx title="AmbienceChannel.tsx"
 import { useState } from "@rbxts/react";
@@ -218,7 +218,7 @@ export function AmbienceChannel() {
 ### Custom visuals with asChild
 
 Every part accepts `asChild`. The track slot carries the drag-start handler, ref and selection
-props; the thumb slot also forces an `AnchorPoint` of (0.5, 0.5). `Slider.Range` stretches your
+props. The thumb slot also forces an `AnchorPoint` of (0.5, 0.5). `Slider.Range` stretches your
 child to fill the animated fill frame, so style it with colour and corners rather than sizing it.
 
 ```tsx title="StyledSlider.tsx"
@@ -304,8 +304,8 @@ export function FieldOfViewSlider(props: { onCommit: (fov: number) => void }) {
 ### Value, clamping, and stepping
 
 The value is a single `number`, controlled via `value`/`onValueChange` or uncontrolled via
-`defaultValue` (defaulting to `min`). `min`/`max` default to `0`/`100`, normalized so the lower
-bound is the smaller; `step` defaults to `1`, and a zero or negative `step` falls back to `1`.
+`defaultValue`, which defaults to `min`. `min` and `max` default to `0` and `100`, normalized so the
+lower bound is the smaller. `step` defaults to `1`, and a zero or negative `step` falls back to `1`.
 
 ### Change vs. commit
 
@@ -316,8 +316,8 @@ bound is the smaller; `step` defaults to `1`, and a zero or negative `step` fall
 ### Rendering and layout
 
 `Slider.Root` renders no instance, so `Slider.Track` is the outermost GuiObject. The default track
-is a `frame` sized 260x10 or 10x220, the range an animated fill `frame`, the thumb a 16x16
-`textbutton` anchored at its centre — all replaceable with `asChild`.
+is a `frame` sized 260x10 or 10x220. The range is an animated fill `frame`, and the thumb a 16x16
+`textbutton` anchored at its centre. All three are replaceable with `asChild`.
 
 ### Dragging
 
@@ -333,16 +333,16 @@ mapped to value changes.
 
 ### Orientation
 
-`orientation` is `"horizontal"` (default) or `"vertical"`. It governs which pointer axis maps to the
-value, how the default track sizes itself, and how the range and thumb position themselves — from
+`orientation` is `"horizontal"`, the default, or `"vertical"`. It governs which pointer axis maps to
+the value, how the default track sizes itself, and how the range and thumb position themselves: from
 the left horizontally, from the bottom vertically.
 
 ### Composition with asChild
 
-`Slider.Track` and `Slider.Thumb` merge their behaviour onto your single child through `Slot`: the
+`Slider.Track` and `Slider.Thumb` merge their behaviour onto your single child through `Slot`. The
 slot's `Active`, `Selectable`, ref and `InputBegan` handling win, and the thumb forces `AnchorPoint`
 to (0.5, 0.5). `Slider.Range` with `asChild` keeps the animated fill frame and stretches your child
-to fill it, overriding its `Position` and `Size` — express its look through colour, gradients,
+to fill it, overriding its `Position` and `Size`. Express its look through colour, gradients,
 corners and strokes.
 
 ### Motion
@@ -351,7 +351,7 @@ corners and strokes.
 while a drag is in progress so the handle stays under the pointer.
 
 <Callout title="Roblox gotchas">
-The track and thumb are `Active` and `Selectable` only while the slider is enabled; when `disabled`, input is ignored and selection removed. Keyboard adjustment fires through the thumb's `InputBegan`, so the thumb must be able to receive selection for arrow and page keys to reach it.
+The track and thumb are `Active` and `Selectable` only while the slider is enabled. When `disabled`, input is ignored and selection removed. Keyboard adjustment fires through the thumb's `InputBegan`, so the thumb must be able to receive selection for arrow and page keys to reach it.
 </Callout>
 
 <Callout title="Keyboard input commits on every press">
