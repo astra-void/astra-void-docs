@@ -8,7 +8,10 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-All `@lattice-ui/*` packages version in lockstep, so a single release number describes the whole library. This page summarizes each release and its migration steps; the exact code changes live in [Migration](/lattice-ui/reference/migration/), and the full entry-by-entry history in the repository's [CHANGELOG.md](https://github.com/astra-void/lattice-ui/blob/main/CHANGELOG.md).
+All `@lattice-ui/*` packages version in lockstep, so a single release number describes the whole
+library. This page summarizes each release and its migration steps. The exact code changes live in
+[Migration](/lattice-ui/reference/migration/), and the full entry-by-entry history in the
+repository's [CHANGELOG.md](https://github.com/astra-void/lattice-ui/blob/main/CHANGELOG.md).
 
 <Callout title="Pre-1.0 versioning">
   Lattice UI is pre-1.0: minor releases (`0.x`) may include breaking changes,
@@ -23,7 +26,7 @@ The current stable release. A patch: three fixes to `asChild`'s handling of UI m
 
 **Fixes**
 
-- **UI modifiers are recognised under both renderers.** `Slot` looks each child's type up in a table of UI modifiers, and that table held one spelling at a time — `@rbxts/react` rewrites a host tag to its Roblox class name, while a browser React renderer leaves it as written. Both are now listed.
+- **UI modifiers are recognised under both renderers.** `Slot` looks each child's type up in a table of UI modifiers, and that table held one spelling at a time. `@rbxts/react` rewrites a host tag to its Roblox class name, while a browser React renderer leaves it as written. Both are now listed.
 - **`UIShadow` counts as a modifier**, so a `shadow-*` class no longer fails `asChild` like a casing miss.
 - **Re-parented modifiers no longer collide keys with the element's own children.** Both child walks numbered from `.0`, and React may resolve a duplicate key by dropping a child rather than warning.
 
@@ -42,7 +45,7 @@ Every motion host that used to be a `CanvasGroup` is now a `Frame`, so no primit
 - `Dialog.Content` is the one part with no direct replacement for a whole-surface fade, because its host spans the layer. Pass `asChild` with your own `canvasgroup`, or move the fade to the overlay dim and your own panel elements.
 
 <Callout title="Why a `CanvasGroup` was the wrong default">
-A `CanvasGroup` composites its whole subtree into one offscreen layer so `GroupTransparency` can fade it as a unit — right for that one effect, wrong for everything else. Children could not carry their own transparency, and every dialog, menu and tooltip paid for the layer whether or not it faded. Rendering a `Frame` makes the composite opt-in.
+A `CanvasGroup` composites its whole subtree into one offscreen layer so `GroupTransparency` can fade it as a unit. That is right for the one effect and wrong for everything else. Children could not carry their own transparency, and every dialog, menu and tooltip paid for the layer whether or not it faded. Rendering a `Frame` makes the composite opt-in.
 </Callout>
 
 **Highlights**
@@ -53,7 +56,7 @@ A `CanvasGroup` composites its whole subtree into one offscreen layer so `GroupT
 
 **Fixes**
 
-- `asChild` works in Roblox on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by JSX tag, so every modifier missed the lookup and counted as a second target candidate — any recipe emitting a `UIListLayout` or `UICorner` hit it on every use. 0.8.1 finishes the job by listing both spellings. See [`asChild` composition](/lattice-ui/guides/as-child-composition/).
+- `asChild` works in Roblox on a subtree a Tailwind-style transform has styled. `UI_MODIFIER_TAGS` was keyed by JSX tag, so every modifier missed the lookup and counted as a second target candidate. Any recipe emitting a `UIListLayout` or `UICorner` hit it on every use. 0.8.1 finishes the job by listing both spellings. See [`asChild` composition](/lattice-ui/guides/as-child-composition/).
 
 ## 0.7.0
 
@@ -62,10 +65,10 @@ around the same idea.
 
 **Migration** — see [Migration](/lattice-ui/reference/migration/) for the full walkthrough. In short:
 
-- Every primitive renders unstyled. Pass the appearance you want directly to the part — props now forward onto the instance it renders — or use `asChild`.
-- Motion has no defaults. Pass `transition` to anything that should animate; presence timing and exit-before-unmount are unchanged.
+- Every primitive renders unstyled. Pass the appearance you want directly to the part, since props now forward onto the instance it renders, or use `asChild`.
+- Motion has no defaults. Pass `transition` to anything that should animate. Presence timing and exit-before-unmount are unchanged.
 - Drop `trackColorMode`, `trackOnColor`, `trackOffColor` and `disabledTrackColor` from `Switch.Root`, and `transition` from `RadioGroup.Item` and `ToggleGroup.Item`.
-- Supply labels as children on `Select.Item` and `Combobox.Item`; `textValue` no longer renders.
+- Supply labels as children on `Select.Item` and `Combobox.Item`. `textValue` no longer renders.
 - Render the toast queue yourself inside `Toast.Viewport`, and supply the layout for `Menu.Group` and `ContextMenu.Group`.
 
 <Callout title="This release mostly does not fail to compile">
@@ -74,7 +77,7 @@ around the same idea.
 
 **Highlights**
 
-- Primitives now set behavior plus the minimum needed to neutralize Roblox's own instance defaults. Geometry computed from state — progress fill ratios, slider thumb travel, popper position, scroll thumb size — stays owned by the primitive.
+- Primitives now set behavior plus the minimum needed to neutralize Roblox's own instance defaults. Geometry computed from state stays owned by the primitive: progress fill ratios, slider thumb travel, popper position, scroll thumb size.
 - Unknown props forward from every part onto the instance it renders, so styling no longer requires `asChild`. Consumer props override the neutral defaults but never the behavior props, consumer event handlers compose with the primitive's rather than replacing them, and refs compose too.
 - Forwarded props are type-checked against that instance, so a prop the element does not accept is a compile error instead of being silently absorbed.
 - Highlight state is readable through `useMenuItemContext`, `useContextMenuItemContext`, `useSelectItemContext` and `useComboboxItemContext`, which return `{ highlighted, disabled }` — `highlighted` covers hover *or* managed focus.
@@ -83,7 +86,7 @@ around the same idea.
 
 **Fixes**
 
-- 16 leaf parts render `children` again — both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay`. Attaching a `UICorner` or `UIPadding` to one of these previously did nothing.
+- 16 leaf parts render `children` again. Both separators, both text inputs, the labels, descriptions and messages on `TextField` and `Textarea`, `Toast.Title`, `Toast.Description`, `Select.Value`, `Combobox.Value`, `Avatar.Image` and `Dialog.Overlay`. Attaching a `UICorner` or `UIPadding` to one of these previously did nothing.
 - `asChild` accepts Roblox UI modifiers as siblings of the child element, which is the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits. See [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 - `Menu.Trigger` no longer runs its activation twice, and `Menu.Item` fires `onSelect` exactly once per activation.
 - A menu item stays highlighted while it holds keyboard focus.
@@ -93,23 +96,26 @@ around the same idea.
 
 ## 0.6.2
 
-A CLI-only patch. It changes no primitive behavior — every fix is about making a scaffolded project install and type-check cleanly on npm, where a peer conflict is a hard error rather than a warning.
+A CLI-only patch. It changes no primitive behaviour. Every fix is about making a scaffolded project
+install and type-check cleanly on npm, where a peer conflict is a hard error rather than a warning.
 
 **Migration**
 
-- Use `npx lattice-ui` rather than `npx lattice`. `npx` resolves the published package name, not the shorthand alias, so `npx lattice` never worked on npm projects; the CLI's own command hints now say `lattice-ui`. The `lattice` binary still works once the package is installed.
-- If your project still lists pre-0.6.1 package names, run `lattice init` — it now rewrites them to their `react-` replacements instead of leaving both names to fight over peers. `doctor` reports them and `upgrade` skips them.
+- Use `npx lattice-ui` rather than `npx lattice`. `npx` resolves the published package name, not the shorthand alias, so `npx lattice` never worked on npm projects. The CLI's own command hints now say `lattice-ui`, and the `lattice` binary still works once the package is installed.
+- If your project still lists pre-0.6.1 package names, run `lattice init`. It rewrites them to their `react-` replacements instead of leaving both names to fight over peers. `doctor` reports them, and `upgrade` skips them.
 
 **Highlights**
 
-- `create` and `init` record the resolved package manager as a `devEngines` pin, and `add`, `remove`, and `upgrade` apply that pin before touching dependencies — so a project scaffolded with one manager cannot be quietly installed with another.
-- `typescript` is pinned to the version roblox-ts actually compiles with instead of being resolved from the latest dist-tag, and `doctor` warns when a project is already on an unsupported major.
+- `create` and `init` record the resolved package manager as a `devEngines` pin. `add`, `remove` and `upgrade` apply that pin before touching dependencies, so a project scaffolded with one manager cannot be quietly installed with another.
+- `typescript` is pinned to the version roblox-ts actually compiles with, rather than resolved from the latest dist-tag. `doctor` warns when a project is already on an unsupported major.
 - A failed install no longer leaves a half-written scaffold behind: `init` and `create` roll their file changes back.
 - The scaffolded `tsconfig` skips lib checks, so `typecheck` passes on a freshly generated project.
 
 ## 0.6.1
 
-A **rename-only** release: every package moved under a framework layer directory and gained a layer prefix in its published name, so future Vide and plain-Luau targets can sit beside React instead of one framework holding the unprefixed names. No runtime behavior, exports, or APIs changed.
+A **rename-only** release. Every package moved under a framework layer directory and gained a layer
+prefix in its published name, so future Vide and plain-Luau targets can sit beside React. No runtime
+behaviour, exports or APIs changed.
 
 **Migration**
 
@@ -132,18 +138,18 @@ The 0.6 line hardens the layered surface rather than adding new components: game
 
 **Highlights**
 
-- Overlay triggers and items are gamepad-selectable: `Select` trigger/item, toggle-group item, and accordion trigger register focus nodes and route activation through a shared guard, so gamepad users can open menus, move between items, and commit without double-firing.
+- Overlay triggers and items are gamepad-selectable. The `Select` trigger and item, the toggle-group item and the accordion trigger register focus nodes and route activation through a shared guard, so gamepad users can open menus, move between items and commit without double-firing.
 - New `useActivationGuard` in `@lattice-ui/focus` collapses the gamepad/keyboard `Activated` + `Return`/`Space` double-fire into a single activation.
-- Toast now runs on presence motion: it fades in on entry, stays visible while its exit animation completes before removal, starts the expiry timer when it enters the visible window (not at enqueue), and animates `clear()` through the exit transition.
+- Toast now runs on presence motion. It fades in on entry and stays visible while its exit animation completes. The expiry timer starts when it enters the visible window rather than at enqueue, and `clear()` animates through the exit transition.
 - `Text` gains an opt-in `truncate` prop that applies an end-ellipsis for single-line overflow.
 
 **Fixes**
 
 - Dialog hosts its overlay in its own `ScreenGui` so content renders above its dim.
-- Dismissable layers re-promote on open for correct z-order and dismissal order, dismiss on sunk input, and register their trigger as an inside ref so clicking it no longer dismisses; outside-click dismissal also works without an explicit content boundary ref.
+- Dismissable layers re-promote on open for correct z-order and dismissal order, dismiss on sunk input, and register their trigger as an inside ref so clicking it no longer dismisses. Outside-click dismissal also works without an explicit content boundary ref.
 - Popper resolves the `ScreenGui` viewport rect from the GUI inset for more accurate placement.
 - Combobox keeps its selected label, and Select keeps its selected value, after content unmounts.
-- Avatar re-reports loaded status for cached textures on source change; Textarea preserves its X scale during auto-resize.
+- Avatar re-reports loaded status for cached textures on source change. Textarea preserves its X scale during auto-resize.
 
 ## 0.5.1
 
@@ -166,8 +172,8 @@ Extracts shared focus and motion helpers into dedicated packages, expands CLI pr
 - New `@lattice-ui/motion` package for tween and presence helpers, and `@lattice-ui/focus` for focus management.
 - Placement-relative Popper positioning options (`placement`, `sideOffset`, `alignOffset`, `collisionPadding`) adopted across positioned overlays, with improved flip/clamp behavior near viewport edges.
 - `usePopper` exposes resolved placement/position metadata (`position`, `anchorPoint`, `placement`, `contentSize`, `isPositioned`, `update`).
-- Interactive `init` CLI command for existing projects with safe template merging; `create` and `init` scaffold from maintained package templates.
-- Layered components share the same motion recipes and focus infrastructure — overlay content stays mounted while motion is active, so exit animations complete instead of flashing or unmounting early.
+- An interactive `init` CLI command for existing projects, with safe template merging. `create` and `init` scaffold from maintained package templates.
+- Layered components share the same motion recipes and focus infrastructure. Overlay content stays mounted while motion is active, so exit animations complete instead of flashing or unmounting early.
 - Normalized slider and switch thumb anchors so wrapped layouts keep animated thumbs aligned.
 
 ## 0.4.x

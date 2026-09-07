@@ -9,7 +9,7 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-A variant is a condition evaluated at runtime on the player's client; a token only applies when its
+A variant is a condition evaluated at runtime on the player's client. A token only applies when its
 condition matches.
 
 | Variant | Matches when |
@@ -39,10 +39,10 @@ Prefixes chain, and a chained token requires **all** of its conditions to match:
 <frame className="hidden touch:portrait:visible" />
 ```
 
-`active:`, `focus:` and `dark:` arrived in 0.7.0; the `max-` forms and `attr-[…]` in 0.13.0. There is
-still no `not-` form, no `disabled:`, and no group or peer variants. Order within the chain does not
-matter — the conditions are combined as a set. An unrecognized prefix is its own diagnostic,
-`unknown-variant`, whose message lists the supported set; the token is dropped.
+`active:`, `focus:` and `dark:` arrived in 0.7.0. The `max-` forms and `attr-[…]` arrived in 0.13.0.
+There is still no `not-` form, no `disabled:`, and no group or peer variants. Order within the chain
+does not matter — the conditions are combined as a set. An unrecognized prefix reports
+`unknown-variant`, whose message lists the supported set. The token is dropped.
 
 ## Breakpoints, and their complements
 
@@ -57,19 +57,19 @@ axis** rather than a hard-coded three:
 | `xl:` | `width >= 1280` | `max-xl:` — `width < 1280` |
 | `2xl:` | `width >= 1536` | `max-2xl:` — `width < 1536` |
 
-A `max-` form is the **exact** complement of the bare one: the minimum is inclusive and the maximum
-is not, so at exactly 768px `md:` applies and `max-md:` does not, and between them the two cover
-every viewport once. They chain, which is how you address one bucket and nothing else:
+A `max-` form is the **exact** complement of the bare one. The minimum is inclusive and the maximum
+is not, so at exactly 768px `md:` applies and `max-md:` does not. Between them the two cover every
+viewport once. They chain, which is how you address one bucket and nothing else:
 
 ```tsx title="Only between 768 and 1024"
 <frame className="md:max-lg:w-1/2" />
 ```
 
-A chain whose bounds leave no viewport — `lg:max-md:`, or `md:max-md:` — reports
+A chain whose bounds leave no viewport, such as `lg:max-md:` or `md:max-md:`, reports
 `invalid-breakpoint-range` rather than compiling to a rule that never fires. A `max-` in front of
 something that is not a breakpoint reports `unknown-breakpoint` and names the ones that are.
 
-Rename or add thresholds through [`theme.screens`](/vela-rbxts/reference/config/#screens); one entry
+Rename or add thresholds through [`theme.screens`](/vela-rbxts/reference/config/#screens). One entry
 defines both prefixes. As in Tailwind, write the small-viewport value unprefixed and layer larger
 viewports on top.
 
@@ -104,8 +104,8 @@ player who plugs in a controller mid-session flips to `gamepad` because the help
 ## Hover, active and focus are per-element
 
 Three variants have conditions that live on the element rather than in the environment. In each case
-the runtime helper attaches its listeners **only when the element actually carries a rule for that
-variant**, and composes with any handlers you wrote yourself rather than replacing them.
+the runtime helper attaches its listeners **only when the element carries a rule for that variant**.
+It composes with any handlers you wrote yourself rather than replacing them.
 
 | Variant | Tracked through | Notes |
 | --- | --- | --- |
@@ -113,8 +113,8 @@ variant**, and composes with any handlers you wrote yourself rather than replaci
 | `active` | `InputBegan` / `InputEnded` | Mouse and touch; also clears on `MouseLeave` |
 | `focus` | `Focused` / `FocusLost` on a `textbox`, `SelectionGained` / `SelectionLost` elsewhere | |
 
-`active:` clears on `MouseLeave` because a release that happens outside the element never reaches it
-— without that, dragging off a pressed button would leave it stuck in its pressed state.
+`active:` clears on `MouseLeave`, because a release outside the element never reaches it. Without
+that, dragging off a pressed button would leave it stuck.
 
 `focus:` splits by host because Roblox does: a `textbox` has real keyboard focus, while every other
 element only has gamepad/controller selection. Both map to the same variant.
@@ -135,7 +135,7 @@ as the only signal for something important — `focus:` is what a controller pla
 ## Dark mode is state your app owns
 
 Roblox exposes no color scheme to a running game, so `dark:` cannot read one. It matches when
-**`Players.LocalPlayer` carries a `VelaColorScheme` attribute set to `"dark"`**, and the runtime host
+**`Players.LocalPlayer` carries a `VelaColorScheme` attribute set to `"dark"`**. The runtime host
 follows that attribute's change signal, so flipping it restyles every `dark:` element immediately.
 
 ```tsx title="Somewhere your settings UI can reach"
@@ -146,15 +146,15 @@ Players.LocalPlayer.SetAttribute("VelaColorScheme", prefersDark ? "dark" : "ligh
 <frame className="bg-white dark:bg-zinc-900" />
 ```
 
-Anything other than `"dark"` — including the attribute being absent, which is the default — is
-treated as light. The local player is the one instance every element can reach without a provider, so
-that is where the flag lives.
+Anything other than `"dark"` is treated as light, including the attribute being absent. The local
+player is the one instance every element can reach without a provider, so that is where the flag
+lives.
 
 ## State your UI owns
 
-`hover:` is a state Roblox exposes. The states a UI has of its own — a panel that is open, a row that
-is selected, a tier a player reached — have no fixed list for Vela to guess at, so **since 0.13.0 you
-name them**. Both forms read a Roblox attribute off the styled instance:
+`hover:` is a state Roblox exposes. The states a UI has of its own have no fixed list for Vela to
+guess at. A panel that is open, a row that is selected, a tier a player reached. **You name them.**
+Both forms read a Roblox attribute off the styled instance:
 
 ```tsx title="Inline, where a registration would be ceremony"
 <frame className="rounded-sm attr-[State=open]:rounded-lg" />
@@ -170,7 +170,7 @@ plugin(({ addVariant }) => {
 <frame className="rounded-sm open:rounded-lg" />
 ```
 
-The attribute is the one the rest of the game already reads: it replicates from the server, survives
+The attribute is the one the rest of the game already reads. It replicates from the server, survives
 a rejoin, and shows up in Studio's property panel, so the styling layer holds no second copy of the
 state. Set it the way you set any other:
 
@@ -178,30 +178,29 @@ state. Set it the way you set any other:
 <frame ref={(f) => f?.SetAttribute("State", isOpen ? "open" : "closed")} />
 ```
 
-`equals` takes a string, number or boolean. Both forms compose with every other variant, both are
-checked, completed, hovered and sorted like a built-in one, and neither sends the utility behind them
-to the in-game parser — `open:rounded-lg` lowers `rounded-lg` exactly as a bare `rounded-lg` does, and
-only the condition travels. An `attr-[…]` that does not parse reports `malformed-attribute-variant`
-and names what is missing.
+`equals` takes a string, number or boolean. Both forms compose with every other variant, and both
+are checked, completed, hovered and sorted like a built-in one. Neither sends the utility behind
+them to the in-game parser. `open:rounded-lg` lowers `rounded-lg` exactly as a bare `rounded-lg`
+does, and only the condition travels. An `attr-[…]` that does not parse reports
+`malformed-attribute-variant` and names what is missing.
 
 ## The cost: any variant forces the runtime path
 
 A variant condition cannot be evaluated at compile time, so any token carrying a variant prefix
-switches that element onto the **runtime path**: the JSX tag becomes a `VelaRuntimeHost`, the variant
-tokens are serialized into `__velaRules`, the original tag travels as `__velaTag`, and the static
-props are emitted as casts.
+switches that element onto the **runtime path**. The JSX tag becomes a `VelaRuntimeHost`, the
+variant tokens are serialized into `__velaRules`, the original tag travels as `__velaTag`, and the
+static props are emitted as casts.
 
 <Callout title="A variant in a plain string literal is enough">
-`className="sm:w-full"` — a fully static string literal — is enough. One variant-prefixed token
-anywhere in the file pulls the runtime host into that file's output.
+`className="sm:w-full"`, a fully static string literal, is enough. One variant-prefixed token anywhere in the file pulls the runtime host into that file's output.
 </Callout>
 
 What it costs the file is an import. The host lives in `@rbxts/vela-runtime`, one ModuleScript the
-whole place shares, so a file that needs it carries a `createVelaRuntimeHost(...)` call and the config
-it hands over — a few hundred bytes, or a few thousand for a file whose host must parse a class value
-and therefore keeps the full theme tables. The host imports `{ Players, TweenService,
-UserInputService, Workspace }` from `@rbxts/services`, normalizes your theme's colour and spacing
-strings, and installs subscriptions on each element that uses it.
+whole place shares. A file that needs it carries a `createVelaRuntimeHost(...)` call and the config
+it hands over: a few hundred bytes, or a few thousand for a file whose host must parse a class value
+and therefore keeps the full theme tables. The host imports
+`{ Players, TweenService, UserInputService, Workspace }` from `@rbxts/services`, normalizes your
+theme's colour and spacing strings, and installs subscriptions on each element that uses it.
 
 Two consequences:
 
@@ -212,10 +211,10 @@ Two consequences:
   A variant alone does not put you here: its rules are resolved by the compiler, so a variant-only
   file ships its scales emptied.
 
-Output size, diagnostics and coverage are not on that list — variant-prefixed tokens are analyzed
+Output size, diagnostics and coverage are not on that list. Variant-prefixed tokens are analyzed
 statically, and the runtime path resolves every utility family the static path does.
 
-Use variants where they earn their keep: a handful of top-level containers that reflow between phone
+Use variants where they earn their keep. A handful of top-level containers that reflow between phone
 and desktop, an input hint that only makes sense on gamepad, hover feedback on interactive controls.
 Keep leaf components on plain static classes.
 
