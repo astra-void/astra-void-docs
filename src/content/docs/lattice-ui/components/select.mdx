@@ -18,9 +18,9 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 
 Select is the primitive for picking one value from a list: difficulty pickers, region menus, sort
 dropdowns. It coordinates open state, the selected value, item registration, popper positioning and
-outside-press dismissal, so your component renders a trigger, a value label and the items.
+outside-press dismissal.
 
-Reach for Select when a control needs to **hold a single value**, **open an anchored popup** over a trigger, and **dismiss predictably** on selection or an outside interaction.
+Your component renders a trigger, a value label and the items.
 
 ## Preview
 
@@ -34,7 +34,8 @@ import { Select } from "@lattice-ui/react-select";
 
 ## Anatomy
 
-`Root`, `Trigger`, `Portal`, `Content`, and at least one `Item` form the minimum useful select. `Value`, `Group`, `Label`, and `Separator` are optional and help you structure the trigger label and the list.
+`Root`, `Trigger`, `Portal`, `Content` and at least one `Item` form the minimum useful select;
+`Value`, `Group`, `Label` and `Separator` structure the trigger label and the list.
 
 <PrimitiveAnatomy title="Select anatomy">
 
@@ -76,9 +77,8 @@ import { Select } from "@lattice-ui/react-select";
 
 A controlled root, a trigger button with a `Value` label inside, and a handful of items on a plain list surface.
 
-Each `Select.Item` needs its **label as a child** — `textValue` draws nothing in the list — and
-every part needs its own styling. `textValue` still matters, but only for what `Select.Value` shows
-in the closed trigger.
+Each `Select.Item` needs its **label as a child** — `textValue` draws nothing in the list, and
+matters only for what `Select.Value` shows in the closed trigger.
 
 ```tsx title="RegionSelect.tsx"
 import { useState } from "@rbxts/react";
@@ -137,9 +137,8 @@ export function RegionSelect() {
 
 ### Saving a setting on change
 
-Wire `value`/`onValueChange` to persist a selection the moment it happens. It fires once per
-accepted selection — presses on disabled items never reach it, and it only ever reports a `string` —
-so the handler is a safe place to save.
+Wire `value`/`onValueChange` to persist a selection as it happens. It fires once per accepted
+selection, never for a disabled item, and only ever reports a `string`.
 
 ```tsx title="GraphicsQualitySelect.tsx"
 import { useState } from "@rbxts/react";
@@ -188,8 +187,7 @@ export function GraphicsQualitySelect(props: {
 ### Grouped options
 
 `Group`, `Label` and `Separator` structure a longer list and are purely visual — registration order
-and value resolution ignore them. All three render unstyled: give `Group` a layout, `Label` its
-`Text`, and `Separator` a `Size` and `BackgroundColor3`.
+and value resolution ignore them. All three render unstyled.
 
 ```tsx title="SortSelect.tsx"
 import { useState } from "@rbxts/react";
@@ -269,9 +267,9 @@ export function SortSelect() {
 
 ### Disabled options
 
-A disabled item stays visible but inert: pressing it changes nothing and the content stays open.
-Disabled items are excluded from value resolution, so a value pointing at one is re-selected to the
-first enabled item the next time the items mount, reported through `onValueChange`.
+A disabled item stays visible but inert, and is excluded from value resolution — so a value pointing
+at one is re-selected to the first enabled item the next time the items mount, reported through
+`onValueChange`.
 
 ```tsx title="ServerTierSelect.tsx"
 import { useState } from "@rbxts/react";
@@ -313,10 +311,10 @@ export function ServerTierSelect(props: { hasPremium: boolean }) {
 
 ### Custom trigger and value with asChild
 
-Use `asChild` to project the trigger behavior onto your own button and the resolved text onto your
-own label. The trigger slot merges `Active`, its handlers and its ref, so pass an activatable
-`textbutton` or `imagebutton`. The `Value` slot drives the child's `Text` with the resolved label,
-so its child must be text-bearing; colour, alignment and size stay yours.
+Use `asChild` to project the trigger behaviour onto your own button and the resolved text onto your
+own label. The trigger slot merges `Active`, its handlers and its ref, so pass an activatable button
+class. The `Value` slot drives the child's `Text`, so its child must be text-bearing; colour,
+alignment and size stay yours.
 
 ```tsx title="LoadoutSelect.tsx"
 import { useState } from "@rbxts/react";
@@ -374,9 +372,8 @@ export function LoadoutSelect() {
 ### Tuning placement and offsets
 
 `Content` anchors to the trigger with popper defaults of `placement="bottom"`, `sideOffset={0}`,
-`alignOffset={0}` and `collisionPadding={8}`. A select in a bottom HUD bar should open upward; with
-no room on the preferred side the content flips automatically, staying `collisionPadding` pixels
-from the viewport edges.
+`alignOffset={0}` and `collisionPadding={8}`. With no room on the preferred side it flips
+automatically, staying `collisionPadding` pixels from the viewport edges.
 
 ```tsx title="HudSortSelect.tsx"
 import { useState } from "@rbxts/react";
@@ -412,7 +409,7 @@ export function HudSortSelect() {
 ```
 
 <Callout title="Single value only">
-This release of Select is **single-value only**. There is no multi-select mode, and `value`/`defaultValue` are a single `string`, not an array. Track multiple selections with separate controls or your own state until multi-select lands.
+Select is **single-value only**: `value`/`defaultValue` are a single `string`, not an array. Track multiple selections with separate controls or your own state.
 </Callout>
 
 ## How it behaves
@@ -421,44 +418,42 @@ This release of Select is **single-value only**. There is no multi-select mode, 
 
 Pass `open` and `onOpenChange` to control it, or `defaultOpen` to run uncontrolled. `Trigger`
 toggles on activation and on `Return`/`Space`, and selecting closes it. A disabled root blocks
-*opening* only, so an already-open content can still close. `Trigger` takes its own `disabled`,
-which combines with the root's.
+*opening* only. `Trigger` takes its own `disabled`, combined with the root's.
 
-The trigger renders an unstyled `textbutton` — give it a size and colors. With `asChild`, the slot merges `Active`, the `Activated` and `InputBegan` handlers, and its ref onto your single child element, so use an activatable button class.
+The trigger renders an unstyled `textbutton`, so give it a size and colours. With `asChild`, the
+slot merges `Active`, the `Activated` and `InputBegan` handlers and its ref onto your child element.
 
 ### Value and selection
 
 The selected value is a single `string`, controlled via `value`/`onValueChange` or uncontrolled via
 `defaultValue`. Each item registers its `value`, `textValue`, disabled state and document order on
-mount, so while the content is open the root knows the full ordered set. Activating an item sets the
-value and closes the content.
+mount, so while the content is open the root knows the full ordered set.
 
 Selection is guarded twice: a disabled item ignores activation, and `setValue` refuses a value
-resolving to a disabled item. The root also reconciles the value against the registry — with no
-matching *enabled* item it re-selects the first enabled one, or clears the value when none is
-registered. The re-selection is reported through `onValueChange`; the clear is not, so the callback
-only ever receives a `string`.
+resolving to one. The root also reconciles the value against the registry — with no matching
+*enabled* item it re-selects the first enabled one, or clears the value when none is registered. The
+re-selection is reported through `onValueChange`; the clear is not.
 
 ### Items register only while mounted
 
-Item registration is tied to component lifetime, and items live inside `Select.Content`, which unmounts while the select is closed (unless `forceMount` is set). Two practical consequences:
+Item registration is tied to component lifetime, and items live inside `Select.Content`, which
+unmounts while closed unless `forceMount` is set. Two consequences:
 
-- **Run the value controlled.** With the content closed the registry is empty, so reconciliation clears *uncontrolled* value state — including `defaultValue`, dropped before the content ever opens. Controlled `value` is unaffected.
+- **Run the value controlled.** With the content closed the registry is empty, so reconciliation clears *uncontrolled* value state — `defaultValue` included. Controlled `value` is unaffected.
 - **`textValue` only resolves while items are mounted.** Closed, `Select.Value` falls back to the raw value string. Keep value strings display-ready, or pass `forceMount` on `Content`.
 
 ### The value label
 
 `Select.Value` resolves its text through a chain: the registered item's `textValue`, then the raw
-value string, then `placeholder`. Writing `Text` *is* this part's behavior, so it owns that property
-— and only that one. It does not dim while showing the placeholder; branch on your own state for
-that.
+value string, then `placeholder`. Writing `Text` *is* this part's behaviour, so it owns that
+property and only that one — it does not dim while showing the placeholder.
 
 ### Positioning
 
 `Select.Content` is positioned with popper against the trigger: `placement` picks the side,
-`sideOffset` pushes it away, `alignOffset` slides it along the cross axis, and `collisionPadding`
-keeps it inside the viewport. It is measured after mount and flipped on collision; until that first
-measurement it is parked offscreen, so you never see an unpositioned frame.
+`sideOffset` pushes it away, `alignOffset` slides it along the cross axis, `collisionPadding` keeps
+it inside the viewport. Until the first measurement it is parked offscreen, so you never see an
+unpositioned frame.
 
 ### Dismissal
 
