@@ -9,12 +9,11 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-If you come from the web, most UI-library instincts transfer to Roblox — but a handful do not, and
-those are exactly the ones that make overlays, menus, and modals tricky. There is no DOM, no
-document-level z-index, no tab order, and no event that says "the user clicked outside this
-element." What there is: a single selected `GuiObject`, a `PlayerGui` you portal into, `ScreenGui`
-layers ordered by a number, and a default gamepad selection engine that was never designed for
-layered surfaces.
+If you come from the web, most UI-library instincts transfer to Roblox. A handful do not, and those
+are exactly the ones that make overlays, menus and modals tricky. There is no DOM, no document-level
+z-index, no tab order, and no event that says "the user clicked outside this element." What you get
+instead is a single selected `GuiObject`, a `PlayerGui` you portal into, `ScreenGui` layers ordered
+by a number, and a default gamepad selection engine that was never designed for layered surfaces.
 
 lattice-ui exists largely to paper over these constraints so you do not re-solve them per screen. This guide collects the Roblox realities the primitives are built around, so that when you compose or extend them, the behavior makes sense.
 
@@ -24,9 +23,9 @@ Gamepad and keyboard navigation on Roblox is **selection**: `GuiService.Selected
 
 This is why lattice-ui ships `@lattice-ui/react-focus`. A single mutable property cannot, on its
 own, express "trap selection inside this dialog" or "restore selection to the trigger that opened
-it." The focus manager keeps a model of scopes and nodes, decides what *should* be selected, and
-writes it to `GuiService.SelectedObject`, reading it back when the player moves selection so the two
-stay in agreement.
+it." The focus manager keeps a model of scopes and nodes. It decides what *should* be selected and
+writes it to `GuiService.SelectedObject`. It reads the property back when the player moves
+selection, so the two stay in agreement.
 
 ```tsx title="Keep Selectable in lockstep with disabled state"
 <textbutton
@@ -43,7 +42,10 @@ Setting only `Active={false}` still leaves the button selectable by gamepad. Whe
 
 ## Portals target BasePlayerGui
 
-A surface that must visually escape its parent — a dialog, a popover anchored to a deeply nested button — cannot just render in place; a parent's clipping or `ZIndex` would trap it. On Roblox the destination for top-level UI is the player's `BasePlayerGui` (the `PlayerGui`), and `@lattice-ui/react-layer`'s `Portal` renders there via `ReactRoblox.createPortal`.
+A surface that must visually escape its parent cannot just render in place. That covers a dialog, or
+a popover anchored to a deeply nested button. A parent's clipping or `ZIndex` would trap it. On
+Roblox the destination for top-level UI is the player's `BasePlayerGui` (the `PlayerGui`), and
+`@lattice-ui/react-layer`'s `Portal` renders there via `ReactRoblox.createPortal`.
 
 You set the container once at the root with `PortalProvider`, and every `Portal` (and every primitive that portals, like `Dialog.Portal`) inherits it:
 
@@ -78,9 +80,15 @@ export function UIRoot(props: { children: React.ReactNode }) {
 
 Two `ScreenGui` properties decide how a layered surface sits on screen.
 
-**`DisplayOrder`** is Roblox's only cross-`ScreenGui` stacking control — higher numbers render on top. Within a single `ScreenGui`, `ZIndex` orders children, but across separate `ScreenGui`s only `DisplayOrder` matters. lattice-ui derives layer order from a base (`displayOrderBase`, default `1000`) so dialogs, popovers, and toasts stack in a predictable, app-controlled band rather than colliding with your game HUD.
+**`DisplayOrder`** is Roblox's only cross-`ScreenGui` stacking control — higher numbers render on
+top. Within a single `ScreenGui`, `ZIndex` orders children, but across separate `ScreenGui`s only
+`DisplayOrder` matters. lattice-ui derives layer order from a base, `displayOrderBase`, defaulting
+to `1000`. Dialogs, popovers and toasts stack in a predictable, app-controlled band rather than
+colliding with your game HUD.
 
-**`IgnoreGuiInset`** controls whether the surface starts below the top-bar inset or covers the full viewport. Full-screen overlays and backdrops want to ignore the inset so they truly cover everything; lattice-ui's layer defaults reflect this (`DEFAULT_LAYER_IGNORE_GUI_INSET` is `true`).
+**`IgnoreGuiInset`** controls whether the surface starts below the top-bar inset or covers the full
+viewport. Full-screen overlays and backdrops want to ignore the inset so they truly cover
+everything. lattice-ui's layer defaults reflect this: `DEFAULT_LAYER_IGNORE_GUI_INSET` is `true`.
 
 ```tsx title="A full-screen backdrop covers the inset"
 // Backdrops should fill the whole viewport, top-bar included.
@@ -124,7 +132,10 @@ function focusNext(entries: Array<OrderedSelectionEntry>) {
 
 ## Stable GuiObject refs
 
-The focus model, motion hosts, and dismissable layers all key off the actual `GuiObject` instance behind a ref. If that instance is swapped between renders — a different branch of a ternary, a remounted subtree — the manager sees the old node disappear and the new one as unrelated, which drops trap targets and restore snapshots.
+The focus model, motion hosts, and dismissable layers all key off the actual `GuiObject` instance
+behind a ref. If that instance is swapped between renders, by a different branch of a ternary or a
+remounted subtree, the manager sees the old node disappear and the new one as unrelated. That drops
+trap targets and restore snapshots.
 
 Keep the host instance stable across renders: toggle `Visible`, `Selectable`, or color instead of conditionally rendering a *different* element for triggers, anchors, and content roots. Reserve mount/unmount for genuine presence changes — and when you do unmount an animating surface, let [presence motion](/lattice-ui/guides/presence-and-motion/) hold it until the exit completes.
 

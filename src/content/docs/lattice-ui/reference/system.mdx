@@ -14,7 +14,12 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-style"]}
 />
 
-System sits one level above `@lattice-ui/react-style`. Where Style owns the raw theme and host-prop helpers, System adds the app-facing layer: a **density** system that scales spacing, radius, and type globally; **layout primitives** (`Stack`, `Row`, `Grid`) that drive Roblox layout instances from theme spacing tokens; and **surface tones** for consistent backgrounds and borders. `SystemProvider` ties the theme and density together and feeds a density-resolved `Theme` down through `ThemeProvider`.
+System sits one level above `@lattice-ui/react-style`. Style owns the raw theme and host-prop
+helpers. System adds the app-facing layer on top of it: a **density** system that scales spacing,
+radius and type globally, **layout primitives** (`Stack`, `Row`, `Grid`) that drive Roblox layout
+instances from theme spacing tokens, and **surface tones** for consistent backgrounds and borders.
+`SystemProvider` ties the theme and density together and feeds a density-resolved `Theme` down
+through `ThemeProvider`.
 
 ## Import
 
@@ -39,7 +44,9 @@ function SystemProvider(props: SystemProviderProps): React.Element;
 </SystemProvider>
 ```
 
-Theme and density are each independently controllable (`theme`/`defaultTheme`, `density`/`defaultDensity`). Writes always target the base theme; the resolved theme is derived from base theme plus current density.
+Theme and density are each independently controllable (`theme`/`defaultTheme`,
+`density`/`defaultDensity`). Writes always target the base theme. The resolved theme derives from
+the base theme plus the current density.
 
 <PropTable
   rows={[
@@ -100,7 +107,10 @@ function applyDensity(theme: Theme, token: DensityToken): Theme;
 const compact = applyDensity(defaultLightTheme, "compact");
 ```
 
-Pure theme transformer. Returns a new `Theme` with `space`, `radius`, and `typography` scaled by the token's factors and `colors` carried through unchanged. Spacing and radius are rounded and clamped to a non-negative minimum; text sizes clamp to a minimum of 10. Density does not create layout or child instances — it only reshapes token values.
+Pure theme transformer. Returns a new `Theme` with `space`, `radius`, and `typography` scaled by the
+token's factors and `colors` carried through unchanged. Spacing and radius are rounded and clamped
+to a non-negative minimum. Text sizes clamp to a minimum of 10. Density does not create layout or
+child instances — it only reshapes token values.
 
 ### density
 
@@ -125,7 +135,10 @@ function Stack(props: StackProps): React.Element;
 </Stack>
 ```
 
-`align` controls the cross axis and `justify` the main axis (their effect swaps with `direction`). `gap` and every padding field accept a `SpaceToken` (resolved through the theme) or a raw pixel `number`. `autoSize` maps to `AutomaticSize`; `sx` and any direct host props are merged on top of the transparent base. `asChild` is not supported and throws if passed.
+`align` controls the cross axis and `justify` the main axis (their effect swaps with `direction`).
+`gap` and every padding field accept a `SpaceToken` (resolved through the theme) or a raw pixel
+`number`. `autoSize` maps to `AutomaticSize`. `sx` and any direct host props merge on top of the
+transparent base. `asChild` is not supported and throws if passed.
 
 <PropTable
   rows={[
@@ -152,7 +165,9 @@ A `Stack` with `direction` fixed to `"horizontal"`. Accepts every `StackProps` f
 
 ### Grid
 
-Responsive grid primitive backed by a `uigridlayout`. It measures its own `AbsoluteSize` and resolves the column count and cell width on layout changes — either honoring a fixed `columns` or fitting as many `minColumnWidth` cells as the container allows.
+Responsive grid primitive backed by a `uigridlayout`. It measures its own `AbsoluteSize` and
+resolves the column count and cell width on layout changes. It either honors a fixed `columns` or
+fits as many `minColumnWidth` cells as the container allows.
 
 ```tsx
 function Grid(props: GridProps): React.Element;
@@ -162,7 +177,8 @@ function Grid(props: GridProps): React.Element;
 </Grid>
 ```
 
-`gap` sets both axes; `rowGap`/`columnGap` override per axis. All spacing accepts tokens or pixels. `cellHeight` defaults to 32. Like `Stack`, `asChild` is not supported and throws.
+`gap` sets both axes. `rowGap` and `columnGap` override per axis. All spacing accepts tokens or
+pixels. `cellHeight` defaults to 32. Like `Stack`, `asChild` is not supported and throws.
 
 <PropTable
   rows={[
@@ -191,7 +207,9 @@ function Surface(props: SurfaceProps): React.Element;
 </Surface>
 ```
 
-For decorated tones the host `BorderSizePixel` is forced to 0 since the border is drawn by `uistroke`; the `overlay` tone renders a translucent fill with no decoration. `sx` and direct host props merge on top. `asChild` is not supported and throws.
+For decorated tones the host `BorderSizePixel` is forced to 0, since `uistroke` draws the border.
+The `overlay` tone renders a translucent fill with no decoration. `sx` and direct host props merge
+on top. `asChild` is not supported and throws.
 
 <PropTable
   rows={[

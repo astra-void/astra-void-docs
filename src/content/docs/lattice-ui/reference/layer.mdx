@@ -14,10 +14,10 @@ import { PackageMeta, PropTable, Callout } from "@/components/docs/mdx";
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus"]}
 />
 
-Layer provides the three behaviours every overlay surface needs: rendering **outside the local
-tree** into a `ScreenGui`, **dismissing on outside interaction** while optionally blocking input
-behind the surface, and **staying mounted through an exit animation**. Dialog, Popover, Menu,
-Select, Tooltip and Toast are all built on it.
+Layer provides the three behaviours every overlay surface needs. It renders **outside the local
+tree** into a `ScreenGui`, **dismisses on outside interaction** while optionally blocking input
+behind the surface, and **stays mounted through an exit animation**. Dialog, Popover, Menu, Select,
+Tooltip and Toast are all built on it.
 
 `DismissableLayer` renders through `Portal` and wraps its children in a `FocusLayerProvider`, so
 stacked layers trap and order correctly.
@@ -134,11 +134,12 @@ const contentRef = React.useRef<Frame>();
 ```
 
 The core overlay primitive. It portals a `ScreenGui` whose `DisplayOrder` is the provider base plus
-this layer's mount order, registers on the shared layer stack, and watches for pointer interactions
-outside its content boundary. A press outside fires `onPointerDownOutside`, any other outside
-interaction fires `onInteractOutside`, and unless vetoed with `preventDefault`, `onDismiss` follows.
+this layer's mount order. It registers on the shared layer stack and watches for pointer
+interactions outside its content boundary. A press outside fires `onPointerDownOutside`, any other
+outside interaction fires `onInteractOutside`, and unless vetoed with `preventDefault`, `onDismiss`
+follows.
 
-The boundary defaults to the layer's internal content wrapper; `contentBoundaryRef` names a specific
+The boundary defaults to the layer's internal content wrapper. `contentBoundaryRef` names a specific
 `GuiObject` as "inside", and `insideRefs` marks additional instances such as a separate trigger.
 With `modal` or `disableOutsidePointerEvents`, the layer renders a full-screen blocker behind the
 content.
@@ -168,7 +169,7 @@ type LayerInteractEvent = {
 ```
 
 The event handed to `onPointerDownOutside` and `onInteractOutside`. `originalEvent` is the Roblox
-`InputObject`; `preventDefault()` keeps the layer from dismissing, and `defaultPrevented` reflects
+`InputObject`. `preventDefault()` keeps the layer from dismissing, and `defaultPrevented` reflects
 whether it has been vetoed.
 
 ### Presence
@@ -198,7 +199,7 @@ type PresenceRender = (state: {
 
 A mount controller for exit animations: `Presence` keeps its content mounted after `present` flips
 to `false`, then unmounts once the animation signals completion. It calls its render function with
-`isPresent` — drive your animation off this — and an `onExitComplete` to call when the exit
+`isPresent`, which you drive your animation off, and an `onExitComplete` to call when the exit
 finishes. If that is never called, the content is force-unmounted after `exitFallbackMs` (default
 `140`).
 
@@ -213,11 +214,11 @@ finishes. If that is never called, the content is force-unmounted after `exitFal
 />
 
 <Callout title="Layers render into their own ScreenGuis">
-`DismissableLayer` portals into a generated `ScreenGui` parented to the provider's `BasePlayerGui`, not into your component tree. Its `DisplayOrder` is `displayOrderBase + mountOrder`, so later layers stack on top; set `displayOrderBase` to order Lattice surfaces relative to your own `ScreenGui`s.
+`DismissableLayer` portals into a generated `ScreenGui` parented to the provider's `BasePlayerGui`, not into your component tree. Its `DisplayOrder` is `displayOrderBase + mountOrder`, so later layers stack on top. Set `displayOrderBase` to order Lattice surfaces relative to your own `ScreenGui`s.
 </Callout>
 
 <Callout title="The modal blocker uses an invisible Modal textbutton">
-With `modal` or `disableOutsidePointerEvents`, the blocker is a full-screen transparent `textbutton` with `Modal = true` behind the content, which is what stops clicks and gameplay input reaching instances underneath.
+With `modal` or `disableOutsidePointerEvents`, the blocker is a full-screen transparent `textbutton` with `Modal = true` behind the content. That is what stops clicks and gameplay input reaching instances underneath.
 </Callout>
 
 ## Related
