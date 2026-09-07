@@ -40,7 +40,7 @@ Both packages are ESM-only and published under MIT. All `@loom-dev/*` packages a
 Node 24 or newer is expected (`engines: { node: ">=24" }`).
 
 <Callout title="React 18 only">
-The React peer is `^18.3.1` and nothing wider: the adapter drives `react-reconciler@^0.29.2`, which reads React 18 internals React 19 renamed, so a React 19 install fails at evaluation time:
+The React peer is `^18.3.1` and nothing wider. The adapter drives `react-reconciler@^0.29.2`, which reads React 18 internals React 19 renamed, so a React 19 install fails at evaluation time:
 
 ```bash
 pnpm add -D react@^18.3.1 @types/react@^18.3.12
@@ -50,11 +50,12 @@ pnpm add -D react@^18.3.1 @types/react@^18.3.12
 <Details title="Where the React pin bites, and the peers the plugin declares">
 The range matches the reconciler, so a mismatch fails at install rather than at first render.
 
-It is also why the plugin aliases bare `react` by absolute path rather than `resolve.dedupe`, which
+It is also why the plugin aliases bare `react` by absolute path rather than `resolve.dedupe`. Dedupe
 would re-anchor React at your project root and could pick a different major.
 `Warning: Invalid hook call` with a "more than one copy of React" hint means a version mismatch.
 
-Only the plugin has peers at all; the CLI vendors its own copies. `@loom-dev/preview` declares two:
+Only the plugin has peers at all, since the CLI vendors its own copies. `@loom-dev/preview` declares
+two:
 
 ```json title="From @loom-dev/preview's package.json"
 {
@@ -68,17 +69,17 @@ Only the plugin has peers at all; the CLI vendors its own copies. `@loom-dev/pre
 }
 ```
 
-`vite` is optional because the non-Vite entry points (`/client`, `/globals`, `/services`) are useful without it, but `loomPreview()` is not — install Vite if you are using the plugin. The CLI brings its own.
+`vite` is optional because the non-Vite entry points are useful without it: `/client`, `/globals` and `/services`. `loomPreview()` is not, so install Vite if you are using the plugin. The CLI brings its own.
 </Details>
 
 <Details title="What you do not install: no roblox-ts step, no Rust, no layout dependency">
-There is no roblox-ts compile step in the preview loop and no separate layout dependency: the Rust layout engine ships inside `@loom-dev/layout` as a prebuilt `.wasm`, so a Rust toolchain is only needed to develop loom.
+There is no roblox-ts compile step in the preview loop, and no separate layout dependency. The Rust layout engine ships inside `@loom-dev/layout` as a prebuilt `.wasm`, so a Rust toolchain is only needed to develop loom.
 
-Published packages ship the `wasm-opt`-processed binary — about 178 kB, roughly 68 kB gzipped — which matters only if you [ship a static gallery build](/loom/guides/static-builds-and-embedding/).
+Published packages ship the `wasm-opt`-processed binary, about 178 kB or roughly 68 kB gzipped. That matters only if you [ship a static gallery build](/loom/guides/static-builds-and-embedding/).
 </Details>
 
 <Details title="Pre-1.0: what a minor bump is allowed to do">
-Loom is published from `latest` and versioned in lockstep across the scope, but it is still pre-1.0: minor bumps carry behaviour changes. The plugin owns the whole preview — the generated page, entry detection and gallery mode — so a hand-rolled `index.html` or globals import still works but is no longer needed.
+Loom is published from `latest` and versioned in lockstep across the scope, but it is still pre-1.0, so minor bumps carry behaviour changes. The plugin owns the whole preview: the generated page, entry detection and gallery mode. A hand-rolled `index.html` or globals import still works, but is no longer needed.
 </Details>
 
 ## Verify
@@ -112,18 +113,14 @@ pnpm install        # a prepare hook runs build:native
 ```
 
 <Details title="What the checkout builds, and why link: rather than install">
-**The toolchain widens.** The layout engine is built from source, so you need Rust via **rustup**
-with the `wasm32-unknown-unknown` target (pinned in `rust-toolchain.toml`) and `wasm-pack`, alongside
-Node 24 and pnpm 11.
+**The toolchain widens.** The layout engine is built from source, so you need Rust via **rustup** with the `wasm32-unknown-unknown` target, pinned in `rust-toolchain.toml`, plus `wasm-pack`, Node 24 and pnpm 11.
 
 `pnpm install` builds the WASM engine through `scripts/build-wasm.sh`, emitting into
 `packages/layout/pkg/`. Rebuild it with `pnpm build:native`, or
 `pnpm build:native:release` for the `wasm-opt`-processed binary the release workflow ships. `pnpm
 build:packages` then builds the TypeScript packages with `tsdown`.
 
-**`link:` symlinks rather than copies**, so the package's own `workspace:*` dependencies resolve
-through the real path from the checkout's `node_modules` — you never install loom's dependency tree
-into your project. Importing the plugin from an *unbuilt* checkout has one extra wrinkle, covered in
+**`link:` symlinks rather than copies**, so the package's own `workspace:*` dependencies resolve through the real path from the checkout's `node_modules`. You never install loom's dependency tree into your project. Importing the plugin from an *unbuilt* checkout has one extra wrinkle, covered in
 [Advanced Vite setup](/loom/guides/advanced-vite-setup/#consuming-an-unbuilt-source-checkout).
 </Details>
 

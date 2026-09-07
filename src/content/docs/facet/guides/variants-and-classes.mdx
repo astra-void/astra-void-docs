@@ -65,15 +65,15 @@ const badgeVariants = fv("rounded-full", {
 });
 ```
 
-Matched against the *resolved* selection — defaults included — so a compound fires whether the axis
-came from the caller or from `defaultVariants`.
+Matched against the *resolved* selection, defaults included. A compound fires whether the axis came
+from the caller or from `defaultVariants`.
 
 ## `cn` does not resolve conflicts
 
 shadcn's `cn` is `clsx` + `twMerge`. Facet's is only the flattener, and the reason `twMerge` exists
 does not survive the port.
 
-**On the web**, class order in the attribute means nothing: Tailwind emits utilities in a canonical
+**On the web**, class order in the attribute means nothing. Tailwind emits utilities in a canonical
 stylesheet order and the later *rule* wins, so `p-4 p-2` and `p-2 p-4` are the same.
 `tailwind-merge` exists to make attribute order mean what everyone assumes it does.
 
@@ -82,7 +82,7 @@ earlier one, so class order *is* specificity. `fv()` appends the caller's `class
 makes the behaviour `twMerge` simulates native.
 
 "The caller" here is whatever code calls the recipe — the component itself. A `className` passed in
-from *outside* is a different story; see
+from *outside* is a different story. See
 [Overriding from the call site](#overriding-from-the-call-site).
 
 The cross-family cases agree too:
@@ -94,7 +94,7 @@ w-fit w-9   → w-9                          (same family, later wins)
 ```
 
 A merge pass would cost a token table tracking every Vela family, kept in sync with a compiler still
-adding families, to reproduce an outcome that is already correct.
+adding families. It would reproduce an outcome that is already correct.
 
 ## The one rule
 
@@ -162,15 +162,15 @@ component's own recipe. Both halves of the override lose.
 ### What that means for a copied component
 
 **The answer is the model's answer: edit the file.** That is what a copied component is for, and the
-only override that reliably works. `variant` and `size` cover the cases the component anticipated;
-anything else is a change to source you own.
+only override that reliably works. `variant` and `size` cover the cases the component anticipated.
+Anything else is a change to source you own.
 
 What still crosses the boundary is any instance property the component's classes do not set —
 `LayoutOrder`, `Position`, `Visible`, `ZIndex`, event handlers. Those arrive through passthrough and
 survive, because nothing overwrites them.
 
 **That includes the properties a call-site `className` resolved to**, which is what makes this
-confusing rather than merely inconvenient: the class list is not dropped as a unit, it is dropped
+confusing rather than merely inconvenient. The class list is not dropped as a unit. It is dropped
 property by property.
 
 ```tsx
