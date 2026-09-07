@@ -9,8 +9,8 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-Every stateful primitive has to answer one question: *who owns this state — the primitive, or the
-app?* Rather than forcing one answer, each supports both modes through the same prop shape, so you
+Every stateful primitive has to answer one question. *Who owns this state, the primitive or the
+app?* Rather than forcing one answer, each supports both modes through the same prop shape. You
 start simple and reach for control when you need it.
 
 This pattern is implemented once, in `useControllableState` from `@lattice-ui/react-runtime`, and every primitive root uses it. Learn the shape once and it applies everywhere.
@@ -19,8 +19,8 @@ This pattern is implemented once, in `useControllableState` from `@lattice-ui/re
 
 Every controllable prop comes as a trio: a controlled value, a default for uncontrolled use, and a change callback.
 
-- **Uncontrolled** — pass only the `default*` prop. The primitive owns the state; you read changes through the callback if you care.
-- **Controlled** — pass the value prop *and* the change callback. The app owns the state; the primitive renders what you give it and asks you to update.
+- **Uncontrolled** — pass only the `default*` prop. The primitive owns the state. You read changes through the callback if you care.
+- **Controlled** — pass the value prop *and* the change callback. The app owns the state. The primitive renders what you give it and asks you to update.
 
 The naming is consistent across the library:
 
@@ -101,7 +101,8 @@ export function ProfilePanels() {
 
 ## How it behaves under the hood
 
-`useControllableState` decides which mode it is in by a single rule: **if the value prop is defined, it is controlled; otherwise it is uncontrolled.** That has a few consequences worth knowing:
+`useControllableState` decides which mode it is in by a single rule. **If the value prop is defined,
+it is controlled. Otherwise it is uncontrolled.** That has a few consequences worth knowing:
 
 - The change callback fires in **both** modes, so you can observe an uncontrolled primitive without taking it over.
 - In controlled mode internal state is never written, so the rendered state can never drift from app state.

@@ -26,9 +26,9 @@ The current stable release. A patch: three fixes to `asChild`'s handling of UI m
 
 **Fixes**
 
-- **UI modifiers are recognised under both renderers.** `Slot` looks each child's type up in a table of UI modifiers, and that table held one spelling at a time. `@rbxts/react` rewrites a host tag to its Roblox class name, while a browser React renderer leaves it as written. Both are now listed.
+- **UI modifiers are recognised under both renderers.** `Slot` looks each child's type up in a table of UI modifiers. That table held one spelling at a time. `@rbxts/react` rewrites a host tag to its Roblox class name, while a browser React renderer leaves it as written. Both are now listed.
 - **`UIShadow` counts as a modifier**, so a `shadow-*` class no longer fails `asChild` like a casing miss.
-- **Re-parented modifiers no longer collide keys with the element's own children.** Both child walks numbered from `.0`, and React may resolve a duplicate key by dropping a child rather than warning.
+- **Re-parented modifiers no longer collide keys with the element's own children.** Both child walks numbered from `.0`. React may resolve a duplicate key by dropping a child rather than warning.
 
 <Callout title="If you are on 0.8.0 in Roblox, this changes nothing you can see">
   The 0.8.0 keying is correct for `@rbxts/react`, so a shipped game was never affected by the first fix. The other two are real anywhere.
@@ -138,7 +138,7 @@ The 0.6 line hardens the layered surface rather than adding new components: game
 
 **Highlights**
 
-- Overlay triggers and items are gamepad-selectable. The `Select` trigger and item, the toggle-group item and the accordion trigger register focus nodes and route activation through a shared guard, so gamepad users can open menus, move between items and commit without double-firing.
+- Overlay triggers and items are gamepad-selectable. The `Select` trigger and item, the toggle-group item and the accordion trigger register focus nodes and route activation through a shared guard. Gamepad users can open menus, move between items and commit without double-firing.
 - New `useActivationGuard` in `@lattice-ui/focus` collapses the gamepad/keyboard `Activated` + `Return`/`Space` double-fire into a single activation.
 - Toast now runs on presence motion. It fades in on entry and stays visible while its exit animation completes. The expiry timer starts when it enters the visible window rather than at enqueue, and `clear()` animates through the exit transition.
 - `Text` gains an opt-in `truncate` prop that applies an end-ellipsis for single-line overflow.
@@ -146,7 +146,7 @@ The 0.6 line hardens the layered surface rather than adding new components: game
 **Fixes**
 
 - Dialog hosts its overlay in its own `ScreenGui` so content renders above its dim.
-- Dismissable layers re-promote on open for correct z-order and dismissal order, dismiss on sunk input, and register their trigger as an inside ref so clicking it no longer dismisses. Outside-click dismissal also works without an explicit content boundary ref.
+- Dismissable layers re-promote on open for correct z-order and dismissal order, and dismiss on sunk input. They register their trigger as an inside ref, so clicking it no longer dismisses. Outside-click dismissal also works without an explicit content boundary ref.
 - Popper resolves the `ScreenGui` viewport rect from the GUI inset for more accurate placement.
 - Combobox keeps its selected label, and Select keeps its selected value, after content unmounts.
 - Avatar re-reports loaded status for cached textures on source change. Textarea preserves its X scale during auto-resize.

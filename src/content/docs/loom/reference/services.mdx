@@ -36,8 +36,8 @@ HttpService === game.GetService("HttpService"); // true
 | `UserInputService` | Input signals, `GetMouseLocation`, `GetFocusedTextBox`, capability flags, and since 0.12.0 the key and touch state readers (`IsKeyDown`, `GetKeysPressed`, `IsMouseButtonPressed`). |
 | `Workspace` | `CurrentCamera` with a live `ViewportSize`. Reachable as `game.Workspace` since 0.12.0, like every other service. |
 
-Plus the services that are only *containers* in a client, exported as ordinary instances so a tree
-can be parented into them: `Lighting`, `ReplicatedFirst`, `ReplicatedStorage`,
+Then there are the services that are only *containers* in a client. They are exported as ordinary
+instances so a tree can be parented into them: `Lighting`, `ReplicatedFirst`, `ReplicatedStorage`,
 `ServerScriptService`, `ServerStorage`, `SoundService`, `StarterPack`, `StarterPlayer` and `Teams`.
 
 <Callout title="Unimplemented services are exported, and fail where you use them">
@@ -65,13 +65,12 @@ const bounds = TextService.GetTextSize(
 ```
 
 `GetTextSize(text, fontSize, font, frameSize)` measures through **the same font stack the renderer
-paints with**, so what a component reserves and what the label occupies come from one place.
-Wrapping is greedy at word boundaries and a zero `frameSize.X` means "no frame".
-`GetTextBoundsAsync(params)` reads the same measurement off a `GetTextBoundsParams` instance and
-does not yield.
+paints with**. What a component reserves and what the label occupies come from one place. Wrapping
+is greedy at word boundaries and a zero `frameSize.X` means "no frame". `GetTextBoundsAsync(params)`
+reads the same measurement off a `GetTextBoundsParams` instance and does not yield.
 
 The metrics are the browser's, so shaping and rounding differ from the engine by a glyph here and
-there, and *which* typeface answers is the host's to install — see
+there. *Which* typeface answers is the host's to install. See
 [Fonts and text metrics](/loom/guides/fonts/). The filtering methods are absent: moderation is a
 server call loom will not make.
 
@@ -127,5 +126,6 @@ Color3.fromHex(colour.ToHex()) === colour; // by value
 ```
 
 `ToHSV()` destructures as a tuple and `Color3.fromHSV(h, s, v)` is its inverse. `Vector2` carries
-`Unit` / `Dot` / `Cross` / `Lerp` / `Min` / `Max` / `Abs` and its `xAxis` / `yAxis` constants,
-`Vector3` the equivalents, and `UDim2` a `Lerp`. `UDim` has none, because it has none in the engine.
+`Unit` / `Dot` / `Cross` / `Lerp` / `Min` / `Max` / `Abs`, plus its `xAxis` / `yAxis` constants.
+`Vector3` carries the equivalents, and `UDim2` a `Lerp`. `UDim` has none, because it has none in the
+engine.

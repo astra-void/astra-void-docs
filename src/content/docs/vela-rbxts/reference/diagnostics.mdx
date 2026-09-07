@@ -30,7 +30,7 @@ each file. The category comes from the diagnostic's level and defaults to Warnin
 **Diagnostics can be dropped entirely.** They are delivered through `context.addDiagnostic`. On a roblox-ts that does not expose it, every Vela diagnostic is discarded, and your build looks clean while classes go missing. If you have never seen a Vela warning, verify with `className="bg-nope-500"`.
 
 **Some spans are guessed, and some are not spans at all.** A diagnostic carries a real source range
-wherever the compiler could anchor it, which covers every token inside a static string `className`.
+wherever the compiler could anchor it. That covers every token inside a static string `className`.
 `tsx-parse-failed` is anchored too, and names the line and column.
 
 With no range, the host adapter searches for the first textual occurrence of the diagnostic's token.
@@ -137,7 +137,7 @@ and reads anything else as a key in [`theme.fontFamily`](/vela-rbxts/reference/c
 The errors are structural rather than about your classes.
 
 `compiler-invocation-failed` has one cause common enough to name. The host adapter resolves
-`typescript` from your project and calls into its API, so TypeScript 7 surfaces here as
+`typescript` from your project and calls into its API. TypeScript 7 surfaces here as
 `Cannot read properties of undefined (reading 'Latest')` on the first file. Pin `typescript@5.9.3`.
 Everything else under this code is the native binding failing to load or throwing.
 
@@ -158,7 +158,7 @@ This one is **build only**: the editor surface never collects an unsupported ele
 emits this code.
 
 `unsupported-host-utility` never appears in a build. The per-element restrictions it reports are
-checked by the editor surface alone, so `<frame className="text-red-500" />` compiles and emits a
+checked by the editor surface alone. `<frame className="text-red-500" />` compiles and emits a
 `TextColor3` assignment on a Frame with no complaint. Treat it as an editor-only lint. It is never
 raised on a component either, since the host element behind `<Panel />` is unknown.
 
@@ -247,9 +247,9 @@ the payload you have typed so far is still a **prefix of a real theme key**. As 
 the way to `bg-slate-800`, no squiggle flashes, because `sla` can still become `slate`. `bg-nope`
 warns immediately, because no theme key starts with `nope`.
 
-So a wrong key that happens to be a prefix of a real one, such as `bg-sl` or `bg-slat`, looks fine
-in the editor and still warns in the build. Codes other than `unknown-theme-key` are never filtered,
-so `color-missing-shade` on a `DEFAULT`-less palette shows up immediately.
+A wrong key that happens to be a prefix of a real one, such as `bg-sl` or `bg-slat`, looks fine in
+the editor. It still warns in the build. Codes other than `unknown-theme-key` are never filtered, so
+`color-missing-shade` on a `DEFAULT`-less palette shows up immediately.
 
 ## See also
 

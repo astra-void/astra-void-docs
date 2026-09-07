@@ -47,7 +47,8 @@ Those rows are area-level. For the per-property answer, see
 
 The practical proof point is a full headless component library. Dialogs, popovers, comboboxes,
 selects, tabs, sliders, focus scopes, portals and layers all render and behave correctly under
-`loom preview`, across more than fifty scenes, without a single source change on the library's side.
+`loom preview`. That is across more than fifty scenes, without a single source change on the
+library's side.
 
 ## Not implemented
 
@@ -73,10 +74,10 @@ is still open.
 - **No typechecking.** esbuild strips types, so a preview renders whether or not your project typechecks. See [TypeScript setup](/loom/guides/typescript-setup/).
 - **`print` types oddly.** The globals declaration omits `print` because `lib.dom` already declares
   one and redeclaring is a compile error. The runtime still overwrites the value.
-- **Unimplemented services fail at the call, not the import.** The ten services loom cannot honestly stand in for resolve to a warned stub whose method calls throw by name. `MarketplaceService`, `TeleportService`, `DataStoreService` and friends. A UI that merely *imports* one still mounts.
+- **Unimplemented services fail at the call, not the import.** The ten services loom cannot honestly stand in for resolve to a warned stub. Its method calls throw by name. `MarketplaceService`, `TeleportService`, `DataStoreService` and friends. A UI that merely *imports* one still mounts.
 - **A Luau-only package needs a shim.** Most roblox-ts packages redirect to their own TypeScript source automatically. A declaration-only one has none, and fails by name until you point [`shims`](/loom/guides/package-compatibility/#shims) at a browser module. `@rbxts/react`, `@rbxts/react-roblox`, `@rbxts/services`, `@rbxts/vide`, `@rbxts/ui-labs`, `@rbxts/ripple` and `@rbxts/react-ripple` are handled out of the box.
-- **`rbxassetid://` is resolved for you, twice over.** Roblox's thumbnail API sends no CORS headers, so a dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no server to ask, so the ids are resolved at build time. They are read out of the bundle, and found by mounting each gallery target and reading the tree, which catches an id composed at runtime. An image the first render never reaches still needs a real URL, or your own `setImageResolver`.
-- **The React version is pinned in effect.** The adapter's reconciler targets React 18, and the plugin aliases bare `react` to one absolute path to guarantee a single instance.
+- **`rbxassetid://` is resolved for you, twice over.** Roblox's thumbnail API sends no CORS headers. A dev-server route resolves the id under `loom preview`, the embedded server and Next dev. A [static build](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build) has no server to ask, so the ids are resolved at build time. They are read out of the bundle, and found by mounting each gallery target and reading the tree, which catches an id composed at runtime. An image the first render never reaches still needs a real URL, or your own `setImageResolver`.
+- **The React version is pinned in effect.** The adapter's reconciler targets React 18. The plugin aliases bare `react` to one absolute path, to guarantee a single instance.
 - **Text metrics are the browser's, corrected toward the engine's.** Loom measures with canvas `measureText()`, so shaping and hinting are not Roblox's. Three things narrow the gap. The preview loads the right typeface itself. `TextSize` is divided by the face box rather than spent as a `font-size`. And advances are quantized to the half pixel and kerned the way the engine spends them. Against `GetTextBoundsAsync` at 50 widths, the wrapped line count matches 49 times. What is left is a measurement about a percent roomy, so text wraps a hair early rather than overflowing. [The detail](/loom/guides/fonts/#where-a-line-breaks).
 
 ## Versioning
