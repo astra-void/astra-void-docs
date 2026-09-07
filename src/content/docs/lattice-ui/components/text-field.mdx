@@ -16,7 +16,7 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-motion"]}
 />
 
-Text Field wraps a Roblox `TextBox` for single-line input: it owns the value, separates a live
+Text Field wraps a Roblox `TextBox` for single-line input. It owns the value, separates a live
 change from a commit, and shares **disabled / readOnly / required / invalid** state across a label,
 description and message. For multi-line input, [Textarea](/lattice-ui/components/textarea/) is the
 sibling primitive.
@@ -33,7 +33,7 @@ import { TextField } from "@lattice-ui/react-text-field";
 
 ## Anatomy
 
-Only `Root` and `Input` are required; `Label`, `Description` and `Message` read shared state from
+Only `Root` and `Input` are required. `Label`, `Description` and `Message` read shared state from
 context.
 
 <PrimitiveAnatomy title="TextField anatomy">
@@ -146,8 +146,8 @@ export function ItemSearchField(props: { onQueryChange: (query: string) => void 
 
 ### Change vs commit
 
-`onValueChange` fires on every text change, `onValueCommit` once when editing ends. Change is for
-live UI — previews, counters, filtering — and commit for the expensive work.
+`onValueChange` fires on every text change, and `onValueCommit` once when editing ends. Change is
+for live UI: previews, counters, filtering. Commit is for the expensive work.
 
 ```tsx title="ServerNameField.tsx"
 import { useState } from "@rbxts/react";
@@ -247,9 +247,9 @@ export function UsernameField() {
 
 ### Disabled and readOnly
 
-Both freeze the value but differ in interaction: `disabled` clears `Active`/`Selectable`, dims the
-text, ignores edits and suppresses the commit callback, while `readOnly` keeps the field focusable
-and copyable but rejects edits — and a focus loss still fires `onValueCommit`.
+Both freeze the value but differ in interaction. `disabled` clears `Active` and `Selectable`, dims
+the text, ignores edits and suppresses the commit callback. `readOnly` keeps the field focusable and
+copyable but rejects edits, and a focus loss still fires `onValueCommit`.
 
 ```tsx title="ServerInfoFields.tsx"
 import { TextField } from "@lattice-ui/react-text-field";
@@ -274,7 +274,7 @@ export function ServerInfoFields(props: { joinCode: string; canEditRegion: boole
 ### Filtered input
 
 For numeric-only entry, control the value and strip rejected characters in `onValueChange` before
-they reach state; the `TextBox` text is bound to the owned value, so the field tracks the filtered
+they reach state. The `TextBox` text is bound to the owned value, so the field tracks the filtered
 result. Run the same normalization at commit, where you parse and clamp.
 
 ```tsx title="BetAmountField.tsx"
@@ -320,15 +320,15 @@ last typed.
 
 ### Change and commit
 
-A keystroke calls `onValueChange`; a commit happens on `FocusLost`. Commit is not a diff — it fires
-on every focus loss, unchanged text included, and is suppressed only while `disabled`. A `readOnly`
-field still commits.
+A keystroke calls `onValueChange`, and a commit happens on `FocusLost`. Commit is not a diff: it
+fires on every focus loss, unchanged text included, and is suppressed only while `disabled`. A
+`readOnly` field still commits.
 
 ### Disabled and readOnly
 
-Both stop edits from updating the value: `Root.setValue` ignores incoming text and the `Input`
+Both stop edits from updating the value. `Root.setValue` ignores incoming text and the `Input`
 rewrites the `TextBox` back, so stray platform input cannot desync the field. `disabled` also clears
-`Active`/`Selectable`, dims the text and suppresses the commit callback; `readOnly` only drops
+`Active` and `Selectable`, dims the text and suppresses the commit callback. `readOnly` only drops
 `TextEditable`. `Input` can set either locally, combining with `Root`'s state via OR.
 
 ### Required, invalid, and name
@@ -339,18 +339,18 @@ recolours, and `name` is passed through context and otherwise inert.
 
 ### Label and focus
 
-`TextField.Label` renders a `textbutton` whose activation calls `CaptureFocus()` on the input; while
-disabled it drops `Active`/`Selectable`. `Description` and `Message` are non-interactive labels that
-dim alongside a disabled field.
+`TextField.Label` renders a `textbutton` whose activation calls `CaptureFocus()` on the input. While
+disabled it drops `Active` and `Selectable`. `Description` and `Message` are non-interactive labels
+that dim alongside a disabled field.
 
 ### Input focus motion
 
-The `Input` tracks focus and exposes it through context but paints nothing. Focus while `disabled`
-or `readOnly` does not count as active, so a read-only field does not light up as editable — branch
+The `Input` tracks focus and exposes it through context, but paints nothing. Focus while `disabled`
+or `readOnly` does not count as active, so a read-only field does not light up as editable. Branch
 on the state yourself, with a `createFieldResponseRecipe()` if you want it eased.
 
 <Callout title="Default text and visuals">
-Every part renders unstyled and carries no copy. `Input` is a `textbox` with `ClearTextOnFocus` off and no size or placeholder; `Label`, `Description` and `Message` render nothing until you supply it.
+Every part renders unstyled and carries no copy. `Input` is a `textbox` with `ClearTextOnFocus` off and no size or placeholder. `Label`, `Description` and `Message` render nothing until you supply it.
 
 Pass the copy and styling as props, or use `asChild` for a different element class. All four render children, so a `uipadding` attaches directly.
 </Callout>
