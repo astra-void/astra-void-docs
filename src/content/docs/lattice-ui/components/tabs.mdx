@@ -16,9 +16,12 @@ import { PackageMeta, PropTable, Callout , LoomPreview } from "@/components/docs
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-focus", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
-Tabs is the primitive for switching between mutually exclusive views: settings categories, inventory sections, shop pages, or any place where one panel is visible at a time. It owns the active value, keeps its triggers ordered, handles arrow-key movement between them, and mounts the matching panel with presence motion.
+Tabs is the primitive for switching between mutually exclusive views: settings categories, inventory
+sections, shop pages. It owns the active value, keeps its triggers ordered, handles arrow-key
+movement between them, and mounts the matching panel with presence motion.
 
-Reach for Tabs when a set of triggers should drive **value-based selection** — exactly one active at a time — with **keyboard and gamepad movement** across the list and **panels that mount and unmount** as the value changes.
+Exactly one trigger is active at a time, with keyboard and gamepad movement across the list and
+panels that mount and unmount as the value changes.
 
 ## Preview
 
@@ -32,7 +35,8 @@ import { Tabs } from "@lattice-ui/react-tabs";
 
 ## Anatomy
 
-Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every `Trigger` and `Content` is tied to the active value through a shared `value` string.
+Compose `Root` around a `List` of `Trigger`s and one `Content` per value, each tied to the active
+value through a shared `value` string.
 
 ```tsx title="Tabs anatomy"
 <Tabs.Root>
@@ -54,7 +58,9 @@ Compose `Root` around a `List` of `Trigger`s and one `Content` per value. Every 
 
 ### Basic tabs
 
-An uncontrolled tab group. `defaultValue` picks the starting panel, and the default `Trigger` renders a `textbutton` whose label is its `value`. The `List` and `Content` defaults are zero-size transparent frames, so pass `asChild` with your own sized elements to lay them out.
+An uncontrolled tab group. `defaultValue` picks the starting panel, and the default `Trigger`
+renders a `textbutton` labelled with its `value`. `List` and `Content` default to zero-size
+transparent frames, so pass `asChild` with your own sized elements.
 
 ```tsx title="ShopTabs.tsx"
 import { Tabs } from "@lattice-ui/react-tabs";
@@ -124,7 +130,8 @@ export function ShopTabs() {
 
 ### Controlled tabs
 
-Drive the active value from your own state with `value`/`onValueChange`. Anything outside the tab group — a hotkey, a tutorial step, a deep link — can now switch panels by setting state.
+Drive the active value from your own state with `value`/`onValueChange`, so a hotkey, a tutorial
+step or a deep link can switch panels.
 
 ```tsx title="SettingsTabs.tsx"
 import { useState } from "@rbxts/react";
@@ -171,7 +178,8 @@ export function SettingsTabs() {
 
 ### Vertical tabs
 
-Set `orientation="vertical"` to move selection with Up/Down instead of Left/Right. Orientation is behavioral only — lay the list out yourself with a vertical `uilistlayout`.
+Set `orientation="vertical"` to move selection with Up/Down instead of Left/Right. It is behavioural
+only — lay the list out yourself with a vertical `uilistlayout`.
 
 ```tsx title="QuestCategories.tsx"
 import { Tabs } from "@lattice-ui/react-tabs";
@@ -241,7 +249,9 @@ export function QuestCategories() {
 
 ### Custom triggers with asChild
 
-Pass `asChild` on `Trigger` to supply your own button while keeping registration, activation, and movement wiring. The trigger's response motion still animates the child's `BackgroundColor3` and `TextColor3` between the built-in active/inactive palette on selection.
+Pass `asChild` on `Trigger` to supply your own button while keeping registration, activation and
+movement wiring. The trigger's response motion still animates the child's `BackgroundColor3` and
+`TextColor3` between the built-in palette.
 
 ```tsx title="StyledTabs.tsx"
 import { Tabs } from "@lattice-ui/react-tabs";
@@ -304,7 +314,9 @@ export function StyledTabs() {
 
 ### Disabled triggers
 
-A disabled trigger cannot be activated, is skipped by arrow-key movement, and never becomes the active value. If the active value becomes disabled, `Root` moves the selection to the next enabled trigger automatically.
+A disabled trigger cannot be activated, is skipped by arrow-key movement, and never becomes the
+active value. If the active value becomes disabled, `Root` moves selection to the next enabled
+trigger.
 
 ```tsx title="PrestigeTabs.tsx"
 import { Tabs } from "@lattice-ui/react-tabs";
@@ -349,7 +361,8 @@ export function PrestigeTabs(props: { prestigeUnlocked: boolean }) {
 
 ### Keeping panels mounted
 
-By default a panel unmounts after its exit animation. Pass `forceMount` to keep it in the tree at all times — Tabs then only toggles its `Visible` property. Use this when a panel is expensive to rebuild, like a `viewportframe` world map.
+By default a panel unmounts after its exit animation. `forceMount` keeps it in the tree and only
+toggles `Visible` — worth it when a panel is expensive to rebuild.
 
 ```tsx title="MapTabs.tsx"
 import { Tabs } from "@lattice-ui/react-tabs";
@@ -391,33 +404,42 @@ export function MapTabs() {
 
 ### Value state
 
-`Tabs.Root` is controllable. Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled. The active value is a plain string that each `Trigger` and `Content` matches against. `onValueChange` fires only with a defined value, so you never receive an `undefined` selection.
+Pass `value` and `onValueChange` to control it, or `defaultValue` to run uncontrolled. The active
+value is a plain string each `Trigger` and `Content` matches against, and `onValueChange` fires only
+with a defined value.
 
 When the active value points at no enabled trigger — on first mount with no default, or after the
-selected trigger is removed or disabled — `Root` resolves a replacement. It falls back to the first
-enabled trigger, or to the next enabled one after whichever was last selected. This keeps a valid
-panel visible as triggers mount, unmount, or toggle their `disabled` state.
+selected trigger is removed or disabled — `Root` falls back to the first enabled trigger, or the
+next enabled one after whichever was last selected.
 
 ### Trigger registration and selection
 
-Each `Tabs.Trigger` registers itself with `Root` in mount order, exposing a stable `order` used to resolve fallbacks and arrow-key movement. A trigger becomes active in three ways: pointer activation, Roblox `SelectionGained` (so moving a gamepad cursor onto a trigger selects it immediately), and pressing Enter or Space while focused. Disabled triggers set `Active` and `Selectable` to `false`, are skipped during movement, and never become the active value.
+Each `Tabs.Trigger` registers with `Root` in mount order, exposing a stable `order` used for
+fallbacks and arrow-key movement. A trigger becomes active on pointer activation, on
+`SelectionGained`, or on Enter/Space while focused. Disabled triggers set `Active` and `Selectable`
+to `false`, are skipped during movement, and never become the active value.
 
 `Tabs.Trigger` registers with the focus system through `useFocusNode`, so it participates in gamepad selection alongside other focusable nodes.
 
 ### Orientation and arrow keys
 
-`orientation` defaults to `"horizontal"`. It controls which arrow keys move the selection: Left/Right when horizontal, Up/Down when vertical. Pressing a movement key focuses the next enabled trigger in that direction and selects it in one step. Orientation is purely behavioral — it does not lay out the `List`, so add your own `uilistlayout` (as in the examples) to position the triggers.
+`orientation` defaults to `"horizontal"` and controls which arrow keys move the selection. Pressing
+a movement key focuses the next enabled trigger in that direction and selects it in one step. It
+does not lay out the `List`, so add your own `uilistlayout`.
 
 ### Panels and presence
 
-`Tabs.Content` is tied to a `value` and is present only while that value is active. By default it mounts through a `Presence` boundary running a surface-reveal recipe, so the panel animates in when selected and animates out when another value takes over, unmounting after the exit completes. Override the recipe with `transition`. Pass `forceMount` to keep the panel mounted at all times — the content stays in the tree and toggles its `Visible` property based on the active value and motion phase.
+`Tabs.Content` is present only while its `value` is active. By default it mounts through a
+`Presence` boundary running a surface-reveal recipe, unmounting after the exit completes; override
+it with `transition`. `forceMount` keeps the panel in the tree, toggling `Visible` from the active
+value and motion phase.
 
 <Callout title="Bring your own layout">
-The default `Tabs.List` and `Tabs.Content` render transparent frames sized `UDim2.fromOffset(0, 0)`. They group and reveal children but do not lay anything out. In practice, pass `asChild` with your own sized `frame`, as every example above does, so panels and lists occupy real space.
+The default `Tabs.List` and `Tabs.Content` render transparent frames sized `UDim2.fromOffset(0, 0)` — they group and reveal children but lay nothing out. Pass `asChild` with your own sized `frame` so panels and lists occupy real space.
 </Callout>
 
 <Callout title="Default trigger visuals">
-The built-in `Tabs.Trigger` renders a 132x34 `textbutton` whose `Text` is its `value`, with response motion between an active and inactive color. With `asChild`, the same motion still drives your child's `BackgroundColor3` and `TextColor3` between the built-in palette values whenever the selected state changes — plan your custom styling around that.
+The built-in `Tabs.Trigger` renders a 132x34 `textbutton` whose `Text` is its `value`, with response motion between an active and inactive colour. With `asChild` the same motion drives your child's `BackgroundColor3` and `TextColor3` between those palette values — plan your styling around that.
 </Callout>
 
 ## API reference
