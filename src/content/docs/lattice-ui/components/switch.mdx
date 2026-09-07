@@ -33,7 +33,7 @@ import { Switch } from "@lattice-ui/react-switch";
 
 ## Anatomy
 
-`Root` is the toggleable track and the only required part; `Thumb` is the sliding handle.
+`Root` is the toggleable track and the only required part. `Thumb` is the sliding handle.
 
 <PrimitiveAnatomy title="Switch anatomy">
 
@@ -83,9 +83,8 @@ export function BasicSwitch() {
 
 ### Controlled settings toggle
 
-Pass `checked` and `onCheckedChange` when something outside needs to read or set the value — here a
-music toggle keeping local state for instant feedback and forwarding every change to a save
-callback.
+Pass `checked` and `onCheckedChange` when something outside needs to read or set the value. Here a
+music toggle keeps local state for instant feedback, and forwards every change to a save callback.
 
 ```tsx title="MusicToggle.tsx"
 import { useState } from "@rbxts/react";
@@ -206,7 +205,7 @@ export function PremiumToggle(props: { hasPremium: boolean }) {
 
 ### Custom thumb size
 
-The slide is a fixed short settle with no transition prop, but the geometry adapts: travel resolves
+The slide is a fixed short settle with no transition prop, but the geometry adapts. Travel resolves
 to the track width minus the thumb width, and the thumb stays vertically centred at any height.
 
 ```tsx title="LargeThumbSwitch.tsx"
@@ -241,7 +240,7 @@ export function LargeThumbSwitch() {
 ### Checked state
 
 Controllable on `checked`/`onCheckedChange`, with `defaultChecked` for uncontrolled usage. The state
-is a plain boolean that activation flips; while `disabled`, both the toggle and direct `setChecked`
+is a plain boolean that activation flips. While `disabled`, both the toggle and direct `setChecked`
 calls are ignored.
 
 ### Activation and selection
@@ -263,10 +262,10 @@ in.
 
 ### The thumb
 
-`Switch.Thumb` animates between the ends of the track as `checked` changes: checked parks its
-trailing edge on the track's trailing edge, unchecked its leading edge on the leading edge. Because
-`AnchorPoint` and `Position` interpolate together, travel resolves to the track width minus the
-thumb width for **any** thumb width, and the same pairing on Y keeps it centred at any height.
+`Switch.Thumb` animates between the ends of the track as `checked` changes. Checked parks its
+trailing edge on the track's trailing edge, unchecked its leading edge on the leading edge.
+`AnchorPoint` and `Position` interpolate together, so travel resolves to the track width minus the
+thumb width for **any** thumb width. The same pairing on Y keeps it centred at any height.
 
 Motion owns `AnchorPoint` and `Position` under a `layout` target contract, so both are dropped from
 anything you pass. Style the thumb with size, colour, corners and children.

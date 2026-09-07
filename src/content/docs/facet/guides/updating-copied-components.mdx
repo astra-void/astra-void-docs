@@ -19,10 +19,10 @@ npx facet-rbxts diff            # every installed component
 npx facet-rbxts diff button     # one
 ```
 
-Compares each copied file against what the registry would write there **today**, replaying the `~/`
-rewrite first so your project's alias and directory choices are not reported as changes.
+Compares each copied file against what the registry would write there **today**. It replays the `~/`
+rewrite first, so your project's alias and directory choices are not reported as changes.
 
-The direction is registry → project: `-` is what the registry has, `+` is what your file says, so
+The direction is registry → project. `-` is what the registry has and `+` is what your file says, so
 applying the `+` side is what "keep mine" means.
 
 <Callout title="It cannot tell your edit from an upstream change">
@@ -54,11 +54,11 @@ npx facet-rbxts remove badge --force
 Two refusals, and they are not the same kind of refusal.
 
 **A file that differs from the registry** is refused without `--force`. "Differs" is the closest
-stand-in for "you changed this", and it also fires when only upstream moved, so in the worst case
-you are asked about a file you never touched — the safe direction to be wrong in.
+stand-in for "you changed this", and it also fires when only upstream moved. In the worst case you
+are asked about a file you never touched. That is the safe direction to be wrong in.
 
 **A component another installed component still imports** is refused, and `--force` does not cover
-it — deleting `utils` out from under an installed `button` leaves a project that does not compile.
+it. Deleting `utils` out from under an installed `button` leaves a project that does not compile.
 
 That second check runs to a fixed point, which matters more than it sounds:
 
@@ -74,15 +74,15 @@ Directories are left alone, and so is anything you added next to the removed fil
 ## Why there is no lock file
 
 A `facet.lock` of per-file content hashes is the obvious fix for what `diff` cannot say, and it was
-dropped. A hash answers *whether* a file differs, not *how* — showing that needs the text you started
+dropped. A hash answers *whether* a file differs, not *how*. Showing that needs the text you started
 from, which means a second copy of every component committed to your repository. It also goes stale
 for reasons that are not edits: a formatter pass, a rename, a move.
 
 ## Pinning a registry revision
 
-The default registry **moves**: `https://facet.astra-void.xyz/r` is republished on every push to
-Facet's `main`, so an edit reaches everyone immediately — including a project that ran `facet add`
-months ago and will next run `facet diff`.
+The default registry **moves**. `https://facet.astra-void.xyz/r` is republished on every push to
+Facet's `main`, so an edit reaches everyone immediately. That includes a project that ran
+`facet add` months ago and will next run `facet diff`.
 
 Every push also writes an immutable copy under the commit that produced it, and a project can point
 at one instead:
@@ -103,7 +103,7 @@ registry", not "`button` came from that revision". And a pinned project stops re
 someone moves the pin.
 
 <Callout title="It still cannot attribute a change">
-Pinning removes upstream movement as a *source* of drift; it does not record what your file started as. Move the pin forward and `diff` is back to reporting a difference it cannot explain.
+Pinning removes upstream movement as a *source* of drift. It does not record what your file started as. Move the pin forward and `diff` is back to reporting a difference it cannot explain.
 </Callout>
 
 What revisions genuinely unlock is that the base text becomes something the CLI could one day

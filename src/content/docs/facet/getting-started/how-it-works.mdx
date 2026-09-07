@@ -18,12 +18,12 @@ import { Callout } from "@/components/docs/mdx";
 | **Facet** | The opinionated composition of the two, as source you own | the registry |
 
 **Do not reimplement in a copied component what Lattice or Vela already owns.** A Facet component
-that grows focus management should be fixed upstream in the Lattice primitive; one that grows a
+that grows focus management should be fixed upstream in the Lattice primitive. One that grows a
 literal `Color3` has stopped being themeable.
 
-That division is what makes the copy-in model viable: the file you own is composition — recipes, a
-host element, prop plumbing — and it is short because everything difficult sits in a package that
-*is* a dependency.
+That division is what makes the copy-in model viable. The file you own is composition: recipes, a
+host element, prop plumbing. It is short because everything difficult sits in a package that *is* a
+dependency.
 
 ## The registry is fetched, not bundled
 
@@ -99,7 +99,7 @@ projects are laid out by Rojo.
 
 ### One transaction
 
-Every write goes through a transaction that commits or rolls back as a unit, so a failure halfway
+Every write goes through a transaction that commits or rolls back as a unit. A failure halfway
 through `facet add card` cannot leave a `card.tsx` whose helpers were never written.
 
 ### And, for one kind of component, one edit to a file you wrote
@@ -109,7 +109,7 @@ needs above your whole app. Today that is [`dialog`](/facet/components/dialog/),
 `PlayerGui` to portal into.
 
 This is the only place the CLI touches a file it did not write, and it asks first. Everything else
-it reports fails at *build* time; a missing provider fails at runtime, in production. See
+it reports fails at *build* time. A missing provider fails at runtime, in production. See
 [wiring a provider](/facet/reference/cli/#wiring-a-provider).
 
 ## What the copied component then depends on
@@ -148,11 +148,11 @@ maps those roles onto a neutral ramp, and Vela resolves them to literal `Color3`
 time, so switching `base` rethemes every copied component.
 
 <Callout title="A build carries exactly one mode">
-Because resolution happens at compile time, `mode: "dark"` is a build-time choice, not a runtime toggle — Roblox has no equivalent of a browser re-reading CSS variables on every paint. See [Theming](/facet/guides/theming/#one-mode-per-build).
+Because resolution happens at compile time, `mode: "dark"` is a build-time choice, not a runtime toggle. Roblox has no equivalent of a browser re-reading CSS variables on every paint. See [Theming](/facet/guides/theming/#one-mode-per-build).
 </Callout>
 
 ## What Facet does not do
 
-- **It does not record anything at copy time.** No lock file, no hashes, no note of which registry version a file came from, which is why `facet diff` can show that a file differs but not whether *you* changed it — see [Updating copied components](/facet/guides/updating-copied-components/).
-- **It does not update.** There is no `facet upgrade`; the most the CLI can do is show a diff.
+- **It does not record anything at copy time.** No lock file, no hashes, no note of which registry version a file came from. That is why `facet diff` can show that a file differs but not whether *you* changed it. See [Updating copied components](/facet/guides/updating-copied-components/).
+- **It does not update.** There is no `facet upgrade`. The most the CLI can do is show a diff.
 - **It does not have a second style.** `facet.json` keeps shadcn's `style` field pinned to `"default"`, and nothing branches on it.
