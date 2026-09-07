@@ -37,7 +37,7 @@ Everything renders as grey Roblox defaults. No error, no warning, and the build 
 
 ## A component renders zero pixels wide
 
-**One axis has no answer.** `UIPadding` does not grow a frame on Roblox — it insets children — and
+**One axis has no answer.** `UIPadding` does not grow a frame on Roblox, it insets children. And
 Vela starts a frame at `UDim2.new(0, 0, 0, 0)`.
 
 ```
@@ -45,15 +45,15 @@ h-9 px-4        → 0 × 36. Invisible.
 h-9 w-fit px-4  → correct.
 ```
 
-For a container, check the whole chain: one that hugs its content can only measure children that
+For a container, check the whole chain. One that hugs its content can only measure children that
 already know their own size, so a single label with an unresolved axis collapses everything above
 it.
 
 ## A class compiles but does nothing
 
 **Suspect the code path before the class.** Every Facet class string comes out of `fv()`, so it is a
-computed expression Vela resolves at runtime rather than at compile time — and that path was a
-strict subset of the static lowering for a long time:
+computed expression Vela resolves at runtime rather than at compile time. That path was a strict
+subset of the static lowering for a long time:
 
 | Below Vela | These silently do nothing |
 | --- | --- |
@@ -79,7 +79,7 @@ Pointing at generated code nobody wrote. **You are on Vela 0.8.x**, which inline
 every transformed file, spending roughly 96 of Luau's 200 local registers before the file's own
 first line.
 
-Upgrade to `vela-rbxts@^0.9.0`, which scopes the runtime into one initializer; emitted files drop
+Upgrade to `vela-rbxts@^0.9.0`, which scopes the runtime into one initializer. Emitted files drop
 from ~106 module-scope locals to ~24.
 
 The same limit applies to a component you wrote: each exported name costs a register, which is why
@@ -97,11 +97,11 @@ Add a weight — `font-normal` counts. It is the only thing that says which font
 Two causes, both about `className` arriving at the wrong place.
 
 **You are using `asChild`.** `TextSlot` never renders on that path, so the label recipe is not
-applied and the child draws its own text at Roblox's default. Style the child yourself;
+applied and the child draws its own text at Roblox's default. Style the child yourself.
 `buttonLabelVariants` is exported for it.
 
 **Or a wrapper re-applied `className` internally.** Vela lowers `className` at the *call site*, so
-the resolved `TextColor3` / `TextSize` / `FontFace` arrive as ordinary props, and a component that
+the resolved `TextColor3`, `TextSize` and `FontFace` arrive as ordinary props. A component that
 accepts a `className` and re-applies it inside drops them.
 
 ## The dialog throws the first time it opens
@@ -111,10 +111,10 @@ accepts a `className` and re-applies it inside drops them.
 ```
 
 **There is no `PortalProvider` above your app.** `Dialog.Portal` reads the `PlayerGui` it renders
-into from a strict context, so everything before this succeeds and the failure lands on a player
+into from a strict context. Everything before this succeeds, and the failure lands on a player
 pressing the button.
 
-The `.Provider` in the message is Lattice's generic strict-context wording; the component to reach
+The `.Provider` in the message is Lattice's generic strict-context wording. The component to reach
 for is `PortalProvider` itself.
 
 ```tsx title="src/client/main.client.tsx"
@@ -137,8 +137,8 @@ missing.
 whole instance, so every side-specific key is
 [dropped silently](/vela-rbxts/guides/colors-and-surfaces/#borders).
 
-Reach for `divide-x` / `divide-y` on the parent instead: Vela lowers those to real one-pixel frames
-interleaved between its children, a rule between each pair and none after the last. For a single
+Reach for `divide-x` or `divide-y` on the parent instead. Vela lowers those to real one-pixel frames
+interleaved between its children: a rule between each pair, and none after the last. For a single
 rule in a specific place, put a [`Separator`](/facet/components/separator/) in the flow by hand.
 
 The registry's `accordion` carries `divide-y divide-border` on its root for exactly this reason.
@@ -162,8 +162,8 @@ Put the size on a wrapper frame, or edit the copied file.
 ## A `className` I pass to a component is ignored
 
 **Expected — it cannot work.** `<Button className="bg-destructive" />` renders exactly like
-`<Button />`, silently. Vela consumes the class at the call site and lowers it into instance props,
-and the component's own class-derived props are emitted after its spreads, so they overwrite what
+`<Button />`, silently. Vela consumes the class at the call site and lowers it into instance props.
+The component's own class-derived props are emitted after its spreads, so they overwrite what
 arrived. Both halves of the override lose.
 
 The answer is the one the copy-in model is built on: **edit the copied file**. Full explanation, and
@@ -214,7 +214,7 @@ gone.
 ## `facet remove` refuses
 
 **"differs from the registry"** — the file is not what the registry would write there today. You
-edited it, *or* upstream moved; Facet records nothing at copy time and cannot tell them apart.
+edited it, *or* upstream moved. Facet records nothing at copy time and cannot tell them apart.
 `--force` deletes it anyway.
 
 **"is still imported by …"** — another installed component depends on it, and `--force` does not
@@ -240,8 +240,8 @@ project root. Run it inside your roblox-ts project, or pass `--cwd`.
 tokens  4 token(s) installed components name are not defined: card, card-foreground, …
 ```
 
-Your `vela.config.ts` does not spread `facetTheme`. `doctor` reads the config as text — naming a
-token as a colour key counts — because a Vela config is arbitrary TypeScript.
+Your `vela.config.ts` does not spread `facetTheme`. `doctor` reads the config as text, because a
+Vela config is arbitrary TypeScript. Naming a token as a colour key counts.
 
 The fix is in [Theming](/facet/guides/theming/). A token reported as missing from `@facet-ui/theme`
 too is a Facet bug — upgrade the theme package or report it.
@@ -249,11 +249,11 @@ too is a Facet bug — upgrade the theme package or report it.
 ## Imports do not resolve after copying
 
 If `facet.json` sets an `import` specifier on an alias, your tsconfig needs a matching `paths`
-entry, and `doctor` fails rather than warns because every copied component imports through it.
-Either add the entry, or clear `"import"` and let the CLI write relative imports.
+entry. `doctor` fails rather than warns, because every copied component imports through it. Either
+add the entry, or clear `"import"` and let the CLI write relative imports.
 
 Changing that setting does not rewrite files already copied — `facet add <name> --overwrite` does.
 
 <Callout title="Studio is still the only place some of this shows up">
-A component can compile clean, emit exactly the properties you expect, and still look wrong — that is how `card`'s description shipped in Arial and the first `button` zero pixels wide. If nothing above explains what you are seeing, open Studio and look at the instance tree.
+A component can compile clean, emit exactly the properties you expect, and still look wrong. That is how `card`'s description shipped in Arial, and the first `button` zero pixels wide. If nothing above explains what you are seeing, open Studio and look at the instance tree.
 </Callout>

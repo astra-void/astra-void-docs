@@ -16,10 +16,10 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
   dependencies={["@lattice-ui/react-runtime", "@lattice-ui/react-layer", "@lattice-ui/react-motion"]}
 />
 
-Toast is the primitive for transient, non-blocking notifications. A `Provider` owns the queue —
-enqueuing, the visible-count limit, per-toast duration and exit timing — so your component only
-renders each surface and reacts to actions. You drive it imperatively with `useToast` from anywhere
-inside the provider.
+Toast is the primitive for transient, non-blocking notifications. A `Provider` owns the queue:
+enqueuing, the visible-count limit, per-toast duration and exit timing. Your component renders each
+surface and reacts to actions. You drive it imperatively with `useToast` from anywhere inside the
+provider.
 
 ## Preview
 
@@ -73,7 +73,7 @@ import { Toast, useToast } from "@lattice-ui/react-toast";
 A provider at the top of the UI, a button that enqueues, and a viewport that renders the queue.
 `enqueue` returns the new toast's id.
 
-The viewport is where the work is: map `visibleToasts`, give each record a `Toast.Root`, and wire
+The viewport is where the work is. Map `visibleToasts`, give each record a `Toast.Root`, and wire
 `onExitComplete` to `finalize` so a toast drops only once its exit finishes.
 `visible={!record.exiting}` starts that exit.
 
@@ -173,10 +173,11 @@ There is no `open`/`onOpenChange` on a toast — you `enqueue` and `remove`, and
 
 ### Undo action toast
 
-`ToastOptions` carries only data — `id`, `title`, `description`, `durationMs` — never callbacks. Key
-the pending undo by the id `enqueue` returns, then wire `Toast.Action` to the stored payload.
+`ToastOptions` carries only data: `id`, `title`, `description` and `durationMs`. Never callbacks.
+Key the pending undo by the id `enqueue` returns, then wire `Toast.Action` to the stored payload.
 
-Both `onAction` and `onClose` are plain callbacks; neither removes the toast for you, so call `remove(record.id)` in each handler.
+Both `onAction` and `onClose` are plain callbacks. Neither removes the toast for you, so call
+`remove(record.id)` in each handler.
 
 ```tsx title="UndoDeleteToasts.tsx"
 import { useRef } from "@rbxts/react";
@@ -284,8 +285,8 @@ export function UndoDeleteToasts(props: { onUndo: (itemName: string) => void }) 
 ### Duration tuning and sticky toasts
 
 Each toast lives for its own `durationMs`, falling back to the provider's `defaultDurationMs`. A
-`durationMs` of `0` or less makes it sticky until something calls `remove` or `clear` — pass your
-own `id` so another code path can clear it later.
+`durationMs` of `0` or less makes it sticky until something calls `remove` or `clear`. Pass your own
+`id` so another code path can clear it later.
 
 ```tsx title="ConnectionToasts.tsx"
 import { Toast, useToast } from "@lattice-ui/react-toast";
@@ -362,10 +363,10 @@ export function ConnectionToasts() {
 
 ### Queue behavior under burst
 
-`maxVisible` caps how many render at once; the rest wait in order. Here six pickups arrive at once
-with `maxVisible={2}`.
+`maxVisible` caps how many render at once, and the rest wait in order. Here six pickups arrive at
+once with `maxVisible={2}`.
 
-A toast's clock starts at `enqueue` but expiry is only *evaluated* inside the visible window, so one
+A toast's clock starts at `enqueue`, but expiry is only *evaluated* inside the visible window. One
 that waited longer than its `durationMs` exits almost immediately on surfacing. Under bursts,
 lengthen the duration, summarise, or go sticky.
 
@@ -502,18 +503,18 @@ export function SnappyToasts() {
 ### The queue
 
 `enqueue(options)` appends a toast and returns its `id`, auto-generated as `toast-N` unless you pass
-one. `remove(id)` starts its exit — or drops it instantly if it is still beyond the visible cap —
-and is a no-op on one already exiting. `clear()` empties the queue, skipping exit motion.
+one. `remove(id)` starts its exit, or drops it instantly if it is still beyond the visible cap. It
+is a no-op on one already exiting. `clear()` empties the queue, skipping exit motion.
 
 While any toasts exist the provider runs a `Heartbeat` connection pruning expired and finished
 toasts each frame, disconnecting once the queue drains.
 
 ### Visibility limit
 
-`maxVisible` (default `3`, clamped to at least `1`) caps how many render at once; the rest wait in
-arrival order. `visibleToasts` is the capped slice the viewport renders, `toasts` the full queue. An
-exiting toast still occupies its slot for the exit window, so the next one surfaces only after the
-record is dropped.
+`maxVisible` (default `3`, clamped to at least `1`) caps how many render at once, and the rest wait
+in arrival order. `visibleToasts` is the capped slice the viewport renders, and `toasts` is the full
+queue. An exiting toast still occupies its slot for the exit window, so the next one surfaces only
+after the record is dropped.
 
 ### Duration and expiry
 
@@ -528,8 +529,8 @@ first visible frame.
 ### Exit timing and motion
 
 When a visible toast's time elapses, or `remove` is called on it, the provider marks the record
-`exiting` and keeps it for a fixed ~160ms window so its exit motion can play. Wire each root's
-`visible` to `!record.exiting` and `onExitComplete` to `finalize(record.id)`.
+`exiting`. It keeps the record for a fixed ~160ms window so its exit motion can play. Wire each
+root's `visible` to `!record.exiting`, and `onExitComplete` to `finalize(record.id)`.
 
 `Toast.Root` runs no motion unless you pass a `transition`. `createToastResponseRecipe()` (0.14s,
 appearance target) animates `BackgroundTransparency` between `0` while visible and `1` while hidden.
@@ -541,7 +542,7 @@ The 160ms drop window is not derived from your transition, so slower exits get t
 Every part renders unstyled, so the whole surface is yours:
 
 - `Toast.Viewport` — a `Frame` holding your children. No layout, no queue markup.
-- `Toast.Root` — a `Frame` whose `Visible` is presence-driven; everything else is yours.
+- `Toast.Root` — a `Frame` whose `Visible` is presence-driven. Everything else is yours.
 - `Toast.Title` and `Toast.Description` — `TextLabel`s with no copy of their own. They render children, so a `uipadding` works directly on them.
 - `Toast.Action` and `Toast.Close` — `TextButton`s merging `Active`, `Selectable` and the `Activated` handler. Neither touches the queue.
 
@@ -550,7 +551,7 @@ Mount `Toast.Provider` above everything that calls `useToast`, which reads it th
 </Callout>
 
 <Callout title="Action and Close do not remove the toast">
-`onAction` and `onClose` are plain callbacks; activating the button does not touch the queue. Call `remove(id)` in both — otherwise the toast lingers until its duration expires, and a sticky one never leaves.
+`onAction` and `onClose` are plain callbacks, and activating the button does not touch the queue. Call `remove(id)` in both, or the toast lingers until its duration expires. A sticky one never leaves.
 </Callout>
 
 <Callout title="Toast payloads are data, not callbacks">
@@ -583,9 +584,14 @@ Returns the imperative API for the nearest provider. Throws when called outside 
   ]}
 />
 
-`ToastOptions` accepts `id`, `title`, `description`, and `durationMs` — all optional, all plain data. Each queue entry is a `ToastRecord` carrying those fields plus `createdAtMs` and, once leaving, `exiting`/`exitStartedAtMs`; custom viewports read `id`, `title`, `description`, and `exiting` from it.
+`ToastOptions` accepts `id`, `title`, `description`, and `durationMs` — all optional, all plain
+data. Each queue entry is a `ToastRecord` carrying those fields plus `createdAtMs`, and once
+leaving, `exiting` and `exitStartedAtMs`. Custom viewports read `id`, `title`, `description` and
+`exiting` from it.
 
-The package also exports the provider's pure queue helpers — `enqueueToast`, `dequeueToast`, `getVisibleToasts`, and `pruneExpiredToasts` — which are useful for testing custom viewports against the exact scheduling rules.
+The package also exports the provider's pure queue helpers: `enqueueToast`, `dequeueToast`,
+`getVisibleToasts` and `pruneExpiredToasts`. They are useful for testing custom viewports against
+the exact scheduling rules.
 
 ### Toast.Viewport
 
