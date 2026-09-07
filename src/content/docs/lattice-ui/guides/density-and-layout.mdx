@@ -9,7 +9,7 @@ draft: false
 
 import { Callout } from "@/components/docs/mdx";
 
-`@lattice-ui/react-style` gives you tokens; `@lattice-ui/react-system` gives them somewhere to live:
+`@lattice-ui/react-style` gives you tokens. `@lattice-ui/react-system` gives them somewhere to live:
 one provider owning theme *and* density, a density system that rescales every spacing, radius and
 type token globally, **surface tones** for elevation-consistent panels, and layout primitives that
 turn Roblox layout instances into token-driven components. The
@@ -18,8 +18,8 @@ turn Roblox layout instances into token-driven components. The
 ## One provider for theme and density
 
 `SystemProvider` sits at the root. It owns the **base theme**, wraps a `DensityProvider`, and
-republishes a *density-resolved* theme through `ThemeProvider` — so every `useTheme` consumer below
-sees the scaled theme without doing anything.
+republishes a *density-resolved* theme through `ThemeProvider`. Every `useTheme` consumer below sees
+the scaled theme without doing anything.
 
 ```tsx title="App root"
 import React from "@rbxts/react";
@@ -62,7 +62,9 @@ export function DensitySetting() {
 
 ## Density
 
-Density is a single token — `"compact"`, `"comfortable"`, or `"spacious"` — that answers "how tight should this UI be?" once, instead of per-component. `applyDensity` scales the whole token scale:
+Density is a single token that answers "how tight should this UI be?" once, instead of
+per-component. The options are `"compact"`, `"comfortable"` and `"spacious"`. `applyDensity` scales
+the whole token scale:
 
 | Token | Space | Radius | Text size |
 | --- | --- | --- | --- |
@@ -95,7 +97,8 @@ export function DensityPreview() {
 }
 ```
 
-Both panels render from identical code; only the resolved token values differ. This is also the honest way to preview a density setting before the player commits to it.
+Both panels render from identical code. Only the resolved token values differ. This is also the
+honest way to preview a density setting before the player commits to it.
 
 <Callout title="Density reshapes tokens, not instances">
 `applyDensity` is a pure `Theme → Theme` transform that never creates or resizes instances. Anything hard-coded in raw pixels is invisible to density, so prefer tokens wherever a value should breathe with the setting.
@@ -103,9 +106,13 @@ Both panels render from identical code; only the resolved token values differ. T
 
 ## Surfaces
 
-Panels need consistent backgrounds and borders, and eyeballing colors per-panel drifts fast. System ships four **surface tones** — `"surface"` (default), `"elevated"`, `"sunken"`, and `"overlay"` — and two ways to apply them.
+Panels need consistent backgrounds and borders, and eyeballing colors per-panel drifts fast. System
+ships four **surface tones**, and two ways to apply them. The tones are `"surface"` (default),
+`"elevated"`, `"sunken"` and `"overlay"`.
 
-The `Surface` primitive renders a decorated `frame`: the tone's background, a `uicorner` from the theme radius, and a themed `uistroke` border (the `overlay` tone skips decoration and renders a translucent fill instead).
+The `Surface` primitive renders a decorated `frame`: the tone's background, a `uicorner` from the
+theme radius, and a themed `uistroke` border. The `overlay` tone skips decoration and renders a
+translucent fill instead.
 
 ```tsx title="An elevation-consistent panel"
 import React from "@rbxts/react";
@@ -123,8 +130,8 @@ export function QuestPanel() {
 }
 ```
 
-When you only want the tone's *props* on an element you already have, `surface()` returns an `sx`
-resolving to background, border colour and border size for the token:
+When you only want the tone's *props* on an element you already have, `surface()` returns an `sx`.
+It resolves to background, border colour and border size for the token:
 
 ```tsx title="surface() applies a tone as sx props"
 import { surface, Stack } from "@lattice-ui/react-system";
@@ -139,11 +146,12 @@ host. Either way the tone names carry the elevation story: `sunken` recedes, `su
 ## Layout primitives
 
 `Stack`, `Row` and `Grid` wrap the layout instances in components whose spacing props accept **space
-tokens or raw pixels**: `gap={8}` means the theme's `8` token, which compact density might resolve
-to 7, while off-scale numbers pass through as pixels. All three render a transparent `frame`, sort
-by `LayoutOrder`, and accept the same padding shorthands.
+tokens or raw pixels**. `gap={8}` means the theme's `8` token, which compact density might resolve
+to 7. Off-scale numbers pass through as pixels. All three render a transparent `frame`, sort by
+`LayoutOrder`, and accept the same padding shorthands.
 
-`Stack` is vertical by default; `align` sets the cross axis and `justify` the main axis (they swap when `direction` flips). A HUD column:
+`Stack` is vertical by default. `align` sets the cross axis and `justify` the main axis, and the two
+swap when `direction` flips. A HUD column:
 
 ```tsx title="HUD column with Stack"
 import React from "@rbxts/react";
@@ -202,13 +210,14 @@ export function InventoryGrid(props: { items: Array<Item> }) {
 }
 ```
 
-Shrink the container and the grid drops columns; widen it and columns come back — no breakpoint code on your side.
+Shrink the container and the grid drops columns. Widen it and columns come back, with no breakpoint
+code on your side.
 
 <Callout title="No asChild on layout primitives">
 Unlike the interaction primitives, these do not support `asChild` — passing it throws. They must own their host `frame`, since the layout and decoration instances live inside it. Use `sx` and direct host props instead.
 </Callout>
 
-The stack composes top-down: `SystemProvider` resolves theme × density once, surface tones give
+The stack composes top-down. `SystemProvider` resolves theme and density once, surface tones give
 panels one elevation language, and the layout primitives space children from the same resolved
 scale. Build with tokens end-to-end and a single `setDensity` re-fits the entire UI.
 

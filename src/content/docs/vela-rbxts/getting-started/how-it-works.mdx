@@ -19,7 +19,7 @@ between is one shared pipeline, which is why both tracks emit the same Luau.
 ## The pipeline
 
 **Something hands the adapter a file.** Under the *transformer*, roblox-ts resolves the
-`tsconfig.json` plugin entry and calls the exported factory with your `Program` and its own
+`tsconfig.json` plugin entry. It calls the exported factory with your `Program` and its own
 `typescript` instance. The factory throws without that instance, so plain `tsc` cannot drive it.
 Under the *CLI*, `vela build` walks `--src` itself and calls the same adapter per file, with no
 `Program` and no plugin options.
@@ -44,14 +44,14 @@ config is stripped of its `vela-rbxts` imports, transpiled, and executed in a sc
 that is neither a resolved config nor an input-shaped object. Finding nothing gets you the default
 theme. See [config discovery](/vela-rbxts/reference/config/#discovery) for the caching.
 
-**The native compiler parses and lowers.** It walks the JSX tree, resolves each class token against
-the merged theme, and produces new source text plus a diagnostic list.
+**The native compiler parses and lowers.** It walks the JSX tree and resolves each class token
+against the merged theme. Out comes new source text plus a diagnostic list.
 
 **The text goes back out**, as text rather than an AST. Under the transformer it is parsed into a
-fresh `SourceFile` and substituted in memory, and diagnostics are handed back through roblox-ts's
+fresh `SourceFile` and substituted in memory. Diagnostics are handed back through roblox-ts's
 `addDiagnostic`. **On a roblox-ts that does not expose that hook they are dropped silently.** Under
 the CLI the text is written to the mirrored path, skipped when byte-identical so `rbxtsc -w` is not
-woken, and diagnostics are printed by the CLI itself.
+woken. The CLI prints the diagnostics itself.
 
 ## What gets touched
 
@@ -108,8 +108,8 @@ element, prepends helper instances as children, and removes the `className`. The
 tag, and nothing from Vela survives into the running game. This path supports the full utility set.
 
 It also emits two properties you did not ask for. A host element carrying a `className` starts from
-`BackgroundTransparency = 1` and `BorderSizePixel = 0`, so no class list has to paint over the
-opaque grey box Roblox gives every `GuiObject`. Anything that actually paints opts back out, and a
+`BackgroundTransparency = 1` and `BorderSizePixel = 0`. No class list has to paint over the opaque
+grey box Roblox gives every `GuiObject`. Anything that actually paints opts back out, and a
 background painted by a variant reopens it at runtime. Components are never preflighted. See
 [`preflight`](/vela-rbxts/reference/config/#preflight).
 
@@ -125,9 +125,9 @@ original tag travels as `__velaTag`. Structural work rides along in further inte
 For a host element, `__velaTag` is the tag string. For a component it is a live reference,
 `__velaTag={Box}`, so the host renders your component rather than an intrinsic.
 
-At runtime the host normalizes theme strings into `Color3` and `UDim` values, reads the environment,
-applies whichever rules match, tokenizes any dynamic `className`, strips the internal props, and
-calls `React.createElement` with the original tag and the helper children. It reads
+At runtime the host normalizes theme strings into `Color3` and `UDim` values. It reads the
+environment, applies whichever rules match, tokenizes any dynamic `className`, strips the internal
+props, and calls `React.createElement` with the original tag and the helper children. It reads
 `Workspace.CurrentCamera.ViewportSize` for width, height, orientation and rem. It reads
 `UserInputService.TouchEnabled` / `MouseEnabled` / `GamepadEnabled` for input mode, and
 `MouseEnter`/`MouseLeave` on the element for `hover:`.
@@ -152,9 +152,9 @@ Any one of these is sufficient.
 
 **A `className` expression that does not collapse to one static token list.** A template literal
 with an interpolation, a variable, a call, a spread. A **branch** is on this list only because it
-needs the host to read its conditions. `a ? "x" : "y"` names its tokens in the source, so the
-compiler resolves every one of them, with diagnostics, and hands the element the resolved props
-alongside the tests.
+needs the host to read its conditions. `a ? "x" : "y"` names its tokens in the source. The compiler
+resolves every one of them, with diagnostics, and hands the element the resolved props alongside the
+tests.
 
 **Any token carrying a variant prefix.** A variant depends on the live environment, so even a plain
 static string literal forces the runtime path:
@@ -171,10 +171,7 @@ The one motion utility that does *not* promote is `transition-*` alone. With not
 warns `transition-without-runtime` and is dropped.
 
 <Callout title="The in-game token resolver understands far less than the compiler">
-It handles the colour, background, radius, padding, margin, gap and sizing prefixes, plus `divide-*`,
-the case transforms, the decorations and the motion families. Every other utility inside a *text*
-`className` the host has to parse — layout, alignment, text size, position, constraints — is dropped
-with no diagnostic.
+It handles the colour, background, radius, padding, margin, gap and sizing prefixes, plus `divide-*`, the case transforms, the decorations and the motion families. Every other utility inside a *text* `className` the host has to parse is dropped with no diagnostic. That covers layout, alignment, text size, position and constraints.
 
 This limit applies to text and nothing else. Variant-prefixed tokens and the tokens inside a branch
 go through the static resolver and are only *evaluated* at runtime, which is why
@@ -189,20 +186,16 @@ Almost every "my class did nothing" report comes from an element that quietly to
 
 1. **Write `className` as a plain string literal.** A literal inside a `.map()` callback is still a
    literal — what matters is the expression in the attribute.
-2. **When the look changes between known states, write the branch out** —
-   `[base, on ? "bg-blue-600" : "bg-slate-700"]` — rather than interpolating a computed string. That
-   keeps both looks resolved and checked; branching the whole JSX element additionally avoids the host.
-3. **When a number changes continuously, set the property directly** —
-   `Size={UDim2.fromScale(health, 1)}` — and let the classes carry what does not change. Never set the
-   same property from both a class and a prop: on a collision Vela emits after you and the class wins.
+2. **When the look changes between known states, write the branch out**, as `[base, on ? "bg-blue-600" : "bg-slate-700"]`, rather than interpolating a computed string. That keeps both looks resolved and checked. Branching the whole JSX element additionally avoids the host.
+3. **When a number changes continuously, set the property directly**, as `Size={UDim2.fromScale(health, 1)}`, and let the classes carry what does not change. Never set the same property from both a class and a prop. On a collision, Vela emits after you and the class wins.
 4. **Give every element an explicit size.** Roblox starts instances at zero, so a missing `h-*` is an
    invisible element, not a small one.
 5. **Prefer `gap-*` to margins.** Margins build a wrapper frame, which forces the runtime path even in
    a plain literal — and they sum with the parent's gap.
 
 Variants are the deliberate exception: `hover:` on a control, a breakpoint on a handful of top-level
-containers. What does not earn the host is an *opaque* string written where a readable one would do —
-the runtime resolver lowers everything the static path does, so what you lose is not the classes but
+containers. What does not earn the host is an *opaque* string written where a readable one would do.
+The runtime resolver lowers everything the static path does, so what you lose is not the classes but
 every check on them.
 
 ## Next step

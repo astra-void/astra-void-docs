@@ -17,8 +17,8 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 />
 
 Combobox is the primitive for a filterable, single-value picker: searchable selects, command
-palettes, autocomplete fields. It owns three pieces of state — the selected **value**, the **input
-text** and the **open** state — keeps them in sync, and repairs a selection that no longer resolves
+palettes, autocomplete fields. It owns three pieces of state, the selected **value**, the **input
+text** and the **open** state, keeps them in sync, and repairs a selection that no longer resolves
 to an enabled item.
 
 ## Preview
@@ -78,7 +78,7 @@ lists.
 ### Basic filtered list
 
 An uncontrolled root, an input textbox as the anchor, and items on a plain list surface. Typing
-narrows the list in place; selecting sets the value, fills the field and closes the list.
+narrows the list in place. Selecting sets the value, fills the field and closes the list.
 
 `textValue` does not render as the item's label, so each item is given a `Text` of its own. It still
 drives filtering and the resolved value label, and defaults to `value`.
@@ -215,7 +215,7 @@ export function CommandPalette() {
 
 ### Groups and labels
 
-`Group`, `Label` and `Separator` are purely visual: they do not affect filtering or selection, and a
+`Group`, `Label` and `Separator` are purely visual. They do not affect filtering or selection, and a
 label stays visible even when every item under it is filtered out. All three render unstyled.
 
 ```tsx title="ServerRegionPicker.tsx"
@@ -345,7 +345,7 @@ export function SpellSearch() {
 
 Use `asChild` on `Combobox.Input` to project the input behaviour onto your own `textbox`. The
 primitive drives `Text`, `TextEditable`, `PlaceholderText`, `ClearTextOnFocus`, the change handler
-and the anchor ref, so keep `placeholder` on the part and put your styling in colours, strokes,
+and the anchor ref. Keep `placeholder` on the part, and put your styling in colours, strokes,
 corners and padding.
 
 ```tsx title="StyledCosmeticSearch.tsx"
@@ -396,22 +396,22 @@ export function StyledCosmeticSearch() {
 ### Open state
 
 Pass `open` and `onOpenChange` to control the listbox, or `defaultOpen` to run uncontrolled.
-`Trigger` toggles on activation and on `Return`/`Space`; `Input` opens the list on focus — an empty
-query matches every item — and typing keeps it open. Selecting closes it, and a disabled root
+`Trigger` toggles on activation and on `Return`/`Space`. `Input` opens the list on focus, where an
+empty query matches every item, and typing keeps it open. Selecting closes it, and a disabled root
 refuses to open but can still close.
 
 ### Value and input state
 
 Value and input text are separate, independently controllable state. Selecting sets the value and
-syncs the input to that item's display text, ignoring a disabled item; typing updates the query and
-opens the list without changing the value; closing re-syncs the input from the value.
+syncs the input to that item's display text, ignoring a disabled item. Typing updates the query and
+opens the list without changing the value. Closing re-syncs the input from the value.
 
 While the list is open, a selected value that no longer resolves to an enabled registered item is
 replaced with the first enabled one. The repair never *fills* an empty selection, and
 `onValueChange` fires only for defined values.
 
 `Combobox.Value` displays the selected item's text from the registry, or its `placeholder`.
-`disabled` blocks all state changes; `readOnly` blocks input edits but still allows selection
+`disabled` blocks all state changes. `readOnly` blocks input edits but still allows selection
 through items.
 
 ### Filtering
@@ -421,7 +421,7 @@ non-matching one sets its own `Visible` to false and becomes non-interactive, un
 The content never removes or reorders nodes, so your layout collapses around hidden items.
 
 The active query is what the user typed. Selecting syncs the field text without changing the open
-list's query, so the list does not collapse to the selected item; closing re-syncs the query from
+list's query, so the list does not collapse to the selected item. Closing re-syncs the query from
 the field text, so reopening shows the list filtered by the selection.
 
 The default filter is a case-insensitive substring match. `defaultComboboxFilter`,
@@ -430,15 +430,15 @@ mirroring the filtering in your own logic.
 
 ### Positioning
 
-`Combobox.Content` is positioned by the popper foundation against the active anchor — the input when
-present, otherwise the trigger — and flips to the opposite side on collision. Tune it with
+`Combobox.Content` is positioned by the popper foundation against the active anchor, the input when
+present and otherwise the trigger. It flips to the opposite side on collision. Tune it with
 `placement` (default `"bottom"`), `sideOffset` (default `0`), `alignOffset` (default `0`) and
 `collisionPadding` (default `8`).
 
 ### Dismissal
 
 `Combobox.Content` is always **non-modal**, so the rest of the UI stays interactive. The trigger and
-input are registered as inside refs; any other outside press closes the list. Use
+input are registered as inside refs. Any other outside press closes the list. Use
 `onPointerDownOutside` and `onInteractOutside` to observe or veto first.
 
 ### Motion and presence
@@ -446,7 +446,7 @@ input are registered as inside refs; any other outside press closes the list. Us
 `Combobox.Content` runs no motion of its own. Pass a `transition` to animate it — `createPopperEntranceRecipe(placement)` matches the `frame` the content renders and animates from the resolved placement. `forceMount` keeps the content mounted through its exit (useful when you drive motion yourself or need the node to persist).
 
 <Callout title="Three states, kept in sync">
-Combobox reconciles the three automatically: selecting syncs the input, closing re-syncs it from the value, and an invalid selection is repaired against the registry while the list is open. Mixing a controlled value with an uncontrolled input is fully supported.
+Combobox reconciles the three automatically. Selecting syncs the input, closing re-syncs it from the value, and an invalid selection is repaired against the registry while the list is open. Mixing a controlled value with an uncontrolled input is fully supported.
 </Callout>
 
 <Callout title="Items hide themselves — there is no built-in empty state">
