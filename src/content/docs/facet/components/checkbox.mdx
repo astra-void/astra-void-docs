@@ -87,12 +87,12 @@ Lattice keeps its contexts **private**: `Checkbox.Root` knows whether it is chec
 outside can read it. But the border and fill are this file's job, so the wrapper needs the same
 answer.
 
-The way out is not to reach into the primitive but to hold the value here with
-`useControllableState` — *the same hook the primitive uses* — and drive the primitive **controlled**
-from it. One copy of the state, in the file you own.
+The way out is not to reach into the primitive. Hold the value here with `useControllableState`,
+*the same hook the primitive uses*, and drive the primitive **controlled** from it. One copy of the
+state, in the file you own.
 
 <Callout title="This is the shape, not a special case">
-`switch`, `tabs`, `toggle-group`, `accordion` and `radio-group` all do this. Where a component styles by a state, the state is mirrored; where it does not, there is no mirror, because nothing here needed to know.
+`switch`, `tabs`, `toggle-group`, `accordion` and `radio-group` all do this. Where a component styles by a state, the state is mirrored. Where it does not, there is no mirror, because nothing here needed to know.
 </Callout>
 
 ## State classes go inside the slot
@@ -124,12 +124,12 @@ export const checkboxVariants = {
 };
 ```
 
-`font-bold` on the glyph is load-bearing, and not for weight: Vela leaves `FontFace` alone when no
-`font-*` appears, and Roblox's default is LegacyArial —
+`font-bold` on the glyph is load-bearing, and not for weight. Vela leaves `FontFace` alone when no
+`font-*` appears, and Roblox's default is LegacyArial. That is
 [the bug that shipped in `card`](/facet/components/card/#wrapping-and-alignment-are-classes). The
 glyph is its own `textlabel`, and nothing inherits.
 
-`size-fit` on a glyph inside a `size-full` indicator is what centres it: the indicator does the
+`size-fit` on a glyph inside a `size-full` indicator is what centres it. The indicator does the
 `items-center justify-center`, and the glyph is only as big as the character.
 
 ## The mark is a text glyph
@@ -138,10 +138,10 @@ glyph is its own `textlabel`, and nothing inherits.
 <textlabel Text={checked === "indeterminate" ? "–" : "✓"} … />
 ```
 
-Roblox has no icon font, so `✓` and `–` are characters — a
+Roblox has no icon font, so `✓` and `–` are characters. That is a
 [settled position](/facet/guides/component-conventions/#7-icons-are-text-glyphs-replaceable-by-slot)
-rather than a shortcut, since shipping images means owning the upload, moderation and licensing
-forever. Swap the `textlabel` for an `imagelabel` and nothing else changes.
+rather than a shortcut. Shipping images means owning the upload, moderation and licensing forever.
+Swap the `textlabel` for an `imagelabel` and nothing else changes.
 
 ## Indeterminate is a value, not a flag
 

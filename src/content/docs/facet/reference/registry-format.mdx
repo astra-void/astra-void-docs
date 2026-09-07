@@ -45,8 +45,8 @@ r/a1b2c3d/button.json
 ```
 
 A revision is keyed by the **commit SHA** that produced it. That is the only identifier already
-immutable, unique per publish, and meaningful outside the registry. A CLI version would not work:
-three components shipped under `0.3.0` on separate pushes, because a component reaches users by
+immutable, unique per publish, and meaningful outside the registry. A CLI version would not work.
+Three components shipped under `0.3.0` on separate pushes, because a component reaches users by
 being published rather than by a CLI release.
 
 The two copies are byte-for-byte identical rather than re-rendered, and a test asserts they match.
@@ -148,7 +148,7 @@ The expression for the local player's `PlayerGui` is knowledge about roblox-ts. 
 </Callout>
 
 **The registry declares it, not the CLI.** The alternative was for the CLI to know that `dialog`
-needs `PortalProvider`, which would put that knowledge in a released binary. The next layered
+needs `PortalProvider`. That would put the knowledge in a released binary. The next layered
 component would then need a CLI release to be wired correctly.
 
 **`version` did not move for it.** `loadIndex` *rejects* an index whose version it does not
@@ -214,7 +214,7 @@ specifier, and otherwise as a relative path from where the importing file lands.
 segment is left alone, so it fails loudly at typecheck rather than being rewritten to something
 wrong.
 
-**Relative paths in registry source are a bug.** The CLI can rewrite `~/lib/utils`; it cannot
+**Relative paths in registry source are a bug.** The CLI can rewrite `~/lib/utils`. It cannot
 rewrite `../lib/utils`.
 
 ## What a component may import
@@ -251,11 +251,11 @@ That ships a file that cannot compile in a project without the package.
 ## Specs
 
 Dependency strings are `name` or `name@range`, split on the **last** `@` so a scoped package's
-leading one survives: `@facet-ui/theme` is a name, `vela-rbxts@^0.9.0` is a name and a range.
+leading one survives. `@facet-ui/theme` is a name, and `vela-rbxts@^0.9.0` is a name and a range.
 
-Range comparison is deliberately not a semver implementation. It answers one question — is what is
-installed at least the version this needs — for the shapes Facet writes (`^0.9.0`, `>=0.8.0`,
-`0.1.1`), and reports anything else as unverifiable rather than guessing.
+Range comparison is deliberately not a semver implementation. It answers one question for the shapes
+Facet writes, `^0.9.0`, `>=0.8.0` and `0.1.1`. Is what is installed at least the version this needs?
+Anything else is reported as unverifiable rather than guessed at.
 
 ## Errors
 

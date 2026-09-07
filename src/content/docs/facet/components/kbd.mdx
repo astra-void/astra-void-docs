@@ -71,7 +71,7 @@ Every other component carries a `font-*` defensively: Vela leaves `FontFace` alo
 `font-mono` is not that: Vela resolves it against `theme.fontFamily`, to RobotoMono, where the weights resolve against something else. This is the one place where the mandatory `font-*` is choosing a typeface because the component wants it.
 </Callout>
 
-A key cap in a proportional face reads as a word in a box; in a monospace face it reads as a key.
+A key cap in a proportional face reads as a word in a box. In a monospace face it reads as a key.
 That is the whole justification.
 
 See [Text and labels](/facet/guides/text-and-labels/) for why `font-*` is mandatory at all.
@@ -87,22 +87,21 @@ export const kbdVariants = fv(
 The obvious implementation of a key cap is a square — keys are square. It is wrong here, because a
 cap has to hold `Ctrl` as readily as `E`, and Roblox will not infer that width for you.
 
-`size-fit` plus `px-1.5` gives a cap that is as wide as its content and no wider, so `E` comes out
-nearly square and `Ctrl` comes out a rounded rectangle. Same recipe, no variants, no `w-*`.
+`size-fit` plus `px-1.5` gives a cap that is as wide as its content and no wider. `E` comes out
+nearly square, and `Ctrl` comes out a rounded rectangle. Same recipe, no variants, no `w-*`.
 
 That makes `kbd` the same `AutomaticSize` story as [Badge](/facet/components/badge/#size-fit-is-the-whole-geometry):
 the frame can only measure itself because `TextSlot` renders its label with `size-fit` too. Break
 that and the cap collapses to nothing.
 
-If you want uniform caps in a row — a shortcut legend where the columns should line up — `<Kbd
-className="w-10" Text="E" />` will **not** do it: a class written at a Vela-compiled call site
+If you want uniform caps in a row, such as a shortcut legend where the columns should line up,
+`<Kbd className="w-10" Text="E" />` will **not** do it: a class written at a Vela-compiled call site
 [never reaches the component](/facet/guides/variants-and-classes/#overriding-from-the-call-site).
 Add a `size` variant to your copy of the file, or wrap each cap in a fixed-width frame.
 
 ## What it does not do
 
 There is no `size` variant and no pressed state. A key cap is a static label for a key that exists
-on a keyboard; a thing that responds to being clicked is a
-[Button](/facet/components/button/). Composing them — a cap inside a button's `children` — is the
-supported way to build a rebindable-key row, and it keeps the interaction in the component that
-already handles it.
+on a keyboard. A thing that responds to being clicked is a [Button](/facet/components/button/).
+Composing them, with a cap inside a button's `children`, is the supported way to build a
+rebindable-key row. It keeps the interaction in the component that already handles it.
