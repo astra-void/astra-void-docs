@@ -133,15 +133,14 @@ The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reach
 of open values, held on `Accordion` with `useControllableState`. A Facet context hands
 `isOpen(value)` down, since Lattice's own is private and the chevron rotates with it.
 
-The second context is `AccordionItemContext`, and it carries one boolean:
+The second context, `AccordionItemContext`, carries one boolean:
 
 ```tsx
 const AccordionItemContext = React.createContext<{ open: boolean } | undefined>(undefined);
 ```
 
-Without it, `AccordionTrigger` would need its item's `value` to ask the first context — meaning
-either passing `value` twice or reaching into the primitive. The item already knows, so it hands its
-own answer down.
+Without it, `AccordionTrigger` would need its item's `value` to ask the first context — passing
+`value` twice, or reaching into the primitive. The item already knows, so it hands its answer down.
 
 ## The header carries no layout class
 

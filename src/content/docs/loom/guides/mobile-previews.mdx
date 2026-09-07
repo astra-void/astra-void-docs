@@ -27,11 +27,10 @@ Roblox does not, so neither does loom. A scene that should adapt to a small scre
 ## Why zooming is not the default
 
 Zooming a narrow device to a fixed 960-wide logical viewport reads as the same layout drawn smaller.
-It is not — it is a *different* layout, the one the engine gives at 960, shrunk to fit.
-`TextWrapped` text keeps the line breaks it had at 960, a `UIListLayout` with `Wraps` keeps its row
-count, `AutomaticSize` settles at the wide measurement, and scale-vs-offset mixes re-proportion
-against the wrong number. Everything *looks* fine, just small, and is wrong in exactly the places a
-narrow viewport is the thing being checked.
+It is not — it is a *different* layout, the one the engine gives at 960, shrunk to fit. `TextWrapped`
+text keeps the line breaks it had at 960, a `UIListLayout` with `Wraps` keeps its row count, and
+`AutomaticSize` settles at the wide measurement. Everything *looks* fine, just small, and is wrong in
+exactly the places a narrow viewport is the thing being checked.
 
 ## `?base=` keeps a wide composition
 
