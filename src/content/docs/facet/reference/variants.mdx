@@ -15,8 +15,8 @@ import { Callout, PackageMeta } from "@/components/docs/mdx";
   importName="fv, cn"
 />
 
-The one runtime package a Facet component imports from Facet. An rbxts package, built by `rbxtsc` —
-everything else a component needs is either a Lattice primitive or a Vela class string.
+The one runtime package a Facet component imports from Facet, built by `rbxtsc`. Everything else a
+component needs is a Lattice primitive or a Vela class string.
 
 Installed by `facet add` as a dependency of the `utils` registry item. Currently 0.4.0.
 
@@ -53,12 +53,12 @@ Returns `(selection?) => string`. The selection is one optional key per axis, pl
 slot.
 
 **Resolution order:** base → each matching variant → matching compound variants → the caller's
-`className`. The caller lands last so a consumer override wins by construction — which is why `cn`
-does not need to merge conflicts, and why nothing in a component may be appended after
-`props.className`. See [the one rule](/facet/guides/variants-and-classes/#the-one-rule).
+`className`. The caller lands last so an override wins by construction, which is why `cn` need not
+merge conflicts and why nothing may be appended after `props.className`. See
+[the one rule](/facet/guides/variants-and-classes/#the-one-rule).
 
-Compound variants match against the **resolved** selection, defaults included, so one fires whether
-the axis came from the caller or from `defaultVariants`.
+Compound variants match the **resolved** selection, defaults included, so one fires whether the axis
+came from the caller or from `defaultVariants`.
 
 ## `VariantProps<Recipe>`
 
@@ -84,9 +84,8 @@ cn("h-9", disabled && "opacity-50", { "bg-muted": isMuted }, ["gap-2", "px-4"]);
 // → "h-9 opacity-50 bg-muted gap-2 px-4"
 ```
 
-Flattens `ClassValue`s into a space-separated class string. Strings pass through, numbers are
-stringified, arrays recurse, records contribute their keys where the value is `true`, and everything
-else — booleans, `nil` — is dropped.
+Flattens `ClassValue`s into a space-separated string: strings pass through, numbers stringify,
+arrays recurse, records contribute keys whose value is `true`, and everything else is dropped.
 
 <Callout title="cn does not resolve conflicting utilities">
 Unlike `tailwind-merge`, which of `p-2 p-4` wins is Vela's call, not this package's — Vela resolves

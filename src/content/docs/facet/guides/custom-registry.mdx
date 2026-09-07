@@ -9,8 +9,8 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-The CLI fetches components at runtime rather than bundling them, which means the source of those
-components is a setting. Four ways to change it, in resolution order — most specific first.
+The CLI fetches components at runtime rather than bundling them, so their source is a setting. Four
+ways to change it, most specific first.
 
 ## Resolution order
 
@@ -36,11 +36,10 @@ FACET_REGISTRY_URL=https://ui.example.com/r npx facet-rbxts list
 }
 ```
 
-The config field is the right one for a team: everyone who clones the project gets the same
-registry without remembering a flag.
+The config field is the one for a team — everyone who clones the project gets the same registry.
 
 <Callout title="The default URL is baked into every released CLI">
-`https://facet.astra-void.xyz/r` is a constant in the published package. That is why the Facet repo's own deploy generates a `CNAME` file as part of the site artifact: deploying from a GitHub Actions artifact replaces the whole site, and without it GitHub can revert the custom domain to the `github.io` default. That outage is not something a patch release fixes quickly.
+`https://facet.astra-void.xyz/r` is a constant in the published package, which is why the deploy generates a `CNAME` as part of the site artifact: an Actions artifact replaces the whole site, and without it GitHub can revert the custom domain to the `github.io` default.
 </Callout>
 
 ## What a registry has to serve
@@ -54,11 +53,11 @@ Three kinds of file over plain HTTP (or a directory with the same layout):
 ```
 
 The CLI reads `index.json` first and refuses anything whose `version` is not `1`, telling the user
-to upgrade rather than guessing at a format it does not know. Item payloads are fetched lazily —
-only for what is actually being added, removed, or diffed.
+to upgrade rather than guessing. Item payloads are fetched lazily, only for what is being added,
+removed or diffed.
 
-A 404 on an item is treated as a user typo; a 404 on the index means the registry moved. Requests
-carry `accept: application/json` and time out after 15 seconds.
+A 404 on an item reads as a typo, a 404 on the index as a moved registry. Requests carry
+`accept: application/json` and time out after 15 seconds.
 
 The full shape is in the [registry format reference](/facet/reference/registry-format/).
 
@@ -72,24 +71,17 @@ pnpm registry:build     # registry/ → site/
 ```
 
 `site/` is generated and never committed, so the published registry cannot drift from `registry/`.
-The build emits the index, one JSON per item, and an immutable `r/<sha>/` copy of both. Alongside
-those: a landing page listing what exists, a `CNAME`, a `.nojekyll` (Pages runs Jekyll otherwise,
-which eats underscore-prefixed paths), `schema.json` — the JSON Schema every `facet.json` names in
-its own `$schema` — and `revisions.json`, listing which frozen revisions exist.
+The build emits the index, one JSON per item, and an immutable `r/<sha>/` copy of both, plus a
+landing page, a `CNAME`, a `.nojekyll` (Pages otherwise runs Jekyll, which eats underscore-prefixed
+paths), `schema.json`, and `revisions.json`.
 
-`schema.json` is generated from the `FacetConfig` type rather than checked in, so it cannot be a
-version behind the CLI that writes the files pointing at it. It is typed to cover every key of that
-type, so a new config field does not compile until it is described.
+`schema.json` is generated from the `FacetConfig` type rather than checked in, so it cannot lag the
+CLI. It is typed to cover every key, so a new config field does not compile until it is described.
 
 <Callout title="Revisions need somewhere to accumulate">
-Pages deploys one artifact and the artifact **replaces the entire site**, so a revision written by
-one deploy would be deleted by the next. Facet's published tree therefore lives on a `gh-pages`
-branch that accumulates: the workflow checks it out, copies the new build over it, commits, and
-uploads *that* tree as the artifact.
+Pages deploys one artifact and it **replaces the entire site**, so a revision written by one deploy would be deleted by the next. The published tree therefore lives on an accumulating `gh-pages` branch: the workflow checks it out, copies the new build over it, commits, and uploads *that* tree.
 
-The branch is storage, not a deployment source — Pages is still deployed from Actions, and `.git` is
-removed before the upload so the accumulator's history is not part of the site. A fork that does not
-care about revisions can skip all of this and upload `site/` directly.
+The branch is storage, not a deployment source: Pages still deploys from Actions, and `.git` is removed before the upload. A fork that does not need revisions can upload `site/` directly.
 </Callout>
 
 Test against the working tree before publishing anything:
@@ -100,34 +92,27 @@ FACET_REGISTRY_DIR=site/r npx facet-rbxts add button --cwd ../some-project
 ```
 
 <Callout title="Three places name the host">
-`DEFAULT_REGISTRY_URL` in the CLI's registry source, `$schema` in its config module, and
-`CUSTOM_DOMAIN` in the build script. They must agree — a mismatch between the last one and the first
-two means the CLI asks a host the site no longer claims.
+`DEFAULT_REGISTRY_URL` in the CLI's registry source, `$schema` in its config module, and `CUSTOM_DOMAIN` in the build script. A mismatch means the CLI asks a host the site no longer claims.
 </Callout>
 
 ## Adding your own components to a fork
 
 Three edits, and it is not done until all three are made:
 
-1. **The source** in `registry/src/ui` (or `lib`, `hooks`), addressing other registry files with
-   `~/` — never a relative path, because the CLI rewrites `~/` and cannot rewrite `../lib/utils`.
-2. **An entry** in `registry/registry.ts` declaring every import as a `dependency` (npm) or a
-   `registryDependency` (another item), plus the semantic `tokens` its classes name so `facet
-   doctor` can check them.
+1. **The source** in `registry/src/ui` (or `lib`, `hooks`), addressing other registry files with `~/` — never a relative path, which the CLI cannot rewrite.
+2. **An entry** in `registry/registry.ts` declaring every import as a `dependency` (npm) or a `registryDependency`, plus the semantic `tokens` its classes name so `facet doctor` can check them.
 3. **A scene** in `apps/playground` — the only place anyone sees it render.
 
 `registry:check` enforces the structural half: unique names, known item types, resolvable registry
 dependencies, no file claimed by two items, and **one spec per npm package across the whole
-registry**. That last one exists because `facet add` unions dependency strings across the install
-set, so `@lattice-ui/react-runtime` and `@lattice-ui/react-runtime@^0.8.0` in two entries would
-survive as two entries and both reach the package manager.
+registry** — because `facet add` unions dependency strings, so two spellings would both reach the
+package manager.
 
-What it cannot check is a missing npm dependency — an import the entry never declared. That is on
-the author, and it ships a file that cannot compile in a project that did not happen to have the
-package already.
+What it cannot check is a missing npm dependency — an import the entry never declared, which ships a
+file that cannot compile.
 
 ## A private registry
 
-Nothing about the format requires GitHub Pages. Any static host works, and so does a directory on
-disk. If it is behind auth, the CLI has no credential support — point `FACET_REGISTRY_DIR` at a
-checkout your build process already has access to.
+Nothing about the format requires GitHub Pages — any static host works, and so does a directory on
+disk. The CLI has no credential support, so for anything behind auth point `FACET_REGISTRY_DIR` at a
+checkout your build already has access to.
