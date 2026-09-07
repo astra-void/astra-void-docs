@@ -12,11 +12,7 @@ import { Callout } from "@/components/docs/mdx";
 Every symptom below was reproduced on a real project, ordered roughly by how often it comes up.
 
 <Callout title="Check your version before anything else">
-A long list of symptoms — missing Luau globals, text sizing and wrapping that disagrees between two
-machines or between `vite dev` and a deployed build, clipped descenders, a `ScrollingFrame` that
-never scrolls, `rbxassetid://` images blank in a static build, `AutomaticSize="XY"` collapsing to
-zero — are all fixed bugs whose only remedy is upgrading. Check `npm ls loom-dev` first, and see
-[Scope and status](/loom/getting-started/scope-and-status/) for what each release closed.
+A long list of symptoms are all fixed bugs whose only remedy is upgrading. Missing Luau globals. Text sizing and wrapping that disagrees between two machines, or between `vite dev` and a deployed build. Clipped descenders. A `ScrollingFrame` that never scrolls. `rbxassetid://` images blank in a static build. `AutomaticSize="XY"` collapsing to zero. Check `npm ls loom-dev` first, and see [Scope and status](/loom/getting-started/scope-and-status/) for what each release closed.
 </Callout>
 
 ## Quick index
@@ -63,13 +59,13 @@ former. Check the `<script src>` in the served page, and pass `loomPreview({ ent
 
 ## `ReferenceError: UDim2 is not defined`
 
-The Roblox datatype globals were never installed. Under the dev server a plugin injects them as a
-script tag; under `vite build` the plugin prepends the globals import to the page's entry modules,
+The Roblox datatype globals were never installed. Under the dev server, a plugin injects them as a
+script tag. Under `vite build`, the plugin prepends the globals import to the page's entry modules,
 since a tag injected by `transformIndexHtml` never joins the bundle.
 
-In a page **you built**, the plugin could not see your entry — likely a
-`build.rollupOptions.input` of your own, or an entry pulled in by something other than a
-`<script type="module" src>`. Add the import yourself, first in the entry:
+In a page **you built**, the plugin could not see your entry. Likely a `build.rollupOptions.input`
+of your own, or an entry pulled in by something other than a `<script type="module" src>`. Add the
+import yourself, first in the entry:
 
 ```tsx
 import "@loom-dev/preview/globals";
@@ -81,8 +77,8 @@ Under the **dev server**, something is loading before the injected script — mo
 ## `Warning: Invalid hook call` / "more than one copy of React"
 
 Two React instances are in the graph. The plugin aliases bare `react` and both JSX runtimes to one
-absolute path so the adapter, the reconciler and your components converge — so when it happens, one
-of three things is true:
+absolute path, so the adapter, the reconciler and your components converge. When it happens anyway,
+one of three things is true:
 
 1. **A stale optimizer cache**, where Vite re-optimized mid-session and served a mix of old and new
    pre-bundles. `rm -rf node_modules/.vite` and restart.
@@ -136,10 +132,10 @@ loom: no face is loaded for the Roblox font family "Gotham" — its text is pain
 and measured in the system fallback instead, …
 ```
 
-A browser ships none of Roblox's typefaces, and since `AutomaticSize` and `TextWrapped` are driven by
-measuring glyph widths, a missing face moves the *layout*, not just the paint. The preview loads 28
-of the engine's families itself, with no import and no configuration; the warning survives for the
-ones loom cannot redistribute — `Gotham`, `BuilderSans` and six more. Register your own copy with
+A browser ships none of Roblox's typefaces. `AutomaticSize` and `TextWrapped` are driven by
+measuring glyph widths, so a missing face moves the *layout*, not just the paint. The preview loads
+28 of the engine's families itself, with no import and no configuration. The warning survives for
+the ones loom cannot redistribute: `Gotham`, `BuilderSans` and six more. Register your own copy with
 `registerFont`. Both halves are in [Fonts and text metrics](/loom/guides/fonts/).
 
 The [debug panel](/loom/guides/debug-panel/)'s **fonts** section answers this directly: it lists
@@ -148,11 +144,11 @@ every typeface the scene resolved to and whether the browser really loaded it.
 ## Content spills out of its container
 
 An `AutomaticSize` object grows only up to the room its parent leaves, which is what Roblox does.
-Content with an irreducible minimum — a long unbreakable word, a row of buttons that will not fit —
-therefore overflows the box instead of widening it, and that overflow is the same one Studio shows.
+Content with an irreducible minimum overflows the box instead of widening it: a long unbreakable
+word, a row of buttons that will not fit. That overflow is the same one Studio shows.
 
-If a preview overflows and Studio does not, the layout is genuinely too small for its content at that
-viewport: give the parent more room, or let the text wrap.
+If a preview overflows and Studio does not, the layout is genuinely too small for its content at
+that viewport. Give the parent more room, or let the text wrap.
 
 <Callout title="Layout changes need a WASM rebuild">
 If you are developing loom itself and edit anything under `crates/loom-layout`, the browser keeps
@@ -162,6 +158,6 @@ is usually a missing rebuild.
 
 ## A target throws and the page still works
 
-By design. The gallery shell is plain DOM with a React error boundary around each target, so import
-failures, bad `preview` exports and render throws each land in an inline red panel with a stack while
-the sidebar stays usable. Switching targets clears it.
+By design. The gallery shell is plain DOM with a React error boundary around each target. Import
+failures, bad `preview` exports and render throws each land in an inline red panel with a stack,
+while the sidebar stays usable. Switching targets clears it.

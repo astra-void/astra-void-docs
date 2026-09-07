@@ -33,12 +33,12 @@ own `vite.config.ts` is ignored.
 
 ### Mode selection
 
-The CLI picks gallery or single-entry mode and hands the result to `loomPreview()` as `targets`; the
+The CLI picks gallery or single-entry mode and hands the result to `loomPreview()` as `targets`. The
 plugin serves either way, so
 [`loomPreview({ targets })`](/loom/reference/vite-plugin/#the-generated-page) in your own config
 behaves identically.
 
-1. `--targets` present, or `loom.config.ts` supplies `targets` → **gallery mode**. The generated page mounts targets itself; no client entry is needed, and a project's own `index.html` is overridden.
+1. `--targets` present, or `loom.config.ts` supplies `targets` → **gallery mode**. The generated page mounts targets itself. No client entry is needed, and a project's own `index.html` is overridden.
 2. Otherwise, a project `index.html` is used as-is.
 3. Otherwise a page is generated with a full-viewport `#loom-root` and a module script pointing at the first matching entry:
 
@@ -86,8 +86,8 @@ On success it prints the resolved output directory:
 
 ## `loom.config.ts`
 
-Read only by `preview`, from `<dir>/loom.config.ts`. Imported through `tsx`; an import failure prints
-a warning and is otherwise ignored.
+Read only by `preview`, from `<dir>/loom.config.ts`. It is imported through `tsx`, and an import
+failure prints a warning and is otherwise ignored.
 
 ```ts title="loom.config.ts"
 export default {
@@ -100,7 +100,7 @@ Precedence and validation:
 
 - CLI flags always win over the file.
 - `targets` must be a string or a non-empty array of strings.
-- `port` is honoured **only when `targets` is valid** — a config with a missing or malformed `targets` is skipped in full, port included, with a hint on stderr.
+- `port` is honoured **only when `targets` is valid**. A config with a missing or malformed `targets` is skipped in full, port included, with a hint on stderr.
 
 ## Glob semantics
 
@@ -113,9 +113,9 @@ Precedence and validation:
 | a value containing `*` | used verbatim |
 | any other value (a directory) | `<value>/**/*.loom.tsx` |
 
-Leading `./` and trailing slashes are stripped first. The matcher supports three constructs — `**/`
-(any depth including none), `**` (anything), `*` (anything but `/`) — and treats every other
-character literally.
+Leading `./` and trailing slashes are stripped first. The matcher supports three constructs: `**/`
+for any depth including none, `**` for anything, and `*` for anything but `/`. Every other character
+is literal.
 
 Discovery walks the project recursively, skipping `node_modules` and dot-entries, and returns sorted
 POSIX-style relative paths. Unreadable directories are skipped rather than fatal.
@@ -124,7 +124,7 @@ POSIX-style relative paths. Unreadable directories are skipped rather than fatal
 
 Under the dev server, adding or deleting a `*.loom.tsx` file invalidates the virtual target module
 and triggers a full page reload, since the sidebar is rebuilt from the import map. The URL hash
-survives it. Editing a target's contents is ordinary HMR.
+survives it, and editing a target's contents is ordinary HMR.
 
 ## `loom-dev/embed` — the programmatic API
 
@@ -164,16 +164,16 @@ await buildGallery({
 | `DEFAULT_GALLERY_BASE` | `"/loom-preview/"` |
 
 `createGalleryServer` also takes `hmrPort`. Middleware mode has no HTTP server of its own to
-upgrade, so Vite always puts HMR on a standalone port, and its default (24678) is the first port
-every other Vite dev server grabs. A collision is quiet rather than fatal: Vite logs it and previews
+upgrade, so Vite always puts HMR on a standalone port. Its default, 24678, is the first port every
+other Vite dev server grabs. A collision is quiet rather than fatal: Vite logs it, and previews
 never hot-reload. Left unset, loom picks a free port per server.
 
 <Callout type="note" title="It runs its own Vite">
-`createGalleryServer` starts a **separate** Vite instance and the host only forwards HTTP to it, because the loom plugin rewrites `react` and `@rbxts/*` for the whole config it lives in and would otherwise hijack the host's own React. The one thing not proxied is Vite's HMR WebSocket, which always gets a port of its own.
+`createGalleryServer` starts a **separate** Vite instance, and the host only forwards HTTP to it. The loom plugin rewrites `react` and `@rbxts/*` for the whole config it lives in, and would otherwise hijack the host's own React. The one thing not proxied is Vite's HMR WebSocket, which always gets a port of its own.
 </Callout>
 
-`middleware` answers only under `base` — redirecting the bare `/loom-preview` to the trailing-slash
-form — and calls `next()` for everything else, so it is safe ahead of the host's own routes.
+`middleware` answers only under `base`, redirecting the bare `/loom-preview` to the trailing-slash
+form. It calls `next()` for everything else, so it is safe ahead of the host's own routes.
 Everything else matches the CLI: the same target discovery, the same
 [URL contract](/loom/guides/static-builds-and-embedding/#the-url-contract), the same per-target
 error containment.

@@ -10,7 +10,7 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 Loom runs a roblox-ts source tree in a browser, so every package that tree imports needs *something
-a browser can execute*. Most have one and you never think about it; this page is about the few that
+a browser can execute*. Most have one and you never think about it. This page is about the few that
 do not.
 
 ## The automatic case
@@ -37,7 +37,7 @@ no TypeScript implementation:
 ```
 
 Declaration files are types, not code, and the Luau cannot run in a browser. The only answer is a
-browser module standing in for the package: loom ships one where the meaning is unambiguous, and
+browser module standing in for the package. Loom ships one where the meaning is unambiguous, and
 lets you write one for anything else.
 
 ## What loom ships
@@ -52,7 +52,7 @@ lets you write one for anything else.
 | `@rbxts/ripple` `@rbxts/react-ripple` | A port of the published spring/tween/motion implementation. |
 
 <Callout title="`Promise` is a binding, not a global">
-The preview plugin injects the roblox-ts `Promise` (evaera's) at module scope in previewed source. It is injected rather than installed as a global on purpose: the page's own `Promise` belongs to the host, and the two disagree about `all` and `allSettled`, so overwriting the global would break the bundler, React and loom itself.
+The preview plugin injects the roblox-ts `Promise` (evaera's) at module scope in previewed source. It is injected rather than installed as a global on purpose. The page's own `Promise` belongs to the host, and the two disagree about `all` and `allSettled`. Overwriting the global would break the bundler, React and loom itself.
 </Callout>
 
 Everything below is the detail on the last two.
@@ -69,7 +69,7 @@ Loom models the non-story environment, exactly as UI Labs behaves when the same 
 story:
 
 - `Environment.IsStory()` returns `false`.
-- `Environment.InputListener` is `undefined`; it is story-only.
+- `Environment.InputListener` is `undefined`, since it is story-only.
 - `Environment.UserInput` is loom's `UserInputService`, the same object `game.GetService(...)`
   returns, never a copy.
 - `Unmount`, `Reload`, `CreateSnapshot` and `SetStoryHolder` are no-ops, and `GetJanitor()` returns
@@ -87,7 +87,7 @@ export const InputService = Environment.IsStory()
 ```
 
 <Callout title="Compatibility for one import, not support for UI Labs">
-Loom is not the Studio plugin and a loom scene is not a story. Story creators, controls, snapshots, sandbox injection, story mounting and the plugin APIs are **not** emulated — importing one fails with the normal ESM missing-export error, which beats a stub that behaves differently than in Studio. Subpaths are not covered either.
+Loom is not the Studio plugin and a loom scene is not a story. Story creators, controls, snapshots, sandbox injection, story mounting and the plugin APIs are **not** emulated. Importing one fails with the normal ESM missing-export error, which beats a stub that behaves differently than in Studio. Subpaths are not covered either.
 </Callout>
 
 ### `@rbxts/ripple` and `@rbxts/react-ripple`
@@ -157,8 +157,8 @@ import { UserInputService } from "@rbxts/services";
 export const listener = UserInputService;
 ```
 
-**Never construct a second service.** Leaving the rest out is the point: an import of something you
-did not shim fails loudly rather than behaving differently than it does in Studio.
+**Never construct a second service.** Leaving the rest out is the point. An import of something you
+did not shim fails loudly, rather than behaving differently than it does in Studio.
 
 ## The error you are trying to avoid
 
@@ -178,8 +178,9 @@ loomPreview({
 });
 ```
 
-That message replaces what you would otherwise get — Vite's opaque `Failed to resolve entry for
-package`, or, only during a build, Rollup trying to *parse* the Luau as JavaScript:
+That message replaces what you would otherwise get. Vite's opaque
+`Failed to resolve entry for package`, or, only during a build, Rollup trying to *parse* the Luau as
+JavaScript:
 
 ```text
 RollupError:
@@ -192,5 +193,5 @@ adapter for it. Nothing can be inferred — Luau is not JavaScript, and a `.d.ts
 code.
 
 <Callout title="This can surface only in the build">
-A gallery target is a lazy `import()`, so the dev server never fetches a scene you do not open, while `loom build` follows every target eagerly to code-split it. **A gallery that runs fine in development can still fail the build** — a package reached only from a scene you never opened waits until then to tell you.
+A gallery target is a lazy `import()`, so the dev server never fetches a scene you do not open. `loom build` follows every target eagerly to code-split it. **A gallery that runs fine in development can still fail the build.** A package reached only from a scene you never opened waits until then to tell you.
 </Callout>
