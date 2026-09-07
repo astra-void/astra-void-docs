@@ -17,8 +17,8 @@ building a component library, and it is the only mode `loom build` supports.
 pnpm exec loom preview ~/code/my-ui --targets
 ```
 
-With `--targets` present, loom stops looking for a client entry entirely — the gallery shell does the
-mounting — and serves its own generated page even if the project ships an `index.html`.
+With `--targets` present, loom stops looking for a client entry entirely, because the gallery shell
+does the mounting. It serves its own generated page even if the project ships an `index.html`.
 
 The same mode is one option away in a project that owns its Vite config:
 
@@ -75,8 +75,8 @@ Two fields matter:
 | `render` | yes | Must be a function returning a React element. The shell renders it *as a function component* (`React.createElement(preview.render)`), so hooks inside it work and React re-renders it on its own schedule. |
 | `title` | no | A non-empty string replaces the sidebar's relative-path label. Titles are loaded lazily on idle, so the sidebar shows paths first and upgrades in place. |
 
-Anything else — a default export, a bare component export, `preview` without a callable `render` —
-produces an inline error panel rather than a broken page:
+Anything else produces an inline error panel rather than a broken page. A default export, a bare
+component export, or `preview` without a callable `render`:
 
 ```text
 invalid preview export in src/scenes/Counter.loom.tsx
@@ -99,12 +99,13 @@ scene component, not in the `render` thunk.
 | `--targets src/scenes` (no `*`) | `src/scenes/**/*.loom.tsx` |
 | `--targets "apps/*/src/**/*.scene.tsx"` | used verbatim |
 
-The option also takes an array of either shape; the CLI flag does not.
+The option also takes an array of either shape. The CLI flag does not.
 
-The matcher is a small purpose-built one, not `picomatch`: `**/` matches any depth *including none*,
-`**` matches anything, `*` matches anything except `/`, and every other character is literal. There is
-no brace expansion, no `?`, no negation, no extglob. The walk skips `node_modules` and any directory
-starting with `.`, and results are sorted, so sidebar order is stable and path-alphabetical.
+The matcher is a small purpose-built one, not `picomatch`. `**/` matches any depth *including none*,
+`**` matches anything, and `*` matches anything except `/`. Every other character is literal. There
+is no brace expansion, no `?`, no negation, no extglob. The walk skips `node_modules` and any
+directory starting with `.`, and results are sorted, so sidebar order is stable and
+path-alphabetical.
 
 Discovery re-runs on the fly: adding or deleting a `*.loom.tsx` file invalidates the virtual module
 and triggers a full page reload. The URL hash survives that reload, so the selected target stays
@@ -126,9 +127,7 @@ flags always win over the file. The file is imported through `tsx`, so TypeScrip
 and an import failure is downgraded to a warning rather than aborting the preview.
 
 <Callout title="A config without `targets` is skipped whole">
-The CLI validates that `targets` is present and well-typed before honoring anything in the file. A
-config that has, say, a `server.port` and a `targetDiscovery` object — the shape an older loom used —
-is ignored entirely, including its port, and you get:
+The CLI validates that `targets` is present and well-typed before honoring anything in the file. A config with a `server.port` and a `targetDiscovery` object, the shape an older loom used, is ignored entirely, port included. You get:
 
 ```text
 loom: loom.config.ts found, but its default export has no `targets` field — skipping it
@@ -142,9 +141,9 @@ doing nothing.
 
 ## Error containment
 
-The gallery chrome is deliberately plain DOM — no React outside a single error boundary — so a target
-that explodes cannot white-screen the page. Three failure classes are caught separately and rendered
-into an inline red panel with the stack, while the sidebar stays interactive:
+The gallery chrome is deliberately plain DOM, with no React outside a single error boundary. A
+target that explodes cannot white-screen the page. Three failure classes are caught separately and
+rendered into an inline red panel with the stack, while the sidebar stays interactive:
 
 - **Import failure** — `failed to import <path>` (a syntax error, a missing module).
 - **Bad contract** — `invalid preview export in <path>`.
@@ -155,8 +154,8 @@ to keep in a gallery as a regression check for exactly this behavior.
 
 ## Inspecting a target
 
-The sidebar header carries a **`debug`** button — also **Ctrl+Alt+D**, also `?debug=1` — that opens
-a panel over the stage reporting what the mounted target is actually doing: import and first-frame
+The sidebar header carries a **`debug`** button, also reachable with **Ctrl+Alt+D** or `?debug=1`.
+It opens a panel over the stage reporting what the mounted target is doing: import and first-frame
 timings, the logical viewport it laid out against, the live instance tree, which typefaces really
 loaded, and a hover inspector for the scene. It is off by default and runs nothing while closed. See
 [The debug panel](/loom/guides/debug-panel/).
@@ -165,6 +164,5 @@ loaded, and a hover inspector for the scene. It is off by default and runs nothi
 
 In full-chrome mode the shell uses hash routing: selecting a target sets `#/<relPath>`, and the hash
 is the source of truth across reloads. An initial `?target=<relPath>` seeds the selection on first
-load without a hash — that is the deep-link contract the static build and docs-site iframes use, and
-it is documented in [Static builds and
-embedding](/loom/guides/static-builds-and-embedding/).
+load without a hash. That is the deep-link contract the static build and docs-site iframes use,
+documented in [Static builds and embedding](/loom/guides/static-builds-and-embedding/).

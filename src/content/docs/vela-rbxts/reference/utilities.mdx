@@ -11,8 +11,8 @@ import { Callout, UtilityTable } from "@/components/docs/mdx";
 
 This is the complete list of what Vela compiles as of **0.13.0**. If a class is not on this page,
 Vela does not implement it. An unknown family produces `unsupported-utility-family`, and a real
-Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`. A few — anything that
-looks like `text-*` — get misread as a color key instead. See
+Tailwind family with no Roblox equivalent produces `no-roblox-equivalent`. A few get misread as a
+colour key instead. Anything that looks like `text-*`. See
 [Diagnostics](/vela-rbxts/reference/diagnostics/) for what each warning means.
 
 Every utility lowers to a **property**, a **helper instance** Vela prepends as a child, or, for the
@@ -132,9 +132,9 @@ bracketed thickness resolves on all three, with or without the unit: `border-[3p
 `outline-[2px]`. A bracket is parsed as an arbitrary *color* first, so `border-[#0f0]` is the color
 and `border-[3px]` the thickness. See [arbitrary values](#arbitrary-values).
 
-For `border-*`, four things are explicitly rejected with `unsupported-border-value`: the CSS border
-styles `dashed`, `solid`, `dotted` and `double`, every side-specific form such as `border-x` or
-`border-t-2`, `border-opacity-*`, and anything containing a slash. For `ring-*`/`outline-*`:
+For `border-*`, four things are explicitly rejected with `unsupported-border-value`. The CSS border
+styles `dashed`, `solid`, `dotted` and `double`. Every side-specific form, such as `border-x` or
+`border-t-2`. `border-opacity-*`. And anything containing a slash. For `ring-*`/`outline-*`:
 `inset`, `solid`, `dashed`, `dotted`, `double`, `offset-*`, and any other unbracketed thickness
 (`unsupported-stroke-value`).
 
@@ -168,8 +168,8 @@ when it is non-zero, and `Transparency`.
 <UtilityTable family="gradient" />
 
 Stops flush into a `ColorSequence`. `Rotation` is emitted only when non-zero. `BackgroundColor3` is
-forced to white so the gradient is not tinted by the element's own background, which overrides a
-`bg-*` on the same element regardless of token order. A bad direction is
+forced to white so the gradient is not tinted by the element's own background. That overrides a
+`bg-*` on the same element, regardless of token order. A bad direction is
 `unsupported-gradient-direction`.
 
 ## Z-index
@@ -244,9 +244,9 @@ Margins sum with the parent's `gap-*` — a `gap-2` list whose children carry `m
 gaps, not 8. For space between list children, prefer `gap-*` on the parent: one property on one
 instance, and it keeps the element on the static path. A negative top or left margin moves the
 element rather than padding the box around it. **Each side holds one signed value, and the last
-class written to it wins.** `ml-4 -ml-2` shifts by 8, `-ml-2 ml-4` pads by 16, and `-ml-0` clears
-what came before it. `-mr-*` and `-mb-*` remain `unsupported-negative-margin` — those would have to
-pull the *next* sibling closer.
+class written to it wins.** `ml-4 -ml-2` shifts by 8. `-ml-2 ml-4` pads by 16. `-ml-0` clears what
+came before it. `-mr-*` and `-mb-*` remain `unsupported-negative-margin` — those would have to pull
+the *next* sibling closer.
 
 ## Gap and space
 
@@ -283,8 +283,7 @@ Accepted values on the sizing axes:
 
 - `px` — one pixel of offset.
 - `full` — scale `1`.
-- Fractions, from an exact allowlist: `1/2`; `1/3`, `2/3`; `1/4`, `3/4`; `1/5`, `2/5`, `3/5`, `4/5`;
-  `1/6`, `5/6`; and `1/12` through `11/12`. Unreduced forms such as `2/4`, `3/6`, and `2/6` are
+- Fractions come from an exact allowlist: `1/2`, `1/3`, `2/3`, `1/4`, `3/4`, `1/5`, `2/5`, `3/5`, `4/5`, `1/6`, `5/6`, and `1/12` through `11/12`. Unreduced forms such as `2/4`, `3/6`, and `2/6` are
   **not** accepted.
 - Any spacing value, used as an offset. If the resolved spacing carries a non-zero scale component,
   it is rejected with `unsupported-size-spacing-value`.
@@ -413,12 +412,12 @@ works verbatim:
 The value is converted to transparency as `100 - n`. Any non-integer or out-of-range value gives
 `unsupported-opacity-value`.
 
-**It fades everything the element draws.** `BackgroundTransparency` on every host,
+**It fades everything the element draws.** That is `BackgroundTransparency` on every host,
 `TextTransparency` on the text hosts, `ImageTransparency` on the image hosts, and the `Transparency`
 of a `UIStroke` or `UIShadow` the same class list drew.
 
 **And the subtree under it.** Roblox has no inherited transparency, so Vela hands every instance
-below the class the running product `1 - (1 - own) * alpha`. Children written inside an expression
+below the class a running product: `1 - (1 - own) * alpha`. Children written inside an expression
 count, and so do `{props.children}` and component children, which the alpha reaches through React
 context. A `canvasgroup` ends the descent — its `GroupTransparency` composites the subtree in one
 pass.
@@ -604,9 +603,9 @@ sections above and [Diagnostics](/vela-rbxts/reference/diagnostics/).
 
 When `className` is a dynamic expression rather than something Vela can collapse at compile time,
 the class string is resolved by the injected runtime helper instead. **Every family on this page
-resolves there**, with the static path's semantics. That includes opacity modifiers, arbitrary
-values, and the families that only meet at the end: the two `Size` axes, `Position` and
-`AnchorPoint`, `FontFace`, a grid track and the gap it gives back.
+resolves there**, with the static path's semantics. Opacity modifiers, arbitrary values, and the
+families that only meet at the end: the two `Size` axes, `Position` and `AnchorPoint`, `FontFace`, a
+grid track and the gap it gives back.
 
 One thing differs, and it is the runtime path being stricter rather than thinner. **A utility the
 host element cannot carry is dropped** instead of written, since assigning `TextColor3` to a `Frame`
