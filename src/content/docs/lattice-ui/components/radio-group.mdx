@@ -18,9 +18,8 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 
 Radio Group is the primitive for picking exactly one option from a set. `Root` owns the value,
 `Item` registers itself and handles activation and directional navigation, and `Indicator` marks the
-selected one. Reach for it when a choice is **single-select**, the options should be **navigable as
-a unit**, and selection should **follow focus** the way native radio groups do. For a choice behind
-a trigger, [Select](/lattice-ui/components/select/) fits better.
+selected one. Selection **follows focus**, the way native radio groups do. For a choice behind a
+trigger, [Select](/lattice-ui/components/select/) fits better.
 
 ## Preview
 
@@ -35,7 +34,7 @@ import { RadioGroup } from "@lattice-ui/react-radio-group";
 ## Anatomy
 
 Each `Item` carries a `value` and may contain an `Indicator` that shows only while checked. `Root`
-renders no instance of its own, so the container and layout are yours.
+renders no instance, so the container and layout are yours.
 
 <PrimitiveAnatomy title="RadioGroup anatomy">
 
@@ -59,8 +58,8 @@ renders no instance of its own, so the container and layout are yours.
 
 ### Basic usage
 
-Uncontrolled state seeded with `defaultValue`. Because `Root` renders no container, the group
-borrows the layout of whatever frame it sits in.
+Uncontrolled state seeded with `defaultValue`. With no container of its own, the group borrows the
+layout of the frame it sits in.
 
 ```tsx title="BasicRadioGroup.tsx"
 import { RadioGroup } from "@lattice-ui/react-radio-group";
@@ -85,8 +84,8 @@ export function BasicRadioGroup() {
 
 ### Controlled group
 
-Pass `value` and `onValueChange` when something outside the group needs to read or set the choice.
-It fires with the newly selected value and never with `undefined`, so it is safe to store directly.
+Pass `value` and `onValueChange` when something outside needs to read or set the choice. It fires
+with the newly selected value and never with `undefined`.
 
 ```tsx title="QualitySetting.tsx"
 import { useState } from "@rbxts/react";
@@ -120,7 +119,7 @@ export function QualitySetting(props: { onSave: (quality: string) => void }) {
 
 `orientation` picks the arrow-key axis: vertical (the default) moves on `Up`/`Down`, horizontal on
 `Left`/`Right`. It does not lay the items out — pair it with a matching `uilistlayout`
-`FillDirection`. Movement clamps at both ends rather than wrapping.
+`FillDirection`. Movement clamps at both ends.
 
 ```tsx title="TeamPicker.tsx"
 import { useState } from "@rbxts/react";
@@ -152,8 +151,7 @@ export function TeamPicker() {
 ### Card-style items with asChild
 
 Use `asChild` to project activation, gamepad selection and the arrow-key wiring onto your own
-button, with an `Indicator` inside it as the dot. The item never touches your element's colour, so
-branch on the checked state yourself.
+button, with an `Indicator` inside as the dot. The item never touches your element's colour.
 
 ```tsx title="DifficultyCards.tsx"
 import { useState } from "@rbxts/react";
@@ -216,9 +214,9 @@ export function DifficultyCards() {
 
 ### Disabled items
 
-`disabled` on an item makes it inert and removes it from navigation: it cannot be activated, drops
-out of gamepad selection, and arrow movement steps over it to the next enabled entry. `disabled` on
-`Root` freezes the whole group.
+`disabled` on an item makes it inert and removes it from navigation — it cannot be activated, drops
+out of gamepad selection, and arrow movement steps over it. `disabled` on `Root` freezes the whole
+group.
 
 ```tsx title="GameModePicker.tsx"
 import { useState } from "@rbxts/react";
@@ -249,9 +247,9 @@ export function GameModePicker() {
 
 ### Dynamic item lists
 
-Directional navigation walks the registry in **mount order**. For a list that grows at runtime,
-appending keeps mount and visual order aligned; inserting into the middle renders in the middle but
-navigates last, so prefer append-only growth or a `LayoutOrder` that mirrors mount order.
+Directional navigation walks the registry in **mount order**. Appending keeps mount and visual order
+aligned; inserting into the middle renders in the middle but navigates last, so prefer append-only
+growth or a `LayoutOrder` mirroring mount order.
 
 ```tsx title="LoadoutPicker.tsx"
 import { useState } from "@rbxts/react";
@@ -293,41 +291,43 @@ export function LoadoutPicker() {
 
 Controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage; with neither
 the group starts empty. An `Item` is checked when its `value` equals the group value, and
-`onValueChange` only ever receives a defined string — there is no way to clear the selection through
-interaction, matching native radio behavior.
+`onValueChange` only ever receives a defined string — interaction cannot clear the selection,
+matching native radio behaviour.
 
-Activating an item calls the group's `setValue` with that item's value. When `Root` is `disabled`, `setValue` drops every change, so neither activation nor programmatic movement can alter the value; an individual `disabled` item just refuses its own activation.
+Activating an item calls the group's `setValue`. A `disabled` `Root` drops every change, so neither
+activation nor programmatic movement alters the value; an individual `disabled` item only refuses
+its own activation.
 
 ### Activation
 
-An item selects itself on `Activated`, on `Return`/`Space`, and on `SelectionGained` — so on a
-gamepad, moving selection onto an item commits it. An item is `Active` and `Selectable` only while
-enabled.
+An item selects itself on `Activated`, on `Return`/`Space` and on `SelectionGained`, so on a gamepad
+moving selection onto an item commits it. An item is `Active` and `Selectable` only while enabled.
 
-With `asChild`, these handlers are merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
+With `asChild` these handlers merge onto your child element through `Slot`: the slot's `Active`,
+`Selectable` and ref win, and handlers compose. Use a `textbutton` or `imagebutton` so `Activated`
+fires.
 
 ### Orientation and arrow-key navigation
 
-`orientation` selects the arrow-key axis each item listens on; the other axis is ignored. A matching
-press moves selection one step: the group resolves the next entry from the ordered registry, focuses
-it through the [focus manager](/lattice-ui/guides/focus-management/), and selects it in the same
-step.
+`orientation` selects the arrow-key axis each item listens on; the other is ignored. A matching
+press resolves the next entry from the ordered registry, focuses it through the
+[focus manager](/lattice-ui/guides/focus-management/), and selects it in the same step.
 
-Movement covers **available** entries only — an entry is skipped if it is disabled, not `Visible`,
-or not `Selectable` — and clamps to the ends, so it never wraps. If the selected item is itself
-unavailable, the next forward move lands on the first available item and the next backward move on
-the last.
+Movement covers **available** entries only — disabled, invisible or non-`Selectable` entries are
+skipped — and clamps at the ends. If the selected item is itself unavailable, the next forward move
+lands on the first available item and the next backward move on the last.
 
 ### Item registration order
 
 Each item is stamped with a monotonically increasing `order` on its first render and keeps it for
 its lifetime; remounting assigns a fresh, higher one. Navigation sorts by that order, so it tracks
-**mount order rather than visual position**. Keep the two aligned: render from one array, append new
-entries, and lay them out with a matching `SortOrder`.
+**mount order rather than visual position** — render from one array, append new entries, and lay
+them out with a matching `SortOrder`.
 
 ### Item rendering and color
 
-An `Item` renders an unstyled `textbutton` — no size, no label, no colors. It does not render `value` as its text; pass a `Text` of your own, or children.
+An `Item` renders an unstyled `textbutton` — no size, no label, no colours — and does not render
+`value` as its text. Pass a `Text` of your own, or children.
 
 The item never writes `BackgroundColor3`, which is why it accepts no `transition` — that prop only
 ever timed a colour animation the primitive no longer runs. Derive the colour from the checked state
