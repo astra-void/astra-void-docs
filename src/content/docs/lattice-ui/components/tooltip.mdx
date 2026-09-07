@@ -17,8 +17,8 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 />
 
 Tooltip is the primitive for a small, transient surface that explains a control: button hints, icon
-labels, stat breakdowns. It opens on hover or gamepad selection, waits a beat before showing —
-skipping that wait between nearby triggers — anchors against the trigger with collision-aware
+labels, stat breakdowns. It opens on hover or gamepad selection and waits a beat before showing,
+skipping that wait between nearby triggers. It anchors against the trigger with collision-aware
 placement, and dismisses when the pointer or selection leaves.
 
 ## Preview
@@ -102,8 +102,8 @@ export function StatTooltip() {
 ### Shared delay across a toolbar
 
 One `Provider` around a row of icon buttons gives every tooltip the same delay and the same skip
-window: the first hover waits the full `delayDuration`, and once any tooltip has opened a
-neighbouring trigger opens within `skipDelayDuration` instead.
+window. The first hover waits the full `delayDuration`. Once any tooltip has opened, a neighbouring
+trigger opens within `skipDelayDuration` instead.
 
 ```tsx title="ActionToolbar.tsx"
 import { Tooltip } from "@lattice-ui/react-tooltip";
@@ -351,21 +351,21 @@ export function GamepadStatTooltip() {
 
 ### Open behavior
 
-`Tooltip.Trigger` tracks two activity sources, hover and selection focus: the tooltip opens when
-either becomes active and closes only when both are inactive, so moving the mouse off a
-still-selected trigger keeps it up. Hover opens go through the delay; selection opens skip it.
+`Tooltip.Trigger` tracks two activity sources, hover and selection focus. The tooltip opens when
+either becomes active and closes only when both are inactive. Moving the mouse off a still-selected
+trigger keeps it up. Hover opens go through the delay. Selection opens skip it.
 
 `disabled` drops open actions while still tracking activity, closes immediately when flipped
 mid-hover, and clears `Active` and `Selectable`.
 
 ### Open delay and skip window
 
-The delay resolves from `Root`'s `delayDuration` if set, otherwise the `Provider`'s (default `700`
-ms); `0` or less opens synchronously. Leaving the trigger cancels a pending open, and so does
-unmounting the root.
+The delay resolves from `Root`'s `delayDuration` if set, otherwise the `Provider`'s, which defaults
+to `700` ms. `0` or less opens synchronously. Leaving the trigger cancels a pending open, and so
+does unmounting the root.
 
-The skip window lives on the provider: every open stamps a timestamp, and a hover open starting
-within `skipDelayDuration` (default `300` ms) waits at most that long — so moving between adjacent
+The skip window lives on the provider. Every open stamps a timestamp, and a hover open starting
+within `skipDelayDuration`, default `300` ms, waits at most that long. Moving between adjacent
 triggers does not re-wait the full delay.
 
 ### Positioning
@@ -403,7 +403,7 @@ Only hover opens are delayed. `SelectionGained` opens immediately, and a pending
 </Callout>
 
 <Callout title="The default trigger is a transparent placeholder">
-Without `asChild`, `Tooltip.Trigger` renders a transparent 140x36 placeholder — handy for wiring, not for shipping. Pass `asChild` and project the hover and selection handlers and anchor ref onto your own button; the slot's `Active` and `Selectable` follow `disabled`.
+Without `asChild`, `Tooltip.Trigger` renders a transparent 140x36 placeholder — handy for wiring, not for shipping. Pass `asChild` to project the hover and selection handlers and the anchor ref onto your own button. The slot's `Active` and `Selectable` follow `disabled`.
 </Callout>
 
 ## API reference

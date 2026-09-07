@@ -17,9 +17,9 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 />
 
 Progress visualizes how far along a task is: loading bars, download meters, XP bars, quest trackers.
-`Root` clamps the value against a maximum and derives a `0..1` ratio, `Indicator` animates a fill to
-it, and `Spinner` is a self-rotating element for work with no measurable progress. The primitive
-owns the maths and the motion; you own the colours, sizing and layout.
+`Root` clamps the value against a maximum and derives a `0..1` ratio, and `Indicator` animates a
+fill to it. `Spinner` is a self-rotating element for work with no measurable progress. The primitive
+owns the maths and the motion. You own the colours, sizing and layout.
 
 ## Preview
 
@@ -101,7 +101,7 @@ export function DownloadBar() {
 ### Indeterminate state
 
 Set `indeterminate` when work has no measurable endpoint. The indicator stops tracking the value and
-renders a fixed `0.35` fill; flip it back off and the same indicator animates to the real ratio, so
+renders a fixed `0.35` fill. Flip it back off and the same indicator animates to the real ratio, so
 one bar covers both phases.
 
 ```tsx title="MatchmakingBar.tsx"
@@ -125,8 +125,8 @@ export function MatchmakingBar(props: { searching: boolean; loadPercent: number 
 
 ### Standalone spinner
 
-`Progress.Spinner` needs no `Root`. `spinning` starts and stops the loop and hides the element while
-stopped; `speedDegPerSecond` sets the rate.
+`Progress.Spinner` needs no `Root`. `spinning` starts and stops the loop, and hides the element
+while stopped. `speedDegPerSecond` sets the rate.
 
 ```tsx title="SaveIndicator.tsx"
 import { Progress } from "@lattice-ui/react-progress";
@@ -154,7 +154,7 @@ export function SaveIndicator(props: { saving: boolean }) {
 
 ### Percent readout
 
-Use the exported `resolveProgressRatio` rather than re-deriving `value / max` — it is the same
+Use the exported `resolveProgressRatio` rather than re-deriving `value / max`. It is the same
 function `Root` uses, so an out-of-range value that renders full also reads as `100%`.
 
 ```tsx title="LevelProgress.tsx"
@@ -197,7 +197,7 @@ export function LevelProgress(props: { xp: number; xpForNextLevel: number }) {
 
 ### Custom fill and motion
 
-`transition` overrides how the fill settles after each value change; `asChild` swaps the indicator's
+`transition` overrides how the fill settles after each value change. `asChild` swaps the indicator's
 frame for your own. The default recipe settles in 0.12s — `createProgressResponseRecipe` with a
 longer duration suits health bars. This is one of the few transitions with a default, because the
 fill is geometry the primitive computes.
@@ -258,8 +258,8 @@ full scale.
 
 Pass `transition` to override the recipe, or rebuild it with
 `createProgressResponseRecipe(duration)`. By default the fill is a solid frame with any `children`
-inside; under `asChild` your child becomes the fill, its `Position` and `Size` forced to span the
-window.
+inside. Under `asChild` your child becomes the fill, with its `Position` and `Size` forced to span
+the window.
 
 ### Spinner rotation
 

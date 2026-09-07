@@ -11,7 +11,10 @@ import { Callout, PropTable, PackageInstall } from "@/components/docs/mdx";
 
 An overlay has a layout problem the moment it is born inside another component. A tooltip rendered inside a scrolling list gets clipped by the list. A dialog rendered deep in a panel inherits that panel's `ZIndex` band and ends up fighting siblings for stacking order. The content needs to *escape* its parent and render at the top of the screen tree — while its trigger stays where it logically belongs.
 
-`@lattice-ui/react-layer` provides the three pieces that make this work: **Portal** moves content into the right `BasePlayerGui`, **DismissableLayer** gives each surface its own ordered `ScreenGui` and coordinates outside-press dismissal, and **Presence** keeps a node mounted long enough to animate out. Every overlay primitive — Dialog, Popover, Menu, Select, Tooltip — is built on these.
+`@lattice-ui/react-layer` provides the three pieces that make this work. **Portal** moves content
+into the right `BasePlayerGui`. **DismissableLayer** gives each surface its own ordered `ScreenGui`
+and coordinates outside-press dismissal. **Presence** keeps a node mounted long enough to animate
+out. Every overlay primitive is built on these: Dialog, Popover, Menu, Select and Tooltip.
 
 ## Install
 
@@ -21,7 +24,9 @@ The shipped components depend on this package already. Install it directly only 
 
 ## Portals: escaping the local tree
 
-`createPortal` (re-exported through `Portal`) renders children into a target `Instance` instead of the position where the element appears in the tree. The trigger stays in your component; the content renders elsewhere.
+`createPortal` (re-exported through `Portal`) renders children into a target `Instance` instead of
+the position where the element appears in the tree. The trigger stays in your component. The content
+renders elsewhere.
 
 ```tsx title="Portal escapes clipping and stacking"
 import { Popover } from "@lattice-ui/react-popover";
@@ -85,7 +90,7 @@ Resolve the `PlayerGui` once and pass the same `container` for the life of the s
 - **Assigns a `DisplayOrder`** of `displayOrderBase + mountOrder`, so layers stack in the order they opened — the most recently opened surface sits on top.
 - **Tracks a layer stack** so dismissal is ordered: an outside press dismisses the *topmost* layer, not all of them at once. Nested overlays close from the inside out.
 - **Optionally blocks interaction behind it** when `modal` (or `disableOutsidePointerEvents`) is set, by rendering a full-screen `Modal` `textbutton` behind the content.
-- **Reports outside interactions** so you can observe — or veto — them before the surface dismisses.
+- **Reports outside interactions** so you can observe or veto them before the surface dismisses.
 
 ```tsx title="A custom dismissable surface"
 import React from "@rbxts/react";
@@ -139,7 +144,8 @@ Because each layer is its own `ScreenGui`, stacking between surfaces is governed
 
 ## Nested overlays
 
-When overlays stack — a menu opened from inside a dialog, a select inside a popover — the layer stack keeps them honest:
+When overlays stack, such as a menu opened from inside a dialog or a select inside a popover, the
+layer stack keeps them honest:
 
 - Each new layer mounts with a higher `DisplayOrder`, so the innermost surface is always on top.
 - An outside press dismisses only the topmost active layer, so closing a menu does not also close the dialog behind it.
@@ -149,7 +155,10 @@ You generally get this for free by composing Lattice primitives. When building c
 
 ## Presence: surviving exit animation
 
-When an overlay closes, unmounting it immediately would cut off any exit animation. `Presence` bridges the gap: it keeps the node mounted after `present` flips to `false`, exposes an `isPresent` flag to drive the exit, and only unmounts once the exit completes (or a fallback timeout elapses).
+When an overlay closes, unmounting it immediately would cut off any exit animation. `Presence`
+bridges the gap. It keeps the node mounted after `present` flips to `false` and exposes an
+`isPresent` flag to drive the exit. It unmounts once the exit completes, or a fallback timeout
+elapses.
 
 ```tsx title="Presence keeps the node mounted to animate out"
 import { Presence } from "@lattice-ui/react-layer";
@@ -176,7 +185,7 @@ import { Presence } from "@lattice-ui/react-layer";
 ## When not to
 
 - The content is **inline** and belongs in the normal layout flow — do not portal it just to reorder it.
-- A single fixed-position element with no dismissal needs none of this; a plain `ScreenGui` with a set `DisplayOrder` is enough.
+- A single fixed-position element with no dismissal needs none of this. A plain `ScreenGui` with a set `DisplayOrder` is enough.
 
 ## Related
 
