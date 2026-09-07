@@ -9,13 +9,9 @@ sidebar:
 
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
-Roblox has no box model: an element is positioned by `Position` and `AnchorPoint`, sized by `Size`
-and `AutomaticSize`, and laid out by child instances like `UIListLayout` and `UIPadding`. Vela maps
-onto those instances where it can, emulates where it can build one honestly, and warns where neither
-is possible. Two rules explain most of the surprises here: a utility sets a property on the element
-or on a *helper instance* Vela prepends to its children, and several Tailwind names that look like
-siblings land on different Roblox properties, because Roblox splits alignment and flex distribution
-into separate enums.
+Roblox has no box model. An element is positioned by `Position` and `AnchorPoint`, sized by `Size` and `AutomaticSize`, and laid out by child instances like `UIListLayout` and `UIPadding`. Vela maps onto those instances where it can, emulates where it can build one honestly, and warns where neither is possible.
+
+Two rules explain most of the surprises here. A utility sets a property on the element, or on a *helper instance* Vela prepends to its children. And several Tailwind names that look like siblings land on different Roblox properties, because Roblox splits alignment and flex distribution into separate enums.
 
 ## Flex and `UIListLayout`
 
@@ -37,7 +33,7 @@ no reversed fill direction. Reorder the children, or invert their `order-*` valu
 ### `justify-*` splits across two properties
 
 `justify-start`, `justify-center` and `justify-end` set `HorizontalAlignment`. The distribution
-values — `justify-between`, `justify-around`, `justify-evenly` — set **`HorizontalFlex`**, a
+values `justify-between`, `justify-around` and `justify-evenly` set **`HorizontalFlex`**, a
 different property with a different enum type.
 
 | Class | Property | Value |
@@ -53,11 +49,10 @@ different property with a different enum type.
 They are separate properties, so `justify-center justify-between` sets both and the two interact inside Roblox's layout solver rather than the later class winning. Pick one.
 </Callout>
 
-`items-*` splits the same way on the cross axis. `items-start`, `items-center`, and `items-end` set
-`VerticalAlignment` (`Top`, `Center`, `Bottom`); `items-stretch` sets
-**`VerticalFlex = Enum.UIFlexAlignment.Fill`**. The `content-*` family drives the same two vertical
-properties: `content-start`/`content-center`/`content-end` set `VerticalAlignment`, and
-`content-between`/`content-around`/`content-evenly`/`content-stretch` set `VerticalFlex`.
+`items-*` splits the same way on the cross axis. `items-start`, `items-center` and `items-end` set
+`VerticalAlignment`, while `items-stretch` sets **`VerticalFlex = Enum.UIFlexAlignment.Fill`**. The
+`content-*` family drives the same two properties: `content-start`, `content-center` and
+`content-end` set `VerticalAlignment`, and the rest set `VerticalFlex`.
 
 These names are axis-fixed, not direction-relative: `justify-*` always drives the horizontal
 properties and `items-*` the vertical, even under `flex-col`.
@@ -117,12 +112,12 @@ for it where CSS would use `flex-row-reverse`.
 ## Grid and `UIGridLayout`
 
 `grid` creates a `UIGridLayout` child with `SortOrder = LayoutOrder`. `grid-cols-{n}` (1–12) sets
-`FillDirection = Horizontal` with `FillDirectionMaxCells = n`; `grid-rows-{n}` does the same
-vertically. There are no spans — `col-span-*` and `row-span-*` have no `UIGridLayout` counterpart
-and report `no-roblox-equivalent`.
+`FillDirection = Horizontal` with `FillDirectionMaxCells = n`, and `grid-rows-{n}` does the same
+vertically. There are no spans: `col-span-*` and `row-span-*` have no `UIGridLayout` counterpart and
+report `no-roblox-equivalent`.
 
 **The grid is the one layout that sizes its own children.** `UIGridLayout` stamps `CellSize` onto
-every child, so a `w-*` on a cell does nothing — the track count decides the width:
+every child, so a `w-*` on a cell does nothing. The track count decides the width:
 
 ```tsx title="grid grid-cols-2 gap-2.5"
 <uigridlayout FillDirectionMaxCells={2} CellSize={new UDim2(0.5, -5, 0, 100)} CellPadding={UDim2.fromOffset(10, 10)} />
@@ -151,10 +146,10 @@ Padding utilities collect into one `UIPadding` child. The axis mapping is direct
 
 ## Margins are built, not native
 
-Roblox has no margin box, so Vela constructs one: a positive margin wraps the element in a
+Roblox has no margin box, so Vela constructs one. A positive margin wraps the element in a
 transparent frame padded by the margin values, with the element's layout-facing props routed onto
 the wrapper. That wrapper cannot be a static prop, so **any margin utility moves the element onto
-the [runtime path](/vela-rbxts/guides/dynamic-class-names/)** — even in a plain string literal. The
+the [runtime path](/vela-rbxts/guides/dynamic-class-names/)**, even in a plain string literal. The
 variants:
 
 | Class | Effect |
@@ -179,14 +174,14 @@ one value resolver, in two steps.
    finite, non-negative, and an exact multiple of `0.5`. The result is `new UDim(0, key * 4)`.
 
 So `p-1.5` is `new UDim(0, 6)` and `p-40` is `new UDim(0, 160)`. `p-0.25` fails both steps and emits
-`unknown-theme-key`; a leading sign is rejected outright.
+`unknown-theme-key`. A leading sign is rejected outright.
 
 <Callout title="The built-in spacing scale has one key">
-`theme.spacing` ships with exactly `"4"`; every other numeric key works through the arithmetic fallback. Adding named keys is covered in [Theming](/vela-rbxts/guides/theming/).
+`theme.spacing` ships with exactly `"4"`. Every other numeric key works through the arithmetic fallback. Adding named keys is covered in [Theming](/vela-rbxts/guides/theming/).
 </Callout>
 
 <Callout title="Since 0.12.0 those offsets are rem, not pixels">
-`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**. Every offset on this page is a rem unit carried as `__VelaRem.scale(…)`, following the player's viewport and clamped into `[min, max]` — so these numbers hold at 1920×1020, and everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels). Scale-valued utilities are untouched.
+`new UDim(0, 160)` is what `w-40` is worth **at the base viewport**. Every offset on this page is a rem unit carried as `__VelaRem.scale(…)`, following the player's viewport and clamped into `[min, max]`. These numbers hold at 1920×1020, and everywhere if you [pin the clamp](/vela-rbxts/guides/theming/#pinning-offsets-back-to-literal-pixels). Scale-valued utilities are untouched.
 </Callout>
 
 ## Sizing and `Size`
@@ -210,10 +205,10 @@ resolves through one of four branches.
 | `/12` | `1` through `11` |
 
 Anything outside that table is rejected, including the reducible forms. `w-2/4` and `w-3/6` are
-**not** accepted even though they equal `w-1/2`; write `w-1/2`.
+**not** accepted even though they equal `w-1/2`. Write `w-1/2`.
 
 **Anything else** goes through the spacing grammar above and becomes an offset. A resolved spacing
-value with a non-zero scale component — a custom theme entry like `new UDim(0.5, 0)` — gives
+value with a non-zero scale component, such as a custom theme entry of `new UDim(0.5, 0)`, gives
 `unsupported-size-spacing-value`.
 
 ### Automatic sizing
@@ -277,17 +272,17 @@ Position utilities write into the element's `Position`:
 
 They accept `px`, `full`, the same exact fraction set as sizing, and spacing offsets.
 
-`right-*` and `bottom-*` express the coordinate from the far edge — `right-2` emits
-`new UDim(1, -8)` on X — but do **not** change `AnchorPoint`, so the point they place is still the
+`right-*` and `bottom-*` express the coordinate from the far edge, so `right-2` emits
+`new UDim(1, -8)` on X. They do **not** change `AnchorPoint`, so the point they place is still the
 element's top-left corner. Pair them with `origin-*`:
 
 ```tsx title="8px inside the parent's bottom-right corner"
 <frame className="right-2 bottom-2 origin-bottom-right w-24 h-8" />
 ```
 
-Vela has no `absolute` / `relative` / `fixed` / `static` family — every Roblox GUI object is already
+Vela has no `absolute` / `relative` / `fixed` / `static` family. Every Roblox GUI object is already
 positioned relative to its parent, so those keywords report `no-roblox-equivalent`. A parent with a
-`UIListLayout` owns its children's positions, so `left-*`/`top-*` will not take effect there.
+`UIListLayout` owns its children's positions, so `left-*` and `top-*` will not take effect there.
 
 `origin-{key}` sets `AnchorPoint`. Exactly nine keys are valid:
 
@@ -308,8 +303,8 @@ Anything else is `unsupported-anchor-value`.
 ### Translation
 
 `translate-x-*` and `translate-y-*` shift an element the way CSS transforms do, splitting by value
-kind: a **fraction** is a shift measured in the element's own size, which is what `AnchorPoint`
-expresses, and a **pixel** value adds to the `Position` offset. So the CSS centring idiom works
+kind. A **fraction** is a shift measured in the element's own size, which is what `AnchorPoint`
+expresses. A **pixel** value adds to the `Position` offset. So the CSS centring idiom works
 verbatim:
 
 ```tsx title="Dead center — AnchorPoint (0.5, 0.5), Position (0.5, 0.5) scale"
@@ -376,20 +371,16 @@ Any other value is `unsupported-scale-value`, and scaling is uniform — there i
 
 `hidden` sets `Visible = false` and `visible` sets `Visible = true`.
 
-`overflow-hidden` and `overflow-clip` both set `ClipsDescendants = true`; `overflow-visible` sets it
-to `false`. Any other value emits `unsupported-overflow-value` — there is no scroll variant, since
-scrolling belongs to the `scrollingframe` host element.
+`overflow-hidden` and `overflow-clip` both set `ClipsDescendants = true`. `overflow-visible` sets it
+to `false`. Any other value emits `unsupported-overflow-value`, since scrolling belongs to the
+`scrollingframe` host element rather than to a style.
 
 ## What layout still cannot express
 
-- **Grid spans and flow** — `col-span-*`, `row-span-*`, `grid-flow-*`. `UIGridLayout` has no span
-  concept; these report `no-roblox-equivalent`.
-- **The CSS positioning model** — `absolute`, `relative`, `fixed`, `sticky`, `float`, `clear`.
-  Roblox positioning is always parent-relative.
-- **Axis gaps** — `gap-x-*` and `gap-y-*`. They match the `gap-` prefix, so the leftover text is
-  treated as a spacing key and the failure comes out as `unknown-theme-key` in the `spacing` family
-  rather than as an unknown-family warning.
-- **Reversed fill** — `flex-row-reverse`, `flex-col-reverse`. Use `order-*`.
+- **Grid spans and flow**: `col-span-*`, `row-span-*`, `grid-flow-*`. `UIGridLayout` has no span concept, so these report `no-roblox-equivalent`.
+- **The CSS positioning model**: `absolute`, `relative`, `fixed`, `sticky`, `float`, `clear`. Roblox positioning is always parent-relative.
+- **Axis gaps**: `gap-x-*` and `gap-y-*`. They match the `gap-` prefix, so the leftover text is read as a spacing key and the failure comes out as `unknown-theme-key` rather than an unknown-family warning.
+- **Reversed fill**: `flex-row-reverse`, `flex-col-reverse`. Use `order-*`.
 
 ## See also
 
