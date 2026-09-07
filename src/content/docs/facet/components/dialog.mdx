@@ -49,7 +49,7 @@ import {
 ```
 
 <Callout title="This one needs a provider above your app">
-`Dialog.Portal` reads the `PlayerGui` it renders into from a **strict** context, so without a `PortalProvider` the dialog compiles, ships, and throws the first time a player opens it. `facet add dialog` offers to write the wrapper into your client entry — see [The provider](#the-provider).
+`Dialog.Portal` reads the `PlayerGui` it renders into from a **strict** context, so without a `PortalProvider` the dialog compiles, ships and throws the first time a player opens it. `facet add dialog` offers to write the wrapper into your client entry.
 </Callout>
 
 <FacetPreview
@@ -72,9 +72,8 @@ import {
 | `DialogDescription` | `TextLabel` | `w-full h-fit whitespace-normal leading-tight text-left text-sm font-normal text-muted-foreground` |
 
 The four re-exports pass `DialogPrimitive.Root`, `.Trigger`, `.Portal` and `.Close` through without
-a recipe, so the trigger is whatever you put in it. Bare, `DialogTrigger` is a `textbutton` with no
-size of its own — give it a `className` with both axes resolved, or use `asChild` around a
-[`Button`](/facet/components/button/).
+a recipe. Bare, `DialogTrigger` is a `textbutton` with no size of its own — give it a `className`
+with both axes resolved, or `asChild` around a [`Button`](/facet/components/button/).
 
 <ForwardedProps instance="Frame" />
 
@@ -91,15 +90,16 @@ import { PortalProvider } from "@lattice-ui/react-layer";
 </PortalProvider>
 ```
 
-One wrapper, at the client entry, for the whole app — not per dialog. Every layered component in the
-registry will declare the same one, so this edit happens once.
+One wrapper, at the client entry, for the whole app — not per dialog. Every layered component
+declares the same one, so this edit happens once.
 
 <Callout title="Why the CLI edits a file for this and nothing else">
-`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json`. Both files belong to you, and a pattern-matched edit that mangles one is worse than a printed snippet.
+`facet init` writes `vela.config.ts` only when there is none, and merely *reports* on `tsconfig.json` — both belong to you, and a pattern-matched edit that mangles one is worse than a printed snippet.
 
-This is the exception, because everything else the CLI reports is a **build-time** failure, loud and in front of the person who just ran the command.
+This is the exception, because everything else the CLI reports is a **build-time** failure, in front
+of the person who just ran the command.
 
-A missing `PortalProvider` fails at runtime, in production, when a player presses the button — long after the snippet scrolled past. So `facet add` parses your entry, asks, and writes it. See the [CLI reference](/facet/reference/cli/#wiring-a-provider).
+A missing `PortalProvider` fails at runtime, in production, long after the snippet scrolled past — so `facet add` parses your entry, asks, and writes it.
 </Callout>
 
 `facet doctor` notices when the provider goes missing again.
@@ -157,7 +157,7 @@ inherit:
 
 `Dialog.Content` forces `Size` on its own host so the layer spans the screen, **and** takes the
 first host element under it as the outside-press boundary. A `className` on the primitive fights the
-first — and, through the `UICorner` Vela prepends for `rounded-lg`, quietly becomes the second.
+first, and through the `UICorner` Vela prepends for `rounded-lg` quietly becomes the second.
 
 So the styled panel is a child, and its own centring is two classes:
 
@@ -165,9 +165,8 @@ So the styled panel is a child, and its own centring is two classes:
 mx-auto my-auto
 ```
 
-Vela lowers each to `AnchorPoint` 0.5 plus `Position` 0.5 on that axis. It works because the
-primitive's content host spans the layer and lays nothing out, so this frame positions itself inside
-it.
+Vela lowers each to `AnchorPoint` 0.5 plus `Position` 0.5 on that axis, which works because the
+primitive's content host spans the layer and lays nothing out.
 
 ## The scrim
 
@@ -177,8 +176,7 @@ overlay: fv("bg-black/80"),
 
 The one class in the registry naming a colour instead of a role, against
 [rule 8](/facet/guides/component-conventions/#8-roles-never-ramp-steps). A scrim has to darken
-whatever is under it *in every theme*, and none of Facet's nineteen roles is dark in both modes —
-that is what makes them roles.
+whatever is under it *in every theme*, and none of Facet's nineteen roles is dark in both modes.
 
 | candidate | dark | light |
 | --- | --- | --- |
@@ -186,10 +184,9 @@ that is what makes them roles.
 | `bg-foreground/80` | zinc-50 ✗ | zinc-950 ✓ |
 | `bg-muted/80` | zinc-800 ✓ | zinc-100 ✗ |
 
-No token was added for it either. A token is a published surface — `facet doctor` checks it,
-`@facet-ui/theme` ships the default, every upgrade inherits it — which is a large permanent
-commitment for one class in one component. If `sheet` and `drawer` turn out to want it too, the
-argument restarts.
+No token was added either: a token is a published surface — `facet doctor` checks it,
+`@facet-ui/theme` ships the default, every upgrade inherits it — which is a permanent commitment for
+one class in one component.
 
 ### `overlayClassName`, not `className`
 
@@ -199,32 +196,31 @@ argument restarts.
 
 The name is the point: Vela intercepts a prop *named* `className` at the call site and hands the
 component resolved properties rather than the string, so a class routed through a second component's
-`className` is overwritten by that component's own recipe.
+`className` is overwritten by its recipe.
 
-`overlayClassName` is not `className`, so it arrives intact and merges where the overlay actually
-resolves — [the `TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one
-level up, and why `DialogContent` renders `DialogPrimitive.Overlay` directly.
+`overlayClassName` is not `className`, so it arrives intact and merges where the overlay resolves —
+[the `TextSlot` trap](/facet/guides/text-and-labels/#textslot-takes-no-classname) one level up.
 
 The recipe is also exported as `dialogVariants.overlay`, and the file is yours once copied.
 
 ## The corner ✕ is not a corner ✕
 
-shadcn floats the close button over the panel's top-right. This one takes its own line at the top,
-pushed right by `self-end`:
+shadcn floats the close button over the panel's top-right; this one takes its own line, pushed right
+by `self-end`:
 
 ```tsx
 close: fv("size-6 self-end rounded-md text-sm font-normal text-muted-foreground hover:bg-accent"),
 ```
 
 A `UIListLayout` positions **every** child it has, so a floating child inside a `flex-col` panel
-needs a second frame purely to escape the layout — the wrapper
+would need a second frame purely to escape the layout — the wrapper
 [rule 5](/facet/guides/component-conventions/#5-layout-is-an-instance-not-a-property) says not to
 add. `self-end` is a `UIFlexItem`, the in-layout way to say the same thing.
 
 `showClose={false}` turns it off for a dialog whose only exit is a footer button.
 
 <Callout title="Where the ✕ lands is not something the preview can show">
-Loom's `Enum` table has no `ItemLineAlignment`, so it neither reads nor lays out what `self-end` lowers to and the glyph sits where the list put it. The docs' gallery backfills the enum so the scene renders rather than crashing.
+Loom's `Enum` table has no `ItemLineAlignment`, so it neither reads nor lays out what `self-end` lowers to, and the glyph sits where the list put it. The docs' gallery backfills the enum so the scene renders.
 
-Whether the ✕ reaches the panel's right edge, whether the panel lands centred, and whether the dim covers the screen are the three geometry questions [Studio has not answered yet](/facet/getting-started/scope-and-status/#what-is-not-covered) here.
+Whether the ✕ reaches the panel's right edge, whether the panel lands centred, and whether the dim covers the screen are the three questions [Studio has not answered yet](/facet/getting-started/scope-and-status/#what-is-not-covered).
 </Callout>
