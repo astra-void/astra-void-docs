@@ -86,7 +86,7 @@ component root like the named form beside it.
 ## 0.12.5
 
 **A `SurfaceGui` keeps its literal pixels.** It takes its pixel space from the part it is drawn on
-rather than from the viewport, and a `BillboardGui` sizes itself the same way. Following the rem
+rather than from the viewport. A `BillboardGui` sizes itself the same way, so following the rem
 curve there was wrong. Both are pinned now, on the static and runtime paths alike.
 `theme.rem.pinnedUnder` names them, and emptying it puts them back on the curve. A container the
 compiler never sees is outside what this reaches. Pin such a project with
@@ -95,7 +95,7 @@ compiler never sees is outside what this reaches. Pin such a project with
 ## 0.12.4
 
 **A margin side is one signed slot, so the last class written to it lands.** Padding and a negative
-shift used to accumulate separately, so neither could overwrite the other. `-ml-2 -ml-2` shifted by
+shift used to accumulate separately, and neither could overwrite the other. `-ml-2 -ml-2` shifted by
 16 rather than 8, and `ml-4 -ml-2` applied both a padding *and* a shift. A side that ends up
 negative moves the element. One that ends up positive pads it. `-mr-*` and `-mb-*` still report
 `unsupported-negative-margin`.
@@ -161,7 +161,7 @@ the scaling from the emit entirely. See [rem](/vela-rbxts/guides/theming/#rem).
 
 **The runtime ships as `@rbxts/vela-runtime` instead of being copied into every file.** Ten
 components used to carry ten copies of the same 5,500 lines, each with its own camera subscription.
-It is one ModuleScript the whole place shares now. In the reference app `App.luau` went from 190,260
+It is now one ModuleScript the whole place shares. In the reference app `App.luau` went from 190,260
 bytes to 27,912. Setup is unchanged — the package installs with `vela-rbxts` and sits under the
 `@rbxts` scope every roblox-ts project already lists.
 
@@ -169,7 +169,7 @@ bytes to 27,912. Setup is unchanged — the package installs with `vela-rbxts` a
 *parse* a class value sends its scales emptied entirely.
 
 **A branch's classes are resolved at compile time.** `active ? "text-lg" : "text-sm"` names every
-token it can apply, so the compiler resolves all of them and hands the element the resolved props
+token it can apply. The compiler resolves all of them and hands the element the resolved props
 alongside the tests that decide them. The full utility set applies inside a branch. A bad utility in
 one reports a diagnostic instead of vanishing, and each test is evaluated once however many branches
 hang on it. It reads ternaries, `&&`, the literal behind `||`, arrays and object maps. A branch
@@ -247,7 +247,7 @@ of 120, so crowding the limit again fails a test rather than your build.
 `BackgroundTransparency`, which was invisible on a label whose background was already transparent.
 
 **And into the subtree written under it.** Roblox has no inherited transparency, so the transformer
-walks the JSX and hands every instance below the class the running product `1 - (1 - own) * alpha`.
+walks the JSX. Every instance below the class is handed the running product `1 - (1 - own) * alpha`.
 Children written inside an expression count. A `canvasgroup` on the way down ends the walk. Where
 this parts ways with a real composite is overlapping siblings: each is faded rather than the group,
 so the overlap darkens.
@@ -257,7 +257,7 @@ composed over whatever alpha the colours settled on. `opacity-50 bg-slate-700` a
 `bg-slate-700 opacity-50` are the same thing.
 
 **The inlined runtime stopped costing every file 96 registers.** It had been failing whole
-components with `Out of local registers … exceeded limit 200`, against code you never wrote.
+components with `Out of local registers … exceeded limit 200`, against code nobody wrote.
 
 If you are on 0.9.x and see `opacity-unreachable-child`, it is telling the truth — `{props.children}`
 and component children stayed out of the compile-time walk. 0.10.0 carries the alpha across both.
@@ -265,10 +265,11 @@ and component children stayed out of the compile-time walk. 0.10.0 carries the a
 ## 0.8.0
 
 **Every utility family resolves on the runtime class path.** The runtime host had implemented
-roughly a third of what the static path lowers. A component whose `className` arrived as a *value*,
-the normal shape for a variant recipe, silently lost positioning, box constraints, the grid,
-gradients, rings, shadows, `z-*`, transforms, `opacity-*`, the ScrollingFrame family and most of the
-text families. All of them resolve dynamically now, with the static path's semantics.
+roughly a third of what the static path lowers. A component whose `className` arrived as a *value* —
+the normal shape for a variant recipe — silently lost most of the rest. Positioning, box
+constraints, the grid, gradients, rings, shadows, `z-*`, transforms, `opacity-*`, the ScrollingFrame
+family and most of the text families. All of them resolve dynamically now, with the static path's
+semantics.
 
 This is the release where [dynamic class names](/vela-rbxts/guides/dynamic-class-names/) stopped
 being a reduced dialect.
@@ -309,16 +310,16 @@ scale. Without one it stays at 100px, so existing grids keep their row extent an
 widths — anything compensating for 100px cells needs re-checking.
 </Callout>
 
-**`text-{color}` resolves on the runtime path.** The resolver had no `text-` branch at all, so every
+**`text-{color}` resolves on the runtime path.** The resolver had no `text-` branch at all. Every
 text colour in a dynamic class value was dropped without a diagnostic. **`w-*` and `h-*` stop
 erasing each other in variant rules**, carrying the 0.5.2 fix into `md:w-32 md:h-32`.
 
 ## 0.5.2
 
-**`w-*` and `h-*` stop erasing each other on the runtime path.** `Size` holds both axes, so a
-runtime rule naming one used to state a whole `UDim2` and zero the other. Worth re-reading if you
-worked around this: the axis that lost was left at zero, which also made a scale-based
-`rounded-full` compute to nothing.
+**`w-*` and `h-*` stop erasing each other on the runtime path.** `Size` holds both axes. A runtime
+rule naming one used to state a whole `UDim2` and zero the other. Worth re-reading if you worked
+around this: the axis that lost was left at zero, which also made a scale-based `rounded-full`
+compute to nothing.
 
 ## 0.5.1
 
@@ -400,9 +401,8 @@ lowered `shadow-*` can fail to instantiate and unwind the tree around it. A dyna
 the same element is unaffected.
 
 **The host guards are not symmetric.** The runtime path drops a utility the host element cannot
-carry. The static path warns `unsupported-host-utility` and writes it anyway, so a build that
-ignores warnings reaches Roblox, which rejects the assignment far from the class list that caused
-it.
+carry. The static path warns `unsupported-host-utility` and writes it anyway. A build that ignores
+warnings reaches Roblox, which rejects the assignment far from the class list that caused it.
 
 **A fade that arrives as context composes over a transparency you declared yourself.** A consumer
 reading the alpha at runtime cannot tell your prop from one Vela lowered. Overlapping siblings under

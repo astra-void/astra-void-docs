@@ -16,11 +16,9 @@ second source tree and `rbxtsc` compiles *that*, with no transformer plugin regi
 npx vela build
 ```
 
-This is an **alternative** to [the transformer](/vela-rbxts/getting-started/installation/#choose-how-vela-runs),
-not an addition to it. Both paths call the same compiler through the same host adapter, so the
-lowered output is the same either way; what changes is when it happens and what `rbxtsc` sees. Reach
-for the CLI when a project cannot register a roblox-ts transform plugin — a pinned toolchain, a build
-system that drives `tsc` itself, or a CI step that wants the lowered sources as a reviewable artifact.
+This is an **alternative** to [the transformer](/vela-rbxts/getting-started/installation/#choose-how-vela-runs), not an addition to it. Both paths call the same compiler through the same host adapter, so the lowered output is the same either way. What changes is when it happens, and what `rbxtsc` sees.
+
+Reach for the CLI when a project cannot register a roblox-ts transform plugin. A pinned toolchain, a build system that drives `tsc` itself, or a CI step that wants the lowered sources as a reviewable artifact.
 
 Nothing else about Vela changes. `vela.config.ts`, the [ambient declaration](/vela-rbxts/getting-started/installation/#declare-the-classname-prop),
 the classes you write, and every diagnostic are identical on both paths.
@@ -90,9 +88,9 @@ vela: warning: tsconfig.json compilerOptions.rootDir is "src" but the generated 
 vela: warning: tsconfig.json still registers the "vela-rbxts/transformer" plugin. Remove it — the CLI already lowered these sources.
 ```
 
-The check reads `tsconfig.json` at the project root, tolerating comments and trailing commas. It is a
-hint, not validation: a file it cannot parse produces no warnings rather than an error, and `include`
-is not inspected at all — only `rootDir` and `plugins`.
+The check reads `tsconfig.json` at the project root, tolerating comments and trailing commas. It is
+a hint, not validation. A file it cannot parse produces no warnings rather than an error, and
+`include` is not inspected at all. Only `rootDir` and `plugins` are.
 
 Your build becomes two steps. `vela build` exits non-zero when a file fails to compile, so `&&` is
 the right joint:
@@ -106,8 +104,7 @@ npx vela watch & npx rbxtsc -w -p tsconfig.json
 ```
 
 <Callout title="TypeScript 7 breaks this too">
-The CLI loads `vela.config.ts` through the same host adapter the transformer uses, so it fails the
-same way on TypeScript 7 — as an error on the first file, naming neither TypeScript nor a version:
+The CLI loads `vela.config.ts` through the same host adapter the transformer uses, so it fails the same way on TypeScript 7. An error on the first file, naming neither TypeScript nor a version:
 
 ```text
 client/App.tsx - error vela/host(compiler-invocation-failed): Cannot read properties of undefined (reading 'Latest')
@@ -143,20 +140,20 @@ and there is no diagnostic when it disappears.
 ## Rebuilds and pruning
 
 **An unchanged output is never rewritten.** The CLI compares what it is about to write against what
-is on disk and skips the write when they match, which keeps the file's mtime. Without this, every
+is on disk, and skips the write when they match. That keeps the file's mtime. Without this, every
 `vela build` would touch the whole tree and `rbxtsc -w` would rebuild all of it.
 
 **Pruning is driven by the manifest, not by the directory.** When a source file disappears, the CLI
-deletes its counterpart and removes any directory that emptied out — but only for paths an earlier
-run recorded as its own. A file you put in the generated tree by hand is never deleted, which is
-the safe failure mode for a flag pointed somewhere it should not have been.
+deletes its counterpart and removes any directory that emptied out. It only does this for paths an
+earlier run recorded as its own. A file you put in the generated tree by hand is never deleted,
+which is the safe failure mode for a flag pointed somewhere it should not have been.
 
 `--clean` does not honor that distinction. It removes the `--out` directory outright and resets the
 manifest, so anything else living there goes with it.
 
 ## Diagnostics and exit codes
 
-Diagnostics are the compiler's, printed to stderr and anchored to your real sources — the file, line
+Diagnostics are the compiler's, printed to stderr and anchored to your real sources. The file, line
 and column are the ones you wrote, not positions in the generated tree:
 
 ```text
@@ -164,8 +161,9 @@ client/App.tsx:7:29 - warning vela/compiler(unknown-variant): Unknown variant "c
 1 transformed, 2 copied, 2 warnings (381ms)
 ```
 
-Paths are relative to `--src`, so the leading `src/` you would see in `rbxtsc` output is absent here.
-The summary counts transformed, copied, and — when non-zero — removed, errors and warnings.
+Paths are relative to `--src`, so the leading `src/` you would see in `rbxtsc` output is absent
+here. The summary counts files transformed and copied, plus removed files, errors and warnings when
+any are non-zero.
 
 | Exit code | |
 | --- | --- |
@@ -201,9 +199,9 @@ vela watch: 1 transformed, 0 copied (26ms)
 ```
 
 A **deleted** source prunes its counterpart. An **edited `vela.config.ts` or `vela.config.json`
-rebuilds the whole tree** and clears the host's config cache first, so a theme edit reaches every
-file that reads it rather than only the next file you touch. Only the project root is watched for
-those two names.
+rebuilds the whole tree**, clearing the host's config cache first. A theme edit reaches every file
+that reads it, rather than only the next file you touch. Only the project root is watched for those
+two names.
 
 Watching uses recursive `fs.watch`. Where the platform does not support it, the CLI says so and falls
 back to polling every 400ms:
