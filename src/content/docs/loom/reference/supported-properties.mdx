@@ -10,7 +10,7 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 [Scope and status](/loom/getting-started/scope-and-status/) answers "is text done?" at the area
-level; this page answers "does `AutomaticCanvasSize` work?" at the property level.
+level. This page answers "does `AutomaticCanvasSize` work?" at the property level.
 
 Everything below describes loom `0.12.0` — the JSX intrinsics in `@loom-dev/react`, the DOM mapping
 in `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
@@ -102,22 +102,22 @@ Shared by every visual class.
 
 ### `AutomaticSize` on text
 
-Auto-sizing text is measured browser-side: the adapter runs a canvas `measureText()` with the font
+Auto-sizing text is measured browser-side. The adapter runs a canvas `measureText()` with the font
 the renderer paints and hands the result to the WASM engine as `TextBounds`, since font metrics do
 not exist inside it. Which typeface that is, and why it is worth pinning, is
 [Fonts and text metrics](/loom/guides/fonts/).
 
-`TextWrapped` is honoured: runs are laid into lines at word boundaries, and **one function decides
-every wrap** — measurement asks it how many lines a label needs, the text layer asks where the
+`TextWrapped` is honoured, and runs are laid into lines at word boundaries. **One function decides
+every wrap.** Measurement asks it how many lines a label needs, and the text layer asks where the
 breaks go. The advances behind it are the engine's.
 
 **The wrap width is the nearest ancestor with a width of its own**, less every `UIPadding` in
 between — not the immediate parent. A parent that is itself `AutomaticSize` was sized *by* the
 label, so wrapping against it never wraps.
 
-The re-wrap settles inside the paint that caused it: the first measurement after a container narrows
-is against the old width, so the adapter re-lays-out until the two agree — up to four passes, then
-it defers to the next frame — and patches the DOM once.
+The re-wrap settles inside the paint that caused it. The first measurement after a container narrows
+is against the old width, so the adapter re-lays-out until the two agree, up to four passes before
+deferring to the next frame. It patches the DOM once.
 
 A `RichText` string is measured run by run in the font its tags ask for, so a bold run does not
 clip. An empty `TextBox` is measured against its `PlaceholderText`, or an `AutomaticSize.Y` input
@@ -127,21 +127,21 @@ Both adapters do this, so the same scene lays out identically through vide and r
 
 The wrap width also carries the `UIPadding` insets in between, **including scale ones**. A scale
 inset resolves against the node's own width where its X axis is real, and against zero where the
-axis is automatic — there the width would set the padding would set the width.
+axis is automatic. Otherwise the width would set the padding, which would set the width.
 
 ### `TextSize` is a face height, not a font size
 
-`TextSize` means different things to the two renderers: Roblox fits the whole face into it, ascender
-to descender, while CSS `font-size` sets the em square and a face's ascent plus descent runs well
-past 1em.
+`TextSize` means different things to the two renderers. Roblox fits the whole face into it, ascender
+to descender. CSS `font-size` sets the em square, and a face's ascent plus descent runs well past
+1em.
 
 Loom divides by the face box rather than painting `font-size: TextSize` straight through, which
 would draw every glyph too big. `LineHeight` sets the line box in pixels off `TextSize`. The ratio
 is calibrated per family — see
 [`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
 
-The clip rect carries the overhang the browser's taller line boxes need, with padding handing the
-content box its original height back — otherwise a paragraph's last line loses its descenders.
+The clip rect carries the overhang the browser's taller line boxes need, and padding hands the
+content box its original height back. Otherwise a paragraph's last line loses its descenders.
 Nothing about the layout moves, and a label still clips its text at its left and right edges.
 
 ### `AutomaticSize` is bounded by the parent
@@ -150,18 +150,18 @@ Roblox bounds automatic growth: an `AutomaticSize` object grows up to the maximu
 and a `TextWrapped` label grows to that maximum and only *then* wraps.
 
 Every auto-sized node carries the ceiling its parent leaves, inherited through the padding in
-between; `Size` remains the floor even past it, and a wrapping `UIListLayout` wraps against the same
+between. `Size` remains the floor even past it, and a wrapping `UIListLayout` wraps against the same
 ceiling. Content that still does not fit **overflows**, as it does in the engine.
 
 **A `ScrollingFrame` is the exception.** Its children get no ceiling on an axis carrying
-`AutomaticCanvasSize` or a `CanvasSize` of 0; a `CanvasSize` giving the axis a real extent is still
+`AutomaticCanvasSize` or a `CanvasSize` of 0. A `CanvasSize` giving the axis a real extent is still
 a ceiling.
 
 ## Image properties
 
-Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text as a
-background-painted element rather than an `<img>`, because a sprite window and a 9-slice both place
-a *region* of the source.
+Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text, as a
+background-painted element rather than an `<img>`. A sprite window and a 9-slice both place a
+*region* of the source.
 
 | Property | Status | Notes |
 | --- | --- | --- |
@@ -187,9 +187,9 @@ Roblox's thumbnail API sends no CORS headers, so the browser cannot resolve an a
 
 - **Under a dev server** (`loom preview`, the embedded server, Next dev) the id is resolved
   server-side and answered as a redirect from `<base>__loom/asset/<id>`.
-- **In a static build** (`loom build`, `vite build`) there is no server later. The ids are resolved *at build time*, the images downloaded into the output, and a `__loom/assets.json` manifest points the page at them — see [Static builds and embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
+- **In a static build** (`loom build`, `vite build`) there is no server later. The ids are resolved *at build time* and the images downloaded into the output. A `__loom/assets.json` manifest points the page at them. See [Static builds and embedding](/loom/guides/static-builds-and-embedding/#rbxassetid-in-a-static-build).
 
-The build finds those ids two ways: it reads the emitted output for `rbxassetid://<digits>`, and it mounts each gallery target in node and reads the live tree, catching an id composed at runtime. An image the first render never reaches is still missed — install your own resolver with `setImageResolver` for those.
+The build finds those ids two ways. It reads the emitted output for `rbxassetid://<digits>`, and it mounts each gallery target in node and reads the live tree, catching an id composed at runtime. An image the first render never reaches is still missed — install your own resolver with `setImageResolver` for those.
 </Callout>
 
 ## TextBox properties
@@ -214,12 +214,12 @@ The build finds those ids two ways: it reads the emitted output for `rbxassetid:
 | `VerticalScrollBarInset` `HorizontalScrollBarInset` | **Accepted** | The bar is always painted *over* the canvas — Roblox's `ScrollBarInset.None`, which is also the engine's default. `AbsoluteWindowSize` reserves nothing for it, so a layout that budgets for an inset bar comes out that many pixels wider here than in Studio. |
 
 <Callout title="A `ScrollingFrame` gives its children no growth ceiling">
-A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame, so a `ScrollingFrame` leaves its children no ceiling on an axis whose canvas is free to grow — otherwise the column comes out exactly the window's height and nothing scrolls. The bar is drawn from the same window/canvas maths the adapters feed back, so it cannot disagree with the numbers a component sized itself against.
+A scrolling list in Roblox is an `AutomaticSize` column inside an `AutomaticCanvasSize` frame. A `ScrollingFrame` therefore leaves its children no ceiling on an axis whose canvas is free to grow. Otherwise the column comes out exactly the window's height and nothing scrolls. The bar is drawn from the same window/canvas maths the adapters feed back, so it cannot disagree with the numbers a component sized itself against.
 </Callout>
 
 <Callout title="AutomaticSize plus an explicit CanvasSize">
 `AutomaticSize` on a `ScrollingFrame` that also sets `CanvasSize` is explicitly deferred in the
-layout engine. The combination will not error; it will not size the way Studio does either.
+layout engine. The combination will not error. It will not size the way Studio does either.
 </Callout>
 
 ## Layout and modifier properties
@@ -241,7 +241,7 @@ layout engine. The combination will not error; it will not size the way Studio d
 | `uiscale` | — | `Scale` is ignored entirely. |
 
 `UIListLayout` and `UIGridLayout` report `AbsoluteContentSize` back after layout, gated on real
-change — so a control that sizes itself from `Change={{ AbsoluteContentSize }}` (a dropdown, say)
+change. A control that sizes itself from `Change={{ AbsoluteContentSize }}`, such as a dropdown,
 gets a real number instead of collapsing to zero height.
 
 ### `SortOrder` defaults to `Name`
@@ -251,13 +251,13 @@ whose children carry distinct `Name`s flows alphabetically**, not in source orde
 stable, so a tree that never sets `Name` is unaffected.
 
 Loom defaulted to `LayoutOrder` until `0.7.0`. If a list reordered itself when you upgraded, it was
-already ordering that way in Studio; set `SortOrder={Enum.SortOrder.LayoutOrder}` to get source /
-`LayoutOrder` order back.
+already ordering that way in Studio. Set `SortOrder={Enum.SortOrder.LayoutOrder}` to get source
+order back.
 
 ### `UITableLayout`
 
-The layout's siblings are the table's *lines* — rows, or columns under `MajorAxis.ColumnMajor` — and
-each line's own children are the cells:
+The layout's siblings are the table's *lines*: rows, or columns under `MajorAxis.ColumnMajor`. Each
+line's own children are the cells:
 
 ```tsx
 <frame Size={UDim2.new(1, 0, 0, 120)}>
@@ -269,14 +269,14 @@ each line's own children are the cells:
 </frame>
 ```
 
-A column is as wide as its widest cell and a row as tall as its tallest, both measured against the
-**table's** content box — so a `0.25` scale cell is a quarter of the table, not of its row. A line
-spans the whole table on its minor axis; its own `Size` is ignored, as is any `UIPadding` on it,
-which would otherwise slide its cells off the columns they define.
+A column is as wide as its widest cell, and a row as tall as its tallest. Both are measured against
+the **table's** content box, so a `0.25` scale cell is a quarter of the table, not of its row. A
+line spans the whole table on its minor axis. Its own `Size` is ignored, as is any `UIPadding` on
+it, which would otherwise slide its cells off the columns they define.
 
-`FillEmptySpaceColumns` / `FillEmptySpaceRows` scale the tracks **proportionally** so the table spans
-its container — in both directions, so a table whose natural width overruns is squeezed by the same
-rule. A hidden cell takes neither a track nor a gap.
+`FillEmptySpaceColumns` and `FillEmptySpaceRows` scale the tracks **proportionally** so the table
+spans its container. It works in both directions, so a table whose natural width overruns is
+squeezed by the same rule. A hidden cell takes neither a track nor a gap.
 
 ### `UIPageLayout`
 
@@ -297,11 +297,11 @@ const pager = useRef<{ Next(): void; CurrentPageIndex: number }>();
 </frame>;
 ```
 
-`JumpToIndex(i)` / `JumpTo(page)` / `Next()` / `Previous()` all work and fire `PageLeave` →
-`PageEnter` → `Stopped`; `Circular` decides whether `Next` and `Previous` wrap at the ends.
+`JumpToIndex(i)`, `JumpTo(page)`, `Next()` and `Previous()` all work and fire `PageLeave` →
+`PageEnter` → `Stopped`. `Circular` decides whether `Next` and `Previous` wrap at the ends.
 
 <Callout title="CurrentPage is an instance, so the engine reads an index">
-Roblox's `CurrentPage` is a **GuiObject reference**, and a Scene IR property value is a datatype rather than a node, so it cannot cross the wasm boundary. The layout engine reads `CurrentPageIndex`, a 0-based int the runtime keeps in step; `CurrentPage` still reads back as the instance.
+Roblox's `CurrentPage` is a **GuiObject reference**, and a Scene IR property value is a datatype rather than a node, so it cannot cross the wasm boundary. The layout engine reads `CurrentPageIndex`, a 0-based int the runtime keeps in step. `CurrentPage` still reads back as the instance.
 
 That only matters if you drive a pager from something other than the `@rbxts/react` adapter: set
 `CurrentPageIndex` on the node yourself.
@@ -327,16 +327,16 @@ with a Roblox-shaped name. So a `ref` behaves the way a `ref` does in a place.
 already there and otherwise warns rather than blocking the frame. Code that waits on a child built
 later in the same render needs restructuring, not patience.
 
-**A property read before it is written answers with a typed default**, since `0.12.0` — `0` for a
-number, `""` for a string, the class's own default for a datatype — the way Roblox reflection does,
-rather than `undefined`. A UI that reads `frame.BackgroundTransparency` before setting it used to get
+**A property read before it is written answers with a typed default**, the way Roblox reflection
+does rather than with `undefined`. That is `0` for a number, `""` for a string, and the class's own
+default for a datatype. A UI that reads `frame.BackgroundTransparency` before setting it used to get
 `undefined` and propagate a `NaN` through whatever it computed.
 
 ### Attributes
 
 The second namespace on every instance, and the one an app owns outright, landed in `0.11.0`. It
-behaves as it does in a place: an attribute is not readable as a property, does not fire `Changed`,
-and reaches neither the renderer nor the Scene IR — so writing one paints nothing and schedules no
+behaves as it does in a place. An attribute is not readable as a property, does not fire `Changed`,
+and reaches neither the renderer nor the Scene IR. Writing one paints nothing and schedules no
 flush.
 
 ```ts
@@ -351,27 +351,27 @@ player.SetAttribute("ColorScheme", "dark"); // unchanged — silent, as in Roblo
 player.SetAttribute("ColorScheme", undefined); // removes it, and still fires
 ```
 
-`GetAttributes()` hands back a snapshot rather than the live store, and names are validated the way
-the engine validates them — up to 100 alphanumerics and underscores, with the `RBX` prefix reserved.
-A name a real place would refuse throws here rather than working in the preview and failing in Studio.
+`GetAttributes()` hands back a snapshot rather than the live store. Names are validated the way the
+engine validates them: up to 100 alphanumerics and underscores, with the `RBX` prefix reserved. A
+name a real place would refuse throws here rather than working in the preview and failing in Studio.
 
 ## Input
 
-Pointer and keyboard input route through the real runtime, not DOM shims: `Activated`,
+Pointer and keyboard input route through the real runtime, not DOM shims. `Activated`,
 `MouseButton1Click`, `InputBegan` / `InputChanged` / `InputEnded`, `UserInputService`, focus and
-`TextBox` editing all behave as in Roblox, including input-sinking.
+`TextBox` editing all behave as in Roblox, input-sinking included.
 
-`0.12.0` closed the gap where the rest of the mouse events were **connectable but never dispatched**,
-which is worse than absent — a handler attached to one silently did nothing.
-`MouseButton1Down` / `MouseButton1Up`, `MouseButton2Click` and `MouseMoved` fire now, and keyboard
-input reaches the runtime at all, so `UserInputService.IsKeyDown` and a `KeyCode` comparison answer
-what the user actually pressed. `Enum.KeyCode` gained its digits, modifiers and gamepad buttons in the
-same release, which is what a keyboard-driven UI was missing to match against. Only `TextButton`,
-`ImageButton`, `TextBox`, `ScrollingFrame` and anything with `Active = true` sink pointer input —
-a transparent `Frame` is click-through, exactly as in Roblox.
+`0.12.0` closed the gap where the rest of the mouse events were **connectable but never
+dispatched**, which is worse than absent. A handler attached to one silently did nothing.
+`MouseButton1Down`, `MouseButton1Up`, `MouseButton2Click` and `MouseMoved` fire now. Keyboard input
+reaches the runtime too, so `UserInputService.IsKeyDown` and a `KeyCode` comparison answer what the
+user actually pressed. `Enum.KeyCode` gained its digits, modifiers and gamepad buttons in the same
+release, which is what a keyboard-driven UI was missing to match against. Only `TextButton`,
+`ImageButton`, `TextBox`, `ScrollingFrame` and anything with `Active = true` sink pointer input — a
+transparent `Frame` is click-through, exactly as in Roblox.
 
-`Active` governs *sinking*, not *hearing*. A plain `Frame` with an `InputBegan` handler — a slider
-handle, say — is hit-testable whether or not it is `Active`. A frame with no listeners stays
+`Active` governs *sinking*, not *hearing*. A plain `Frame` with an `InputBegan` handler, such as a
+slider handle, is hit-testable whether or not it is `Active`. A frame with no listeners stays
 click-through, so a transparent positioning layer does not swallow clicks.
 
 ## What this list is not
