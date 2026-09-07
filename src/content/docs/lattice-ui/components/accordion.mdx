@@ -17,10 +17,11 @@ import { PackageMeta, PropTable, Callout, PrimitiveAnatomy , LoomPreview } from 
 />
 
 Accordion is the primitive for a stack of disclosure sections: FAQ lists, settings groups, inventory
-categories, quest logs. It owns which items are open, keyed by a string `value`, and handles each
-section's reveal and exit motion.
+categories. It owns which items are open, keyed by a string `value`, and handles each section's
+reveal and exit motion.
 
-Reach for Accordion when you have **multiple labelled sections** that share an expansion policy — only one open at a time (`single`) or any number open at once (`multiple`) — and you want that policy, plus per-section motion, handled for you.
+Reach for it when **labelled sections** share an expansion policy — one open at a time (`single`) or
+any number (`multiple`).
 
 ## Preview
 
@@ -34,7 +35,8 @@ import { Accordion } from "@lattice-ui/react-accordion";
 
 ## Anatomy
 
-Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wraps a `Header`/`Trigger` pair, and a `Content` body that mounts only while the item is open.
+Compose `Root` around a list of `Item`s. Each carries a unique `value`, a `Header`/`Trigger` pair,
+and a `Content` body that mounts only while open.
 
 <PrimitiveAnatomy title="Accordion anatomy">
 
@@ -64,8 +66,8 @@ Compose `Root` around a list of `Item`s. Each item carries a unique `value`, wra
 ### Basic accordion
 
 An uncontrolled `single` root seeded with `defaultValue`. Every part renders unstyled, so pass the
-trigger a `Text` and a size or you get a working accordion you cannot see. Because `Root` renders no
-instance, the item frames sit directly under your layout container.
+trigger a `Text` and a size. Because `Root` renders no instance, the item frames sit directly under
+your layout container.
 
 ```tsx title="FaqAccordion.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -114,7 +116,9 @@ export function FaqAccordion() {
 
 ### Multiple sections open
 
-`type="multiple"` switches the value to an array and lets any number of items stay open at once — the right fit for filter panels and stat sheets where sections are independent. Items always toggle closed in this mode; `collapsible` is not needed.
+`type="multiple"` switches the value to an array and lets any number of items stay open — the fit
+for filter panels and stat sheets. Items always toggle closed in this mode, so `collapsible` is not
+needed.
 
 ```tsx title="InventoryFilters.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -164,7 +168,8 @@ export function InventoryFilters() {
 
 ### Collapsible single
 
-By default, `type="single"` keeps one item permanently open — re-activating the open trigger does nothing. Add `collapsible` when every panel should be closable, leaving the accordion fully collapsed. This settings panel starts on the audio section but can be shut entirely.
+By default `type="single"` keeps one item permanently open — re-activating its trigger does nothing.
+Add `collapsible` when every panel should be closable.
 
 ```tsx title="SettingsAccordion.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -210,9 +215,8 @@ export function SettingsAccordion() {
 
 ### Controlled accordion
 
-Pass `value` and `onValueChange` when something outside needs to open sections — a "track quest"
-button, a deep link, a reset. In single mode the value is a string and `""` means nothing is open,
-so external code can both jump to a section and collapse everything.
+Pass `value` and `onValueChange` when something outside opens sections — a "track quest" button, a
+deep link, a reset. In single mode the value is a string and `""` means nothing is open.
 
 ```tsx title="QuestLog.tsx"
 import { useState } from "@rbxts/react";
@@ -270,8 +274,8 @@ export function QuestLog() {
 ### Rotating chevron trigger
 
 Use `asChild` on `Trigger` to project the toggle onto your own button and add a chevron that flips
-when the section opens. Item open state is not exposed to your components, so control the root and
-derive `open` from your own value — which is also what you branch on for the trigger's colours.
+when the section opens. Item open state is not exposed, so control the root and derive `open` from
+your own value.
 
 ```tsx title="ChevronAccordion.tsx"
 import { useState } from "@rbxts/react";
@@ -342,9 +346,8 @@ export function ChevronAccordion() {
 
 ### Keeping content mounted
 
-`forceMount` keeps the content frame mounted while closed, with visibility still bound to presence,
-so children keep their state and you can measure or drive motion yourself. Pair it with `transition`
-for a reveal.
+`forceMount` keeps the content frame mounted while closed, visibility still bound to presence, so
+children keep their state and you can measure or drive motion yourself.
 
 ```tsx title="PatchNotes.tsx"
 import { Accordion } from "@lattice-ui/react-accordion";
@@ -384,69 +387,75 @@ export function PatchNotes() {
 
 ### Open-value state
 
-`Accordion.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled usage. State is stored as the item value(s) that are open, not booleans. The `type` prop selects the policy:
+`Accordion.Root` is controllable on `value`/`onValueChange`, with `defaultValue` for uncontrolled
+usage. State is the open item value(s), not booleans, and `type` selects the policy:
 
-- `type="single"` (the default) keeps at most one item open. Opening a new one replaces the last, and `onValueChange` receives a string — `""` when everything is collapsed.
-- `type="multiple"` allows any number. The value is a de-duplicated array, and `onValueChange` receives an array.
+- `type="single"` (the default) keeps at most one item open; `onValueChange` receives a string, `""` when everything is collapsed.
+- `type="multiple"` allows any number; the value is a de-duplicated array.
 
-The root normalizes whatever shape it is given: in single mode an array collapses to its first
-entry; in multiple mode a lone string is wrapped and duplicates dropped. The same logic is exported
-as [`normalizeAccordionValue` and `nextAccordionValues`](#helpers).
+The root normalizes whatever shape it is given — an array collapses to its first entry in single
+mode, a lone string is wrapped in multiple mode. The same logic is exported as
+[`normalizeAccordionValue` and `nextAccordionValues`](#helpers).
 
-`Accordion.Item` reads the root's open values and considers itself open when its `value` is in that set. Each `Accordion.Trigger` toggles its own item through the shared toggle, so controlled and uncontrolled accordions behave identically.
+`Accordion.Item` considers itself open when its `value` is in the root's open set, and each
+`Accordion.Trigger` toggles through the shared toggle, so controlled and uncontrolled accordions
+behave identically.
 
 ### Collapsible
 
-`collapsible` only affects `type="single"`. When `true`, activating the currently open trigger collapses it, leaving nothing open. When `false` (the default), the open item cannot be collapsed by clicking its own trigger — one item always stays open. In `type="multiple"`, items can always be toggled closed regardless of `collapsible`.
+`collapsible` only affects `type="single"`: with it, activating the open trigger collapses it;
+without it (the default), one item always stays open. In `type="multiple"` items can always be
+toggled closed.
 
 ### Structure and layout
 
-`Accordion.Root` renders no instance, so item frames become direct children of whatever container
-surrounds the accordion, and a `uilistlayout` there stacks them. `Item` and `Header` each render a
-transparent frame with no size of its own. Every part forwards GUI props onto the instance it
-renders — nothing auto-flows inside an item.
+`Accordion.Root` renders no instance, so item frames become direct children of the surrounding
+container and a `uilistlayout` there stacks them. `Item` and `Header` each render a transparent
+frame with no size of its own, and nothing auto-flows inside an item.
 
 ### Focus and selection
 
-`Accordion.Trigger` renders a `textbutton` that toggles on `Activated` and on `Return`/`Space`, so
-gamepad and keyboard activation work without extra wiring. A disabled item's trigger ignores both
-and drops `Active`. It sets `Selectable={false}` on itself — render your own selectable element
-through `asChild` if you need gamepad reach.
+`Accordion.Trigger` renders a `textbutton` toggling on `Activated` and on `Return`/`Space`. A
+disabled item's trigger ignores both and drops `Active`. It sets `Selectable={false}` on itself —
+render your own selectable element through `asChild` for gamepad reach.
 
-With `asChild`, the toggle behavior is merged onto your single child element through the shared `Slot`: the slot's `Active`, `Selectable`, event handlers, and ref win over the child's own props, and event handlers compose. Use a `textbutton` or `imagebutton` so `Activated` fires.
+With `asChild` the toggle merges onto your single child element through `Slot`: the slot's `Active`,
+`Selectable`, handlers and ref win over the child's, and handlers compose. Use a `textbutton` or
+`imagebutton` so `Activated` fires.
 
 ### Trigger color motion
 
-The trigger's `BackgroundColor3` is yours as of 0.7.0. It used to animate between a fixed open/closed palette with no opt-out; the primitive now writes no color at all, in either mode. Derive it from the value you control on the root.
+The trigger's `BackgroundColor3` is yours — the primitive writes no colour in either mode. Derive it
+from the value you control on the root.
 
 ### Content presence and motion
 
-`Accordion.Content` is presence-driven: it mounts when its item opens and unmounts when it closes, holding through any exit transition first. It runs no motion of its own and renders an unstyled frame.
+`Accordion.Content` is presence-driven: it mounts when its item opens and unmounts when it closes,
+holding through any exit transition. It runs no motion of its own.
 
-To animate it, pass a `PresenceMotionConfig` as `transition`; `createSurfaceRevealRecipe()` gives a
-rise-and-fade. It animates `BackgroundTransparency`, so give the body a background or animate its
-children instead. `forceMount` keeps it mounted while closed and through its exit. Under `asChild`,
-your element replaces the frame and its `Visible` is bound to presence.
+Pass a `PresenceMotionConfig` as `transition`; `createSurfaceRevealRecipe()` gives a rise-and-fade.
+It animates `BackgroundTransparency`, so give the body a background or animate its children. Under
+`asChild`, your element replaces the frame and its `Visible` is bound to presence.
 
 ### Open state stays internal
 
-The item context is internal to the package — there is no hook for reading whether an item is open.
-When your visuals need to branch on it, control the root and derive the flag from your own state.
+The item context is internal — there is no hook for reading whether an item is open. Control the
+root and derive the flag from your own state.
 
 <Callout title="Controlled vs uncontrolled values">
-Match the shape of `value`/`defaultValue` to `type`. With `type="single"` pass a string; with `type="multiple"` pass an array of strings. The root normalizes mismatches, but keeping the shape consistent makes your `onValueChange` handler predictable.
+Match the shape of `value`/`defaultValue` to `type`: a string for `"single"`, an array for `"multiple"`. The root normalizes mismatches, but a consistent shape keeps `onValueChange` predictable.
 </Callout>
 
 <Callout title="Header is layout-only">
-`Accordion.Header` renders a transparent frame purely to position the trigger — it carries no state and no behavior. Skip it if your layout does not need it, or replace it via `asChild`.
+`Accordion.Header` renders a transparent frame purely to position the trigger, with no state and no behaviour. Skip it if your layout does not need it.
 </Callout>
 
 <Callout title="The primitive owns the trigger background">
-Before 0.7.0 the trigger drove your element's `BackgroundColor3` between fixed open and closed accents, with no opt-out. It no longer writes color in either mode, so a background you set stays put.
+The trigger writes no colour in either mode, so a background you set stays put.
 </Callout>
 
 <Callout title="Default trigger label vs children">
-The trigger renders no text of its own as of 0.7.0 — it used to label itself `"Expand"`/`"Collapse"`. Pass a `Text` prop, which forwards onto the `textbutton`, or render children inside it.
+The trigger renders no text of its own. Pass a `Text` prop, which forwards onto the `textbutton`, or render children inside it.
 </Callout>
 
 ## API reference
