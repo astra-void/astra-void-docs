@@ -13,7 +13,7 @@ Vela reports most mistakes as [diagnostics](/vela-rbxts/reference/diagnostics/).
 the other situation: **something is wrong on screen and the build said nothing.**
 
 <Callout title="Check your version first">
-Most of the silent failures below were fixed releases ago. Run `npm ls @vela-rbxts/compiler` and read the [release notes](/vela-rbxts/reference/release-notes/) before anything else — runtime-path coverage gaps, `opacity-*` not reaching a subtree, "out of local registers", a motion driver taking the tree down at mount, and a slow build all have upgrading as the whole fix.
+Most of the silent failures below were fixed releases ago. Run `npm ls @vela-rbxts/compiler` and read the [release notes](/vela-rbxts/reference/release-notes/) first. Runtime-path coverage gaps, `opacity-*` not reaching a subtree, "out of local registers", a motion driver taking the tree down at mount, and a slow build all have upgrading as the whole fix.
 </Callout>
 
 ## "A class did nothing"
@@ -22,7 +22,7 @@ Sorted by how often each turns out to be the answer.
 
 **1. The utility does not belong on that host element.** `<frame className="text-red-500" />`
 compiles and emits `TextColor3` onto a Frame, which rejects it. The static path warns
-`unsupported-host-utility` and writes it anyway; the runtime path drops it, so the same class list
+`unsupported-host-utility` and writes it anyway. The runtime path drops it, so the same class list
 can behave differently on the two paths.
 
 **2. The class is on a component that does not forward it.** `<Panel className="p-4" />` hands
@@ -35,12 +35,12 @@ in a literal is silent in a computed string. A runtime-path element renders as `
 the compiled output — see [dynamic class names](/vela-rbxts/guides/dynamic-class-names/).
 
 **4. Your build drops Vela diagnostics entirely.** Diagnostics reach you through roblox-ts's
-`context.addDiagnostic`; on a version that does not expose it, every warning disappears. Confirm by
-compiling `className="bg-nope-500"` and checking a warning appears.
+`context.addDiagnostic`. On a version that does not expose it, every warning disappears. Confirm by
+compiling `className="bg-nope-500"` and checking that a warning appears.
 
 **5. The editor stayed quiet, but the key is wrong.** The editor suppresses `unknown-theme-key`
-while your token is still a prefix of a real key, so `bg-slat` shows no squiggle and still warns in
-the build.
+while your token is still a prefix of a real key. `bg-slat` shows no squiggle and still warns in the
+build.
 
 **6. `transition` on a static element.** A static element never changes, so it is dropped with
 `transition-without-runtime`. Add the `hover:` or breakpoint rule that gives it something to tween.
@@ -50,8 +50,9 @@ the build.
 The build is the source of truth, so a squiggle the compiler disagrees with is an editor bug.
 Upgrade.
 
-They genuinely disagree in one direction by design: the per-host rules (`unsupported-host-utility`)
-are enforced in the editor and never by the build — the first entry on this page.
+They genuinely disagree in one direction by design. The per-host rules, reported as
+`unsupported-host-utility`, are enforced in the editor and never by the build. That is the first
+entry on this page.
 
 ## "A breakpoint or orientation variant never applies"
 
@@ -61,12 +62,13 @@ viewport counts as `landscape`.
 
 ## "The layout is wrong"
 
-**`left-*` / `top-*` are ignored.** The parent has a `UIListLayout` — any `flex`, `gap-*` or
-`space-*` — which owns its children's positions. Position an element only under a plain frame.
+**`left-*` / `top-*` are ignored.** The parent has a `UIListLayout`, created by any `flex`, `gap-*`
+or `space-*`, and a list layout owns its children's positions. Position an element only under a
+plain frame.
 
-**An element sits outside its parent after `right-*`/`bottom-*`.** Those set the coordinate from the
-far edge but do not anchor the element, so its top-left corner lands there. Add the matching
-`origin-*`: `right-2 bottom-2 origin-bottom-right`.
+**An element sits outside its parent after `right-*` or `bottom-*`.** Those set the coordinate from
+the far edge but do not anchor the element, so its top-left corner lands there. Add the matching
+`origin-*`, as in `right-2 bottom-2 origin-bottom-right`.
 
 **`justify-*` behaves strangely.** `justify-center` and `justify-between` set two *different*
 properties (`HorizontalAlignment` vs `HorizontalFlex`), so writing both makes them interact inside
@@ -83,7 +85,7 @@ conflicting `UIListLayout`. Set `CellPadding` as a prop and keep `gap-*` off.
 under explicit `LayoutOrder`/`order-*`. Use source order with dividers.
 
 **`order-*` does nothing.** The layout instance is one you wrote yourself, and `SortOrder` defaults
-to `Name`, which sorts alphabetically and ignores `LayoutOrder`. Set it to `LayoutOrder`; Vela's own
+to `Name`, which sorts alphabetically and ignores `LayoutOrder`. Set it to `LayoutOrder`. Vela's own
 layouts set it for you.
 
 ## "The colors are wrong"
@@ -99,13 +101,13 @@ This is the one transparency case that produces no diagnostic.
 **`bg-*` seems ignored next to a gradient.** By design: a gradient forces `BackgroundColor3` to white
 so the stops read true, overriding any `bg-*` regardless of order.
 
-**A theme colour you defined reports `unknown-theme-key`.** A top-level `theme.colors` **silently
-discards `theme.extend.colors`** along with every built-in palette, and discovery walks up from each
-source file, so a stray `vela.config.ts` in a subdirectory shadows the root one. See
+**A theme colour you defined reports `unknown-theme-key`.** Two suspects. A top-level `theme.colors`
+**silently discards `theme.extend.colors`** along with every built-in palette. And discovery walks
+up from each source file, so a stray `vela.config.ts` in a subdirectory shadows the root one. See
 [merge semantics](/vela-rbxts/reference/config/#merge-semantics).
 
 **`opacity-*` fades a transparency you set yourself.** Expected when the fade comes from an ancestor
-*component*: the alpha arrives as React context, and a consumer cannot tell your
+*component*. The alpha arrives as React context, and a consumer cannot tell your
 `BackgroundTransparency` prop from one Vela lowered.
 
 **Overlapping siblings darken where they overlap.** `opacity-*` fades each instance rather than
@@ -113,16 +115,16 @@ compositing the group. Put them in a `canvasgroup` and fade that.
 
 **A themed colour works statically but not on a dynamically-classed element.** The runtime path
 re-parses theme values from text and accepts exactly `Color3.fromRGB(r, g, b)` and `new UDim(a, b)`
-with numeric literals; anything else silently degrades. See [theming](/vela-rbxts/guides/theming/).
+with numeric literals. Anything else silently degrades. See [theming](/vela-rbxts/guides/theming/).
 
 ## "Everything got bigger or smaller after upgrading to 0.12.0"
 
-Expected: every pixel offset is a [rem unit](/vela-rbxts/guides/theming/#rem) following the
+Expected. Every pixel offset is a [rem unit](/vela-rbxts/guides/theming/#rem) following the
 viewport, so a layout tuned by eye at one resolution keeps its proportions there and changes
 everywhere else.
 
-A screen *uniformly* off means the viewport you are testing at; off only at the extremes means the
-clamp is doing its job (`min` 8, `max` 64, both configurable). To rule rem out:
+A screen *uniformly* off means the viewport you are testing at. Off only at the extremes means the
+clamp is doing its job, at `min` 8 and `max` 64, both configurable. To rule rem out:
 
 ```ts title="vela.config.ts"
 export default defineConfig({ theme: { rem: { min: 16, max: 16 } } });
@@ -146,9 +148,9 @@ the workspace root.
 ## "A margin renders unspaced under Vide, with a warning"
 
 A margin box is an instance *above* the element, and Vide parents an element as soon as it builds
-one, so the box has to be decided before the element exists. The compiler handles any `m-*` it can
-see — a static token, a branch — and warns on one arriving out of an opaque call. Name the token
-where the compiler can read it. See [the Vide guide](/vela-rbxts/guides/vide/).
+one. The box has to be decided before the element exists. The compiler handles any `m-*` it can see,
+in a static token or a branch, and warns on one arriving out of an opaque call. Name the token where
+the compiler can read it. See [the Vide guide](/vela-rbxts/guides/vide/).
 
 ## "`className` is a type error"
 
@@ -160,8 +162,8 @@ to itself under roblox-ts's `baseUrl`. See
 ## "The build fails on the first file with `compiler-invocation-failed`"
 
 If the message is `Cannot read properties of undefined (reading 'Latest')`, your TypeScript is too
-new: 7.x moved the API Vela's host adapter calls. Pin `typescript@5.9.3`, which the repo tests
-against; `6.x` works too.
+new. 7.x moved the API Vela's host adapter calls. Pin `typescript@5.9.3`, which the repo tests
+against. `6.x` works too.
 
 Any other `compiler-invocation-failed` means the native compiler call threw. Check the platform has a
 [prebuilt binary](/vela-rbxts/reference/api/#prebuilt-compiler-binaries) — Windows on ARM and linux
@@ -173,8 +175,7 @@ arm64 musl do not.
 - The tsconfig plugin must be `vela-rbxts/transformer`, the subpath. The root package's
   `createTransformer` is a different function, and passing it produces no transform and no error.
 - The transformer only runs under `rbxtsc` — it throws under plain `tsc`.
-- The file filter skips files with no literal `className` substring and no JSX open tag; both are
-  [toggleable](/vela-rbxts/reference/config/#tsconfig-plugin-options) but on by default.
+- The file filter skips files with no literal `className` substring and no JSX open tag. Both are [toggleable](/vela-rbxts/reference/config/#tsconfig-plugin-options), but on by default.
 
 ## "The output got bigger than expected"
 
@@ -185,7 +186,7 @@ emit. Writing the branch out instead of interpolating it is often enough to drop
 ## Still stuck?
 
 Compile the smallest possible reproduction and read the emitted TSX before the Luau. A static-path
-element keeps its tag and gains plain props; a runtime-path element becomes `VelaRuntimeHost` with
-`__vela*` props. Which of the two you are looking at answers most questions on this page — and the
+element keeps its tag and gains plain props. A runtime-path element becomes `VelaRuntimeHost` with
+`__vela*` props. Which of the two you are looking at answers most questions on this page, and the
 [five rules](/vela-rbxts/getting-started/how-it-works/#five-rules-that-keep-you-on-the-static-path)
 say how to move between them.

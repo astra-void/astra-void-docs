@@ -27,15 +27,15 @@ The bracketed prefix is the phase: `@vela-rbxts/compiler` for anything found in 
 each file. The category comes from the diagnostic's level and defaults to Warning.
 
 <Callout title="Two things that will surprise you">
-**Diagnostics can be dropped entirely.** They are delivered through `context.addDiagnostic`; on a roblox-ts that does not expose it, every Vela diagnostic is discarded and your build looks clean while classes go missing. If you have never seen a Vela warning, verify with `className="bg-nope-500"`.
+**Diagnostics can be dropped entirely.** They are delivered through `context.addDiagnostic`. On a roblox-ts that does not expose it, every Vela diagnostic is discarded, and your build looks clean while classes go missing. If you have never seen a Vela warning, verify with `className="bg-nope-500"`.
 
 **Some spans are guessed, and some are not spans at all.** A diagnostic carries a real source range
 wherever the compiler could anchor it, which covers every token inside a static string `className`.
 `tsx-parse-failed` is anchored too, and names the line and column.
 
-With no range, the host adapter searches for the first textual occurrence of the diagnostic's token
-— which only happens when the diagnostic carries one, in practice the dynamic-`className` case.
-Everything else falls through to `{start: 0, length: 0}` at the top of the file.
+With no range, the host adapter searches for the first textual occurrence of the diagnostic's token.
+That only happens when the diagnostic carries one, which in practice is the dynamic-`className`
+case. Everything else falls through to `{start: 0, length: 0}` at the top of the file.
 `classname-on-unsupported-host` is a middle case: a real range for a plain string literal, offset 0
 for a computed expression.
 
@@ -111,9 +111,9 @@ Z-index gets four codes of its own: `z-auto` is `unsupported-z-index-auto`, a ne
 other unbracketed number is `unsupported-z-index-value`. A whole-number `z-[15]` resolves.
 
 **`font-*` falls through to `unknown-theme-key`.** The prefix resolves the fixed weight names first
-and reads anything else as a key in [`theme.fontFamily`](/vela-rbxts/reference/config/#fontfamily),
-so `font-nope`, `font-600` and `font-extrablack` all report `unknown-theme-key`.
-`unsupported-font-weight` still exists in the code table but no payload reaches it.
+and reads anything else as a key in [`theme.fontFamily`](/vela-rbxts/reference/config/#fontfamily).
+`font-nope`, `font-600` and `font-extrablack` all report `unknown-theme-key`.
+`unsupported-font-weight` still exists in the code table, but no payload reaches it.
 
 ### Contextual warnings
 
@@ -142,7 +142,7 @@ The errors are structural rather than about your classes.
 Everything else under this code is the native binding failing to load or throwing.
 
 `classname-on-unsupported-host` is the one that tells you nothing happened. Vela lowers `className`
-on the eight supported host elements and on components; anything else keeps the attribute verbatim
+on the eight supported host elements and on components. Anything else keeps the attribute verbatim
 and warns:
 
 ```tsx title="Warns, and the className survives untouched"
@@ -160,12 +160,11 @@ emits this code.
 `unsupported-host-utility` never appears in a build. The per-element restrictions it reports are
 checked by the editor surface alone, so `<frame className="text-red-500" />` compiles and emits a
 `TextColor3` assignment on a Frame with no complaint. Treat it as an editor-only lint. It is never
-raised on a component either: the host element behind `<Panel />` is unknown, so every utility is
-allowed there.
+raised on a component either, since the host element behind `<Panel />` is unknown.
 
-The **runtime path** does enforce the rule, silently: a utility the host element cannot carry is
-dropped rather than written, since the assignment would be a hard Roblox error. So the same class
-list behaves differently on the two paths, and neither reports anything at build time.
+The **runtime path** does enforce the rule, silently. A utility the host element cannot carry is
+dropped rather than written, since the assignment would be a hard Roblox error. The same class list
+behaves differently on the two paths, and neither reports anything at build time.
 
 ## The ones you will actually hit
 
@@ -178,7 +177,7 @@ compiles normally.
 <frame className="shadwo-lg rounded-lg" />
 ```
 
-`rounded-lg` is applied; `shadwo-lg` is dropped with a warning. The same code covers typos and
+`rounded-lg` is applied, and `shadwo-lg` is dropped with a warning. The same code covers typos and
 genuinely unknown families, so read the token before concluding a feature is missing.
 
 ### no-roblox-equivalent
@@ -204,8 +203,8 @@ message tells you which scale was searched: `colors`, `radius`, or `spacing`.
 ```
 
 `rounded-huge` fails because `rounded-*` is a pure theme lookup and `huge` is not one of the default
-radius keys — add it under `theme.extend.radius` or use `4xl`. `p-0.25` fails because the
-spacing fallback only accepts multiples of `0.5`; use `p-0.5`.
+radius keys — add it under `theme.extend.radius` or use `4xl`. `p-0.25` fails because the spacing
+fallback only accepts multiples of `0.5`. Use `p-0.5`.
 
 The most common form of this one is subtler. A color you thought you defined in `theme.extend.colors`
 will report `unknown-theme-key` if your config also sets a top-level `theme.colors`, because that
@@ -224,10 +223,10 @@ You named a palette family without a shade, and that palette has no `DEFAULT` to
 [@vela-rbxts/compiler] color-missing-shade: Color palette "brand" for background color utility has no "DEFAULT" shade, so it requires an explicit shade such as "brand-500" in className literal.
 ```
 
-Either write the shade — `bg-brand-500` — or add a `DEFAULT` key to the palette in
-`theme.extend.colors` so the bare form resolves. Literal colors — `black`, `white`, and anything you
-define as a plain string — are always usable without a shade, and every built-in palette ships a
-`DEFAULT`, so `bg-slate` works out of the box.
+Either write the shade, as `bg-brand-500`, or add a `DEFAULT` key to the palette in
+`theme.extend.colors` so the bare form resolves. Literal colours are always usable without a shade.
+That covers `black`, `white`, and anything you define as a plain string. Every built-in palette
+ships a `DEFAULT`, so `bg-slate` works out of the box.
 
 ### color-invalid-shade
 
@@ -243,14 +242,14 @@ interpolate missing shades.
 
 ## Editor-only filtering
 
-The editor surface applies one filter the build does not: it suppresses `unknown-theme-key` while
-the payload you have typed so far is still a **prefix of a real theme key**. As you type
-`bg-sla` on the way to `bg-slate-800`, no squiggle flashes, because `sla` can still become `slate` —
-but `bg-nope` warns immediately, because no theme key starts with `nope`.
+The editor surface applies one filter the build does not. It suppresses `unknown-theme-key` while
+the payload you have typed so far is still a **prefix of a real theme key**. As you type `bg-sla` on
+the way to `bg-slate-800`, no squiggle flashes, because `sla` can still become `slate`. `bg-nope`
+warns immediately, because no theme key starts with `nope`.
 
-The consequence is that a wrong key that happens to be a prefix of a real one — `bg-sl`, `bg-slat` —
-looks fine in the editor and still warns in the build. Codes other than `unknown-theme-key` are
-never filtered, so `color-missing-shade` on a `DEFAULT`-less palette shows up immediately.
+So a wrong key that happens to be a prefix of a real one, such as `bg-sl` or `bg-slat`, looks fine
+in the editor and still warns in the build. Codes other than `unknown-theme-key` are never filtered,
+so `color-missing-shade` on a `DEFAULT`-less palette shows up immediately.
 
 ## See also
 
