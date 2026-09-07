@@ -32,7 +32,7 @@ import { Avatar } from "@lattice-ui/react-avatar";
 
 ## Anatomy
 
-The root owns the source and status; the image shows once loaded and the fallback otherwise. `Root`
+The root owns the source and status. The image shows once loaded, and the fallback otherwise. `Root`
 renders no instance, so both parts mount directly into whatever parent you place the avatar in.
 
 <PrimitiveAnatomy title="Avatar anatomy">
@@ -87,7 +87,7 @@ export function BasicAvatar() {
 ### Tuning the fallback delay
 
 `delayMs` controls how long a loading avatar stays blank before the fallback appears. The default
-`250` absorbs most fast loads without a flash; `0` shows the fallback the moment loading starts. The
+`250` absorbs most fast loads without a flash. `0` shows the fallback the moment loading starts. The
 delay only applies while loading — an empty `src` or an errored load shows the fallback immediately.
 
 ```tsx title="LoadoutSlotAvatar.tsx"
@@ -207,7 +207,7 @@ export function StatusAvatar(props: { userId: number; online: boolean }) {
 
 ### Avatar stack
 
-Negative `uilistlayout` padding pulls each wrapper over the previous one, descending `ZIndex` keeps
+Negative `uilistlayout` padding pulls each wrapper over the previous one. Descending `ZIndex` keeps
 the leftmost on top, and a stroke in the panel's background colour cuts them apart. Each member gets
 their own `Avatar.Root`, so slow thumbnails resolve independently.
 
@@ -267,14 +267,14 @@ export function PartyStack() {
 
 ### Load status
 
-`Root` tracks an `AvatarStatus` of `"idle"`, `"loading"`, `"loaded"` or `"error"`. On mount and
-whenever `src` changes it enters `"loading"` for a non-empty source or `"error"` otherwise; `"idle"`
-exists in the union but the built-in parts never produce it. Changing `src` restarts the cycle, with
-a sequence guard so a stale timer cannot fire.
+`Root` tracks an `AvatarStatus` of `"idle"`, `"loading"`, `"loaded"` or `"error"`. On mount, and
+whenever `src` changes, it enters `"loading"` for a non-empty source or `"error"` otherwise.
+`"idle"` exists in the union, but the built-in parts never produce it. Changing `src` restarts the
+cycle, with a sequence guard so a stale timer cannot fire.
 
-`Avatar.Image` checks `IsLoaded` immediately and subscribes to its changed signal, setting the
-status to `"loaded"` once the engine finishes — or `"error"` when its resolved source is empty. It
-is only `Visible` while `"loaded"`, so a broken or in-flight asset never shows as an empty box.
+`Avatar.Image` checks `IsLoaded` immediately and subscribes to its changed signal. It sets the
+status to `"loaded"` once the engine finishes, or `"error"` when its resolved source is empty. It is
+only `Visible` while `"loaded"`, so a broken or in-flight asset never shows as an empty box.
 
 ### Source resolution
 
@@ -293,8 +293,8 @@ This rule is exported as `resolveAvatarFallbackVisible(status, delayElapsed)` al
 
 `Root` renders no instance, so `Image` and `Fallback` mount into the surrounding parent and you
 control layout from outside. The defaults are a 40x40 circular `imagelabel` and a matching
-`textlabel` with placeholder `"AB"` text — children passed without `asChild` render inside that
-label rather than replacing it.
+`textlabel` with placeholder `"AB"` text. Children passed without `asChild` render inside that label
+rather than replacing it.
 
 With `asChild`, `Avatar.Image` merges the resolved `Image` source, load-bound `Visible`, and its status-tracking ref onto your single child element, and `Avatar.Fallback` merges only the derived `Visible`. Both parts error if `asChild` is set without a child.
 
@@ -303,7 +303,7 @@ Keep `Image` and `Fallback` mounted as siblings. Each derives its own visibility
 </Callout>
 
 <Callout title="asChild images must be imagelabels">
-`Avatar.Image` narrows its ref with `IsA("ImageLabel")` before watching `IsLoaded`. Any other class — an `imagebutton` included — never attaches load tracking, so the status never reaches `"loaded"` and the image stays invisible.
+`Avatar.Image` narrows its ref with `IsA("ImageLabel")` before watching `IsLoaded`. Any other class never attaches load tracking, an `imagebutton` included. The status never reaches `"loaded"`, and the image stays invisible.
 </Callout>
 
 <Callout title="The default fallback has placeholder text">
@@ -311,7 +311,7 @@ Without `asChild`, `Avatar.Fallback` renders a `textlabel` reading `"AB"` and pu
 </Callout>
 
 <Callout title="Roblox image loading">
-Status comes from `ImageLabel.IsLoaded`, so it reflects the engine's own asset pipeline. Pass a resolved asset string as `src`; an empty string counts as an error and shows the fallback immediately.
+Status comes from `ImageLabel.IsLoaded`, so it reflects the engine's own asset pipeline. Pass a resolved asset string as `src`. An empty string counts as an error and shows the fallback immediately.
 </Callout>
 
 ## API reference

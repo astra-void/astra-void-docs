@@ -9,7 +9,9 @@ draft: false
 
 import { Callout, PackageInstall } from "@/components/docs/mdx";
 
-Every interactive part renders a host element of a fixed class, usually a `textbutton`, with its behavior wired onto it. `asChild` flips that around: the part takes the element *you* provide and merges its behavior — handlers, refs, selection flags — onto it. Your element becomes the host.
+Every interactive part renders a host element of a fixed class, usually a `textbutton`, with its
+behavior wired onto it. `asChild` flips that around. The part takes the element *you* provide and
+merges its behavior onto it: handlers, refs, selection flags. Your element becomes the host.
 
 It is powered by `Slot` from `@lattice-ui/react-runtime`, which clones your child and composes props onto it.
 
@@ -28,7 +30,7 @@ Each part renders one specific instance class. `Popover.Trigger` renders a `text
 ```
 
 That class is the primitive's choice. If your design system has its own `Button`, or you want an
-`imagebutton`, forwarded props will not get you there — they are type-checked against the instance
+`imagebutton`, forwarded props will not get you there. They are type-checked against the instance
 the part renders, so `Image` on a `textbutton` is a compile error.
 
 With `asChild`, you hand the part your element and it merges behavior onto it:
@@ -70,11 +72,11 @@ the primitive uses.
 `Slot` clones a single child, so the subtree must resolve to exactly one `GuiObject`. A wrong shape errors rather than silently dropping behavior. Two things do **not** count against that budget:
 
 - **Fragments are looked through.** A fragment wrapping a single element resolves to that element.
-- **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uishadow`, `uigradient`, `uiscale`, the constraints, and the rest of the creatable `UIComponent` classes are re-parented under the element the props land on instead of competing to be the target.
+- **Roblox UI modifiers may sit as siblings.** `uicorner`, `uipadding`, `uilistlayout`, `uistroke`, `uishadow`, `uigradient`, `uiscale`, the constraints and the rest of the creatable `UIComponent` classes never compete to be the target. They are re-parented under the element the props land on.
 
-The second rule exists because Roblox attaches modifiers as *children* rather than properties — the
-shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits when it lowers
-`rounded-md` or `p-2` at the call site:
+The second rule exists because Roblox attaches modifiers as *children* rather than properties. That
+is the shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) emits when it
+lowers `rounded-md` or `p-2` at the call site:
 
 ```tsx title="A modifier sibling is re-parented, not cloned"
 <Dialog.Trigger asChild>
@@ -85,7 +87,7 @@ shape a Tailwind-style `className` transform such as [vela-rbxts](/vela-rbxts/) 
 
 Two real `GuiObject` candidates are still an error — the primitive cannot know which to enhance.
 
-This is what makes a class name on the *part* work: Vela emits its helper instances as the component's children, so they arrive here as siblings rather than rival slot candidates. [Styling with Vela](/lattice-ui/guides/styling-with-vela/) walks through all three placements.
+This is what makes a class name on the *part* work. Vela emits its helper instances as the component's children, so they arrive here as siblings rather than rival slot candidates. [Styling with Vela](/lattice-ui/guides/styling-with-vela/) walks through all three placements.
 </Callout>
 
 ## Where you'll use it
@@ -123,7 +125,7 @@ export function SettingsButton() {
 ## When to use it
 
 - You need a **different instance class** than the part renders — an `imagebutton` where it renders a `textbutton`, a `canvasgroup` where it renders a `frame`.
-- Your app **already has the right visual element** — a design-system button, a styled frame — and you only want the behavior.
+- Your app **already has the right visual element**, such as a design-system button or a styled frame, and you only want the behavior.
 - You need to **size a `Content` part**, whose geometry the primitive otherwise owns.
 - You want to **attach your own handlers** to the same event the primitive uses, without losing either.
 

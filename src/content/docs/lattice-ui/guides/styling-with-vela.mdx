@@ -23,7 +23,7 @@ This page is about that seam: where the classes go, what each placement produces
 the toolkits' defaults disagree.
 
 <Callout title="This is an integration, not a dependency">
-Lattice primitives know nothing about Vela — you install and configure it yourself. Everything here works with no Vela at all; you would just be writing the props by hand.
+Lattice primitives know nothing about Vela — you install and configure it yourself. Everything here works with no Vela at all. You would just be writing the props by hand.
 </Callout>
 
 ## The three placements
@@ -39,9 +39,9 @@ Every row above is `Switch.Root` + `Switch.Thumb` with no styling of its own —
 
 ### On your own host element, inside `asChild`
 
-The plainest case: `asChild` hands the part's behaviour to an element you render, and that element
-is an ordinary `textbutton`, so its `className` lowers as it would anywhere. All three rows paint
-their track from `checked`, and the Wi-Fi row uses a computed class value:
+The plainest case. `asChild` hands the part's behaviour to an element you render. That element is an
+ordinary `textbutton`, so its `className` lowers as it would anywhere. All three rows paint their
+track from `checked`, and the Wi-Fi row uses a computed class value:
 
 ```tsx title="Classes on the element you own"
 <Switch.Root asChild checked={wifi} onCheckedChange={setWifi}>
@@ -66,8 +66,8 @@ place for what a dynamically-classed element needs from the layout.
 
 ### On the part, with `asChild`
 
-Put the classes on `Switch.Root` and Vela lowers them onto **the component**: resolved props become
-attributes on `Switch.Root`, and helper instances are prepended as its children — putting the
+Put the classes on `Switch.Root` and Vela lowers them onto **the component**. Resolved props become
+attributes on `Switch.Root`, and helper instances are prepended as its children. That puts the
 `UICorner` next to the `textbutton` rather than inside it:
 
 ```tsx title="What Vela emits"
@@ -84,11 +84,10 @@ attributes on `Switch.Root`, and helper instances are prepended as its children 
 ```
 
 Two `GuiObject`-ish children where `asChild` clones exactly one. `Slot` re-parents the modifier
-under the element the props land on rather than treating it as a second candidate, so this renders
-the same tree as the first form — see
-[asChild composition](/lattice-ui/guides/as-child-composition/).
+under the element the props land on rather than treating it as a second candidate. This renders the
+same tree as the first form. See [asChild composition](/lattice-ui/guides/as-child-composition/).
 
-That emit is what the **static** path produces, and the Bluetooth row keeps it by branching the whole
+That emit is what the **static** path produces. The Bluetooth row keeps it by branching the whole
 element between two literal class lists rather than computing one:
 
 ```tsx title="Two static branches, so both keep the static emit"
@@ -154,13 +153,13 @@ If your UI switches themes at runtime, keep colours and typography on `sx`/recip
 Two Vela behaviors are worth knowing before you put them near a primitive.
 
 **Anything you cannot afford to get wrong silently.** Every utility family resolves on the
-[runtime path](/vela-rbxts/guides/dynamic-class-names/) a computed value puts the element on, so
-this is not about losing classes but about losing *checking*: a typo in a computed value is silent
-where the same typo in a literal is a diagnostic.
+[runtime path](/vela-rbxts/guides/dynamic-class-names/) a computed value puts the element on. You do
+not lose classes, you lose *checking*. A typo in a computed value is silent, where the same typo in
+a literal is a diagnostic.
 
 **Geometry the primitive owns.** Progress fill ratios, slider thumb travel, popper-driven position,
 scroll thumb size and presence-driven `Visible` are computed and written onto the instance. A class
-setting the same property wins — Vela emits last — and the behaviour breaks. Style the parts
+setting the same property wins, because Vela emits last, and the behaviour breaks. Style the parts
 *around* the moving one.
 
 ## Which tool for what
@@ -175,7 +174,7 @@ setting the same property wins — Vela emits last — and the behaviour breaks.
 | Setup cost | none — already a dependency | a transformer, a config, a `.d.ts` |
 
 Neither replaces the other, and mixing them on one element is fine as long as each property is set
-by only one. If you already run Vela, Lattice primitives take your class names; if not, `sx` and
+by only one. If you already run Vela, Lattice primitives take your class names. If not, `sx` and
 recipes are the ones with runtime theming.
 
 ## See also

@@ -17,8 +17,8 @@ Lattice primitives are headless — they give you behavior and leave the pixels 
 Both produce ordinary Roblox instance props in the end. The difference is where the styling decision lives: inline at the call site, or centralized in a recipe your whole design system shares.
 
 Both resolve at runtime and read the live `Theme`, which is what makes a theme toggle work.
-[vela-rbxts](/vela-rbxts/) is a third route with the opposite tradeoff — no runtime cost, no runtime
-theming — and composes with these rather than replacing them. See
+[vela-rbxts](/vela-rbxts/) is a third route with the opposite tradeoff: no runtime cost, and no
+runtime theming. It composes with these rather than replacing them. See
 [styling with Vela](/lattice-ui/guides/styling-with-vela/).
 
 ## The sx value
@@ -68,7 +68,9 @@ key-by-key, except that `Event` and `Change` handler tables are **chained**, so 
 On `Box` and `Text` the resolved `sx` is the later layer, so it overrides a direct prop with the
 same key.
 
-When you need to combine several sx values — a shared base plus a caller override — use `mergeSx`. It returns a single theme-resolving function that folds its arguments left to right, later entries winning:
+To combine several sx values, such as a shared base plus a caller override, use `mergeSx`. It
+returns a single theme-resolving function that folds its arguments left to right, later entries
+winning:
 
 ```tsx title="Composing sx values"
 import { mergeSx, type Sx } from "@lattice-ui/react-style";
@@ -86,8 +88,9 @@ export function Panel(props: { sx?: Sx<Record<string, unknown>> }) {
 ## createRecipe: variant systems
 
 Inline `sx` scales badly once a component needs sizes, tones and states. `createRecipe` takes
-`base`, `variants`, `defaultVariants` and `compoundVariants` — each slot itself an `Sx`, so any can
-read the theme — and returns `(selection, theme) => Partial<Props>`.
+`base`, `variants`, `defaultVariants` and `compoundVariants`, and returns
+`(selection, theme) => Partial<Props>`. Each slot is itself an `Sx`, so any of them can read the
+theme.
 
 ```tsx title="button.recipe.ts"
 import { createRecipe } from "@lattice-ui/react-style";
@@ -128,9 +131,9 @@ export const buttonRecipe = createRecipe({
 });
 ```
 
-Resolution is deterministic layering: the selection merges over `defaultVariants`, then the resolver
-folds `base`, each selected variant's sx, and every matching `compoundVariants` entry — each merged
-with `mergeGuiProps`, so later layers win and event tables compose.
+Resolution is deterministic layering. The selection merges over `defaultVariants`, then the resolver
+folds `base`, each selected variant's sx, and every matching `compoundVariants` entry. Each layer
+merges with `mergeGuiProps`, so later layers win and event tables compose.
 
 ```tsx title="Button.tsx"
 import { React } from "@rbxts/react";
@@ -157,8 +160,8 @@ export function Button(props: {
 ```
 
 Because the resolver takes the theme as an argument rather than reading context, recipes are plain
-functions — call them with `useTheme()` in a component, `defaultLightTheme` in a test, or any
-`Theme` you have. Switching themes re-renders consumers and re-resolves every theme-aware slot.
+functions. Call them with `useTheme()` in a component, `defaultLightTheme` in a test, or any `Theme`
+you have. Switching themes re-renders consumers and re-resolves every theme-aware slot.
 
 <Callout title="Omitted variants resolve through defaultVariants">
 Passing `undefined` is valid — the resolver falls back to `defaultVariants` per group. A group with neither a selected nor a default value is skipped, so make sure every group you rely on has one or is always passed.
@@ -211,16 +214,18 @@ export function StyledCheckbox(props: { label: string; size?: "sm" | "md" }) {
 }
 ```
 
-`Checkbox.Root` composes `Active`, `Selectable`, its `Activated` toggle handler, and its motion ref onto your `textbutton`; the recipe supplies everything visual. Your styling and the primitive's behavior never fight, because `Slot` chains event tables instead of replacing them.
+`Checkbox.Root` composes `Active`, `Selectable`, its `Activated` toggle handler and its motion ref
+onto your `textbutton`. The recipe supplies everything visual. Your styling and the primitive's
+behavior never fight, because `Slot` chains event tables instead of replacing them.
 
 <Callout title="Interactive parts need a button-class host">
-Spread recipe output onto a real intrinsic when the part is interactive. `Box` renders a `frame`, which has no `Activated` signal, and does not forward a ref to its instance — so wrapping an interactive part's `asChild` child in `Box` silently drops both the activation and the primitive's ref.
+Spread recipe output onto a real intrinsic when the part is interactive. `Box` renders a `frame`, which has no `Activated` signal, and does not forward a ref to its instance. Wrapping an interactive part's `asChild` child in `Box` silently drops both the activation and the primitive's ref.
 </Callout>
 
 For non-interactive parts the pairing runs the other way. `Box` and `Text` themselves support
-`asChild`, so you can push a resolved `sx` onto an element another component renders:
-`<Box asChild sx={...}>` around a single child merges the themed props onto it via `Slot` instead of
-adding a wrapper `frame`.
+`asChild`, so you can push a resolved `sx` onto an element another component renders.
+`<Box asChild sx={...}>` around a single child merges the themed props onto it via `Slot`, instead
+of adding a wrapper `frame`.
 
 ## Related
 
