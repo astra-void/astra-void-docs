@@ -37,7 +37,7 @@ import { ContextMenu } from "@lattice-ui/react-context-menu";
 
 ## Anatomy
 
-`Root`, `Trigger`, `Portal` and `Content` form the working menu; `Item` makes it useful, and
+`Root`, `Trigger`, `Portal` and `Content` form the working menu. `Item` makes it useful, and
 `Group`, `Label` and `Separator` structure longer lists. The part names match Menu's, so moving
 between the two is mostly a namespace swap.
 
@@ -77,11 +77,11 @@ between the two is mostly a namespace swap.
 ### Basic context menu
 
 An uncontrolled root, a trigger region and a few items. Right-clicking inside the trigger opens the
-menu at the pointer; selecting an item runs its `onSelect` and closes it.
+menu at the pointer. Selecting an item runs its `onSelect` and closes it.
 
-Every part renders unstyled, so this example supplies all of it: a size and colour for the trigger,
-a layout and surface for the content, a size and label for each item. Without it the menu opens and
-works but draws nothing.
+Every part renders unstyled, so this example supplies all of it. A size and colour for the trigger,
+a layout and surface for the content, and a size and label for each item. Without it the menu opens
+and works but draws nothing.
 
 ```tsx title="BasicContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -141,8 +141,8 @@ Omit `open`/`onOpenChange` and the root owns its state from `defaultOpen`. The p
 ### A real trigger region
 
 `asChild` merges the secondary-click listener onto your own element, which is the normal way to use
-this primitive. The child keeps its own props and handlers — the slot only adds `InputBegan` and
-`Active` — so a left-click `Activated` still works.
+this primitive. The child keeps its own props and handlers, since the slot only adds `InputBegan`
+and `Active`. A left-click `Activated` still works.
 
 ```tsx title="PlotContextMenu.tsx"
 import { ContextMenu } from "@lattice-ui/react-context-menu";
@@ -239,8 +239,8 @@ export function InventorySlotContextMenu(props: { icon: string }) {
 
 ### Placement tuning
 
-`ContextMenu.Content` takes the same popper options as the other anchored primitives, but the anchor
-is a zero-height virtual frame at the pointer, as wide as the measured content — which drops the
+`ContextMenu.Content` takes the same popper options as the other anchored primitives. But the anchor
+is a zero-height virtual frame at the pointer, as wide as the measured content, which drops the
 menu's top-left corner at the cursor. `placement` grows it the other way, and near the bottom of the
 screen the popper flips it regardless.
 
@@ -423,16 +423,18 @@ A `disabled` trigger ignores the secondary click entirely and never updates the 
 ### Positioning
 
 The content mounts an invisible virtual anchor at the stored pointer position, with **zero height
-and the measured content's width**, which lands the menu's top-left corner at the cursor rather than
+and the measured content's width**. That lands the menu's top-left corner at the cursor, rather than
 centring it.
 
-From there it behaves like every other anchored surface: `placement` is a preference, and on
+From there it behaves like every other anchored surface. `placement` is a preference, and on
 collision the popper tries the opposite side, then the orthogonal ones, then clamps inside the
-viewport. Until the first measurement the content is parked off-screen.
+viewport. Until the first measurement, the content is parked off-screen.
 
 ### Items and activation
 
-`ContextMenu.Item` activates on `Activated` and builds a `ContextMenuSelectEvent` (`{ defaultPrevented, preventDefault() }`) for `onSelect`; if the event is not default-prevented, the item closes the menu. A disabled item ignores activation.
+`ContextMenu.Item` activates on `Activated` and builds a `ContextMenuSelectEvent` for `onSelect`,
+carrying `defaultPrevented` and `preventDefault()`. Unless the event is default-prevented, the item
+closes the menu. A disabled item ignores activation.
 
 The item renders an unstyled `textbutton`, tracking hover through `MouseEnter`/`MouseLeave` and
 exposing it as `useContextMenuItemContext().highlighted` while drawing nothing itself.
@@ -446,7 +448,7 @@ an outside press dismisses. `onPointerDownOutside` and `onInteractOutside` fire 
 
 ### Motion and presence
 
-The content runs no motion of its own. Pass a `transition`; `createPopperEntranceRecipe(placement)`
+The content runs no motion of its own. Pass a `transition`. `createPopperEntranceRecipe(placement)`
 matches the `frame` it renders, and taking the **resolved** placement makes the motion originate
 from the side the menu actually landed on. `forceMount` keeps it mounted through its exit. The
 wrapper is an automatically-sized `frame`, so your surface defines the measured size.

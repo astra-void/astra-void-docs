@@ -9,7 +9,13 @@ draft: false
 
 import { Callout, PropTable } from "@/components/docs/mdx";
 
-There is no CSS on Roblox, so a Lattice theme is not a stylesheet — it is a **plain token object**: a `Theme` with four groups of named values (`colors`, `space`, `radius`, `typography`), where colors are `Color3`s and everything else is numbers and `Enum.Font`s. Nothing consumes it implicitly. A `Dialog.Content` or `Checkbox.Root` does not repaint itself when the theme changes, because headless primitives render no visuals to paint. *Your* components read tokens — through `useTheme`, `useThemeValue`, or an `sx` function — and write them onto host properties like `BackgroundColor3` and `TextSize`.
+There is no CSS on Roblox, so a Lattice theme is not a stylesheet. It is a **plain token object**: a
+`Theme` with four groups of named values — `colors`, `space`, `radius` and `typography`. Colours are
+`Color3`s, and everything else is numbers and `Enum.Font`s. Nothing consumes it implicitly. A
+`Dialog.Content` or `Checkbox.Root` does not repaint itself when the theme changes, because headless
+primitives render no visuals to paint. *Your* components read tokens, through `useTheme`,
+`useThemeValue` or an `sx` function, and write them onto host properties like `BackgroundColor3` and
+`TextSize`.
 
 That explicitness is the whole model: the theme is a shared vocabulary, and every visual decision that uses it is visible in your code.
 
@@ -39,11 +45,16 @@ A `Theme` has exactly four groups. The two built-in themes share the same `space
 | `radius` | `none`, `sm`, `md`, `lg`, `xl`, `full` | pixel `number` |
 | `typography` | `labelSm`, `bodyMd`, `titleMd` | `{ font: Enum.Font; textSize: number }` |
 
-The color roles pair up deliberately: `accent` is a fill and `accentContrast` is the text color that reads on top of it, same for `danger`/`dangerContrast`. `space` tokens are keyed by their pixel value, so `theme.space[8]` is `8` — the scale exists to limit you to a consistent set of steps, not to hide the numbers.
+The color roles pair up deliberately: `accent` is a fill and `accentContrast` is the text color that
+reads on top of it, same for `danger`/`dangerContrast`. `space` tokens are keyed by their pixel
+value, so `theme.space[8]` is `8`. The scale exists to limit you to a consistent set of steps, not
+to hide the numbers.
 
 ## Creating a theme
 
-`createTheme(partialTheme)` builds a complete `Theme` by merging your `PartialTheme` over `defaultLightTheme`, group by group. Override only what you need; everything else falls back to the light defaults.
+`createTheme(partialTheme)` builds a complete `Theme` by merging your `PartialTheme` over
+`defaultLightTheme`, group by group. Override only what you need. Everything else falls back to the
+light defaults.
 
 ```ts title="themes.ts"
 import { createTheme, defaultDarkTheme } from "@lattice-ui/react-style";
@@ -74,7 +85,11 @@ Each group is spread over the defaults, so `colors: { accent }` keeps the other 
 
 ## Providing and reading the theme
 
-`ThemeProvider` puts a theme in context. Like every stateful Lattice primitive it supports both ownership modes (see [Controlled and uncontrolled state](/lattice-ui/guides/controlled-state/)): pass `defaultTheme` to let the provider own the theme, or pass `theme` plus `onThemeChange` to own it yourself. With neither prop it defaults to `defaultLightTheme`.
+`ThemeProvider` puts a theme in context. Like every stateful Lattice primitive, it supports both
+ownership modes. Pass `defaultTheme` to let the provider own the theme, or pass `theme` plus
+`onThemeChange` to own it yourself. See
+[Controlled and uncontrolled state](/lattice-ui/guides/controlled-state/). With neither prop it
+defaults to `defaultLightTheme`.
 
 ```tsx title="App.tsx"
 import { ThemeProvider } from "@lattice-ui/react-style";
@@ -162,7 +177,9 @@ The selector's identity is part of the memoization. An inline lambda is recreate
 
 ## Runtime theme switching
 
-Because the theme is ordinary React state, switching it is just `setTheme` with a different token object — every component that reads the theme re-renders with the new values. A dark-mode toggle is the canonical case:
+Because the theme is ordinary React state, switching it is just `setTheme` with a different token
+object. Every component that reads the theme re-renders with the new values. A dark-mode toggle is
+the canonical case:
 
 ```tsx title="DarkModeToggle.tsx"
 import { useState } from "@rbxts/react";
@@ -188,15 +205,22 @@ export function DarkModeToggle() {
 }
 ```
 
-In uncontrolled mode `setTheme` updates the provider's internal state directly. In controlled mode (`theme` prop supplied) it only calls `onThemeChange` — the provider renders whatever theme you feed back in, so app logic like "follow the player's saved preference" owns the final say. Either way, `onThemeChange` fires on every change, so you can persist the choice from a single place.
+In uncontrolled mode `setTheme` updates the provider's internal state directly. In controlled mode,
+with the `theme` prop supplied, it only calls `onThemeChange`. The provider renders whatever theme
+you feed back in, so app logic like "follow the player's saved preference" owns the final say.
+Either way, `onThemeChange` fires on every change, so you can persist the choice from a single
+place.
 
 <Callout title="Themes swap by reference, not mutation">
-Always pass a new `Theme` object to `setTheme` — the built-ins, or the result of `createTheme`. Mutating token values on the current theme object changes nothing on screen, because no component is notified; context consumers update when the theme reference changes.
+Always pass a new `Theme` object to `setTheme` — the built-ins, or the result of `createTheme`. Mutating token values on the current theme object changes nothing on screen, because no component is notified. Context consumers update when the theme reference changes.
 </Callout>
 
 ## Themes and recipes
 
-Reading `useTheme` in every component works, but it scales poorly once variants appear. The `sx` and recipe layer in `@lattice-ui/react-style` exists exactly for this — an `sx` value can be a function of the theme, and `createRecipe` resolves variant-driven styles against the current theme for you. See [Styling with recipes](/lattice-ui/guides/styling-with-recipes/) for that workflow.
+Reading `useTheme` in every component works, but it scales poorly once variants appear. The `sx` and
+recipe layer in `@lattice-ui/react-style` exists exactly for this. An `sx` value can be a function
+of the theme, and `createRecipe` resolves variant-driven styles against the current theme for you.
+See [Styling with recipes](/lattice-ui/guides/styling-with-recipes/) for that workflow.
 
 ## Related
 

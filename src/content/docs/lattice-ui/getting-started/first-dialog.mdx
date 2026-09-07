@@ -8,7 +8,10 @@ sidebar:
 
 import { Callout } from "@/components/docs/mdx";
 
-Dialog is a good first primitive because it shows the whole Lattice UI model in one surface: a `Root` that owns state, parts that read from it, and an app-owned frame for the visuals. By the end of this walkthrough you will have a working confirmation dialog that opens from a button, traps focus, and closes predictably.
+Dialog is a good first primitive because it shows the whole Lattice UI model in one surface. A
+`Root` that owns state, parts that read from it, and an app-owned frame for the visuals. By the end
+of this walkthrough you will have a working confirmation dialog that opens from a button, traps
+focus, and closes predictably.
 
 This page is a guided build, not a reference. For the full prop list and behavior details, see the [Dialog component page](/lattice-ui/components/dialog/).
 
@@ -37,9 +40,11 @@ export function ConfirmDialog() {
 }
 ```
 
-`Root`, `Portal`, and `Content` are the minimum useful surface; `Trigger`, `Overlay`, and `Close` are there to drive and dress it.
+`Root`, `Portal` and `Content` are the minimum useful surface. `Trigger`, `Overlay` and `Close` are
+there to drive and dress it.
 
-This sketch compiles, but it renders nothing you can see — every part is unstyled until you say otherwise. That is the anatomy, not a working dialog; the next steps fill it in.
+This sketch compiles, but it renders nothing you can see — every part is unstyled until you say
+otherwise. That is the anatomy, not a working dialog. The next steps fill it in.
 
 ## Step 2 — Add a trigger
 
@@ -89,7 +94,9 @@ That is literal: an overlay you do not style is fully transparent. It still cove
 
 `Dialog.Content` traps focus while open and restores it on close without any configuration. Motion is opt-in: leave `transition` off and the dialog still opens and closes correctly, just instantly.
 
-`DIALOG_RISE` is the transition itself. `Dialog.Content` renders a full-screen `Frame`, so what it can animate is where the surface sits — an 8-pixel rise on the way in, the same offset on the way out:
+`DIALOG_RISE` is the transition itself. `Dialog.Content` renders a full-screen `Frame`, so what it
+can animate is where the surface sits. An 8-pixel rise on the way in, and the same offset on the way
+out:
 
 ```tsx title="The transition"
 import { motionTargets, type PresenceMotionConfig } from "@lattice-ui/react-motion";
@@ -108,10 +115,14 @@ const DIALOG_RISE: PresenceMotionConfig = {
 };
 ```
 
-Keep the transition to `Position`. The host spans the whole layer, so fading *its* `BackgroundTransparency` fills the screen with a rectangle rather than fading the panel — see [Fading a dialog](/lattice-ui/components/dialog/#motion-and-presence) for how to fade the surface itself. The `target` declares which properties motion is allowed to own, which is what keeps it from fighting your layout.
+Keep the transition to `Position`. The host spans the whole layer, so fading *its*
+`BackgroundTransparency` fills the screen with a rectangle rather than fading the panel. See
+[Fading a dialog](/lattice-ui/components/dialog/#motion-and-presence) for how to fade the surface
+itself. The `target` declares which properties motion is allowed to own, which is what keeps it from
+fighting your layout.
 
 <Callout title="Presence timing is separate from motion">
-Even with no `transition`, content stays mounted until its exit finishes, so an exit animation can never be cut off mid-way. The transition decides what animates; presence decides when the tree unmounts.
+Even with no `transition`, content stays mounted until its exit finishes, so an exit animation can never be cut off mid-way. The transition decides what animates. Presence decides when the tree unmounts.
 </Callout>
 
 ## Step 4 — Add a close action
@@ -190,7 +201,9 @@ export function ConfirmDialog() {
 }
 ```
 
-Controlled and uncontrolled usage behave identically — the trigger, the close button, and an outside press all flow through the same state, so `onOpenChange` fires no matter how the dialog opens or closes.
+Controlled and uncontrolled usage behave identically. The trigger, the close button and an outside
+press all flow through the same state, so `onOpenChange` fires no matter how the dialog opens or
+closes.
 
 <Callout title="When to control state">
 Reach for `open`/`onOpenChange` only when an outside actor needs to drive the dialog — a server response, a hotkey, or a parent screen. Otherwise prefer `defaultOpen` and let Dialog own it.
@@ -198,10 +211,10 @@ Reach for `open`/`onOpenChange` only when an outside actor needs to drive the di
 
 ## Recap
 
-- `Dialog.Root` owns the open state; every part reads it through context.
+- `Dialog.Root` owns the open state, and every part reads it through context.
 - Primitives ship unstyled: pass appearance props straight to a part, or use `asChild` when you need a different instance class.
 - `asChild` lets your own `textbutton` become the trigger and close button.
-- `Dialog.Content` traps and restores focus for free; motion is opt-in through `transition`.
+- `Dialog.Content` traps and restores focus for free. Motion is opt-in through `transition`.
 - A modal dialog dismisses on an outside press, not just the close button.
 
 ## Next step
