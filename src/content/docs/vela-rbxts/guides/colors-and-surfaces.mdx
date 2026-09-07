@@ -11,8 +11,8 @@ draft: false
 import { Callout, VelaPreview } from "@/components/docs/mdx";
 
 Every colour utility resolves a key from `theme.colors` and writes it onto a specific Roblox
-property, on the host instance or on a helper Vela adds as a child. Nothing is inherited and nothing
-cascades: a class writes one property on one instance.
+property. That is either the host instance or a helper Vela adds as a child. Nothing is inherited
+and nothing cascades: a class writes one property on one instance.
 
 ```tsx title="src/client/Card.tsx"
 <frame className="bg-slate-800 rounded-lg border border-slate-700 shadow-lg">
@@ -26,7 +26,8 @@ cascades: a class writes one property on one instance.
   scene="SurfaceScene"
 />
 
-Open the **Lowered** tab on that preview to see the split the table below describes: `bg-*` lands on the frame, while `border-*`, `rounded-*` and the gradient stops each become a child instance.
+Open the **Lowered** tab on that preview to see the split the table below describes. `bg-*` lands on
+the frame, while `border-*`, `rounded-*` and the gradient stops each become a child instance.
 
 ## The color families
 
@@ -43,7 +44,7 @@ Open the **Lowered** tab on that preview to see the split the table below descri
 
 Each of these except `placeholder-*`, `divide-*` and the gradient stops has a paired transparency
 property. Setting `border-{color}` writes `Color` *and* sets `Transparency` to `0`, so a coloured
-stroke is visible without a second class; `shadow-{color}` writes `Color` alone.
+stroke is visible without a second class. `shadow-{color}` writes `Color` alone.
 
 `text-*` is not only a color family. It also carries sizes, alignment, and wrapping — see [Text and fonts](/vela-rbxts/guides/text-and-fonts/) for how the compiler decides which one you meant.
 
@@ -58,12 +59,12 @@ waiting to be named in [theming](/vela-rbxts/guides/theming/).
 
 A color can carry a level in one token: `/N` with an integer 0–100 sets the family's transparency
 alongside its color, Tailwind-style. `bg-blue-600/50` emits `BackgroundColor3` plus
-`BackgroundTransparency = 0.5`; `text-slate-100/80` fades text to 80% opacity.
+`BackgroundTransparency = 0.5`. `text-slate-100/80` fades text to 80% opacity.
 
 It works on every family Roblox gives a transparency channel, which is all of them but one.
-`border-slate-500/25` sets the `UIStroke`'s `Transparency`, `divide-white/10` fades the separator
-frames, and `from-blue-600/50` becomes a `UIGradient.Transparency` keypoint aligned with its colour
-stop — so fading one stop leaves the others alone.
+`border-slate-500/25` sets the `UIStroke`'s `Transparency`, and `divide-white/10` fades the
+separator frames. `from-blue-600/50` becomes a `UIGradient.Transparency` keypoint aligned with its
+colour stop, so fading one stop leaves the others alone.
 
 `placeholder-*` is the one family left. Roblox has no placeholder transparency, and fading the text
 itself would take the typed value with it, so it still reports `unsupported-opacity-modifier`.
@@ -76,11 +77,13 @@ itself would take the typed value with it, so it still reports `unsupported-opac
 [Preflight](/vela-rbxts/reference/config/#preflight) already starts every classed host element at `BackgroundTransparency = 1`, so `bg-transparent` on a label or layout frame is a no-op. It still earns its place on an element whose background is painted by a variant and should be clear by default, and anywhere you set `preflight: false`. `text-transparent`, `image-transparent` and `border-transparent` are unaffected.
 </Callout>
 
-That is why `placeholder-transparent` is an error. `PlaceholderColor3` has no paired transparency property, so there is nothing for the utility to set, and the compiler reports `unsupported-color-key` rather than emitting something that would not work.
+That is why `placeholder-transparent` is an error. `PlaceholderColor3` has no paired transparency
+property, so there is nothing for the utility to set. The compiler reports `unsupported-color-key`
+rather than emitting something that would not work.
 
 Gradient stops are the other family with no transparency property, and they produce **no diagnostic
-at all**: the stop is dropped and the gradient is built from what remains. Worth knowing, because a
-two-stop gradient that quietly becomes one renders as a flat fill.
+at all**. The stop is dropped and the gradient is built from what remains, so a two-stop gradient
+that quietly becomes one renders as a flat fill.
 
 `current` and `inherit` are rejected outright with `unsupported-color-key`. Both are cascade
 concepts, and there is no cascade on Roblox — a `TextLabel` does not learn its colour from an
@@ -89,7 +92,7 @@ ancestor `Frame`.
 ## Shades and diagnostics
 
 A colour payload is either a literal key or a palette key plus a shade. The suffix after the last
-hyphen counts as a shade only if it is one of the eleven numbers; anything else makes the whole
+hyphen counts as a shade only if it is one of the eleven numbers. Anything else makes the whole
 payload one semantic key, so `bg-my-color` looks up `my-color`.
 
 A bare palette name resolves through the palette's `DEFAULT`, and every built-in palette ships one
@@ -110,7 +113,9 @@ All three are warnings, not errors. The class is dropped and compilation continu
 
 `border-*` builds a `UIStroke` child. Roblox strokes are a much narrower surface than CSS borders, and Vela's border family reflects that narrowness rather than papering over it.
 
-Thickness accepts **exactly four values**: `border-0`, `border-1`, `border-2`, and `border-4`. Bare `border` is shorthand for thickness `1`. Any other number — `border-3`, `border-8` — is rejected with `unsupported-border-value`.
+Thickness accepts **exactly four values**: `border-0`, `border-1`, `border-2`, and `border-4`. Bare
+`border` is shorthand for thickness `1`. Any other number, such as `border-3` or `border-8`, is
+rejected with `unsupported-border-value`.
 
 `border-transparent` sets `Transparency = 1`. `border-{color}` sets `Color` and `Transparency = 0`.
 
@@ -123,17 +128,17 @@ Thickness accepts **exactly four values**: `border-0`, `border-1`, `border-2`, a
 Everything below is explicitly detected and rejected with `unsupported-border-value`, so you get a diagnostic instead of a silent no-op:
 
 - Border styles — `border-dashed`, `border-solid`, `border-dotted`, `border-double`. `UIStroke` draws one continuous line and has no style property.
-- Side-specific keys — `border-x`, `border-y`, `border-t`, `border-r`, `border-b`, `border-l`, and their prefixed forms like `border-t-2` or `border-x-slate-500`. A `UIStroke` outlines the whole instance; there are no per-side strokes. (For dividers *between* children, `divide-x`/`divide-y` builds real separator frames — see the [utilities reference](/vela-rbxts/reference/utilities/#divide).)
-- `border-opacity-*`. Use the `/N` modifier — `border-slate-500/25` — or `border-transparent`.
+- Side-specific keys — `border-x`, `border-y`, `border-t`, `border-r`, `border-b`, `border-l`, and their prefixed forms like `border-t-2` or `border-x-slate-500`. A `UIStroke` outlines the whole instance. There are no per-side strokes. (For dividers *between* children, `divide-x`/`divide-y` builds real separator frames — see the [utilities reference](/vela-rbxts/reference/utilities/#divide).)
+- `border-opacity-*`. Use the `/N` modifier, as in `border-slate-500/25`, or `border-transparent`.
 
 An arbitrary bracket thickness is *not* rejected: `border-[3]`, `border-[3px]` and `border-[0.125rem]`
 all reach `UIStroke.Thickness`, and like every other offset they scale with the viewport.
 
 ### Rings and outlines
 
-`ring` and `outline` exist for Tailwind muscle memory: `ring` is thickness 3, `outline` thickness 2,
+`ring` and `outline` exist for Tailwind muscle memory. `ring` is thickness 3, `outline` thickness 2,
 and both set `ApplyStrokeMode = Border`. But Roblox gives one reliable `UIStroke` per instance, so
-all three families **write into the same helper** and the later token wins — there is no CSS-style
+all three families **write into the same helper** and the later token wins. There is no CSS-style
 ring stacked on a border. Off-list values are `unsupported-stroke-value`.
 
 ## Radius
@@ -152,7 +157,8 @@ theme: { extend: { radius: { card: "new UDim(0, 10)" } } }
 
 ## Shadows
 
-`shadow` and the size presets build a `UIShadow` child. The presets are fixed; there is no way to tune them from a class.
+`shadow` and the size presets build a `UIShadow` child. The presets are fixed. There is no way to
+tune them from a class.
 
 | Class | Blur radius | Y offset | Spread | Transparency |
 | --- | --- | --- | --- | --- |
@@ -217,14 +223,16 @@ With a gradient present, Vela sets `BackgroundColor3` to white, because `UIGradi
 
 ## Element opacity
 
-`opacity-N` accepts **any integer from 0 to 100** — not a fixed step scale — and inverts it, because Roblox measures transparency where CSS measures opacity. `opacity-100` is fully opaque, `opacity-0` is fully transparent, and `opacity-40` emits `0.6`.
+`opacity-N` accepts **any integer from 0 to 100**, not a fixed step scale, and inverts it. Roblox
+measures transparency where CSS measures opacity. `opacity-100` is fully opaque, `opacity-0` is
+fully transparent, and `opacity-40` emits `0.6`.
 
 A non-integer or out-of-range value reports `unsupported-opacity-value`. The editor's completion list shows a shorter set of round numbers, but that list is suggestion sugar — `opacity-37` compiles fine.
 
 **It fades everything the element draws, and everything under it.** The value reaches every
 transparency channel the host paints, then is handed down the subtree as a running product,
 `1 - (1 - own) * alpha`. That descent crosses component boundaries too, travelling as a React
-context through `{props.children}` and component children.
+context through `{props.children}`.
 
 Reach for the `/N` modifier when you want a *single* family faded — `text-slate-100/80` fades the
 text and leaves the surface alone. The two multiply rather than fight: `opacity-50 bg-blue-600/50`
