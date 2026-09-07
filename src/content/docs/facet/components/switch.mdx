@@ -109,9 +109,9 @@ that owns one.
 ## Sizing it
 
 `h-5 w-9` on the track and `size-4` on the thumb are the only numbers in the component, and they are
-paired: a 16px thumb inside a 20px track leaves 2px of inset each side. Changing one means changing
+paired. A 16px thumb inside a 20px track leaves 2px of inset each side. Changing one means changing
 the other — there is no variant, because the file is short enough to edit.
 
-A call-site `className` cannot do it either: `h-5 w-9` is in the recipe, which resolves *after* the
-props a call-site class arrives as — see
+A call-site `className` cannot do it either. `h-5 w-9` is in the recipe, which resolves *after* the
+props a call-site class arrives as. See
 [overriding from the call site](/facet/guides/variants-and-classes/#overriding-from-the-call-site).

@@ -43,8 +43,8 @@ import { Label } from "../shared/ui/label";
 | `RadioGroup` | `Frame` | `flex-col gap-2 w-fit h-fit` |
 | `RadioGroupItem` | `TextButton` | `size-4 rounded-full border border-input transition duration-150` |
 
-Two parts, not four: the indicator and the dot inside it are drawn by `RadioGroupItem`, and take no
-props, so exporting them would cost two Luau registers and buy nothing. See
+Two parts, not four. The indicator and the dot inside it are drawn by `RadioGroupItem` and take no
+props. Exporting them would cost two Luau registers and buy nothing. See
 [the register limit](/facet/guides/component-conventions/#6-flat-named-exports).
 
 ## Props
@@ -131,5 +131,5 @@ layout — two mechanisms sharing a prop. Nothing in Lattice lays this frame out
 frame tells Lattice which key moves where.
 
 <Callout title="A horizontal group is not a row of labelled rows">
-The `flex-row` lands on the group's own frame, so its children are laid out in a row. If each child is itself a labelled row — a `flex-row` frame holding a dial and a `Label` — you get a row of rows, which is usually what you want. The component only flips its own axis.
+The `flex-row` lands on the group's own frame, so its children are laid out in a row. If each child is itself a labelled row, such as a `flex-row` frame holding a dial and a `Label`, you get a row of rows. That is usually what you want. The component only flips its own axis.
 </Callout>

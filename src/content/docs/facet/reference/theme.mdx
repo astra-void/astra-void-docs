@@ -29,7 +29,7 @@ import { facetTheme } from "@facet-ui/theme";
 facetTheme({ base: "zinc", mode: "dark", radius: "new UDim(0, 8)" });
 ```
 
-Returns a `ThemeExtend` — a plain object with `colors` and `radius` — for spreading into
+Returns a `ThemeExtend`, a plain object with `colors` and `radius`, for spreading into
 `theme.extend`:
 
 ```ts title="vela.config.ts"
@@ -129,7 +129,7 @@ Standard Tailwind neutrals, as Luau `Color3.fromRGB(…)` expressions:
 | `stone` | `250, 250, 249` | `120, 113, 108` | `12, 10, 9` |
 | `neutral` | `250, 250, 250` | `115, 115, 115` | `10, 10, 10` |
 
-Each is a full 50/100/200/300/400/500/600/700/800/900/950 scale; only the ends and midpoint are
+Each is a full 50/100/200/300/400/500/600/700/800/900/950 scale. Only the ends and midpoint are
 shown here.
 
 ## One mode per build

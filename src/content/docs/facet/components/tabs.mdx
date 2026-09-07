@@ -54,7 +54,7 @@ button and a label, so there is no single instance for an unknown prop to land o
 ## Pass `defaultValue`
 
 <Callout title="Without one, nothing styles as selected">
-Lattice's `Tabs.Root` selects the first enabled trigger when it has no value. The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) in this file cannot see that decision — it holds `undefined`, so `selected` is false for every trigger and the list renders with nothing highlighted while the content panel switches correctly.
+Lattice's `Tabs.Root` selects the first enabled trigger when it has no value. The [mirrored state](/facet/components/checkbox/#the-state-is-mirrored-not-reached-for) in this file cannot see that decision. It holds `undefined`, so `selected` is false for every trigger. The list renders with nothing highlighted while the content panel switches correctly.
 
 It compiles, it works, and it looks broken. Give `Tabs` a `defaultValue` (or a controlled `value`).
 </Callout>
@@ -113,6 +113,6 @@ last-token-wins.
 
 ## `w-fit` on the list, `h-9` on the list
 
-The list hugs its triggers horizontally and states a fixed height, which gives the pill its shape:
+The list hugs its triggers horizontally and states a fixed height, which gives the pill its shape.
 `p-1` insets the `h-7` triggers by 4px each side inside the `h-9` track. Changing one number means
 changing the other.

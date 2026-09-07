@@ -102,7 +102,7 @@ fill and the thumb's travel are `Position`/`Size` written by Lattice as the valu
 overwrites them on the next frame.
 
 <Callout title="The thumb rides the track, not a slot inside it">
-`size-4` on an `h-2` bar makes the thumb twice the track's height, hanging over both edges — what a slider knob looks like, and only possible because nothing is laying it out.
+`size-4` on an `h-2` bar makes the thumb twice the track's height, hanging over both edges. That is what a slider knob looks like, and it is only possible because nothing is laying it out.
 
 Studio still has to confirm that the overhang lands symmetrically and the range fill stops under the thumb — the [preview is not Studio](/facet/getting-started/scope-and-status/#what-is-not-covered).
 </Callout>
@@ -124,5 +124,5 @@ For a volume slider you want both — the first to hear the change live, the sec
 ```
 
 The track and the thumb each state the fade, because
-[`opacity-*` does not cross a component boundary](/facet/guides/component-conventions/#3-nothing-inherits)
-— the thumb is a primitive child, not JSX the compiler can see under the track.
+[`opacity-*` does not cross a component boundary](/facet/guides/component-conventions/#3-nothing-inherits).
+The thumb is a primitive child, not JSX the compiler can see under the track.

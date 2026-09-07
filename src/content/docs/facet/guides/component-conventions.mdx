@@ -74,7 +74,7 @@ instance to carry what an existing instance can carry**, which is why the regist
 
 That component exists in CSS to hide a `padding-bottom: 56.25%` trick. Roblox has
 `UIAspectRatioConstraint` and Vela lowers straight onto it. A wrapper would add a frame, a file and
-a level to the `AutomaticSize` chain, and be less capable: the class works on any host instance,
+a level to the `AutomaticSize` chain, and be less capable. The class works on any host instance,
 while a component forces a `Frame`.
 
 **Ratio is a class, not a component.**
@@ -275,7 +275,7 @@ the only build-clean runtime failure in the registry. The component declares it,
 missing.
 
 **The styled panel is a frame inside the primitive's content, never the content itself.** The
-primitive forces `Size` on its own host so the layer spans the screen. It *also* takes the first
+primitive forces `Size` on its own host, so the layer spans the screen. It *also* takes the first
 host element under it as the outside-press boundary. A `className` there fights the first, and
 through the `UICorner` Vela prepends for `rounded-*` it quietly becomes the second.
 
