@@ -26,28 +26,25 @@ except `list`.
 }
 ```
 
-The file is parsed loosely and normalized against those defaults, so a hand-edited config missing a
-key picks the default up rather than crashing mid-copy.
+It is parsed loosely and normalized against those defaults, so a hand-edited config missing a key
+picks the default up rather than crashing mid-copy.
 
 ## `$schema`
 
 The JSON Schema the file advertises, for editor completion and validation. It is **generated** from
-the CLI's `FacetConfig` type by the same deploy that publishes the registry, so it can never be a
-version behind the CLI that writes files pointing at it.
+the CLI's `FacetConfig` type by the deploy that publishes the registry, so it cannot lag the CLI.
 
 ## `style`
 
 `"default"`, and there is no second value.
 
-shadcn shipped two styles and has since deprecated `default`; the field outlived the second style.
-That is most of the argument, and it is worse here. Nothing about a Roblox component is verifiable
-by reading it, so a second style doubles the set of components that have to be opened in Studio and
-looked at — already the expensive, manual step.
+shadcn shipped two styles and has since deprecated `default`, so the field outlived the second
+style. It is worse here: nothing about a Roblox component is verifiable by reading it, so a second
+style doubles the set that has to be opened in Studio and looked at.
 
-The field stays because `facet.json` is a file you commit, and removing a key from it is a breaking
-change for the benefit of deleting one line. It is also the natural place for a fork to say what it
-serves. Nothing in the CLI branches on it, and it is typed as the literal `"default"` rather than
-`string`, so any code that starts branching has to change the type first.
+The field stays because `facet.json` is a file you commit, and removing a key is a breaking change
+for the benefit of deleting one line. Nothing branches on it, and it is typed as the literal
+`"default"` rather than `string`, so any code that starts branching has to change the type first.
 
 ## `theme`
 
@@ -60,13 +57,11 @@ serves. Nothing in the CLI branches on it, and it is typed as the literal `"defa
 | `base` | `"zinc"` · `"slate"` · `"stone"` · `"neutral"` | Neutral ramp the semantic tokens derive from |
 | `mode` | `"dark"` · `"light"` | Which side of the ramp they resolve to |
 
-These are what `init` writes into the generated `vela.config.ts`, and what a later `doctor` uses to
-print the correct `facetTheme({ … })` snippet if the config is unwired.
+These are what `init` writes into the generated `vela.config.ts`, and what `doctor` uses to print
+the right `facetTheme({ … })` snippet if the config is unwired.
 
 <Callout title="Editing this does not retheme anything on its own">
-The theme lives in `vela.config.ts`. Changing `facet.json` after `init` changes what the CLI would
-*suggest*, not what your build resolves — `init` never rewrites an existing Vela config. Change both,
-or change the Vela config alone. See [Theming](/facet/guides/theming/).
+The theme lives in `vela.config.ts`, and `init` never rewrites an existing one. Changing `facet.json` afterwards changes what the CLI would *suggest*, not what your build resolves. See [Theming](/facet/guides/theming/).
 </Callout>
 
 ## `aliases`
@@ -95,10 +90,10 @@ Which alias a file lands under is decided by its registry item type:
 | `registry:hook` | `hooks` |
 | `registry:block` | `ui` |
 
-**Relative is the default**, because it needs no tsconfig `paths` and therefore works in a roblox-ts
-project nobody configured for this. With `import` set, the rewrite is textual —
-`~/lib/utils` → `shared/lib/utils`. Without it, the CLI computes a relative path from the importing
-file's destination, so `~/lib/utils` inside `src/shared/ui/button.tsx` becomes `../lib/utils`.
+**Relative is the default**, because it needs no tsconfig `paths`. With `import` set the rewrite is
+textual — `~/lib/utils` → `shared/lib/utils`; without it the CLI computes a relative path from the
+importing file's destination, so `~/lib/utils` inside `src/shared/ui/button.tsx` becomes
+`../lib/utils`.
 
 If you set `import`, your tsconfig needs a matching `paths` entry. `facet doctor` **fails** on this
 rather than warning, because every copied component imports through it. It accepts the specifier

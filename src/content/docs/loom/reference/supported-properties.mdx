@@ -10,11 +10,10 @@ sidebar:
 import { Callout } from "@/components/docs/mdx";
 
 [Scope and status](/loom/getting-started/scope-and-status/) answers "is text done?" at the area
-level. This page answers "does `AutomaticCanvasSize` work?" at the property level, so you know
-exactly how far a preview can be trusted before you open Studio.
+level; this page answers "does `AutomaticCanvasSize` work?" at the property level.
 
-Everything below describes loom `0.12.0`: the JSX intrinsics in `@loom-dev/react`, the DOM mapping in
-`@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
+Everything below describes loom `0.12.0` — the JSX intrinsics in `@loom-dev/react`, the DOM mapping
+in `@loom-dev/renderer`, and the Rust layout engine in `crates/loom-layout`.
 
 ## How to read this
 
@@ -25,18 +24,15 @@ Everything below describes loom `0.12.0`: the JSX intrinsics in `@loom-dev/react
 | **Accepted** | Typed and settable, and nothing reads it. No error, no effect. |
 | **Not typed** | No JSX prop and no runtime handling. A compile error, and it would not render either. |
 
-**Accepted** is the row that costs you time, so it is spelled out rather than omitted. Those props
-exist so real component code — which sets them for the Roblox build — runs under the preview without
-edits.
+**Accepted** is the row that costs you time, so it is spelled out. Those props exist so real
+component code, which sets them for the Roblox build, runs under the preview without edits.
 
 <Callout title="An enum prop can be written as a bare string">
-The engine takes the string wherever it takes the item — `AutomaticSize="XY"` *is* `Enum.AutomaticSize.XY`, and roblox-ts's own React typings offer both spellings. Loom reads either, everywhere.
+The engine takes the string wherever it takes the item — `AutomaticSize="XY"` *is* `Enum.AutomaticSize.XY`, and loom reads either everywhere.
 </Callout>
 
 <Callout title="`EnumItem.Value` changed in `0.12.0`">
-It reports the engine's own number now, rather than the item's position in loom's declaration list.
-Code that compares `.Value` against a hardcoded integer may need updating; comparing items directly,
-or matching on `.Name`, is unaffected — as is the layout engine, which matches by name.
+It reports the engine's own number rather than the item's position in loom's declaration list, so code comparing `.Value` against a hardcoded integer may need updating. Comparing items directly, or matching on `.Name`, is unaffected.
 </Callout>
 
 ## Instances
@@ -106,73 +102,66 @@ Shared by every visual class.
 
 ### `AutomaticSize` on text
 
-Auto-sizing text is measured browser-side — the adapter runs a canvas `measureText()` with the same
-font the renderer paints and hands the result to the WASM engine as `TextBounds`, because font
-metrics do not exist inside the engine. Which typeface that is, and why it is worth pinning, is
+Auto-sizing text is measured browser-side: the adapter runs a canvas `measureText()` with the font
+the renderer paints and hands the result to the WASM engine as `TextBounds`, since font metrics do
+not exist inside it. Which typeface that is, and why it is worth pinning, is
 [Fonts and text metrics](/loom/guides/fonts/).
 
-`TextWrapped` is honored: runs are laid into lines at word boundaries rather than measured as one
-long line, and **one function decides every wrap** — measurement asks it how many lines a label
-needs, and the text layer asks where to put the breaks it paints. The advances behind it are the
-engine's, half a pixel per grapheme plus the run's kerning.
+`TextWrapped` is honoured: runs are laid into lines at word boundaries, and **one function decides
+every wrap** — measurement asks it how many lines a label needs, the text layer asks where the
+breaks go. The advances behind it are the engine's.
 
 **The wrap width is the nearest ancestor with a width of its own**, less every `UIPadding` in
 between — not the immediate parent. A parent that is itself `AutomaticSize` was sized *by* the
-label, so wrapping against it never wraps at all. The library idiom stacks two or three such
-containers, and the one node with a real width is where the room runs out.
+label, so wrapping against it never wraps.
 
-The re-wrap settles inside the paint that caused it. The wrap width comes from the layout that paint
-produces, so the first measurement after a container narrows is against the old width; the adapter
-re-lays-out until the two agree — up to four passes, then it defers to the next frame — and patches
-the DOM once. Rendering the first pass would put a too-wide label on screen for a frame, which
-during a window drag is every frame.
+The re-wrap settles inside the paint that caused it: the first measurement after a container narrows
+is against the old width, so the adapter re-lays-out until the two agree — up to four passes, then
+it defers to the next frame — and patches the DOM once.
 
-A `RichText` string is measured run by run in the font its own tags ask for, so a bold or resized run
-does not clip. An empty `TextBox` is measured against its `PlaceholderText`, which is what it
-displays — otherwise an `AutomaticSize.Y` input would collapse to zero height and become unclickable.
+A `RichText` string is measured run by run in the font its tags ask for, so a bold run does not
+clip. An empty `TextBox` is measured against its `PlaceholderText`, or an `AutomaticSize.Y` input
+would collapse to zero height.
 
 Both adapters do this, so the same scene lays out identically through vide and react.
 
-The wrap width also carries the `UIPadding` insets in between, **including scale ones**. The layout
-engine resolves a scale inset against the node's own width where its X axis is real, and against
-zero where the axis is automatic — a scale inset on an automatic axis is circular, since the width
-sets the padding sets the width.
+The wrap width also carries the `UIPadding` insets in between, **including scale ones**. A scale
+inset resolves against the node's own width where its X axis is real, and against zero where the
+axis is automatic — there the width would set the padding would set the width.
 
 ### `TextSize` is a face height, not a font size
 
-`TextSize` means different things to the two renderers. Roblox fits the whole face into it —
-ascender to descender, which is why one line measures exactly that tall — while CSS `font-size` sets
-the em square, and a face's ascent plus descent runs well past 1em.
+`TextSize` means different things to the two renderers: Roblox fits the whole face into it, ascender
+to descender, while CSS `font-size` sets the em square and a face's ascent plus descent runs well
+past 1em.
 
 Loom divides by the face box rather than painting `font-size: TextSize` straight through, which
-would draw every glyph too big by its face's own ratio. `LineHeight` sets the line box in pixels off
-`TextSize`, since the engine's pitch is `TextSize`-relative. Which ratio to divide by is calibrated
-per family — see [`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
+would draw every glyph too big. `LineHeight` sets the line box in pixels off `TextSize`. The ratio
+is calibrated per family — see
+[`TextSize` is not a font size](/loom/guides/fonts/#textsize-is-not-a-font-size).
 
 The clip rect carries the overhang the browser's taller line boxes need, with padding handing the
-content box its original height back — otherwise a paragraph's last line loses the tails of its `y`,
-`p` and `g`. Nothing about the layout moves: `TextBounds`, `AbsoluteSize` and every rect around the
-label are unchanged, and a label still clips its own text at its left and right edges.
+content box its original height back — otherwise a paragraph's last line loses its descenders.
+Nothing about the layout moves, and a label still clips its text at its left and right edges.
 
 ### `AutomaticSize` is bounded by the parent
 
-Roblox bounds automatic growth: an object with `AutomaticSize` grows up to the maximum its parent
-allows, and a `TextWrapped` label grows to that maximum and only *then* wraps.
+Roblox bounds automatic growth: an `AutomaticSize` object grows up to the maximum its parent allows,
+and a `TextWrapped` label grows to that maximum and only *then* wraps.
 
 Every auto-sized node carries the ceiling its parent leaves, inherited through the padding in
-between. `Size` remains the floor even past that ceiling, and a wrapping `UIListLayout` wraps
-against the same ceiling. Content that still does not fit **overflows**, which is what the engine
-does — it does not widen the object to make room.
+between; `Size` remains the floor even past it, and a wrapping `UIListLayout` wraps against the same
+ceiling. Content that still does not fit **overflows**, as it does in the engine.
 
-**A `ScrollingFrame` is the exception.** A canvas free to grow is one whose whole point is
-outgrowing the window, so its children get no ceiling on an axis carrying `AutomaticCanvasSize` or a
-`CanvasSize` of 0. A `CanvasSize` giving the axis a real extent is still a ceiling.
+**A `ScrollingFrame` is the exception.** Its children get no ceiling on an axis carrying
+`AutomaticCanvasSize` or a `CanvasSize` of 0; a `CanvasSize` giving the axis a real extent is still
+a ceiling.
 
 ## Image properties
 
-Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text, as a
-background-painted element rather than an `<img>` — a sprite window and a 9-slice both place a
-*region* of the source, which `object-fit` cannot express.
+Shared by `imagelabel` and `imagebutton`. The image paints in a layer beneath the text as a
+background-painted element rather than an `<img>`, because a sprite window and a 9-slice both place
+a *region* of the source.
 
 | Property | Status | Notes |
 | --- | --- | --- |
